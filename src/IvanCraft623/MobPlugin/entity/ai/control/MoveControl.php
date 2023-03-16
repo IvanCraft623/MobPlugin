@@ -1,5 +1,24 @@
 <?php
 
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
 declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\control;
@@ -11,6 +30,13 @@ use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Door;
 use pocketmine\block\Fence;
 use pocketmine\math\Vector3;
+use function atan2;
+use function cos;
+use function floor;
+use function max;
+use function sin;
+use function sqrt;
+use const M_PI;
 
 class MoveControl {
 
@@ -35,15 +61,15 @@ class MoveControl {
 		$this->mob = $mob;
 	}
 
-	public function hasWanted(): bool {
+	public function hasWanted() : bool {
 		return $this->operation === self::MOVE_TO;
 	}
 
-	public function getSpeedModifier(): float {
+	public function getSpeedModifier() : float {
 		return $this->speedModifier;
 	}
 
-	public function setWantedPosition(Vector3 $position, float $speedModifier): void {
+	public function setWantedPosition(Vector3 $position, float $speedModifier) : void {
 		$this->wantedPosition = $position;
 		$this->speedModifier = $speedModifier;
 		if ($this->operation !== self::OPERATION_JUMPING) {
@@ -51,14 +77,14 @@ class MoveControl {
 		}
 	}
 
-	public function strafe(float $strafeForwards, float $strafeRight): void {
+	public function strafe(float $strafeForwards, float $strafeRight) : void {
 		$this->operation = self::OPERATION_STRAFE;
 		$this->strafeForwards = $strafeForwards;
 		$this->strafeRight = $strafeRight;
 		$this->speedModifier = 1 / 4;
 	}
 
-	public function tick(): void {
+	public function tick() : void {
 		$location = $this->mob->getLocation();
 		if ($this->operation === self::OPERATION_STRAFE) {
 			$speed = $this->speedModifier * $this->mob->getDefaultSpeed();
@@ -121,7 +147,7 @@ class MoveControl {
 		}
 	}
 
-	private function isWalkable(float $x, foat $z): bool {
+	private function isWalkable(float $x, foat $z) : bool {
 		$navigation = $this->mob->getNavigation();
 		if ($navigation !== null) {
 			$nodeEvaluator = $navigation->getNodeEvaluator();
@@ -134,25 +160,12 @@ class MoveControl {
 		return true;
 	}
 
-	protected function rotlerp(float $float1, float $float2, float $float3): float {
-		$float4 = Utils::wrapDegrees($float2 - $float1);
-
-		if ($float4 > $float3) {
-			$float4 = $float3;
-		}
-		if ($float4 < -$float3) {
-			$float4 = -$float3;
-		}
-		$float5 = $float1 + $float4;
-		if ($float5 < 0) {
-			$float5 += 360;
-		} elseif ($float5 > 360) {
-			$float5 -= 360;
-		}
-		return $float5;
+	protected function rotateLerp(float $startDegrees, float $endDegrees, float $maxRotation) : float {
+		$delta = Utils::clamp(Utils::wrapDegrees($endDegrees - $startDegrees), -$maxRotation, $maxRotation);
+		return Utils::wrapDegrees($startDegrees + $delta);
 	}
 
-	public function getWantedPosition(): Vector3 {
+	public function getWantedPosition() : Vector3 {
 		return $this->wantedPosition;
 	}
 }

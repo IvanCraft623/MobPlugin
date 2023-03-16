@@ -1,20 +1,43 @@
 <?php
 
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
 declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
-use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
+use IvanCraft623\MobPlugin\MobPlugin;
 
 use pocketmine\entity\Living as PMLiving;
-use pocketmine\item\Item;
 use pocketmine\item\enchantment\VanillaEnchantments;
+use pocketmine\item\Item;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\utils\Random;
+use function array_filter;
+use function array_key_exists;
+use function array_merge;
+use function array_values;
 
 abstract class Living extends PMLiving {
 	//TODO!
@@ -81,7 +104,7 @@ abstract class Living extends PMLiving {
 	 * @param Item[] $items
 	 * @phpstan-param array<int, Item> $items
 	 */
-	private static function populateInventoryFromListTag(Inventory $inventory, array $items): void{
+	private static function populateInventoryFromListTag(Inventory $inventory, array $items) : void{
 		$listeners = $inventory->getListeners()->toArray();
 		$inventory->getListeners()->clear();
 
@@ -90,35 +113,35 @@ abstract class Living extends PMLiving {
 		$inventory->getListeners()->add(...$listeners);
 	}
 
-	public function getRandom(): Random {
+	public function getRandom() : Random {
 		return $this->random;
 	}
 
-	public function getDefaultSpeed(): float {
+	public function getDefaultSpeed() : float {
 		return $this->defaultSpeed;
 	}
 
-	public function getSpeed(): float {
+	public function getSpeed() : float {
 		return $this->speed;
 	}
 
-	public function setSpeed(float $speed): void {
+	public function setSpeed(float $speed) : void {
 		$this->speed = $speed;
 	}
 
-	public function getMaxUpStep(): float {
+	public function getMaxUpStep() : float {
 		return $this->maxUpStep;
 	}
 
-	public function getInventory(): MobInventory{
+	public function getInventory() : MobInventory{
 		return $this->inventory;
 	}
 
-	public function canAttack(PMLiving $target): bool {
+	public function canAttack(PMLiving $target) : bool {
 		return true;
 	}
 
-	public function canSee(Entity $entity): bool{
+	public function canSee(Entity $entity) : bool{
 		$start = $this->getEyePos();
 		$end = $entity->getEyePos();
 		$directionVector = $end->subtractVector($start)->normalize();
@@ -135,14 +158,14 @@ abstract class Living extends PMLiving {
 		return true;
 	}
 
-	public function getDrops(): array {
+	public function getDrops() : array {
 		return array_filter(array_merge(
 			$this->inventory !== null ? array_values($this->inventory->getContents()) : [],
 			$this->armorInventory !== null ? array_values($this->armorInventory->getContents()) : []
-		), function(Item $item): bool{ return !$item->hasEnchantment(VanillaEnchantments::VANISHING()); });
+		), function(Item $item) : bool{ return !$item->hasEnchantment(VanillaEnchantments::VANISHING()); });
 	}
 
-	public function saveNBT(): CompoundTag {
+	public function saveNBT() : CompoundTag {
 		$nbt = parent::saveNBT();
 
 		$inventoryTag = new ListTag([], NBT::TAG_Compound);

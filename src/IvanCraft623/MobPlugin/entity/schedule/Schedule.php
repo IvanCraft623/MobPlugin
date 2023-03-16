@@ -1,5 +1,24 @@
 <?php
 
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
 declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\schedule;
@@ -11,20 +30,20 @@ class Schedule {
 
 	private array $timelines = [];
 
-	protected static function register(string $name, Schedule $schedule): void {
+	protected static function register(string $name, Schedule $schedule) : void {
 		self::_registryRegister($name, $schedule);
 	}
 
 	/**
 	 * @return Schedule[]
 	 */
-	public static function getAll(): array {
+	public static function getAll() : array {
 		/** @var Schedule[] $result */
 		$result = self::_registryGetAll();
 		return $result;
 	}
 
-	protected static function setup(): void {
+	protected static function setup() : void {
 		$empty = (new ScheduleBuilder(new Schedule()))->changeActivityAt(0, Activity::IDLE())->build();
 		self::register("empty", $empty);
 		$simple = (new ScheduleBuilder(new Schedule()))->changeActivityAt(5000, Activity::WORK())->changeActivityAt(11000, Activity::REST())->build();
@@ -35,7 +54,7 @@ class Schedule {
 		self::register("villager_default", $villager_default);
 	}
 
-	public function ensureTimelineExistsFor(Activity $activity): void {
+	public function ensureTimelineExistsFor(Activity $activity) : void {
 		foreach ($this->timelines as $key => $data) {
 			if ($activity->equals($data[0])) {
 				return;
@@ -44,7 +63,7 @@ class Schedule {
 		$this->timelines[] = [$activity, new Timeline()];
 	}
 
-	public function getTimelineFor(Activity $activity): Timeline {
+	public function getTimelineFor(Activity $activity) : Timeline {
 		foreach ($this->timelines as $key => $data) {
 			if ($activity->equals($data[0])) {
 				return $data[1];
@@ -52,7 +71,7 @@ class Schedule {
 		}
 	}
 
-	public function getAllTimelinesExceptFor(Activity $activity): Timeline {
+	public function getAllTimelinesExceptFor(Activity $activity) : Timeline {
 		$timelines = [];
 		foreach ($this->timelines as $key => $data) {
 			if (!$activity->equals($data[0])) {
@@ -62,7 +81,7 @@ class Schedule {
 		return $timelines;
 	}
 
-	public function getActivityAt(int $timeStamp): Activity {
+	public function getActivityAt(int $timeStamp) : Activity {
 		$activity = Activity::IDLE();
 		$max = -1;
 		foreach ($this->timelines as $key => $data) {
