@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+namespace IvanCraft623\MobPlugin\entity\ai\control;
+
+use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
+use IvanCraft623\MobPlugin\utils\Utils;
+
+use pocketmine\block\Door;
+use pocketmine\block\Fence;
+use pocketmine\math\Vector3;
+
+class MoveControl {
+
+	public const OPERATION_WAIT = 0;
+	public const OPERATION_MOVE_TO = 1;
+	public const OPERATION_STRAFE = 2;
+	public const OPERATION_JUMPING = 3;
+
+	protected Mob $mob;
+
+	protected Vector3 $wantedPosition;
+
+	protected float $speedModifier;
+
+	protected float $strafeForwards;
+
+	protected float $strafeRight;
+
+	protected int $operation = self::OPERATION_WAIT;
+
+	public function __construct(Mob $mob) {
+		$this->mob = $mob;
+	}
+
+	public function hasWanted(): bool {
+		return $this->operation === self::MOVE_TO;
+	}
+
+	public function getSpeedModifier(): float {
+		return $this->speedModifier;
+	}
+
+	public function setWantedPosition(Vector3 $position, float $speedModifier): void {
+		$this->wantedPosition = $position;
+		$this->speedModifier = $speedModifier;
+		if ($this->operation !== self::OPERATION_JUMPING) {
+			$this->operation = self::OPERATION_MOVE_TO;
+		}
+	}
+
+	public function strafe(float $strafeForwards, float $strafeRight): void {
+		$this->operation = self::OPERATION_STRAFE;
+		$this->strafeForwards = $strafeForwards;
+		$this->strafeRight = $strafeRight;
+		$this->speedModifier = 1 / 4;
+	}
+
+	public function tick(): void {
+		$location = $this->mob->getLocation();
+		if ($this->operation === self::OPERATION_STRAFE) {
+			$speed = $this->speedModifier * $this->mob->getDefaultSpeed();
+			$strafeForwards = $this->strafeForwards;
+			$strafeRight = $this->strafeRight;
+			$strafe = sqrt(($strafeForwards ** 2) + ($strafeRight ** 2));
+			if ($strafe < 1) {
+				$strafe = 1;
+			}
+			$strafe = $speed / $strafe;
+			$float *= $strafe;
+			$float2 *= $strafe;
+
+			$sin = sin($location->yaw * (M_PI / 180));
+			$cos = cos($location->yaw * (M_PI / 180));
+
+			$x = $strafeForwards * $cos - $strafeRight * $sin;
+			$z = $strafeRight * $cos - $strafeForwards * $sin;
+			if (!$this->isWalkable($x, $z)) {
+				$this->strafeForwards = 1;
+				$this->strafeRight = 0;
+			}
+			$this->mob->setZza($this->strafeForwards);
+			$this->mob->setXxa($this->strafeRight);
+			$this->operation = self::OPERATION_WAIT;
+		} elseif ($this->operation === self::OPERATION_MOVE_TO) {
+			$this->operation = self::OPERATION_WAIT;
+			$x = $this->wantedPosition->x - $location->x;
+			$y = $this->wantedPosition->y - $location->y;
+			$z = $this->wantedPosition->z - $location->z;
+			$distanceSquared = ($x ** 2) + ($y ** 2) + ($z ** 2);
+			if ($distanceSquared < (2.5 * 10 ** -7)) {
+				$this->mob->setZza(0);
+				return;
+			}
+			$yaw = $this->rotlerp($location->yaw, (atan2($z, $x) * (180 / M_PI)) - 90, 90);
+			$this->mob->setRotation($yaw, 0.0);
+			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
+
+			$motion = $mob->getMotion();
+			foreach ($location->getWorld()->getCollisionBlocks($mob->boundingBox->addCoord($motion->x, $motion->y, $motion->z)) as $block) {
+				if ($block->getCollisionBoxes()[0]->maxY - $mob->boundingBox->minY > 1) {
+					if ($y > $this->mob->getMaxUpStep() &&
+					($x ** 2) + ($z ** 2) < max(1.0, $mob->getSize()->getWidth()) &&
+					!$block instanceof Door &&
+					!$block instanceof Fence) {
+						$this->mob->getJumpControl()->jump();
+						$this->operation = self::OPERATION_JUMPING;
+						return;
+					}
+				}
+			}
+		} elseif ($this->operation === self::OPERATION_JUMPING) {
+			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
+			if ($this->mob->onGround) {
+				$this->operation = self::OPERATION_WAIT;
+			}
+		} else {
+			$this->mob->setZza(0);
+		}
+	}
+
+	private function isWalkable(float $x, foat $z): bool {
+		$navigation = $this->mob->getNavigation();
+		if ($navigation !== null) {
+			$nodeEvaluator = $navigation->getNodeEvaluator();
+			$location = $mob->getLocation();
+			if ($nodeEvaluator !== null &&
+				!$nodeEvaluator->getBlockPathType($mob->getWorld(), floor($location->x + $x), floor($location->y), floor($location->z + $z))->equals(BlockPathTypes::WALKABLE())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	protected function rotlerp(float $float1, float $float2, float $float3): float {
+		$float4 = Utils::wrapDegrees($float2 - $float1);
+
+		if ($float4 > $float3) {
+			$float4 = $float3;
+		}
+		if ($float4 < -$float3) {
+			$float4 = -$float3;
+		}
+		$float5 = $float1 + $float4;
+		if ($float5 < 0) {
+			$float5 += 360;
+		} elseif ($float5 > 360) {
+			$float5 -= 360;
+		}
+		return $float5;
+	}
+
+	public function getWantedPosition(): Vector3 {
+		return $this->wantedPosition;
+	}
+}

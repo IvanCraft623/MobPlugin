@@ -1,0 +1,8 @@
+---
+name: MobPlugin
+author: IvanCraft623
+main: IvanCraft623\MobPlugin\MobPlugin
+version: 0.0.1
+api: 4.0.0
+description: "Implements Mobs like Vanilla!"
+...
