@@ -52,15 +52,11 @@ abstract class Living extends PMLiving {
 
 	protected MobInventory $inventory;
 
-	public function __construct(CompoundTag $nbt) {
-		parent::__construct($nbt);
+	protected function initEntity(CompoundTag $nbt) : void{
+		parent::initEntity($nbt);
 
 		$this->random = MobPlugin::getInstance()->getRandom();
 		$this->speed = $this->defaultSpeed;
-	}
-
-	protected function initEntity(CompoundTag $nbt) : void{
-		parent::initEntity($nbt);
 
 		$this->inventory = new MobInventory($this);
 		$syncHeldItem = function() : void{

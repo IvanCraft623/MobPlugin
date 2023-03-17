@@ -24,8 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
-use IvanCraft623\MobPlugin\entity\ai\control\lookControl;
+use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 
 use pocketmine\nbt\tag\CompoundTag;
@@ -33,11 +34,15 @@ use pocketmine\nbt\tag\CompoundTag;
 abstract class Mob extends Living {
 	//TODO!
 
-	protected MoveControl $lookControl;
+	protected LookControl $lookControl;
 
 	protected MoveControl $moveControl;
 
 	protected JumpControl $jumpControl;
+
+	protected GoalSelector $goalSelector;
+
+	protected GoalSelector $targetSelector;
 
 	protected Sensing $sensing;
 
@@ -47,13 +52,20 @@ abstract class Mob extends Living {
 
 	protected float $zza;
 
-	public function __construct(CompoundTag $nbt) {
-		parent::__construct($nbt);
+	protected function initEntity(CompoundTag $nbt) : void{
+		parent::initEntity($nbt);
 
+		$this->goalSelector = new GoalSelector();
+		$this->targetSelector = new GoalSelector();
 		$this->lookControl = new lookControl($this);
 		$this->moveControl = new MoveControl($this);
 		$this->jumpControl = new JumpControl($this);
 		$this->sensing = new Sensing($this);
+
+		$this->registerGoals();
+	}
+
+	public function registerGoals() : void{
 	}
 
 	public function getMoveControl() : MoveControl {
@@ -90,5 +102,22 @@ abstract class Mob extends Living {
 
 	public function getRotSpeed() : int {
 		return 10;
+	}
+
+	protected function entityBaseTick(int $tickDiff = 1) : bool{
+		$hasUpdate = parent::entityBaseTick($tickDiff);
+
+		//TODO: leash check
+
+		/*if ($this->ticksLived % 5 === 0) {
+			$this->updateControlFlags();
+			$hasUpdate = true;
+		}*/
+
+		return $hasUpdate;
+	}
+
+	protected function updateControlFlags() : void{
+		// TODO!
 	}
 }
