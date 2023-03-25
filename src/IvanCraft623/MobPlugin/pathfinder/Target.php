@@ -21,37 +21,37 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\utils;
+namespace IvanCraft623\MobPlugin\pathfinder;
 
-/**
- * @phpstan-template TKey
- * @phpstan-template TValue
- */
-class Pair {
+use const INF;
 
-	private mixed $key;
+class Target extends Node {
 
-	private mixed $value;
+	protected float $bestHeuristic = INF;
 
-	/** @phpstan-param TKey $key */
-	/** @phpstan-param TValue $value */
-	public function __construct(mixed $key, mixes $value) {
-		$this->key = $key;
-		$this->value = $value;
+	protected Node $bestNode;
+
+	private bool $reached = false;
+
+	/**
+	 * @return Target
+	 */
+	public static function fromObject(Node $node){
+		return new Target($node->getX(), $node->getY(), $node->getZ());
 	}
 
-	/** @phpstan-return TKey */
-	public function getKey() : mixed {
-		return $this->key;
+	public function updateBest(float $heuristic, Node $node) : void{
+		if ($heuristic < $this->bestHeuristic) {
+			$this->bestHeuristic = $heuristic;
+			$this->bestNode = $node;
+		}
 	}
 
-	/** @phpstan-return TValue */
-	public function getValue() : mixed {
-		return $this->value;
+	public function getBestNode() : Node{
+		return $this->bestNode;
 	}
 
-	/** @phpstan-param TValue $value */
-	public function setValue(mixed $value) : void {
-		$this->value = $value;
+	public function setReached(bool $reached = true) : void{
+		$this->reached = $reached;
 	}
 }

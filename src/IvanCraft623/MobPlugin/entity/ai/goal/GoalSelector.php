@@ -23,23 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use pocketmine\utils\Limits;
+use function array_filter;
 
 class GoalSelector {
 
-	/**
-	 * @var array<int, WrappedGoal> flag => WrappedGoal
-	 */
+	/** @var array<int, WrappedGoal> flag => WrappedGoal */
 	protected array $lockedFlags = [];
 
-	/**
-	 * @var WrappedGoal[]
-	 */
+	/** @var WrappedGoal[] */
 	protected array $availableGoals = [];
 
-	/**
-	 * @var array<int, int> flag => flag
-	 */
+	/** @var array<int, int> flag => flag */
 	protected array $disabledFlags = [];
 
 	protected int $newGoalRate = 3;
@@ -57,7 +51,7 @@ class GoalSelector {
 		});
 	}
 
-	public function removeGoal(Goal $goal): void {
+	public function removeGoal(Goal $goal) : void {
 		foreach ($this->availableGoals as $key => $wrappedGoal) {
 			if ($wrappedGoal->getGoal() === $goal) {
 				if ($wrappedGoal->isRunning()) {
@@ -71,7 +65,7 @@ class GoalSelector {
 	/**
 	 * @param array<int, int> $flags
 	 */
-	private static function goalContainsAnyFlags(WrappedGoal $wrappedGoal, array $flags): bool {
+	private static function goalContainsAnyFlags(WrappedGoal $wrappedGoal, array $flags) : bool {
 		foreach ($wrappedGoal->getFlags() as $flag) {
 			if (isset($flags[$flag])) {
 				return true;
@@ -83,7 +77,7 @@ class GoalSelector {
 	/**
 	 * @param array<int, WrappedGoal> $lockedFlags
 	 */
-	private static function goalCanBeReplacedForAllFlags(WrappedGoal $wrappedGoal, array $lockedFlags): bool {
+	private static function goalCanBeReplacedForAllFlags(WrappedGoal $wrappedGoal, array $lockedFlags) : bool {
 		foreach ($wrappedGoal->getFlags() as $flag) {
 			if (isset($lockedFlags[$flag]) && !$lockedFlags[$flag]->canBeReplacedBy($wrappedGoal)) {
 				return false;

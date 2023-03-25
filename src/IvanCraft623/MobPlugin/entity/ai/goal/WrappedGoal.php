@@ -84,8 +84,8 @@ class WrappedGoal extends Goal {
 		return $this->goal->requiresUpdateEveryTick();
 	}
 
-	public function adjustedTickDelay() : bool{
-		return $this->goal->adjustedTickDelay();
+	public function adjustedTickDelay(int $ticks) : int{
+		return $this->goal->adjustedTickDelay($ticks);
 	}
 
 	public function isRunning() : bool{
@@ -105,6 +105,6 @@ class WrappedGoal extends Goal {
 		if ($goal === $this) {
 			return true;
 		}
-		return $goal instanceof WrappedGoal && $this->goal::class === $goal::class;
+		return $goal instanceof WrappedGoal && $this->goal::class === $goal->goal::class;
 	}
 }

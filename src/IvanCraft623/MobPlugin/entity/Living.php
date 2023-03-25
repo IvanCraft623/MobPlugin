@@ -26,6 +26,8 @@ namespace IvanCraft623\MobPlugin\entity;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 
+use pocketmine\block\Liquid;
+use pocketmine\block\Water;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
@@ -152,6 +154,25 @@ abstract class Living extends PMLiving {
 			}
 		}
 		return true;
+	}
+
+	public function isTouchingWater() : bool{
+		foreach ($this->getWorld()->getCollisionBlocks($this->getBoundingBox()) as $block) {
+			if ($block instanceof Water) {
+				//TODO: waterlogging check and do not trigger with powder snow
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function canStandOnFluid(Liquid $liquid) : bool{
+		return false;
+	}
+
+	public function getMaxFallDistance() : int{
+		return 3;
 	}
 
 	public function getDrops() : array {

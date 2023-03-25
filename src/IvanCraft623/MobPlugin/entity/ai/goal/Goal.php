@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
+use function ceil;
+
 abstract class Goal {
 
 	public const FLAG_MOVE = 0;
@@ -30,9 +32,7 @@ abstract class Goal {
 	public const FLAG_JUMP = 2;
 	public const FLAG_TARGET = 3;
 
-	/**
-	 * @var int[]
-	 */
+	/** @var int[] */
 	protected array $flags = [];
 
 	abstract public function canUse();

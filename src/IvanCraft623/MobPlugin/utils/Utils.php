@@ -23,9 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\utils;
 
+use IvanCraft623\MobPlugin\pathfinder\PathComputationType;
+
+use pocketmine\block\Block;
+use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\Door;
+use pocketmine\block\Slab;
+use pocketmine\block\Water;
 use pocketmine\item\Bow;
 use pocketmine\item\Releasable;
 use function max;
+use function method_exists;
 use function min;
 
 class Utils {
@@ -58,5 +66,63 @@ class Utils {
 
 	public static function rotateIfNecessary(float $currentDegrees, float $targetDegrees, float $maxDifference) : float {
 		return $targetDegrees - self::clamp(self::degreesDifference($currentDegrees, $targetDegrees), -$maxDifference, $maxDifference);
+	}
+
+	public static function isPathfindable(Block $block, PathComputationType $pathType) : bool{
+		if ($block instanceof Door) {
+			if ($pathType->equals(PathComputationType::LAND()) || $pathType->equals(PathComputationType::AIR())) {
+				return $block->isOpen();
+			}
+			return false;
+		} elseif ($block instanceof Slab) {
+			//TODO: Waterlogging check
+			return false;
+		}
+
+		switch ($block->getId()) {
+			case BlockLegacyIds::ANVIL:
+			case BlockLegacyIds::BREWING_STAND_BLOCK:
+			case BlockLegacyIds::BREWING_STAND_BLOCK:
+			case BlockLegacyIds::DRAGON_EGG:
+			//TODO: respawn anchor
+			case BlockLegacyIds::END_ROD:
+			//TODO: lightning rod
+			case BlockLegacyIds::PISTON_ARM_COLLISION:
+				return false;
+
+			case BlockLegacyIds::DEAD_BUSH:
+				return $pathType->equals(PathComputationType::AIR() ? true : self::getDefaultPathfindable($block, $pathType));
+
+			default:
+				return self::getDefaultPathfindable($block, $pathType);
+
+		}
+	}
+
+	private static function getDefaultPathfindable(Block $block, PathComputationType $pathType) : bool{
+		return match(true){
+			$pathType->equals(PathComputationType::LAND()) => !$block->isFullCube(),
+			$pathType->equals(PathComputationType::WATER()) => $block instanceof Water, //TODO: watterlogging check
+			$pathType->equals(PathComputationType::AIR()) => !$block->isFullCube(),
+			default => false
+		};
+	}
+
+	public function arrayContains(object $needle, array $array) : bool{
+		$useEquals = method_exists($needle, "equals");
+		foreach ($array as $value) {
+			if (!$value instanceof $needle) {
+				continue;
+			}
+			if ($useEquals) {
+				if ($needle->equals($value)) {
+					return true;
+				}
+			} elseif ($needle === $value) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

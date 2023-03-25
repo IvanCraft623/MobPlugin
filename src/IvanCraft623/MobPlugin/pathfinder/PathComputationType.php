@@ -21,37 +21,28 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\utils;
+namespace IvanCraft623\MobPlugin\pathfinder;
+
+use pocketmine\utils\EnumTrait;
 
 /**
- * @phpstan-template TKey
- * @phpstan-template TValue
+ * This doc-block is generated automatically, do not modify it manually.
+ * This must be regenerated whenever registry members are added, removed or changed.
+ * @see build/generate-registry-annotations.php
+ * @generate-registry-docblock
+ *
+ * @method static PathComputationType AIR()
+ * @method static PathComputationType LAND()
+ * @method static PathComputationType WATER()
  */
-class Pair {
+final class PathComputationType {
+	use EnumTrait;
 
-	private mixed $key;
-
-	private mixed $value;
-
-	/** @phpstan-param TKey $key */
-	/** @phpstan-param TValue $value */
-	public function __construct(mixed $key, mixes $value) {
-		$this->key = $key;
-		$this->value = $value;
-	}
-
-	/** @phpstan-return TKey */
-	public function getKey() : mixed {
-		return $this->key;
-	}
-
-	/** @phpstan-return TValue */
-	public function getValue() : mixed {
-		return $this->value;
-	}
-
-	/** @phpstan-param TValue $value */
-	public function setValue(mixed $value) : void {
-		$this->value = $value;
+	protected static function setup() : void{
+		self::registerAll(
+			new self("land"),
+			new self("water"),
+			new self("air")
+		);
 	}
 }

@@ -27,12 +27,18 @@ use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
+use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
+use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 
 use pocketmine\nbt\tag\CompoundTag;
+use function max;
 
 abstract class Mob extends Living {
 	//TODO!
+
+	protected PathNavigation $navigation;
 
 	protected LookControl $lookControl;
 
@@ -46,6 +52,9 @@ abstract class Mob extends Living {
 
 	protected Sensing $sensing;
 
+	/** @var array<int, float> BlockPathTypes->id => malus */
+	protected array $pathfindingMalus = [];
+
 	protected float $xxa;
 
 	protected float $yya;
@@ -57,9 +66,10 @@ abstract class Mob extends Living {
 
 		$this->goalSelector = new GoalSelector();
 		$this->targetSelector = new GoalSelector();
-		$this->lookControl = new lookControl($this);
+		$this->lookControl = new LookControl($this);
 		$this->moveControl = new MoveControl($this);
 		$this->jumpControl = new JumpControl($this);
+		$this->navigation = $this->createNavigation();
 		$this->sensing = new Sensing($this);
 
 		$this->registerGoals();
@@ -68,12 +78,20 @@ abstract class Mob extends Living {
 	public function registerGoals() : void{
 	}
 
+	public function createNavigation() : PathNavigation{
+		return new GroundPathNavigation($this, $this->world);
+	}
+
 	public function getMoveControl() : MoveControl {
 		return $this->moveControl;
 	}
 
 	public function getJumpControl() : JumpControl {
 		return $this->jumpControl;
+	}
+
+	public function getNavigation() : PathNavigation{
+		return $this->navigation;
 	}
 
 	public function getSensing() : Sensing {
@@ -104,6 +122,18 @@ abstract class Mob extends Living {
 		return 10;
 	}
 
+	public function getMaxFallDistance() : int{
+		$defaultMax = parent::getMaxFallDistance();
+		if ($this->targetId === null) {
+			return $defaultMax;
+		}
+
+		$maxFallDistance = (int) ($this->getHealth() - $this->getMaxHealth() / 3);
+		$maxFallDistance -= (3 - $this->getWorld()->getDifficulty()) * 4;
+
+		return max(0, $maxFallDistance + $defaultMax);
+	}
+
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
@@ -119,5 +149,14 @@ abstract class Mob extends Living {
 
 	protected function updateControlFlags() : void{
 		// TODO!
+	}
+
+	public function getPathfindingMalus(BlockPathTypes $pathType) : float{
+		// TODO: vehicle checks
+		return $this->pathfindingMalus[$pathType->id()] ?? $pathType->getMalus();
+	}
+
+	public function setPathfindingMalus(BlockPathTypes $pathType, float $malus) : void{
+		$this->pathfindingMalus[$pathType->id()] = $malus;
 	}
 }
