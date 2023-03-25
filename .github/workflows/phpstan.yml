@@ -20,7 +20,7 @@ jobs:
           version: "tags/php-8.2-latest"
 
       - name: Unpack PHP Release
-        run: unzip Linux.zip && tar -xzvf PHP-Linux-x86_64-PM4.tar.gz
+        run: tar -xzvf PHP-Linux-x86_64-PM4.tar.gz
 
       - name: Download Composer
         run: curl -o composer.phar "https://getcomposer.org/composer-stable.phar"
