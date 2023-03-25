@@ -1,0 +1,17 @@
+{
+    "name": "ivancraft623/mobplugin",
+    "description": "Plugin for PocketMine-MP that implements mobs AI.",
+    "type": "project",
+    "license": "Apache-2.0",
+    "require-dev": {
+        "php": "^8.0",
+        "pocketmine/pocketmine-mp": "^4.0.0",
+        "phpstan/phpstan": "1.9.14"
+    },
+    "config": {
+        "platform": {
+            "php": "8.0"
+        },
+        "sort-packages": true
+    }
+}
