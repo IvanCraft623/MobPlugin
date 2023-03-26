@@ -27,7 +27,7 @@ use IvanCraft623\MobPlugin\entity\ai\behavior\PositionTracker;
 
 class WalkTarget {
 
-	private PositionTracker $target;
+	private PosTracker $target;
 
 	private float $speedModifier;
 

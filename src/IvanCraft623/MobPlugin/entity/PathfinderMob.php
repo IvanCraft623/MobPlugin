@@ -132,6 +132,11 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		return !$this->navigation->isDone();
 	}
 
+	public function onChunkChanged(int $chunkX, int $chunkZ, Chunk $chunk) : void{}
+	public function onChunkLoaded(int $chunkX, int $chunkZ, Chunk $chunk) : void{}
+	public function onChunkUnloaded(int $chunkX, int $chunkZ, Chunk $chunk) : void{}
+	public function onChunkPopulated(int $chunkX, int $chunkZ, Chunk $chunk) : void{}
+
 	public function onBlockChanged(Vector3 $position) : void{
 		// It would be great to be able to compare block collisions to save execution time but
 		// with the current pocketmine implementation there is no an easy way to know which block was before

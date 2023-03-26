@@ -35,7 +35,7 @@ class PositionTracker implements PosTracker {
 	}
 
 	public function currentPosition() : Vector3{
-		return $position->add(0.5, 0.5, 0.5);
+		return $this->position->add(0.5, 0.5, 0.5);
 	}
 
 	public function currentBlockPosition() : Vector3{
