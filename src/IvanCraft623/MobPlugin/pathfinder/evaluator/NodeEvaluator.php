@@ -24,15 +24,17 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\pathfinder\evaluator;
 
 use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\pathfinder\Node;
 use IvanCraft623\MobPlugin\pathfinder\Target;
 
+use pocketmine\math\Vector3;
 use pocketmine\world\World;
 use function floor;
 
 abstract class NodeEvaluator {
 
-	protected Wolrd $world;
+	protected World $world;
 
 	protected Mob $mob;
 
@@ -54,9 +56,9 @@ abstract class NodeEvaluator {
 
 		$this->nodes = [];
 
-		$this->entityWidth = floor($mob->getSize()->getWidth() + 1);
-		$this->entityHeight = floor($mob->getSize()->getHeight() + 1);
-		$this->entityDepth = floor($mob->getSize()->getWidth() + 1);
+		$this->entityWidth = (int) floor($mob->getSize()->getWidth() + 1);
+		$this->entityHeight = (int) floor($mob->getSize()->getHeight() + 1);
+		$this->entityDepth = (int) floor($mob->getSize()->getWidth() + 1);
 	}
 
 	public function done() : void{
@@ -81,7 +83,7 @@ abstract class NodeEvaluator {
 	public abstract function getGoal(float $x, float $y, float $z) : Target;
 
 	protected function getTargetFromNode(Node $node) : Target {
-		return new Target($node);
+		return Target::fromObject($node);
 	}
 
 	/**

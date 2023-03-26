@@ -23,11 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
-use IvanCraft623\MobPlugin\pathfinder\NodeEvaluator;
+use IvanCraft623\MobPlugin\pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\pathfinder\evaluator\WalkNodeEvaluator;
 use IvanCraft623\MobPlugin\pathfinder\Path;
 use IvanCraft623\MobPlugin\pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\pathfinder\WalkNodeEvaluator;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockLegacyIds;
@@ -37,6 +38,7 @@ use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\utils\AssumptionFailedError;
+use pocketmine\world\World;
 use function abs;
 use function count;
 use function floor;
@@ -154,15 +156,15 @@ abstract class PathNavigation {
 		if (!$this->canUpdatePath()) {
 			return null;
 		}
-		if ($this->path !== null && !$this->path->isDone() && Utils::arrayContains($this->targetPosition, $positions)) {
+		if ($this->targetPosition !== null && $this->path !== null && !$this->path->isDone() && Utils::arrayContains($this->targetPosition, $positions)) {
 			return $this->path;
 		}
 
 		$range = $range ?? $this->mob->getAttributeMap()->get(Attribute::FOLLOW_RANGE)?->getValue() ?? throw new AssumptionFailedError("Follow range attribute is null");
-		$path = $this->pathFinder->findPath($this->world, $this->mob, $positions, $range, $maxVisitedNodes, $this->maxVisitedNodesMultiplier);
+		$path = $this->pathfinder->findPath($this->world, $this->mob, $positions, $range, $maxVisitedNodes, $this->maxVisitedNodesMultiplier);
 
 		if ($path !== null && ($target = $path->getTarget()) !== null) {
-			$this->targetPos = $target;
+			$this->targetPosition = $target;
 			$this->reachRange = $maxVisitedNodes;
 			$this->resetStuckTimeout();
 		}
@@ -171,12 +173,12 @@ abstract class PathNavigation {
 	}
 
 	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier) : bool{
-		return $this->moveTo($this->createPathFromXYZ($x, $y, $z, 1), $speedModifier);
+		return $this->moveToPath($this->createPathFromXYZ($x, $y, $z, 1), $speedModifier);
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier) : bool{
 		$path = $this->createPathFromEntity($target, 1);
-		return $path !== null && $this->moveTo($path, $speedModifier);
+		return $path !== null && $this->moveToPath($path, $speedModifier);
 	}
 
 	public function moveToPath(?Path $path, float $speedModifier) : bool{
@@ -187,6 +189,7 @@ abstract class PathNavigation {
 
 		/**
 		 * @var Path $path
+		 * @var Path $this->path
 		 */
 		if (!$path->equals($this->path)) {
 			$this->path = $path;
@@ -203,6 +206,8 @@ abstract class PathNavigation {
 		$this->speedModifier = $speedModifier;
 		$this->lastStuckCheckPos = $this->getTempMobPosition();
 		$this->lastStuckCheck = $this->tick;
+
+		return true;
 	}
 
 	public function getPath() : ?Path{
@@ -221,7 +226,7 @@ abstract class PathNavigation {
 				$this->followThePath();
 			} elseif ($this->path !== null && !$this->path->isDone()) {
 				$tempPos = $this->getTempMobPosition();
-				$nextPos = $this->getNextEntityPosition($this->mob);
+				$nextPos = $this->path->getNextEntityPosition($this->mob);
 				if ($tempPos->y > $nextPos->y &&
 					!$this->mob->isOnGround() &&
 					floor($tempPos->x) === floor($nextPos->x) &&
@@ -231,8 +236,8 @@ abstract class PathNavigation {
 				}
 			}
 
-			if (!$this->isDone()) {
-				$nextPos = $this->getNextEntityPosition($this->mob);
+			if ($this->path !== null && !$this->isDone()) {
+				$nextPos = $this->path->getNextEntityPosition($this->mob);
 				$nextPos->y = $this->getGroundY($nextPos);
 				$this->mob->getMoveControl()->setWantedPosition($nextPos, $this->speedModifier);
 			}
@@ -245,6 +250,10 @@ abstract class PathNavigation {
 	}
 
 	protected function followThePath() : void{
+		if ($this->path === null) {
+			return;
+		}
+
 		$tempPos = $this->getTempMobPosition();
 		$width = $this->mob->getSize()->getWidth();
 		$this->maxDistanceToWaypoint = $width > 0.75 ? $width / 2 : 0.75 - $width / 2;
@@ -265,6 +274,10 @@ abstract class PathNavigation {
 	}
 
 	private function shouldTargetNextNodeInDirection(Vector3 $direction) : bool{
+		if ($this->path === null) {
+			return false;
+		}
+
 		if ($this->path->getNextNodeIndex() + 1 >= $this->path->getNodeCount()) {
 			return false;
 		}
@@ -298,7 +311,7 @@ abstract class PathNavigation {
 		$mobSpeed = $mob->getSpeed();
 		if ($this->tick - $this->lastStuckCheck > self::STUCK_CHECK_INTERVAL) {
 			$speed = $mobSpeed >= 1 ? $mobSpeed : $mobSpeed ** 2;
-			if ($position->distanceSquared($this->lastStuckCheck) < (($speed * 100 * self::STUCK_THRESHOLD_DISTANCE_FACTOR) ** 2)) {
+			if ($position->distanceSquared($this->lastStuckCheckPos) < (($speed * 100 * self::STUCK_THRESHOLD_DISTANCE_FACTOR) ** 2)) {
 				$this->isStuck = true;
 				$this->stop();
 			} else {

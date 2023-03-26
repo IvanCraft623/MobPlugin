@@ -59,9 +59,6 @@ class PathFinder {
 		$this->openSet->clear();
 		$this->nodeEvaluator->prepare($world, $mob);
 		$startNode = $this->nodeEvaluator->getStart();
-		if ($startNode === null) {
-			return null;
-		}
 
 		/** @var Target[] $actuallyTargets */
 		$actuallyTargets = [];
@@ -77,7 +74,7 @@ class PathFinder {
 	/**
 	 * @param Target[] $targets
 	 */
-	private function findPathRecursive(Node $startNode, array $targets, float $distanceMultiplier, int $maxVisitedNodes, float $fudgeFactor) : ?Path {
+	private function findPathRecursive(Node $startNode, array $targets, float $distanceMultiplier, int $maxDistanceManhattan, float $fudgeFactor) : ?Path {
 		$openSet = $this->openSet;
 		$openSet->clear();
 
@@ -88,7 +85,7 @@ class PathFinder {
 		$openSet->insert($startNode);
 
 		$visitedNodes = 0;
-		$maxVisitedNodes = (int) ($maxVisitedNodes * $fudgeFactor);
+		$maxVisitedNodes = (int) ($this->maxVisitedNodes * $fudgeFactor);
 
 		/** @var Target[] $reachableTargets */
 		$reachableTargets = [];
@@ -103,7 +100,7 @@ class PathFinder {
 			$current->closed = true;
 
 			foreach ($targets as $target) {
-				if ($current->distanceManhattan($target) <= $distanceMultiplier) {
+				if ($current->distanceManhattan($target) <= $maxDistanceManhattan) {
 					$target->setReached();
 					$reachableTargets[] = $target;
 				}

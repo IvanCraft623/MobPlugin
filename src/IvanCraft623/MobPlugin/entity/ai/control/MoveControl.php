@@ -62,7 +62,7 @@ class MoveControl {
 	}
 
 	public function hasWanted() : bool {
-		return $this->operation === self::MOVE_TO;
+		return $this->operation === self::OPERATION_MOVE_TO;
 	}
 
 	public function getSpeedModifier() : float {
@@ -95,8 +95,8 @@ class MoveControl {
 				$strafe = 1;
 			}
 			$strafe = $speed / $strafe;
-			$float *= $strafe;
-			$float2 *= $strafe;
+			$strafeForwards *= $strafe;
+			$strafeRight *= $strafe;
 
 			$sin = sin($location->yaw * (M_PI / 180));
 			$cos = cos($location->yaw * (M_PI / 180));
@@ -120,15 +120,15 @@ class MoveControl {
 				$this->mob->setZza(0);
 				return;
 			}
-			$yaw = $this->rotlerp($location->yaw, (atan2($z, $x) * (180 / M_PI)) - 90, 90);
+			$yaw = $this->rotateLerp($location->yaw, (atan2($z, $x) * (180 / M_PI)) - 90, 90);
 			$this->mob->setRotation($yaw, 0.0);
 			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
 
-			$motion = $mob->getMotion();
-			foreach ($location->getWorld()->getCollisionBlocks($mob->boundingBox->addCoord($motion->x, $motion->y, $motion->z)) as $block) {
-				if ($block->getCollisionBoxes()[0]->maxY - $mob->boundingBox->minY > 1) {
+			$motion = $this->mob->getMotion();
+			foreach ($location->getWorld()->getCollisionBlocks($this->mob->boundingBox->addCoord($motion->x, $motion->y, $motion->z)) as $block) {
+				if ($block->getCollisionBoxes()[0]->maxY - $this->mob->boundingBox->minY > 1) {
 					if ($y > $this->mob->getMaxUpStep() &&
-					($x ** 2) + ($z ** 2) < max(1.0, $mob->getSize()->getWidth()) &&
+					($x ** 2) + ($z ** 2) < max(1.0, $this->mob->getSize()->getWidth()) &&
 					!$block instanceof Door &&
 					!$block instanceof Fence) {
 						$this->mob->getJumpControl()->jump();
@@ -147,13 +147,13 @@ class MoveControl {
 		}
 	}
 
-	private function isWalkable(float $x, foat $z) : bool {
+	private function isWalkable(float $x, float $z) : bool {
 		$navigation = $this->mob->getNavigation();
 		if ($navigation !== null) {
 			$nodeEvaluator = $navigation->getNodeEvaluator();
-			$location = $mob->getLocation();
+			$location = $this->mob->getLocation();
 			if ($nodeEvaluator !== null &&
-				!$nodeEvaluator->getBlockPathType($mob->getWorld(), floor($location->x + $x), floor($location->y), floor($location->z + $z))->equals(BlockPathTypes::WALKABLE())) {
+				!$nodeEvaluator->getBlockPathType($this->mob->getWorld(), floor($location->x + $x), floor($location->y), floor($location->z + $z))->equals(BlockPathTypes::WALKABLE())) {
 				return false;
 			}
 		}

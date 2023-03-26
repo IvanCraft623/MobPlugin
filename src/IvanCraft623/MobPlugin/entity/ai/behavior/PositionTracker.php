@@ -21,37 +21,15 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity\ai\memory;
+namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
-class ExpirableValue {
+use IvanCraft623\MobPlugin\entity\Living;
+use pocketmine\math\Vector3;
 
-	private mixed $value;
+interface PositionTracker {
 
-	private ?int $timeToLive;
+	public function currentPosition() : Vector3;
 
-	public function __construct(mixed $value, ?int $timeToLive = null) {
-		$this->value = $value;
-		$this->timeToLive = $timeToLive;
-	}
+	public function isVisibleBy(Living $entity) : bool;
 
-	public function tick() : void {
-		if ($this->canExpire()) {
-			--$this->timeToLive;
-		}
-	}
-
-	public function getValue() : mixed {
-		return $this->value;
-	}
-
-	public function hasExpired() : bool {
-		if ($this->canExpire()) {
-			return $this->timeToLive <= 0;
-		}
-		return false;
-	}
-
-	public function canExpire() : bool {
-		return $this->timeToLive !== null;
-	}
 }

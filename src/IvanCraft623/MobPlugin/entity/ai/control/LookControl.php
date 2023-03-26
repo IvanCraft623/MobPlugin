@@ -42,7 +42,7 @@ class LookControl {
 
 	protected bool $hasWanted = false;
 
-	protected ?Vector3 $wanted = null;
+	protected Vector3 $wanted;
 
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
@@ -96,6 +96,7 @@ class LookControl {
 	}
 
 	protected function rotateTowards(float $currentDegrees, float $targetDegrees, float $maxRotation) : float {
-		return Utils::degreesDifference($currentDegrees, $targetDegrees) + Utils::clamp($degreesDifference, -$maxRotation, $maxRotation);
+		$degreesDifference = Utils::degreesDifference($currentDegrees, $targetDegrees);
+		return $degreesDifference + Utils::clamp($degreesDifference, -$maxRotation, $maxRotation);
 	}
 }

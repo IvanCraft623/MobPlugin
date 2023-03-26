@@ -43,11 +43,11 @@ class TargetingConditions {
 	public bool $testInvisible = true;
 
 	public function __construct(float $range, bool $allowInvulnerable, bool $allowUnseeable, bool $allowNonAttackable, bool $testInvisible) {
-		$result->range = $range;
-		$result->allowInvulnerable = $allowInvulnerable;
-		$result->allowUnseeable = $allowUnseeable;
-		$result->allowNonAttackable = $allowNonAttackable;
-		$result->testInvisible = $testInvisible;
+		$this->range = $range;
+		$this->allowInvulnerable = $allowInvulnerable;
+		$this->allowUnseeable = $allowUnseeable;
+		$this->allowNonAttackable = $allowNonAttackable;
+		$this->testInvisible = $testInvisible;
 	}
 
 	public function test(?PMLiving $entity, PMLiving $target) : bool {

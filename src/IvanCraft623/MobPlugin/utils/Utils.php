@@ -91,7 +91,7 @@ class Utils {
 				return false;
 
 			case BlockLegacyIds::DEAD_BUSH:
-				return $pathType->equals(PathComputationType::AIR() ? true : self::getDefaultPathfindable($block, $pathType));
+				return $pathType->equals(PathComputationType::AIR()) ? true : self::getDefaultPathfindable($block, $pathType);
 
 			default:
 				return self::getDefaultPathfindable($block, $pathType);
@@ -108,7 +108,7 @@ class Utils {
 		};
 	}
 
-	public function arrayContains(object $needle, array $array) : bool{
+	public static function arrayContains(object $needle, array $array) : bool{
 		$useEquals = method_exists($needle, "equals");
 		foreach ($array as $value) {
 			if (!$value instanceof $needle) {

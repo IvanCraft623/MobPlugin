@@ -23,13 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\pathfinder\Path;
 use IvanCraft623\MobPlugin\pathfinder\PathFinder;
 
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
+use pocketmine\world\World;
 use function floor;
 
 class GroundPathNavigation extends PathNavigation{

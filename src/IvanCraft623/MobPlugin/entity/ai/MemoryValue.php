@@ -32,7 +32,7 @@ final class MemoryValue {
 
 	private ?ExpirableValue $value = null;
 
-	public function createUnchecked(MemoryModuleType $type, ?ExpirableValue $value = null) : self {
+	public static function createUnchecked(MemoryModuleType $type, ?ExpirableValue $value = null) : self {
 		return new self($type, $value);
 	}
 

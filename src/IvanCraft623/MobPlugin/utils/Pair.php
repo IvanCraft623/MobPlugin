@@ -35,7 +35,7 @@ class Pair {
 
 	/** @phpstan-param TKey $key */
 	/** @phpstan-param TValue $value */
-	public function __construct(mixed $key, mixes $value) {
+	public function __construct(mixed $key, mixed $value) {
 		$this->key = $key;
 		$this->value = $value;
 	}

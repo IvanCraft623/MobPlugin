@@ -23,34 +23,55 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai;
 
-use IvanCraft623\MobPlugin\entity\ai\behavior\BehaviorStatus;
+use IvanCraft623\MobPlugin\entity\ai\behavior\Behavior;
+use IvanCraft623\MobPlugin\entity\ai\behavior\ExpirableValue;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
+use IvanCraft623\MobPlugin\entity\ai\memory\MemoryStatus;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensor;
 use IvanCraft623\MobPlugin\entity\Living;
 use IvanCraft623\MobPlugin\entity\schedule\Activity;
 use IvanCraft623\MobPlugin\entity\schedule\Schedule;
 use IvanCraft623\MobPlugin\utils\Pair;
 use pocketmine\utils\ObjectSet;
-use function spl_object_id;
+use function count;
+use function is_array;
 
 class Brain {
 
+	/**
+	 * @var MemoryModuleType[]
+	 * @phpstan-var array<string, MemoryModuleType> MemoryModuleType->name() => MemoryModuleType
+	 */
 	private array $memories = [];
 
 	/** @var Sensor[] */
 	private array $sensors = [];
 
+	/**
+	 * @var array<int, array<int, Behavior[]>>
+	 * array<priority, <array<Activity->id(), Behavior[]>>
+	 */
 	private array $availableBehaviorsByPriority = [];
 
 	private Schedule $schedule;
 
+	/** @var array<int, Pair<MemoryModuleType, MemoryStatus>[]> activityId => Pair */
 	private array $activityRequirements = [];
 
+	/** @var array<int, MemoryModuleType[]> activityId => MemoryModuleType[] */
 	private array $activityMemoriesToEraseWhenStopped = [];
 
+	/**
+	 * @var Activity[]|ObjectSet
+	 * @phpstan-var ObjectSet<Activity>
+	 */
 	private ObjectSet $coreActivities;
 
+	/**
+	 * @var Activity[]|ObjectSet
+	 * @phpstan-var ObjectSet<Activity>
+	 */
 	private ObjectSet $activeActivities;
 
 	private Activity $defaultActivity;
@@ -109,10 +130,16 @@ class Brain {
 		$this->setMemoryInternal($type, new ExpirableValue($value, $timeToLive));
 	}
 
-	public function setMemoryInternal(MemoryModuleType $type, ExpirableValue $value) : void {
-		if (isset($this->memories[$type->name()])) {
-			if ($value->getValue() === null) {
-				$this->eraseMemory($type);
+	public function setMemoryInternal(MemoryModuleType $memory, ?ExpirableValue $value) : void {
+		if (isset($this->memories[$memory->name()])) {
+			$isEmptyArray = false;
+
+			if ($value !== null && is_array($value->getValue())) {
+				$isEmptyArray = count($value->getValue()) === 0;
+			}
+
+			if ($isEmptyArray) {
+				$this->eraseMemory($memory);
 			} else {
 				$memory->setValue($value);
 				$this->memories[$memory->name()] = $memory;
@@ -154,12 +181,17 @@ class Brain {
 		$this->coreActivities = $activities;
 	}
 
+	/**
+	 * @return Behavior[]
+	 */
 	public function getRunningBehaviors() : array {
 		$behaviors = [];
-		foreach ($this->availableBehaviorsByPriority as $activity => $behaviors) {
-			foreach ($behaviors as $behavior) {
-				if ($behavior->getStatus()->equals(BehaviorStatus::RUNNING())) {
-					$behaviors[] = $behavior;
+		foreach ($this->availableBehaviorsByPriority as $priority => $activities) {
+			foreach ($activities as $arctivityId => $behaviors) {
+				foreach ($behaviors as $behavior) {
+					if ($behavior->getStatus()->equals(BehaviorStatus::RUNNING())) {
+						$behaviors[] = $behavior;
+					}
 				}
 			}
 		}
@@ -201,9 +233,9 @@ class Brain {
 	private function eraseMemoriesForOtherActivitesThan(Activity $activity) : void {
 		foreach ($this->activeActivities->toArray() as $act) {
 			if (!$act->equals($activity)) {
-				if (isset($this->activityMemoriesToEraseWhenStopped[spl_object_id($act)])) {
-					$memories = $this->activityMemoriesToEraseWhenStopped[spl_object_id($act)];
-					foreach ($memories->toArray() as $memory) {
+				if (isset($this->activityMemoriesToEraseWhenStopped[$act->id()])) {
+					$memories = $this->activityMemoriesToEraseWhenStopped[$act->id()];
+					foreach ($memories as $memory) {
 						$this->eraseMemory($memory);
 					}
 				}
@@ -234,23 +266,39 @@ class Brain {
 		$this->defaultActivity = $activity;
 	}
 
-	public function addActivity(Activity $activity, array $pairs) : void {
-		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $pairs, new ObjectSet());
+	/**
+	 * @param Pair<int, Behavior>[] $behaviorPairs
+	 */
+	public function addActivity(Activity $activity, array $behaviorPairs) : void {
+		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $behaviorPairs, new ObjectSet());
 	}
 
+	/**
+	 * @param Pair<int, Behavior>[] $behaviorPairs
+	 */
 	public function addActivityWithConditions(Activity $activity, array $behaviorPairs, array $memoryPairs) : void {
 		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $behaviorPairs, $memoryPairs, new ObjectSet());
 	}
 
+	/**
+	 * @param Pair<int, Behavior>[] $behaviorPairs
+	 * @param Pair<MemoryModuleType, MemoryStatus>[] $memoryPairs
+	 * @param MemoryModuleType[] $memoryModules
+	 */
 	public function addActivityAndRemoveMemoriesWhenStopped(Activity $activity, array $behaviorPairs, array $memoryPairs, ObjectSet $memoryModules) : void {
-		$this->activityRequirements[$activity->getName()] = $memoryPairs;
-		if ($memoryModules->toArray() !== []) {
-			$this->activityMemoriesToEraseWhenStopped[spl_object_id($activity)] = $memoryModules;
+		$this->activityRequirements[$activity->id()] = $memoryPairs;
+		if (count($memoryModules) !== 0) {
+			$this->activityMemoriesToEraseWhenStopped[$activity->id()] = $memoryModules;
 		}
-		foreach ($behaviorPairs as $pair) {
-			if (!isset($this->availableBehaviorsByPriority[$activity->getName()][$pair->getKey()])) {
-				$this->availableBehaviorsByPriority[$activity->getName()][$pair->getKey()] = $pair->getValue();
-			}
+		foreach ($behaviorPairs as $key => $pair) {
+			/** @var int $priority */
+			$priority = $pair->getKey();
+			/** @var int $priority */
+			$behavior = $pair->getValue();
+
+			$activityId = $activity->id();
+
+			$this->availableBehaviorsByPriority[$priority][$activityId][] = $behavior;
 		}
 	}
 
@@ -292,10 +340,12 @@ class Brain {
 
 	private function startEachNonRunningBehavior(Living $entity) : void {
 		$time = $entity->getWorld()->getServer()->getTick();
-		foreach ($this->availableBehaviorsByPriority as $activity => $behaviors) {
-			foreach ($behaviors as $behavior) {
-				if ($behavior->getStatus()->equals(BehaviorStatus::STOPPED())) {
-					$behavior->tryStart($entity, $time);
+		foreach ($this->availableBehaviorsByPriority as $priority => $activities) {
+			foreach ($activities as $activityId => $behaviors) {
+				foreach ($behaviors as $behavior) {
+					if ($behavior->getStatus()->equals(BehaviorStatus::STOPPED())) {
+						$behavior->tryStart($entity, $time);
+					}
 				}
 			}
 		}
@@ -309,10 +359,10 @@ class Brain {
 	}
 
 	private function activityRequirementsAreMet(Activity $activity) : bool {
-		if (!isset($this->activityRequirements[$activity->getName()])) {
+		if (!isset($this->activityRequirements[$activity->id()])) {
 			return false;
 		}
-		foreach ($this->activityRequirements[$activity->getName()] as $pair) {
+		foreach ($this->activityRequirements[$activity->id()] as $pair) {
 			/** @var MemoryModuleType $type */
 			$type = $pair->getKey();
 			/** @var MemoryStatus $status */

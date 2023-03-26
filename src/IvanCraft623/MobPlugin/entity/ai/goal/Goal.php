@@ -35,7 +35,7 @@ abstract class Goal {
 	/** @var int[] */
 	protected array $flags = [];
 
-	abstract public function canUse();
+	abstract public function canUse() : bool;
 
 	public function canContinueToUse() : bool{
 		return $this->canUse();

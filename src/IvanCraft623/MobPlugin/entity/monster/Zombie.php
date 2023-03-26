@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\VanillaItems;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use function mt_rand;

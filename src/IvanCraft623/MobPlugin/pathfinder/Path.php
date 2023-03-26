@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\pathfinder;
 
+use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use function array_splice;
 use function count;

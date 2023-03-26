@@ -23,18 +23,26 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use IvanCraft623\MobPlugin\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 
 use pocketmine\block\Liquid;
 use pocketmine\block\Water;
+use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
+use pocketmine\inventory\CallbackInventoryListener;
+use pocketmine\inventory\Inventory;
 use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\convert\TypeConverter;
+use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
+use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
+use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\utils\Random;
 use function array_filter;
 use function array_key_exists;
@@ -54,6 +62,8 @@ abstract class Living extends PMLiving {
 
 	protected MobInventory $inventory;
 
+	protected Brain $brain;
+
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
@@ -62,8 +72,10 @@ abstract class Living extends PMLiving {
 
 		$this->inventory = new MobInventory($this);
 		$syncHeldItem = function() : void{
+			$inv = $this->getInventory();
+			$packet = MobEquipmentPacket::create($this->getId(), ItemStackWrapper::legacy(TypeConverter::getInstance()->coreItemStackToNet($inv->getItemInHand())), $inv->getHeldItemIndex(), $inv->getHeldItemIndex(), ContainerIds::INVENTORY);
 			foreach($this->getViewers() as $viewer){
-				$viewer->getNetworkSession()->onMobMainHandItemChange($this);
+				$viewer->getNetworkSession()->sendDataPacket($packet);
 			}
 		};
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(
@@ -96,6 +108,12 @@ abstract class Living extends PMLiving {
 			self::populateInventoryFromListTag($this->inventory, $inventoryItems);
 			self::populateInventoryFromListTag($this->armorInventory, $armorInventoryItems);
 		}
+
+		$this->brain = $this->makeBrain();
+	}
+
+	protected function makeBrain() : Brain{
+		return new Brain([], [], []);
 	}
 
 	/**
@@ -135,6 +153,10 @@ abstract class Living extends PMLiving {
 		return $this->inventory;
 	}
 
+	public function getBrain() : Brain{
+		return $this->brain;
+	}
+
 	public function canAttack(PMLiving $target) : bool {
 		return true;
 	}
@@ -145,7 +167,7 @@ abstract class Living extends PMLiving {
 		$directionVector = $end->subtractVector($start)->normalize();
 		if ($directionVector->lengthSquared() > 0) {
 			foreach(VoxelRayTrace::betweenPoints($start, $end) as $vector3){
-				$block = $this->getWorld()->getBlockAt($vector3->x, $vector3->y, $vector3->z);
+				$block = $this->getWorld()->getBlockAt((int) $vector3->x, (int) $vector3->y, (int) $vector3->z);
 
 				$blockHitResult = $block->calculateIntercept($start, $end);
 				if(!$block->isTransparent() && $blockHitResult !== null){
@@ -177,7 +199,7 @@ abstract class Living extends PMLiving {
 
 	public function getDrops() : array {
 		return array_filter(array_merge(
-			$this->inventory !== null ? array_values($this->inventory->getContents()) : [],
+			array_values($this->inventory->getContents()),
 			$this->armorInventory !== null ? array_values($this->armorInventory->getContents()) : []
 		), function(Item $item) : bool{ return !$item->hasEnchantment(VanillaEnchantments::VANISHING()); });
 	}

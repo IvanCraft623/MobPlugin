@@ -54,4 +54,8 @@ class Target extends Node {
 	public function setReached(bool $reached = true) : void{
 		$this->reached = $reached;
 	}
+
+	public function reached() : bool{
+		return $this->reached;
+	}
 }

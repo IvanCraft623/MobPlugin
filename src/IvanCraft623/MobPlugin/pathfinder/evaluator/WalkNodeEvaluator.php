@@ -28,9 +28,10 @@ use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\pathfinder\Node;
 use IvanCraft623\MobPlugin\pathfinder\PathComputationType;
 use IvanCraft623\MobPlugin\pathfinder\Target;
-use IvanCraft623\MobPlugin\Utils;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BaseRail;
+use pocketmine\block\Block;
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\Door;
 use pocketmine\block\Fence;
@@ -118,7 +119,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	protected function getStartNode(Vector3 $position) : Node{
 		$node = $this->getNode($position);
-		$node->type = $this->getBlockPathType($this->mob, $node->x, $node->y, $node->z);
+		$node->type = $this->getBlockPathTypeWithMob($this->mob, $node->x, $node->y, $node->z);
 		$node->costMalus = $this->mob->getPathfindingMalus($node->type);
 
 		return $node;
@@ -135,8 +136,8 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		$count = 0;
 		$maxUpStep = 0;
 
-		$pathType = $this->getBlockPathType($this->mob, $node->x, $node->y, $node->z);
-		$pathTypeAbove = $this->getBlockPathType($this->mob, $node->x, $node->y + 1, $node->z);
+		$pathType = $this->getBlockPathTypeWithMob($this->mob, $node->x, $node->y, $node->z);
+		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->mob, $node->x, $node->y + 1, $node->z);
 
 		if ($this->mob->getPathfindingMalus($pathTypeAbove) >= 0 && !$pathType->equals(BlockPathTypes::STICKY_HONEY())) {
 			$maxUpStep = floor(max(1, $this->mob->getMaxUpStep()));
@@ -151,7 +152,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		$horizontalNeighbors = [];
 		foreach (Facing::HORIZONTAL as $side) {
 			$neighborPos = $nodePos->getSide($side);
-			$neighborNode = $this->findAcceptedNode($neighborPos->x, $neighborPos->z, $neighborPos->y, $maxUpStep, $floorLevel, $side, $pathType);
+			$neighborNode = $this->findAcceptedNode((int) $neighborPos->x, (int) $neighborPos->z, (int) $neighborPos->y, $maxUpStep, $floorLevel, $side, $pathType);
 
 			$horizontalNeighbors[$side] = $neighborNode;
 			if ($neighborNode !== null && $this->isNeighborValid($neighborNode, $node)) {
@@ -164,7 +165,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			$zFacePos = $nodePos->getSide($zFace);
 			foreach ([Facing::WEST, Facing::EAST] as $xFace) {
 				$diagonalPos = $zFacePos->getSide($xFace);
-				$diagonalNode = $this->findAcceptedNode($diagonalPos->x, $diagonalPos->z, $diagonalPos->y, $maxUpStep, $floorLevel, $zFace, $pathType);
+				$diagonalNode = $this->findAcceptedNode((int) $diagonalPos->x, (int) $diagonalPos->z, (int) $diagonalPos->y, $maxUpStep, $floorLevel, $zFace, $pathType);
 
 				if ($diagonalNode !== null && $this->isDiagonalValid($node, $horizontalNeighbors[$xFace], $horizontalNeighbors[$zFace], $diagonalNode)) {
 					$nodes[$count++] = $diagonalNode;
@@ -204,7 +205,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		return false;
 	}
 
-	private static function doesBlockHavePartialCollision(BlockPathTypes $pathType) : bool{
+	public static function doesBlockHavePartialCollision(BlockPathTypes $pathType) : bool{
 		return $pathType->equals(BlockPathTypes::FENCE()) || $pathType->equals(BlockPathTypes::DOOR_WOOD_CLOSED()) || $pathType->equals(BlockPathTypes::DOOR_IRON_CLOSED());
 	}
 
@@ -258,7 +259,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			return null;
 		}
 
-		$currentPathType = $this->getBlockPathType($this->mob, $x, $y, $z);
+		$currentPathType = $this->getBlockPathTypeWithMob($this->mob, $x, $y, $z);
 		$malus = $this->mob->getPathfindingMalus($currentPathType);
 
 		if ($malus >= 0) {
@@ -303,12 +304,12 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			}
 
 			if (!$this->isAmphibious() && $currentPathType->equals(BlockPathTypes::WATER()) && !$this->canFloat()) {
-				if (!$this->getBlockPathType($this->mob, $x, $y - 1, $z)->equals(BlockPathTypes::WATER())) {
+				if (!$this->getBlockPathTypeWithMob($this->mob, $x, $y - 1, $z)->equals(BlockPathTypes::WATER())) {
 					return $resultNode;
 				}
 
 				while ($y > World::Y_MIN) {
-					$currentPathType = $this->getBlockPathType($this->mob, $x, --$y, $z);
+					$currentPathType = $this->getBlockPathTypeWithMob($this->mob, $x, --$y, $z);
 					if (!$currentPathType->equals(BlockPathTypes::WATER())) {
 						return $resultNode;
 					}
@@ -330,7 +331,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 						return $this->getBlockedNode($x, $y, $z);
 					}
 
-					$currentPathType = $this->getBlockPathType($this->mob, $x, $y, $z);
+					$currentPathType = $this->getBlockPathTypeWithMob($this->mob, $x, $y, $z);
 					$malus = $this->mob->getPathfindingMalus($currentPathType);
 					if (!$currentPathType->equals(BlockPathTypes::OPEN) && $malus >= 0) {
 						$resultNode = $this->getNodeAndUpdateCostToMax($x, $y, $z, $currentPathType, $malus);
@@ -344,7 +345,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			}
 
 			if (static::doesBlockHavePartialCollision($currentPathType) && $resultNode === null) {
-				$resultNode = $this->getNode($x, $y, $z);
+				$resultNode = $this->getNodeAt($x, $y, $z);
 				$resultNode->closed = true;
 				$resultNode->type = $currentPathType;
 				$resultNode->costMalus = $currentPathType->getMalus();
@@ -353,13 +354,13 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		return $resultNode;
 	}
 
-	private function getMobJumpHeight() : floar{
+	private function getMobJumpHeight() : float{
 		return max(static::DEFAULT_MOB_JUMP_HEIGHT, $this->mob->getMaxUpStep());
 	}
 
 	private function getNodeAndUpdateCostToMax(int $x, int $y, int $z, BlockPathTypes $pathType, float $malus) : Node{
-		$node = $this->getNode($x, $y, $z);
-		$node->pathType = BlockPathTypes::BLOCKED();
+		$node = $this->getNodeAt($x, $y, $z);
+		$node->type = BlockPathTypes::BLOCKED();
 		$node->costMalus = max($node->costMalus, $malus);
 
 		return $node;
@@ -367,7 +368,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	private function getBlockedNode(int $x, int $y, int $z) : Node{
 		$node = $this->getNode($x, $y, $z);
-		$node->pathType = $pathType;
+		$node->type = $pathType;
 		$node->costMalus = -1;
 
 		return $node;
@@ -386,9 +387,9 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	/**
-	 * @param array<int BlockPathTypes> $pathTypes
+	 * @param array<int, BlockPathTypes> $pathTypes
 	 */
-	public function getBlockPathTypes(World $world, int $startX, int $startY, int $startZ, array &$pathTypes, BlockPathTypes $pathType, Vector3 $mobPosition) : BlockPathTypes{
+	public function getBlockPathTypes(World $world, int $startX, int $startY, int $startZ, array &$pathTypes, BlockPathTypes $pathType, Vector3 $mobPos) : BlockPathTypes{
 		for ($currentX = 0; $currentX < $this->entityWidth; ++$currentX) {
 			for ($currentY = 0; $currentY < $this->entityHeight; ++$currentY) {
 				for($currentZ = 0; $currentZ < $this->entityDepth; ++$currentZ) {
@@ -421,10 +422,10 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			$pathType = BlockPathTypes::UNPASSABLE_RAIL();
 		}
 
-		return $pathTypes;
+		return $pathType;
 	}
 
-	public function getBlockPathType(Mob $mob, int $x, int $y, int $z) : BlockPathTypes{
+	public function getBlockPathTypeWithMob(Mob $mob, int $x, int $y, int $z) : BlockPathTypes{
 		$blockHash = World::blockHash($x, $y, $z);
 		if (!isset($this->pathTypesByPosCache[$blockHash])) {
 			$this->pathTypesByPosCache[$blockHash] = $this->getBlockPathTypeAt($this->world, $x, $y, $z, $mob);
@@ -527,46 +528,37 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		switch (true) {
 			case ($blockId === BlockLegacyIds::AIR):
 				return BlockPathTypes::OPEN();
-				break;
 
 			case ($block instanceof Trapdoor):
 			case ($blockId === BlockLegacyIds::LILY_PAD):
 			//TODO: big dripleaf
 				return BlockPathTypes::TRAPDOOR();
-				break;
 
 			//TODO: powder snow
 
 			case ($blockId === BlockLegacyIds::CACTUS):
 			case ($blockId === BlockLegacyIds::SWEET_BERRY_BUSH):
 				return BlockPathTypes::DAMAGE_OTHER();
-				break;
 
 			//TODO: honey
 
 			case ($blockId === BlockLegacyIds::COCOA):
 				return BlockPathTypes::COCOA();
-				break;
 
 			case ($blockId === BlockLegacyIds::COCOA):
 				return BlockPathTypes::COCOA();
-				break;
 
 			case ($blockId === BlockLegacyIds::COCOA):
 				return BlockPathTypes::COCOA();
-				break;
 
 			case ($block instanceof Water):
 				return BlockPathTypes::WATER();
-				break;
 
 			case ($block instanceof Lava):
 				return BlockPathTypes::LAVA();
-				break;
 
 			case (static::isBurningBlock($block)):
 				return BlockPathTypes::DAMAGE_FIRE();
-				break;
 
 			case ($block instanceof Door):
 				/**
@@ -576,27 +568,22 @@ class WalkNodeEvaluator extends NodeEvaluator {
 					return $block instanceof WoodenDoor ? BlockPathTypes::DOOR_WOOD_CLOSED() : BlockPathTypes::DOOR_IRON_CLOSED();
 				}
 				return BlockPathTypes::DOOR_OPEN();
-				break;
 
 			case ($block instanceof BaseRail):
 				return BlockPathTypes::RAIL();
-				break;
 
 			case ($block instanceof Leaves):
 				return BlockPathTypes::LEAVES();
-				break;
 
 			case ($block instanceof Fence):
 			case ($block instanceof Wall):
 				return BlockPathTypes::FENCE();
-				break;
 
 			case ($block instanceof FenceGate):
 				/**
 				 * @var FeceGate $block
 				 */
 				return $block->isOpen() ? BlockPathTypes::OPEN() : BlockPathTypes::BLOCKED();
-				break;
 
 			default:
 				break;

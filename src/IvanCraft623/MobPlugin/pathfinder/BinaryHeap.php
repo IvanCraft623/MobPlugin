@@ -77,7 +77,7 @@ class BinaryHeap {
 		$node->heapIdx = -1;
 	}
 
-	public function changeCost(Node $node, int $newCost) : void {
+	public function changeCost(Node $node, float $newCost) : void {
 		$previousCost = $node->f;
 		$node->f = $newCost;
 		if ($newCost < $previousCost) {

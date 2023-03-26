@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\Entity;
@@ -74,24 +75,15 @@ class BehaviorUtils {
 	public static function isWithinAttackRange(Mob $mob, PMLiving $target, int $range) : bool {
 		$item = $mob->getInventory()->getItemInHand();
 		if ($item instanceof Releasable && $mob->canUseReleasable($item)) {
-			return $mob->getLocation()->distanceSquared($target->getLocation()) < (Utils::getDefaultProjectileRange() - $range) ** 2;
+			return $mob->getLocation()->distanceSquared($target->getLocation()) < (Utils::getDefaultProjectileRange($item) - $range) ** 2;
 		}
 		return self::isWithinMeleeAttackRange($mob, $target);
 	}
 
-	public static function isWithinMeleeAttackRange(Mob $mob, PMLiving $target, ?float $range = null) : bool {
-		if ($range === null) {
-			$distanceSquared = $mob->getLocation()->distanceSquared($target->getLocation());
-			return (($mob->getSize()->getWidth() * 2) ** 2) + $target->getSize()->getWidth() <= $distanceSquared;
-		} else {
-			$value = $entity->getBrain()->getMemory(MemoryModuleType::ATTACK_TARGET());
-			if ($value === null) {
-				return false;
-			}
-			$distanceTarget = $entity->getLocation()->distanceSquared($value->getValue()->getLocation());
-			$distancePTarget = $entity->getLocation()->distanceSquared($target->getLocation());
-			return $distancePTarget > $distanceTarget + $range * $range;
-		}
+	public static function isWithinMeleeAttackRange(Mob $mob, PMLiving $target) : bool {
+		$distanceSquared = $entity->getLocation()->distanceSquared($target->getLocation());
+		$maximumMeleeAttackDistance = ($mob->getSize()->getWidth() * 2) ** 2 + $target->getSize()->getWidth();
+		return $distanceSquared <= $maximumMeleeAttackDistance;
 	}
 
 	public static function canSee(Living $entity, PMLiving $target) : bool {

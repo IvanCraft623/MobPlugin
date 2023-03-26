@@ -79,7 +79,7 @@ abstract class Mob extends Living {
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new GroundPathNavigation($this, $this->world);
+		return new GroundPathNavigation($this, $this->getWorld());
 	}
 
 	public function getMoveControl() : MoveControl {

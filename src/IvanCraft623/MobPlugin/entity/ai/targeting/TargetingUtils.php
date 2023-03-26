@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
-use IvanCraft623\MobPlugin\entity\Zombie;
+use IvanCraft623\MobPlugin\entity\monster\Zombie;
 
 use pocketmine\block\utils\SkullType;
 use pocketmine\entity\Entity;

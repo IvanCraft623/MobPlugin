@@ -100,8 +100,7 @@ class WrappedGoal extends Goal {
 		return $this->goal;
 	}
 
-	public function equals(?Goal $goal)
-	{
+	public function equals(?Goal $goal) : bool{
 		if ($goal === $this) {
 			return true;
 		}

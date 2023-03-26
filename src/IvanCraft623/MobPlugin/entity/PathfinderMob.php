@@ -24,10 +24,13 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use pocketmine\entity\Attribute;
+use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\ChunkSelector;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\ChunkListener;
 use pocketmine\world\format\Chunk;
+use pocketmine\world\World;
 
 abstract class PathfinderMob extends Mob implements ChunkListener {
 	//TODO!
@@ -68,6 +71,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 			$chunkZ
 		) as $hash){
 			if(!isset($this->usedChunks[$hash])){
+				$X = $Z = 0;
 				World::getXZ($index, $X, $Z);
 				$this->getWorld()->registerChunkListener($this, $X, $Z);
 				$this->usedChunks[$hash] = true;
@@ -76,6 +80,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		}
 
 		foreach($unloadChunks as $index => $bool){
+			$X = $Z = 0;
 			World::getXZ($index, $X, $Z);
 			$this->getWorld()->unregisterChunkListener($this, $X, $Z);
 		}

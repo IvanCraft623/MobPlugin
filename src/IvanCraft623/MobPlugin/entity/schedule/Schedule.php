@@ -23,11 +23,29 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\schedule;
 
+use IvanCraft623\MobPlugin\utils\Pair;
+
 use pocketmine\utils\CloningRegistryTrait;
 
-class Schedule {
+/**
+ * This doc-block is generated automatically, do not modify it manually.
+ * This must be regenerated whenever registry members are added, removed or changed.
+ * @see build/generate-registry-annotations.php
+ * @generate-registry-docblock
+ *
+ * @method static Schedule EMPTY()
+ * @method static Schedule SIMPLE()
+ * @method static Schedule VILLAGER_BABY()
+ * @method static Schedule VILLAGER_DEFAULT()
+ */
+final class Schedule {
 	use CloningRegistryTrait;
 
+	/**
+	 * @var Pair[]
+	 * @phpstan-var array<int, Pair<Activity, Timeline>>
+	 * array<Activity->id(), Pair<Activity, Timeline>>
+	 */
 	private array $timelines = [];
 
 	protected static function register(string $name, Schedule $schedule) : void {
@@ -55,38 +73,37 @@ class Schedule {
 	}
 
 	public function ensureTimelineExistsFor(Activity $activity) : void {
-		foreach ($this->timelines as $key => $data) {
-			if ($activity->equals($data[0])) {
-				return;
-			}
+		if (!isset($this->timelines[$activity->id()])) {
+			$this->timelines[$activity->id()] = new Pair($activity, new Timeline());
 		}
-		$this->timelines[] = [$activity, new Timeline()];
 	}
 
 	public function getTimelineFor(Activity $activity) : Timeline {
-		foreach ($this->timelines as $key => $data) {
-			if ($activity->equals($data[0])) {
-				return $data[1];
-			}
-		}
+		return $this->timelines[$activity->id()]->getValue();
 	}
 
-	public function getAllTimelinesExceptFor(Activity $activity) : Timeline {
+	/**
+	 * @return Timeline[]
+	 */
+	public function getAllTimelinesExceptFor(Activity $activity) : array {
 		$timelines = [];
-		foreach ($this->timelines as $key => $data) {
-			if (!$activity->equals($data[0])) {
-				$timelines[] = $data[1];
+		foreach ($this->timelines as $activityId => $pair) {
+			if (!$activity->equals($pair->getKey())) {
+				$timelines[] = $pair->getValue();
 			}
 		}
 		return $timelines;
 	}
 
-	public function getActivityAt(int $timeStamp) : Activity {
+	public function getActivityAt(int $timeStamp) : Activity{
 		$activity = Activity::IDLE();
-		$max = -1;
-		foreach ($this->timelines as $key => $data) {
-			if ($data[1]->getValueAt($timeStamp) > $max) {
-				$activity = $data[0];
+		$maxValue = -1;
+		foreach ($this->timelines as $pair) {
+			$timeline = $pair->getValue();
+			$value = $timeline->getValueAt($timeStamp);
+			if ($value > $maxValue) {
+				$maxValue = $value;
+				$activity = $pair->getKey();
 			}
 		}
 		return $activity;
