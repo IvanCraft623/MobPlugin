@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\memory;
 
-use IvanCraft623\MobPlugin\entity\ai\behavior\PositionTracker;
+use IvanCraft623\MobPlugin\entity\ai\behavior\PosTracker;
 
 class WalkTarget {
 
@@ -33,13 +33,13 @@ class WalkTarget {
 
 	private int $closeEnoughDist;
 
-	public function __construct(PositionTracker $target, float $speedModifier, int $closeEnoughDist) {
+	public function __construct(PosTracker $target, float $speedModifier, int $closeEnoughDist) {
 		$this->target = $target;
 		$this->speedModifier = $speedModifier;
 		$this->closeEnoughDist = $closeEnoughDist;
 	}
 
-	public function getTarget() : PositionTracker {
+	public function getTarget() : PosTracker {
 		return $this->target;
 	}
 
