@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\pathfinder\evaluator\NodeEvaluator;
 use IvanCraft623\MobPlugin\pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\pathfinder\Node;
 use IvanCraft623\MobPlugin\pathfinder\Path;
 use IvanCraft623\MobPlugin\pathfinder\PathFinder;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -187,7 +188,7 @@ abstract class PathNavigation {
 			return false;
 		}
 
-		if (!$path->equals($this->path)) {
+		if ($this->path === null || !$path->equals($this->path)) {
 			$this->path = $path;
 		}
 
@@ -196,7 +197,6 @@ abstract class PathNavigation {
 		}
 
 		$this->trimPath();
-
 
 		/**
 		 * @var Path $path

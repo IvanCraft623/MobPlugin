@@ -119,7 +119,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	protected function getStartNode(Vector3 $position) : Node{
 		$node = $this->getNode($position);
-		$node->type = $this->getBlockPathTypeWithMob($this->mob, $node->x, $node->y, $node->z);
+		$node->type = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y, $node->z, $this->mob);
 		$node->costMalus = $this->mob->getPathfindingMalus($node->type);
 
 		return $node;
@@ -136,8 +136,8 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		$count = 0;
 		$maxUpStep = 0;
 
-		$pathType = $this->getBlockPathTypeWithMob($this->mob, $node->x, $node->y, $node->z);
-		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->mob, $node->x, $node->y + 1, $node->z);
+		$pathType = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y, $node->z, $this->mob);
+		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y + 1, $node->z, $this->mob);
 
 		if ($this->mob->getPathfindingMalus($pathTypeAbove) >= 0 && !$pathType->equals(BlockPathTypes::STICKY_HONEY())) {
 			$maxUpStep = (int) floor(max(1, $this->mob->getMaxUpStep()));
@@ -259,7 +259,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			return null;
 		}
 
-		$currentPathType = $this->getBlockPathTypeWithMob($this->mob, $x, $y, $z);
+		$currentPathType = $this->getBlockPathTypeWithMob($this->world, $x, $y, $z, $this->mob);
 		$malus = $this->mob->getPathfindingMalus($currentPathType);
 
 		if ($malus >= 0) {
@@ -304,12 +304,12 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			}
 
 			if (!$this->isAmphibious() && $currentPathType->equals(BlockPathTypes::WATER()) && !$this->canFloat()) {
-				if (!$this->getBlockPathTypeWithMob($this->mob, $x, $y - 1, $z)->equals(BlockPathTypes::WATER())) {
+				if (!$this->getBlockPathTypeWithMob($this->world, $x, $y - 1, $z, $this->mob)->equals(BlockPathTypes::WATER())) {
 					return $resultNode;
 				}
 
 				while ($y > World::Y_MIN) {
-					$currentPathType = $this->getBlockPathTypeWithMob($this->mob, $x, --$y, $z);
+					$currentPathType = $this->getBlockPathTypeWithMob($this->world, $x, --$y, $z, $this->mob);
 					if (!$currentPathType->equals(BlockPathTypes::WATER())) {
 						return $resultNode;
 					}
@@ -331,7 +331,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 						return $this->getBlockedNode($x, $y, $z);
 					}
 
-					$currentPathType = $this->getBlockPathTypeWithMob($this->mob, $x, $y, $z);
+					$currentPathType = $this->getBlockPathTypeWithMob($this->world, $x, $y, $z, $this->mob);
 					$malus = $this->mob->getPathfindingMalus($currentPathType);
 					if (!$currentPathType->equals(BlockPathTypes::OPEN()) && $malus >= 0) {
 						$resultNode = $this->getNodeAndUpdateCostToMax($x, $y, $z, $currentPathType, $malus);
@@ -425,10 +425,10 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		return $pathType;
 	}
 
-	public function getBlockPathTypeWithMob(Mob $mob, int $x, int $y, int $z) : BlockPathTypes{
+	public function getBlockPathTypeWithMob(World $world, int $x, int $y, int $z, Mob $mob) : BlockPathTypes{
 		$blockHash = World::blockHash($x, $y, $z);
 		if (!isset($this->pathTypesByPosCache[$blockHash])) {
-			$this->pathTypesByPosCache[$blockHash] = $this->getBlockPathTypeAt($this->world, $x, $y, $z, $mob);
+			$this->pathTypesByPosCache[$blockHash] = $this->getBlockPathTypeAt($world, $x, $y, $z, $mob);
 		}
 
 		return $this->pathTypesByPosCache[$blockHash];

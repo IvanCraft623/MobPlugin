@@ -120,7 +120,7 @@ final class MemoryModuleType {
 		self::register("meeting_pont", new MemoryModuleType("meeting_pont")); //Position
 		self::register("secondary_job_site", new MemoryModuleType("secondary_job_site")); //Position[]
 		self::register("living_entities", new MemoryModuleType("living_entities")); //Living[]
-		self::register("visible_living_entities", new MemoryModuleType("visible_living_entities")); //Living[]
+		self::register("visible_living_entities", new MemoryModuleType("visible_living_entities")); //array<int, Living>
 		self::register("visible_villager_babies", new MemoryModuleType("visible_villager_babies")); //Living[]
 		self::register("nearest_players", new MemoryModuleType("nearest_players")); //Player[]
 		self::register("nearest_visible_player", new MemoryModuleType("nearest_visible_player")); //Player

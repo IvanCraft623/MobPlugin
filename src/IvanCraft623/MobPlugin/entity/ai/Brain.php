@@ -280,16 +280,23 @@ class Brain {
 	/**
 	 * @param Behavior[] $behaviors
 	 */
-	public function addActivity(Activity $activity, array $behaviors) : void {
-		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $this->createPriorityPairs($behaviors), [], []);
+	public function addActivity(Activity $activity, int $startPriority, array $behaviors) : void {
+		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $this->createPriorityPairs($startPriority, $behaviors), [], []);
+	}
+
+	/**
+	 * @param Pair<int, Behavior>[] $behaviorPairs
+	 */
+	public function addActivityWithBehaviorPairs(Activity $activity, array $behaviorPairs) : void {
+		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $behaviorPairs, [], []);
 	}
 
 	/**
 	 * @param Behavior[] $behaviors
 	 * @param Pair<MemoryModuleType, MemoryStatus>[] $conditions
 	 */
-	public function addActivityWithConditions(Activity $activity, array $behaviors, array $conditions) : void {
-		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $this->createPriorityPairs($behaviors), $conditions, []);
+	public function addActivityWithConditions(Activity $activity, int $startPriority, array $behaviors, array $conditions) : void {
+		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $this->createPriorityPairs($startPriority, $behaviors), $conditions, []);
 	}
 
 	/**
@@ -387,12 +394,12 @@ class Brain {
 	}
 
 	/**
-	 * @param Behavior[]
+	 * @param Behavior[] $behaviors
 	 *
 	 * @return Pair<int, Behavior>[]
 	 */
-	public static function createPriorityPairs(int $int, array $behaviors) : array {
-		$key = $int;
+	public static function createPriorityPairs(int $startPriority, array $behaviors) : array {
+		$key = $startPriority;
 		$pairs = [];
 		foreach ($behaviors as $behavior) {
 			$pairs[] = new Pair($key++, $behavior);

@@ -26,23 +26,11 @@ namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 use IvanCraft623\MobPlugin\entity\Living;
 use pocketmine\math\Vector3;
 
-class PositionTracker implements PosTracker {
+interface PosTracker {
 
-	protected Vector3 $position;
+	public function currentPosition() : Vector3;
 
-	public function __construct(Vector3 $position) {
-		$this->position = $position;
-	}
+	public function currentBlockPosition() : Vector3;
 
-	public function currentPosition() : Vector3{
-		return $position->add(0.5, 0.5, 0.5);
-	}
-
-	public function currentBlockPosition() : Vector3{
-		return clone $this->position;
-	}
-
-	public function isVisibleBy(Living $entity) : bool{
-		return true;
-	}
+	public function isVisibleBy(Living $entity) : bool;
 }

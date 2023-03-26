@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
+use IvanCraft623\MobPlugin\entity\ai\memory\WalkTarget;
 use IvanCraft623\MobPlugin\entity\Living;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -33,6 +34,7 @@ use pocketmine\entity\Living as PMLiving;
 use pocketmine\item\Item;
 use pocketmine\item\Releasable;
 use pocketmine\world\Position;
+use function is_array;
 
 class BehaviorUtils {
 
@@ -63,8 +65,8 @@ class BehaviorUtils {
 	}
 
 	public static function setWalkToPositionAndLookTargetMemories(Living $entity, Position $target, float $speedModifier, int $closeEnoughDist) : void {
-		$walkTarget = new WalkTarget(new BlockPosTracker($target), $speedModifier, $closeEnoughDist);
-		$entity->getBrain()->setMemory(MemoryModuleType::LOOK_TARGET(), new BlockPosTracker($target));
+		$walkTarget = new WalkTarget(new PositionTracker($target), $speedModifier, $closeEnoughDist);
+		$entity->getBrain()->setMemory(MemoryModuleType::LOOK_TARGET(), new PositionTracker($target));
 		$entity->getBrain()->setMemory(MemoryModuleType::WALK_TARGET(), $walkTarget);
 	}
 
@@ -81,7 +83,7 @@ class BehaviorUtils {
 	}
 
 	public static function isWithinMeleeAttackRange(Mob $mob, PMLiving $target) : bool {
-		$distanceSquared = $entity->getLocation()->distanceSquared($target->getLocation());
+		$distanceSquared = $mob->getLocation()->distanceSquared($target->getLocation());
 		$maximumMeleeAttackDistance = ($mob->getSize()->getWidth() * 2) ** 2 + $target->getSize()->getWidth();
 		return $distanceSquared <= $maximumMeleeAttackDistance;
 	}
@@ -90,9 +92,8 @@ class BehaviorUtils {
 		$brain = $entity->getBrain();
 		if ($brain->hasMemoryValue(MemoryModuleType::VISIBLE_LIVING_ENTITIES())) {
 			$value = $brain->getMemory(MemoryModuleType::VISIBLE_LIVING_ENTITIES());
-			if ($value !== null) {
-				$entities = $value->getValue();
-				return isset($entities[$target->getId()]);
+			if ($value !== null && is_array($value)) {
+				return isset($value[$target->getId()]);
 			}
 		}
 		return false;

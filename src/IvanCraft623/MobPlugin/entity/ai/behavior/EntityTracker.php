@@ -23,15 +23,14 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
-use IvanCraft623\MobPlugin\ai\memory\MemoryModuleType;
+use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\Living;
-use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\math\Vector3;
 use function is_array;
 
-class EntityTracker implements PositionTracker {
+class EntityTracker implements PosTracker {
 
 	protected Entity $target;
 
@@ -50,6 +49,10 @@ class EntityTracker implements PositionTracker {
 		return $this->trackEyeHeight ? $this->target->getEyePos() : $this->target->getPosition();
 	}
 
+	public function currentBlockPosition() : Vector3{
+		return $this->target->getPosition()->floor();
+	}
+
 	public function isVisibleBy(Living $entity) : bool{
 		if ($this->target instanceof PMLiving) {
 			if (!$this->target->isAlive()) {
@@ -57,7 +60,7 @@ class EntityTracker implements PositionTracker {
 			}
 
 			$visibleEntitiesMemory = $entity->getBrain()->getMemory(MemoryModuleType::VISIBLE_LIVING_ENTITIES());
-			return is_array($visibleEntitiesMemory) && Utils::arrayContains($this->target, $visibleEntitiesMemory);
+			return is_array($visibleEntitiesMemory) && isset($visibleEntitiesMemory[$this->target->getId()]);
 		}
 		return true;
 	}
