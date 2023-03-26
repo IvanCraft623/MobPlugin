@@ -47,7 +47,7 @@ class EntityTracker implements PositionTracker {
 	}
 
 	public function currentPosition() : Vector3{
-		return $this->trackEyeHeight ? $target->getEyePos() : $target->getPosition();
+		return $this->trackEyeHeight ? $this->target->getEyePos() : $this->target->getPosition();
 	}
 
 	public function isVisibleBy(Living $entity) : bool{
@@ -56,7 +56,7 @@ class EntityTracker implements PositionTracker {
 				return false;
 			}
 
-			$visibleEntitiesMemory = $entity->getBrain()->getMemory(MemoryModuleType::NEAREST_VISIBLE_LIVING_ENTITIES());
+			$visibleEntitiesMemory = $entity->getBrain()->getMemory(MemoryModuleType::VISIBLE_LIVING_ENTITIES());
 			return is_array($visibleEntitiesMemory) && Utils::arrayContains($this->target, $visibleEntitiesMemory);
 		}
 		return true;

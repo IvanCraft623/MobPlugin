@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
-use IvanCraft623\MobPlugin\ai\Brain;
+use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 
@@ -73,7 +73,7 @@ abstract class Living extends PMLiving {
 		$this->inventory = new MobInventory($this);
 		$syncHeldItem = function() : void{
 			$inv = $this->getInventory();
-			$packet = MobEquipmentPacket::create($this->getId(), ItemStackWrapper::legacy(TypeConverter::getInstance()->coreItemStackToNet($inv->getItemInHand())), $inv->getHeldItemIndex(), $inv->getHeldItemIndex(), ContainerIds::INVENTORY);
+			$packet = MobEquipmentPacket::create($this->getId(), ItemStackWrapper::legacy(TypeConverter::getInstance()->coreItemStackToNet($inv->getMainHand())), $inv->getHeldItemIndex(), $inv->getHeldItemIndex(), ContainerIds::INVENTORY);
 			foreach($this->getViewers() as $viewer){
 				$viewer->getNetworkSession()->sendDataPacket($packet);
 			}

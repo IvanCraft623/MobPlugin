@@ -73,7 +73,7 @@ class BehaviorUtils {
 	}
 
 	public static function isWithinAttackRange(Mob $mob, PMLiving $target, int $range) : bool {
-		$item = $mob->getInventory()->getItemInHand();
+		$item = $mob->getInventory()->getMainHand();
 		if ($item instanceof Releasable && $mob->canUseReleasable($item)) {
 			return $mob->getLocation()->distanceSquared($target->getLocation()) < (Utils::getDefaultProjectileRange($item) - $range) ** 2;
 		}

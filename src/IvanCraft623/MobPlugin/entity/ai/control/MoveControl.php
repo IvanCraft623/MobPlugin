@@ -153,7 +153,7 @@ class MoveControl {
 			$nodeEvaluator = $navigation->getNodeEvaluator();
 			$location = $this->mob->getLocation();
 			if ($nodeEvaluator !== null &&
-				!$nodeEvaluator->getBlockPathType($this->mob->getWorld(), floor($location->x + $x), floor($location->y), floor($location->z + $z))->equals(BlockPathTypes::WALKABLE())) {
+				!$nodeEvaluator->getBlockPathType($this->mob->getWorld(), (int) floor($location->x + $x), (int) floor($location->y), (int) floor($location->z + $z))->equals(BlockPathTypes::WALKABLE())) {
 				return false;
 			}
 		}

@@ -86,12 +86,12 @@ class LookControl {
 	}
 
 	public function getPitchD() : float {
-		$diff = $this->wanted->subtract($this->mob->getEyePos());
+		$diff = $this->wanted->subtractVector($this->mob->getEyePos());
 		return -(atan2($diff->y, sqrt(($diff->x ** 2) + ($diff->z ** 2))) * (180 / M_PI));
 	}
 
 	public function getYawD() : float {
-		$diff = $this->wanted->subtract($this->mob->getEyePos());
+		$diff = $this->wanted->subtractVector($this->mob->getEyePos());
 		return (atan2($diff->z, $diff->x) * (180 / M_PI)) - 90;
 	}
 

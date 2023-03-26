@@ -52,7 +52,10 @@ abstract class Sensor {
 
 	abstract protected function doTick(Living $entity) : void;
 
-	abstract protected function requires() : array;
+	/**
+	 * @return MemoryModuleType[]
+	 */
+	abstract public function requires() : array;
 
 	protected function isEntityTargetable(Living $entity, PMLiving $target) : bool {
 		if ($entity->getBrain()->isMemoryValue(MemoryModuleType::ATTACK_TARGET(), $target)) {

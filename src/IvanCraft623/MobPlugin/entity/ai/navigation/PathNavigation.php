@@ -97,7 +97,7 @@ abstract class PathNavigation {
 
 		$followRange = $this->mob->getAttributeMap()->get(Attribute::FOLLOW_RANGE)?->getValue() ?? throw new AssumptionFailedError("Follow range attribute is null");
 		;
-		$this->pathfinder = $this->createPathFinder(floor($followRange * 16));
+		$this->pathfinder = $this->createPathFinder((int) floor($followRange * 16));
 	}
 
 	public function resetMaxVisitedNodesMultiplier() : void{
@@ -119,10 +119,10 @@ abstract class PathNavigation {
 	}
 
 	public function recomputePath() : void{
-		if (($time = $this->world->getTime()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
+		if (($time = $this->world->getServer()->getTick()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
 			if ($this->targetPosition !== null) {
 				$this->path = null;
-				$this->path = $this->createPath($this->targetPosition, $this->reachRange);
+				$this->path = $this->createPathFromPosition($this->targetPosition, $this->reachRange);
 				$this->timeLastRecompute = $time;
 				$this->hasDelayedRecomputation = false;
 			}
@@ -135,18 +135,18 @@ abstract class PathNavigation {
 		return $this->createPathFromPosition(new Vector3($x, $y, $z), $maxVisitedNodes, $range);
 	}
 
-	public function createPathFromEntity(?Entity $target, int $maxVisitedNodes, ?float $range = null) : ?Path{
+	public function createPathFromEntity(Entity $target, int $maxVisitedNodes, ?float $range = null) : ?Path{
 		return $this->createPathFromPosition($target->getPosition(), $maxVisitedNodes, $range);
 	}
 
 	public function createPathFromPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
-		return $this->createPath([$position->floor()], $maxVisitedNodes);
+		return $this->createPath([$position->floor()], $maxVisitedNodes, $range);
 	}
 
 	/**
 	 * @param Vector3[] $positions
 	 */
-	public function createPath(array $positions, int $maxVisitedNodes, ?float $range) : ?Path{
+	public function createPath(array $positions, int $maxVisitedNodes, ?float $range = null) : ?Path{
 		if (count($positions) === 0) {
 			return null;
 		}
@@ -187,19 +187,22 @@ abstract class PathNavigation {
 			return false;
 		}
 
-		/**
-		 * @var Path $path
-		 * @var Path $this->path
-		 */
 		if (!$path->equals($this->path)) {
 			$this->path = $path;
 		}
+
 		if ($this->isDone()) {
 			return false;
 		}
 
 		$this->trimPath();
-		if ($this->path->getNodeCount() <= 0) {
+
+
+		/**
+		 * @var Path $path
+		 */
+		$path = $this->path;
+		if ($path->getNodeCount() <= 0) {
 			return false;
 		}
 
@@ -287,7 +290,7 @@ abstract class PathNavigation {
 		if ($direction->distanceSquared($nodePos) > 4) {
 			return false;
 		}
-		if ($this->canMoveDirectly($direction, $this->path->getNextEntityPos($this->mob))) {
+		if ($this->canMoveDirectly($direction, $this->path->getNextEntityPosition($this->mob))) {
 			return true;
 		}
 
@@ -308,7 +311,7 @@ abstract class PathNavigation {
 	}
 
 	public function doStuckDetection(Vector3 $position) : void{
-		$mobSpeed = $mob->getSpeed();
+		$mobSpeed = $this->mob->getSpeed();
 		if ($this->tick - $this->lastStuckCheck > self::STUCK_CHECK_INTERVAL) {
 			$speed = $mobSpeed >= 1 ? $mobSpeed : $mobSpeed ** 2;
 			if ($position->distanceSquared($this->lastStuckCheckPos) < (($speed * 100 * self::STUCK_THRESHOLD_DISTANCE_FACTOR) ** 2)) {
@@ -331,7 +334,7 @@ abstract class PathNavigation {
 			} else {
 				$this->timeoutCachedNode = $nextNodePos;
 				$distanceToNextNode = $position->distance($this->timeoutCachedNode->add(0.5, 0, 0.5));
-				$this->timeoutLimit = $mobSpeed > 0 ? $distanceToNextNode / $speed * 20 : 0;
+				$this->timeoutLimit = $mobSpeed > 0 ? $distanceToNextNode / $mobSpeed * 20 : 0;
 			}
 
 			if ($this->timeoutLimit > 0 && $this->timeoutTimer > $this->timeoutLimit * 3) {
@@ -412,8 +415,8 @@ abstract class PathNavigation {
 	protected static function isClearForMovementBetween(Mob $mob, Vector3 $from, Vector3 $to, bool $detectLiquids) : bool{
 		$to = $to->add(0, $mob->getSize()->getHeight() / 2, 0);
 
-		foreach (VoxelRayTrace::betweenPoints($form, $to) as $pos) {
-			$block = $mob->getWorld()->getBlockAt($pos->x, $pos->y, $pos->z);
+		foreach (VoxelRayTrace::betweenPoints($from, $to) as $pos) {
+			$block = $mob->getWorld()->getBlockAt((int) $pos->x, (int) $pos->y, (int) $pos->z);
 
 			if ($block instanceof Liquid && !$detectLiquids) {
 				continue;
@@ -449,6 +452,7 @@ abstract class PathNavigation {
 			!$this->path->isDone() &&
 			$this->path->getNodeCount() !== 0
 		) {
+			/** @var Node $endNode */
 			$endNode = $this->path->getEndNode();
 			$targetPos = $endNode->asVector3()->addVector($this->mob->getPosition())->divide(2);
 

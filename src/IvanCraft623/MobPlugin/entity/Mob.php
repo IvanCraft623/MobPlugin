@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 
+use pocketmine\item\Releasable;
 use pocketmine\nbt\tag\CompoundTag;
 use function max;
 
@@ -158,5 +159,9 @@ abstract class Mob extends Living {
 
 	public function setPathfindingMalus(BlockPathTypes $pathType, float $malus) : void{
 		$this->pathfindingMalus[$pathType->id()] = $malus;
+	}
+
+	public function canUseReleasable(Releasable $item) : bool{
+		return false;
 	}
 }

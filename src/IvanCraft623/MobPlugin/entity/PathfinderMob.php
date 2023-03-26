@@ -72,7 +72,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		) as $hash){
 			if(!isset($this->usedChunks[$hash])){
 				$X = $Z = 0;
-				World::getXZ($index, $X, $Z);
+				World::getXZ($hash, $X, $Z);
 				$this->getWorld()->registerChunkListener($this, $X, $Z);
 				$this->usedChunks[$hash] = true;
 			}

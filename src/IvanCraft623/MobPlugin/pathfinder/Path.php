@@ -106,7 +106,7 @@ class Path{
 		return $this->nodes[$index]->asVector3();
 	}
 
-	public function getNextEntityPos(Entity $entity) : Vector3{
+	public function getNextEntityPosition(Entity $entity) : Vector3{
 		return $this->getEntityPosAtNode($entity, $this->nextNodeIndex);
 	}
 

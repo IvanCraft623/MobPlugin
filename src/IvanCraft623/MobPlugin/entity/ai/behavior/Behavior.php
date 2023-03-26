@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
+use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\entity\Living;
 
 class Behavior {

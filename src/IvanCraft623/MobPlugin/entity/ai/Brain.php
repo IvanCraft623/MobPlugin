@@ -24,7 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai;
 
 use IvanCraft623\MobPlugin\entity\ai\behavior\Behavior;
-use IvanCraft623\MobPlugin\entity\ai\behavior\ExpirableValue;
+use IvanCraft623\MobPlugin\entity\ai\behavior\BehaviorStatus;
+use IvanCraft623\MobPlugin\entity\ai\memory\ExpirableValue;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryStatus;
@@ -177,6 +178,10 @@ class Brain {
 		$this->schedule = $schedule;
 	}
 
+	/**
+	 * @param Activity[]|ObjectSet $activities
+	 * @phpstan-param ObjectSet<Activity> $activities
+	 */
 	public function setCoreActivities(ObjectSet $activities) : void {
 		$this->coreActivities = $activities;
 	}
@@ -195,6 +200,8 @@ class Brain {
 				}
 			}
 		}
+
+		return $behaviors;
 	}
 
 	public function useDefaultActivity() : void {
@@ -253,6 +260,10 @@ class Brain {
 		}
 	}
 
+	/**
+	 * @param Activity[]|ObjectSet $activities
+	 * @phpstan-param ObjectSet<Activity> $activities
+	 */
 	public function setActiveActivityToFirstValid(ObjectSet $activities) : void {
 		foreach ($activities->toArray() as $activity) {
 			if ($this->activityRequirementsAreMet($activity)) {
@@ -267,26 +278,27 @@ class Brain {
 	}
 
 	/**
-	 * @param Pair<int, Behavior>[] $behaviorPairs
+	 * @param Behavior[] $behaviors
 	 */
-	public function addActivity(Activity $activity, array $behaviorPairs) : void {
-		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $behaviorPairs, new ObjectSet());
+	public function addActivity(Activity $activity, array $behaviors) : void {
+		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $this->createPriorityPairs($behaviors), [], []);
+	}
+
+	/**
+	 * @param Behavior[] $behaviors
+	 * @param Pair<MemoryModuleType, MemoryStatus>[] $conditions
+	 */
+	public function addActivityWithConditions(Activity $activity, array $behaviors, array $conditions) : void {
+		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $this->createPriorityPairs($behaviors), $conditions, []);
 	}
 
 	/**
 	 * @param Pair<int, Behavior>[] $behaviorPairs
-	 */
-	public function addActivityWithConditions(Activity $activity, array $behaviorPairs, array $memoryPairs) : void {
-		$this->addActivityAndRemoveMemoriesWhenStopped($activity, $behaviorPairs, $memoryPairs, new ObjectSet());
-	}
-
-	/**
-	 * @param Pair<int, Behavior>[] $behaviorPairs
-	 * @param Pair<MemoryModuleType, MemoryStatus>[] $memoryPairs
+	 * @param Pair<MemoryModuleType, MemoryStatus>[] $conditions
 	 * @param MemoryModuleType[] $memoryModules
 	 */
-	public function addActivityAndRemoveMemoriesWhenStopped(Activity $activity, array $behaviorPairs, array $memoryPairs, ObjectSet $memoryModules) : void {
-		$this->activityRequirements[$activity->id()] = $memoryPairs;
+	public function addActivityAndRemoveMemoriesWhenStopped(Activity $activity, array $behaviorPairs, array $conditions, array $memoryModules) : void {
+		$this->activityRequirements[$activity->id()] = $conditions;
 		if (count($memoryModules) !== 0) {
 			$this->activityMemoriesToEraseWhenStopped[$activity->id()] = $memoryModules;
 		}
@@ -334,7 +346,7 @@ class Brain {
 	public function stopAll(Living $entity) : void {
 		$time = $entity->getWorld()->getServer()->getTick();
 		foreach ($this->getRunningBehaviors() as $behavior) {
-			$behaviors->doStop($entity, $time);
+			$behavior->doStop($entity, $time);
 		}
 	}
 
@@ -354,7 +366,7 @@ class Brain {
 	private function tickEachRunningBehavior(Living $entity) : void {
 		$time = $entity->getWorld()->getServer()->getTick();
 		foreach ($this->getRunningBehaviors() as $behavior) {
-			$behavior->tickOrStop();
+			$behavior->tickOrStop($entity, $time);
 		}
 	}
 
@@ -375,7 +387,9 @@ class Brain {
 	}
 
 	/**
-	 * @return Pair[]
+	 * @param Behavior[]
+	 *
+	 * @return Pair<int, Behavior>[]
 	 */
 	public static function createPriorityPairs(int $int, array $behaviors) : array {
 		$key = $int;

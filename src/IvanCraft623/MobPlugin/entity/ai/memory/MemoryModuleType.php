@@ -179,6 +179,10 @@ final class MemoryModuleType {
 		$this->name = $name;
 	}
 
+	public function name() : string{
+		return $this->name;
+	}
+
 	public function setValue(?ExpirableValue $value) : void {
 		$this->value = $value;
 	}

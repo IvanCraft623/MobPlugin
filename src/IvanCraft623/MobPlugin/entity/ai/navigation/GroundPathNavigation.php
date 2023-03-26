@@ -74,13 +74,13 @@ class GroundPathNavigation extends PathNavigation{
 			$position = $currentPos;
 		}
 
-		if (!$this->world->getBlock()->getBlock($position)->isSolid()) {
+		if (!$this->world->getBlock($position)->isSolid()) {
 			return parent::createPathFromPosition($position, $maxVisitedNodes, $range);
 		}
 
 		$currentPos = $position->up();
 
-		while($currentPos->getY() < World::Y_MAX && $this->world->getBlock()->getBlock($currentPos)->isSolid()) {
+		while($currentPos->getY() < World::Y_MAX && $this->world->getBlock($currentPos)->isSolid()) {
 			$currentPos = $currentPos->up();
 		}
 
@@ -97,7 +97,7 @@ class GroundPathNavigation extends PathNavigation{
 			while ($block instanceof Water) {
 				$block = $this->world->getBlockAt((int) floor($mobPos->x), ++$y, (int) floor($mobPos->z));
 				if (++$distDiff > 16) {
-					return $mobPos->getY();
+					return (int) $mobPos->getY();
 				}
 			}
 
@@ -109,6 +109,10 @@ class GroundPathNavigation extends PathNavigation{
 
 	protected function trimPath() : void{
 		parent::trimPath();
+
+		if ($this->path === null) {
+			return;
+		}
 
 		if ($this->avoidSun) {
 			$mobPos = $this->mob->getPosition();
