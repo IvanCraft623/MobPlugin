@@ -391,16 +391,16 @@
         },
         {
             "name": "pocketmine/bedrock-protocol",
-            "version": "20.0.0+bedrock-1.19.70",
+            "version": "20.1.0+bedrock-1.19.70",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/BedrockProtocol.git",
-                "reference": "4892a5020187da805d7b46ab522d8185b0283726"
+                "reference": "91d67c8b1bced3c82d0841b1041c0c1f4e93eb68"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/BedrockProtocol/zipball/4892a5020187da805d7b46ab522d8185b0283726",
-                "reference": "4892a5020187da805d7b46ab522d8185b0283726",
+                "url": "https://api.github.com/repos/pmmp/BedrockProtocol/zipball/91d67c8b1bced3c82d0841b1041c0c1f4e93eb68",
+                "reference": "91d67c8b1bced3c82d0841b1041c0c1f4e93eb68",
                 "shasum": ""
             },
             "require": {
@@ -414,7 +414,7 @@
                 "ramsey/uuid": "^4.1"
             },
             "require-dev": {
-                "phpstan/phpstan": "1.10.1",
+                "phpstan/phpstan": "1.10.7",
                 "phpstan/phpstan-phpunit": "^1.0.0",
                 "phpstan/phpstan-strict-rules": "^1.0.0",
                 "phpunit/phpunit": "^9.5"
@@ -432,9 +432,9 @@
             "description": "An implementation of the Minecraft: Bedrock Edition protocol in PHP",
             "support": {
                 "issues": "https://github.com/pmmp/BedrockProtocol/issues",
-                "source": "https://github.com/pmmp/BedrockProtocol/tree/20.0.0+bedrock-1.19.70"
+                "source": "https://github.com/pmmp/BedrockProtocol/tree/20.1.0+bedrock-1.19.70"
             },
-            "time": "2023-03-14T17:06:38+00:00"
+            "time": "2023-03-20T01:17:00+00:00"
         },
         {
             "name": "pocketmine/binaryutils",
@@ -843,16 +843,16 @@
         },
         {
             "name": "pocketmine/pocketmine-mp",
-            "version": "4.17.1",
+            "version": "4.18.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pmmp/PocketMine-MP.git",
-                "reference": "00286e761c7461aa64950efa23f6492d29ea7e84"
+                "reference": "cd603e82663937fa6660c78842a657acfbcc4bab"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pmmp/PocketMine-MP/zipball/00286e761c7461aa64950efa23f6492d29ea7e84",
-                "reference": "00286e761c7461aa64950efa23f6492d29ea7e84",
+                "url": "https://api.github.com/repos/pmmp/PocketMine-MP/zipball/cd603e82663937fa6660c78842a657acfbcc4bab",
+                "reference": "cd603e82663937fa6660c78842a657acfbcc4bab",
                 "shasum": ""
             },
             "require": {
@@ -888,7 +888,7 @@
                 "pocketmine/bedrock-block-upgrade-schema": "~1.1.1+bedrock-1.19.70",
                 "pocketmine/bedrock-data": "~2.1.1+bedrock-1.19.70",
                 "pocketmine/bedrock-item-upgrade-schema": "~1.1.0+bedrock-1.19.70",
-                "pocketmine/bedrock-protocol": "~20.0.0+bedrock-1.19.70",
+                "pocketmine/bedrock-protocol": "~20.1.0+bedrock-1.19.70",
                 "pocketmine/binaryutils": "^0.2.1",
                 "pocketmine/callback-validator": "^1.0.2",
                 "pocketmine/classloader": "^0.2.0",
@@ -929,7 +929,7 @@
             "homepage": "https://pmmp.io",
             "support": {
                 "issues": "https://github.com/pmmp/PocketMine-MP/issues",
-                "source": "https://github.com/pmmp/PocketMine-MP/tree/4.17.1"
+                "source": "https://github.com/pmmp/PocketMine-MP/tree/4.18.1"
             },
             "funding": [
                 {
@@ -941,7 +941,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2023-03-22T22:35:24+00:00"
+            "time": "2023-03-27T17:03:16+00:00"
         },
         {
             "name": "pocketmine/raklib",
