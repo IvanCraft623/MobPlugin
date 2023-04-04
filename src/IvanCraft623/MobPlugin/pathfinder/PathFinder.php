@@ -55,7 +55,7 @@ class PathFinder {
 	/**
 	 * @param Vector3[] $targets
 	 */
-	public function findPath(World $world, Mob $mob, array $targets, float $distanceMultiplier, int $maxVisitedNodes, float $fudgeFactor) : ?Path {
+	public function findPath(World $world, Mob $mob, array $targets, float $distanceMultiplier, int $maxDistanceManhattan, float $fudgeFactor) : ?Path {
 		$this->openSet->clear();
 		$this->nodeEvaluator->prepare($world, $mob);
 		$startNode = $this->nodeEvaluator->getStart();
@@ -66,7 +66,7 @@ class PathFinder {
 			$actuallyTargets[] = $this->nodeEvaluator->getGoal($pos->x, $pos->y, $pos->z);
 		}
 
-		$result = $this->findPathRecursive($startNode, $actuallyTargets, $distanceMultiplier, $maxVisitedNodes, $fudgeFactor);
+		$result = $this->findPathRecursive($startNode, $actuallyTargets, $distanceMultiplier, $maxDistanceManhattan, $fudgeFactor);
 		$this->nodeEvaluator->done();
 		return $result;
 	}
@@ -110,10 +110,10 @@ class PathFinder {
 				break;
 			}
 
-			if (!($current->distanceTo($startNode) >= $distanceMultiplier)) {
-				$neighbors = $this->nodeEvaluator->getNeighbors($this->neighbors, $current);
+			if ($current->distanceTo($startNode) < $distanceMultiplier) {
+				$neighborsCount = $this->nodeEvaluator->getNeighbors($this->neighbors, $current);
 
-				for ($i = 0; $i < $neighbors; $i++) {
+				for ($i = 0; $i < $neighborsCount; $i++) {
 					$neighbor = $this->neighbors[$i];
 
 					$distance = $this->distance($current, $neighbor);

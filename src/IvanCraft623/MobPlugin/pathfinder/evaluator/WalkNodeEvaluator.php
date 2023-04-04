@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\pathfinder\Node;
 use IvanCraft623\MobPlugin\pathfinder\PathComputationType;
 use IvanCraft623\MobPlugin\pathfinder\Target;
+use IvanCraft623\MobPlugin\utils\EnumSet;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BaseRail;
@@ -253,9 +254,8 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	public function findAcceptedNode(int $x, int $y, int $z, int $targetY, float $floorLevel, int $facing, BlockPathTypes $preferredPathType) : ?Node{
 		$resultNode = null;
 		$pos = new Vector3($x, $y, $z);
-		$floorLevel = $this->getFloorLevel($pos);
 
-		if ($floorLevel - $targetY > $this->getMobJumpHeight()) {
+		if ($this->getFloorLevel($pos) - $floorLevel > $this->getMobJumpHeight()) {
 			return null;
 		}
 
@@ -351,6 +351,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 				$resultNode->costMalus = $currentPathType->getMalus();
 			}
 		}
+
 		return $resultNode;
 	}
 
@@ -387,9 +388,9 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	/**
-	 * @param array<int, BlockPathTypes> $pathTypes
+	 * @param EnumSet<BlockPathTypes> $pathTypes
 	 */
-	public function getBlockPathTypes(World $world, int $startX, int $startY, int $startZ, array &$pathTypes, BlockPathTypes $pathType, Vector3 $mobPos) : BlockPathTypes{
+	public function getBlockPathTypes(World $world, int $startX, int $startY, int $startZ, EnumSet $pathTypes, BlockPathTypes $pathType, Vector3 $mobPos) : BlockPathTypes{
 		for ($currentX = 0; $currentX < $this->entityWidth; ++$currentX) {
 			for ($currentY = 0; $currentY < $this->entityHeight; ++$currentY) {
 				for($currentZ = 0; $currentZ < $this->entityDepth; ++$currentZ) {
@@ -401,7 +402,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 						$pathType = $currentPathType;
 					}
 
-					$pathTypes[] = $currentPathType;
+					$pathTypes->add($currentPathType);
 				}
 			}
 		}
@@ -436,13 +437,13 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	public function getBlockPathTypeAt(World $world, int $x, int $y, int $z, Mob $mob) : BlockPathTypes{
 		/**
-		 * @var array<int, BlockPathTypes> $pathTypes BlockPathTypes->id() => BlockPathTypes
+		 * @var EnumSet<BlockPathTypes>
 		 */
-		$pathTypes = [];
+		$pathTypes = new EnumSet(BlockPathTypes::class);
 		$currentPathType = $this->getBlockPathTypes($world, $x, $y, $z, $pathTypes, BlockPathTypes::BLOCKED(), $mob->getPosition()->floor());
 
 		foreach ([BlockPathTypes::FENCE(), BlockPathTypes::UNPASSABLE_RAIL()] as $unpassableType) {
-			if (isset($pathTypes[$unpassableType->id()])) {
+			if ($pathTypes->contains($unpassableType)) {
 				return $unpassableType;
 			}
 		}
@@ -470,7 +471,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	public static function getBlockPathTypeStatic(World $world, int $x, int $y, int $z) : BlockPathTypes{
 		$pathType = static::getBlockPathTypeRaw($world, $x, $y, $z);
 
-		if ($pathType->equals(BlockPathTypes::WALKABLE()) && $y >= World::Y_MIN + 1) {
+		if ($pathType->equals(BlockPathTypes::OPEN()) && $y >= World::Y_MIN + 1) {
 			$pathTypeDown = static::getBlockPathTypeRaw($world, $x, $y - 1, $z);
 			$pathType = (!$pathTypeDown->equals(BlockPathTypes::WALKABLE()) &&
 				!$pathTypeDown->equals(BlockPathTypes::OPEN()) &&

@@ -33,7 +33,6 @@ use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 
 abstract class PathfinderMob extends Mob implements ChunkListener {
-	//TODO!
 
 	protected ChunkSelector $chunkSelector;
 
@@ -143,5 +142,9 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		if ($this->navigation->shouldRecomputePath($position)) {
 			$this->navigation->recomputePath();
 		}
+	}
+
+	public function getWalkTargetValue(Vector3 $position) : float{
+		return 0;
 	}
 }
