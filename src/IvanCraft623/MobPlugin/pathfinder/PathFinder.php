@@ -55,7 +55,7 @@ class PathFinder {
 	/**
 	 * @param Vector3[] $targets
 	 */
-	public function findPath(World $world, Mob $mob, array $targets, float $distanceMultiplier, int $maxDistanceManhattan, float $fudgeFactor) : ?Path {
+	public function findPath(World $world, Mob $mob, array $targets, float $maxDistanceFromStart, int $reachRange, float $maxVisitedNodesPercentage) : ?Path {
 		$this->openSet->clear();
 		$this->nodeEvaluator->prepare($world, $mob);
 		$startNode = $this->nodeEvaluator->getStart();
@@ -66,7 +66,7 @@ class PathFinder {
 			$actuallyTargets[] = $this->nodeEvaluator->getGoal($pos->x, $pos->y, $pos->z);
 		}
 
-		$result = $this->findPathRecursive($startNode, $actuallyTargets, $distanceMultiplier, $maxDistanceManhattan, $fudgeFactor);
+		$result = $this->findPathRecursive($startNode, $actuallyTargets, $maxDistanceFromStart, $reachRange, $maxVisitedNodesPercentage);
 		$this->nodeEvaluator->done();
 		return $result;
 	}
@@ -74,33 +74,31 @@ class PathFinder {
 	/**
 	 * @param Target[] $targets
 	 */
-	private function findPathRecursive(Node $startNode, array $targets, float $distanceMultiplier, int $maxDistanceManhattan, float $fudgeFactor) : ?Path {
-		$openSet = $this->openSet;
-		$openSet->clear();
-
+	private function findPathRecursive(Node $startNode, array $targets, float $maxDistanceFromStart, int $reachRange, float $maxVisitedNodesPercentage) : ?Path {
 		$startNode->g = 0.0;
 		$startNode->h = $this->getBestH($startNode, $targets);
 		$startNode->f = $startNode->h;
 
-		$openSet->insert($startNode);
+		$this->openSet->clear();
+		$this->openSet->insert($startNode);
 
 		$visitedNodes = 0;
-		$maxVisitedNodes = (int) ($this->maxVisitedNodes * $fudgeFactor);
+		$maxVisitedNodes = (int) ($this->maxVisitedNodes * $maxVisitedNodesPercentage);
 
 		/** @var Target[] $reachableTargets */
 		$reachableTargets = [];
 		$targetCount = count($targets);
 
-		while (!$openSet->isEmpty()) {
+		while (!$this->openSet->isEmpty()) {
 			if (++$visitedNodes >= $maxVisitedNodes) {
 				break;
 			}
 
-			$current = $openSet->pop();
+			$current = $this->openSet->pop();
 			$current->closed = true;
 
 			foreach ($targets as $target) {
-				if ($current->distanceManhattan($target) <= $maxDistanceManhattan) {
+				if ($current->distanceManhattan($target) <= $reachRange) {
 					$target->setReached();
 					$reachableTargets[] = $target;
 				}
@@ -110,17 +108,13 @@ class PathFinder {
 				break;
 			}
 
-			if ($current->distanceTo($startNode) < $distanceMultiplier) {
-				$neighborsCount = $this->nodeEvaluator->getNeighbors($this->neighbors, $current);
-
-				for ($i = 0; $i < $neighborsCount; $i++) {
-					$neighbor = $this->neighbors[$i];
-
+			if ($current->distanceTo($startNode) < $maxDistanceFromStart) {
+				foreach ($this->nodeEvaluator->getNeighbors($current) as $neighbor) {
 					$distance = $this->distance($current, $neighbor);
-					$neighbor->walkedDistance += $distance;
+					$neighbor->walkedDistance = $current->walkedDistance + $distance;
 					$newNeighborG = $current->g + $distance + $neighbor->costMalus;
 
-					if ($neighbor->walkedDistance < $distanceMultiplier && (!$neighbor->inOpenSet() || $newNeighborG < $neighbor->g)) {
+					if ($neighbor->walkedDistance < $maxDistanceFromStart && (!$neighbor->inOpenSet() || $newNeighborG < $neighbor->g)) {
 						$neighbor->cameFrom = $current;
 						$neighbor->g = $newNeighborG;
 						$neighbor->h = $this->getBestH($neighbor, $targets) * self::FUDGING;

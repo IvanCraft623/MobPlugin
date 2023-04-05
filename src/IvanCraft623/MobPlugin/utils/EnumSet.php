@@ -26,6 +26,9 @@ namespace IvanCraft623\MobPlugin\utils;
 use pocketmine\utils\EnumTrait;
 
 /**
+ * A hacky class to support EnumSet with sorted elements
+ * corresponding to its ordinal position in the enum.
+ *
  * @phpstan-template T of object
  * @phpstan-implements \IteratorAggregate<int, T>
  */
@@ -44,7 +47,7 @@ final class EnumSet implements \IteratorAggregate{
 	private array $allElements = [];
 
 	/**
-	 * @phpstan-param class-string$enumClass
+	 * @phpstan-param class-string<T> $enumClass
 	 */
 	public function __construct(private string $enumClass) {
 		if (!isset(class_uses($enumClass)[EnumTrait::class])) {
@@ -52,34 +55,28 @@ final class EnumSet implements \IteratorAggregate{
 		}
 
 		foreach ($enumClass::getAll() as $element) {
-			$this->elements[$element->id()] = false;
-			$this->allElements[$element->id()] = $element;
+			$this->elements[$element->id()] = false; // @phpstan-ignore-line
+			$this->allElements[$element->id()] = $element; // @phpstan-ignore-line
 		}
 	}
 
-	/**
-	 * @phpstan-param EnumTrait $elements
-	 */
 	public function add(object ...$elements) : void{
 		foreach ($elements as $element) {
 			if (!$element instanceof $this->enumClass) {
 				throw new \InvalidArgumentException("Element must be an instance of $this->enumClass");
 			}
 
-			$this->elements[$element->id()] = true;
+			$this->elements[$element->id()] = true; // @phpstan-ignore-line
 		}
 	}
 
-	/**
-	 * @phpstan-param EnumTrait $elements
-	 */
 	public function remove(object ...$elements) : void{
 		foreach ($elements as $element) {
 			if (!$element instanceof $this->enumClass) {
 				throw new \InvalidArgumentException("Element must be an instance of $this->enumClass");
 			}
 
-			$this->elements[$element->id()] = false;
+			$this->elements[$element->id()] = false; // @phpstan-ignore-line
 		}
 	}
 
@@ -89,11 +86,8 @@ final class EnumSet implements \IteratorAggregate{
 		}
 	}
 
-	/**
-	 * @phpstan-param EnumTrait $elements
-	 */
 	public function contains(object $element) : bool{
-		return $this->elements[$element->id()] ?? false;
+		return $this->elements[$element->id()] ?? false; // @phpstan-ignore-line
 	}
 
 	/** @phpstan-return \ArrayIterator<int, T> */

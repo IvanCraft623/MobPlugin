@@ -87,9 +87,9 @@ abstract class NodeEvaluator {
 	}
 
 	/**
-	 * @param Node[] $nodes
+	 * @return Node[] $nodes
 	 */
-	public abstract function getNeighbors(array &$nodes, Node $node) : int;
+	public abstract function getNeighbors(Node $node) : array;
 
 	public abstract function getBlockPathTypeWithMob(World $world, int $x, int $y, int $z, Mob $mob) : BlockPathTypes;
 

@@ -63,9 +63,6 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	/** @var array<int, BlockPathTypes> World::blockHash() => BlockPathTypes */
 	protected array $pathTypesByPosCache = [];
 
-	/** @var array<int, bool> spl_object_id(AxisAlignedBB) => bool */
-	protected array $collisionCache = [];
-
 	public function prepare(World $world, Mob $mob) : void{
 		parent::prepare($world, $mob);
 
@@ -75,7 +72,6 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	public function done() : void{
 		$this->mob->setPathfindingMalus(BlockPathTypes::WATER(), $this->oldWaterCost);
 		$this->pathTypesByPosCache = [];
-		$this->collisionCache = [];
 
 		parent::done();
 	}
@@ -131,10 +127,10 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	/**
-	 * @param Node[] $nodes
+	 * @return Node[] $nodes
 	 */
-	public function getNeighbors(array &$nodes, Node $node) : int{
-		$count = 0;
+	public function getNeighbors(Node $node) : array{
+		$nodes = [];
 		$maxUpStep = 0;
 
 		$pathType = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y, $node->z, $this->mob);
@@ -157,7 +153,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 			$horizontalNeighbors[$side] = $neighborNode;
 			if ($neighborNode !== null && $this->isNeighborValid($neighborNode, $node)) {
-				$nodes[$count++] = $neighborNode;
+				$nodes[] = $neighborNode;
 			}
 		}
 
@@ -169,12 +165,12 @@ class WalkNodeEvaluator extends NodeEvaluator {
 				$diagonalNode = $this->findAcceptedNode((int) $diagonalPos->x, (int) $diagonalPos->y, (int) $diagonalPos->z, $maxUpStep, $floorLevel, $zFace, $pathType);
 
 				if ($diagonalNode !== null && $this->isDiagonalValid($node, $horizontalNeighbors[$xFace], $horizontalNeighbors[$zFace], $diagonalNode)) {
-					$nodes[$count++] = $diagonalNode;
+					$nodes[] = $diagonalNode;
 				}
 			}
 		}
 
-		return $count;
+		return $nodes;
 	}
 
 	public function isNeighborValid(Node $neighbor, Node $node) : bool{
@@ -376,15 +372,9 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	private function hasCollisions(AxisAlignedBB $bb) : bool{
-		$bbId = spl_object_id($bb);
-		if (!isset($this->collisionCache[$bbId])) {
-			$this->collisionCache[$bbId] =
-				count($this->world->getCollisionBlocks($bb, true)) !== 0 ||
-				!$this->world->isInWorld((int) floor($bb->minX), (int) floor($bb->minY), (int) floor($bb->minZ)) ||
-				!$this->world->isInWorld((int) floor($bb->maxX), (int) floor($bb->maxY), (int) floor($bb->maxZ));
-		}
-
-		return $this->collisionCache[$bbId];
+		return count($this->world->getCollisionBlocks($bb, true)) !== 0 ||
+			!$this->world->isInWorld((int) floor($bb->minX), (int) floor($bb->minY), (int) floor($bb->minZ)) ||
+			!$this->world->isInWorld((int) floor($bb->maxX), (int) floor($bb->maxY), (int) floor($bb->maxZ));
 	}
 
 	/**
