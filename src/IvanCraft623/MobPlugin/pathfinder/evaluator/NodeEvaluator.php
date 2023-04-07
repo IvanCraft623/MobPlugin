@@ -32,13 +32,16 @@ use pocketmine\math\Vector3;
 use pocketmine\world\World;
 use function floor;
 
+/**
+ * @phpstan-import-type BlockPosHash from World
+ */
 abstract class NodeEvaluator {
 
 	protected World $world;
 
 	protected Mob $mob;
 
-	/** @var array<int, Node> hash => Node */
+	/** @var array<BlockPosHash, Node> */
 	protected array $nodes = [];
 
 	protected int $entityWidth;

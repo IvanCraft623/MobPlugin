@@ -99,6 +99,8 @@ class PathFinder {
 		/** @var Target[] $reachableTargets */
 		$reachableTargets = [];
 
+		$maxDistanceFromStartSqr = $maxDistanceFromStart ** 2;
+
 		while (!$this->openSet->isEmpty()) {
 			if (++$visitedNodes >= $maxVisitedNodes) {
 				break;
@@ -118,7 +120,7 @@ class PathFinder {
 				break;
 			}
 
-			if ($current->distanceTo($startNode) < $maxDistanceFromStart) {
+			if ($current->distanceSquared($startNode) < $maxDistanceFromStartSqr) {
 				foreach ($this->nodeEvaluator->getNeighbors($current) as $neighbor) {
 					$distance = $this->distance($current, $neighbor);
 					$neighbor->walkedDistance = $current->walkedDistance + $distance;
@@ -168,7 +170,7 @@ class PathFinder {
 	}
 
 	public function distance(Node $node1, Node $node2) : float{
-		return $node1->distanceTo($node2);
+		return $node1->distance($node2);
 	}
 
 	/**
@@ -177,7 +179,7 @@ class PathFinder {
 	public function getBestH(Node $node, array $targets) : float{
 		$bestH = INF;
 		foreach ($targets as $target) {
-			$h = $node->distanceTo($target);
+			$h = $node->distance($target);
 			$target->updateBest($h, $node);
 
 			if ($h < $bestH) {

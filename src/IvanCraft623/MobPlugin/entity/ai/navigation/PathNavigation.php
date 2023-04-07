@@ -391,11 +391,11 @@ abstract class PathNavigation {
 			for ($i = 0; $i < $this->path->getNodeCount(); $i++) {
 				$node = $this->path->getNode($i);
 				if ($this->world->getBlock($node->asVector3()) instanceof FillableCauldron) {
-					$this->path->replaceNode($i, $node->cloneAndMove($node->x, $node->y + 1, $node->z));
+					$this->path->replaceNode($i, $node->cloneAndMove($node->getX(), $node->getY() + 1, $node->getZ()));
 
 					$nextNode = $i + 1 < $this->path->getNodeCount() ? $this->path->getNode($i + 1) : null;
 					if ($nextNode !== null && $node->y >= $nextNode->y) {
-						$this->path->replaceNode($i + 1, $node->cloneAndMove($nextNode->x, $node->y + 1, $nextNode->z));
+						$this->path->replaceNode($i + 1, $node->cloneAndMove($nextNode->getX(), $node->getY() + 1, $nextNode->getZ()));
 					}
 				}
 			}
@@ -454,7 +454,7 @@ abstract class PathNavigation {
 		) {
 			/** @var Node $endNode */
 			$endNode = $this->path->getEndNode();
-			$targetPos = $endNode->asVector3()->addVector($this->mob->getPosition())->divide(2);
+			$targetPos = $endNode->addVector($this->mob->getPosition())->divide(2);
 
 			$updatedCenter = $updatedBlock->add(0.5, 0.5, 0.5);
 

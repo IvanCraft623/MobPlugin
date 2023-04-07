@@ -122,7 +122,7 @@ class GroundPathNavigation extends PathNavigation{
 
 			for($i = 0; $i < $this->path->getNodeCount(); ++$i) {
 				$node = $this->path->getNode($i);
-				if ($this->world->getRealBlockSkyLightAt($node->x, $node->y, $node->z) >= 15) {
+				if ($this->world->getRealBlockSkyLightAt($node->getX(), $node->getY(), $node->getZ()) >= 15) {
 					$this->path->truncateNodes($i);
 					return;
 				}

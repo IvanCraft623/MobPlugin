@@ -24,16 +24,19 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\pathfinder;
 
 use pocketmine\math\Vector3;
+use pocketmine\world\World;
 use function abs;
 use function sqrt;
 use const PHP_INT_MIN;
 
-class Node {
+/**
+ * @phpstan-import-type BlockPosHash from World
+ */
+class Node extends Vector3 {
 
-	public int $x;
-	public int $y;
-	public int $z;
-
+	/**
+	 * @phpstan-var BlockPosHash
+	 */
 	private int $hash;
 
 	public int $heapIdx = -1;
@@ -53,9 +56,8 @@ class Node {
 	public BlockPathTypes $type;
 
 	public function __construct(int $x, int $y, int $z) {
-		$this->x = $x;
-		$this->y = $y;
-		$this->z = $z;
+		parent::__construct($x, $y, $z);
+
 		$this->hash = self::createHash($x, $y, $z);
 		$this->type = BlockPathTypes::BLOCKED();
 	}
@@ -70,48 +72,32 @@ class Node {
 		return $newNode;
 	}
 
+	/**
+	 * @phpstan-return BlockPosHash
+	 */
 	public static function createHash(int $x, int $y, int $z) : int {
-		return $y & 0xFF | ($x & 32767) << 8 | ($z & 32767) << 24 | ($x < 0 ? PHP_INT_MIN : 0) | ($z < 0 ? 32768 : 0);
+		return World::blockHash($x, $y, $z);
 	}
 
-	public function getX() : int{
-		return $this->x;
+	/**
+	 * @phpstan-return int
+	 */
+	public function getX() : float|int{
+		return parent::getX();
 	}
 
-	public function getY() : int{
-		return $this->y;
+	/**
+	 * @phpstan-return int
+	 */
+	public function getY() : float|int{
+		return parent::getY();
 	}
 
-	public function getZ() : int{
-		return $this->z;
-	}
-
-	public function distanceTo(Node $node) : float {
-		return sqrt(($node->x - $this->x) ** 2 + ($node->y - $this->y) ** 2 + ($node->z - $this->z) ** 2);
-	}
-
-	public function distanceToXZ(Node $node) : float {
-		return sqrt(($node->x - $this->x) ** 2 + ($node->z - $this->z) ** 2);
-	}
-
-	public function distanceToPos(Vector3 $pos) : float {
-		return sqrt(($pos->x - $this->x) ** 2 + ($pos->y - $this->y) ** 2 + ($pos->z - $this->z) ** 2);
-	}
-
-	public function distanceToSqr(Node|Vector3 $target) : float {
-		return ($target->x - $this->x) ** 2 + ($target->y - $this->y) ** 2 + ($target->z - $this->z) ** 2;
-	}
-
-	public function distanceManhattan(Node|Vector3 $target) : float {
-		return abs($target->x - $this->x) + abs($target->y - $this->y) + abs($target->z - $this->z);
-	}
-
-	public function asVector3() : Vector3{
-		return new Vector3($this->x, $this->y, $this->z);
-	}
-
-	public function equals(Node $other) : bool{
-		return $this->hash === $other->hash;
+	/**
+	 * @phpstan-return int
+	 */
+	public function getZ() : float|int{
+		return parent::getZ();
 	}
 
 	public function hashCode() : int{
@@ -120,5 +106,9 @@ class Node {
 
 	public function inOpenSet() : bool{
 		return $this->heapIdx >= 0;
+	}
+
+	public function distanceManhattan(Vector3 $target) : float {
+		return abs($target->x - $this->x) + abs($target->y - $this->y) + abs($target->z - $this->z);
 	}
 }

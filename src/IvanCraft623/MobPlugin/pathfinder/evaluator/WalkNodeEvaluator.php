@@ -115,7 +115,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	protected function getStartNode(Vector3 $position) : Node{
 		$node = $this->getNode($position);
-		$node->type = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y, $node->z, $this->mob);
+		$node->type = $this->getBlockPathTypeWithMob($this->world, $node->getX(), $node->getY(), $node->getZ(), $this->mob);
 		$node->costMalus = $this->mob->getPathfindingMalus($node->type);
 
 		return $node;
@@ -132,15 +132,14 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		$nodes = [];
 		$maxUpStep = 0;
 
-		$pathType = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y, $node->z, $this->mob);
-		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->world, $node->x, $node->y + 1, $node->z, $this->mob);
+		$pathType = $this->getBlockPathTypeWithMob($this->world, $node->getX(), $node->getY(), $node->getZ(), $this->mob);
+		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->world, $node->getX(), $node->getY() + 1, $node->getZ(), $this->mob);
 
 		if ($this->mob->getPathfindingMalus($pathTypeAbove) >= 0 && !$pathType->equals(BlockPathTypes::STICKY_HONEY())) {
 			$maxUpStep = (int) floor(max(1, $this->mob->getMaxUpStep()));
 		}
 
-		$nodePos = $node->asVector3();
-		$floorLevel = $this->getFloorLevel($nodePos);
+		$floorLevel = $this->getFloorLevel($node);
 
 		/**
 		 * @var array<int, ?Node> $horizontalNeighbors face => node
@@ -371,9 +370,19 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	private function hasCollisions(AxisAlignedBB $bb) : bool{
-		return count($this->world->getCollisionBlocks($bb, true)) !== 0 ||
-			!$this->world->isInWorld((int) floor($bb->minX), (int) floor($bb->minY), (int) floor($bb->minZ)) ||
-			!$this->world->isInWorld((int) floor($bb->maxX), (int) floor($bb->maxY), (int) floor($bb->maxZ));
+		if (!$this->world->isInWorld((int) floor($bb->minX), (int) floor($bb->minY), (int) floor($bb->minZ)) ||
+			!$this->world->isInWorld((int) floor($bb->maxX), (int) floor($bb->maxY), (int) floor($bb->maxZ))
+		) {
+			return true;
+		}
+		
+		foreach ($this->world->getCollisionBlocks($bb) as $block) {
+			if ($block->isSolid()) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
