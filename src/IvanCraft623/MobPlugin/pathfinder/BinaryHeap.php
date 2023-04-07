@@ -32,6 +32,14 @@ class BinaryHeap {
 
 	private int $size = 0;
 
+	/**
+	 * Insert a new node into the binary heap.
+	 *
+	 * @param Node $node The node to insert.
+	 *
+	 * @return Node The inserted node.
+	 * @throws \InvalidArgumentException If the node is already in the heap.
+	 */
 	public function insert(Node $node) : Node {
 		if ($node->heapIdx >= 0) {
 			throw new \InvalidArgumentException("Invalid node");
@@ -43,14 +51,23 @@ class BinaryHeap {
 		}
 	}
 
+	/**
+	 * Clears the heap.
+	 */
 	public function clear() : void {
 		$this->size = 0;
 	}
 
+	/**
+	 * Returns the node at the top of the heap.
+	 */
 	public function peek() : Node {
 		return $this->heap[0];
 	}
 
+	/**
+	 * Returns and remove the node at the top of the heap.
+	 */
 	public function pop() : Node {
 		$topNode = $this->heap[0];
 		$this->heap[0] = $this->heap[--$this->size];
@@ -63,6 +80,9 @@ class BinaryHeap {
 		return $topNode;
 	}
 
+	/**
+	 * Remove a specific node from the heap.
+	 */
 	public function remove(Node $node) : void {
 		$this->heap[$node->heapIdx] = $this->heap[--$this->size];
 		unset($this->heap[$this->size]);
@@ -91,13 +111,16 @@ class BinaryHeap {
 		return $this->size;
 	}
 
+	/**
+	 * Moves a Node up the heap until it is in the correct position.
+	 */
 	private function upHeap(int $index) : void{
 		$node = $this->heap[$index];
 
 		while ($index > 0) {
 			$parentIndex = ($index - 1) >> 1;
 			$parent = $this->heap[$parentIndex];
-			if (!($node->f > $parent->f)) {
+			if (!($node->f < $parent->f)) {
 				break;
 			}
 
@@ -110,12 +133,15 @@ class BinaryHeap {
 		$node->heapIdx = $index;
 	}
 
+	/**
+	 * Moves a Node down the heap until it is in the correct position.
+	 */
 	private function downHeap(int $index) : void {
 		$node = $this->heap[$index];
 		$currentNodeCost = $node->f;
 
 		while (true) {
-			$left = 2 * $index + 1;
+			$left = ($index << 1) + 1;
 			$right = $left + 1;
 			if ($left >= $this->size) {
 				break;

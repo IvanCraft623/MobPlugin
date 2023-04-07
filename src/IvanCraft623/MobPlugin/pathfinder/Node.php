@@ -65,6 +65,7 @@ class Node {
 		$newNode->x = $x;
 		$newNode->y = $y;
 		$newNode->z = $z;
+		$newNode->hash = self::createHash($x, $y, $z);
 
 		return $newNode;
 	}

@@ -52,7 +52,6 @@ use function ceil;
 use function count;
 use function floor;
 use function max;
-use function spl_object_id;
 
 class WalkNodeEvaluator extends NodeEvaluator {
 

@@ -30,15 +30,13 @@ use pocketmine\world\World;
 
 use function array_map;
 use function array_reduce;
+use function array_reverse;
 use function count;
 use const INF;
 
 class PathFinder {
 
 	public const FUDGING = 1.5;
-
-	/** @var Node[] */
-	private array $neighbors = [];
 
 	private int $maxVisitedNodes;
 
@@ -52,8 +50,19 @@ class PathFinder {
 		$this->openSet = new BinaryHeap();
 	}
 
+	public function getNodeEvaluator() : NodeEvaluator{
+		return $this->nodeEvaluator;
+	}
+
 	/**
-	 * @param Vector3[] $targets
+	 * Attempts to find a path from the mob position to one of the specified targets.
+	 *
+	 * @param Vector3[] $targets              Targets to pathfind to.
+	 * @param float     $maxDistanceFromStart Maximum distance at which to search for a path.
+	 * @param int       $reachRange           Distance which the entity can interact with a node.
+	 * @param float     $maxDistanceFromStart Limiting factor of the nodes amount that can be visited.
+	 *
+	 * @return ?Path Resulting path, or null if no path could be found.
 	 */
 	public function findPath(World $world, Mob $mob, array $targets, float $maxDistanceFromStart, int $reachRange, float $maxVisitedNodesPercentage) : ?Path {
 		$this->openSet->clear();
@@ -72,6 +81,8 @@ class PathFinder {
 	}
 
 	/**
+	 * Attempts to find a path from the start node to one of the specified targets.
+	 *
 	 * @param Target[] $targets
 	 */
 	private function findPathRecursive(Node $startNode, array $targets, float $maxDistanceFromStart, int $reachRange, float $maxVisitedNodesPercentage) : ?Path {
@@ -87,7 +98,6 @@ class PathFinder {
 
 		/** @var Target[] $reachableTargets */
 		$reachableTargets = [];
-		$targetCount = count($targets);
 
 		while (!$this->openSet->isEmpty()) {
 			if (++$visitedNodes >= $maxVisitedNodes) {
@@ -190,6 +200,6 @@ class PathFinder {
 			$nodes[] = $from;
 		}
 
-		return new Path($nodes, $target, $reached);
+		return new Path(array_reverse($nodes), $target, $reached);
 	}
 }

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\utils;
 
 use pocketmine\utils\EnumTrait;
+use function class_uses;
 
 /**
  * A hacky class to support EnumSet with sorted elements
@@ -41,9 +42,7 @@ final class EnumSet implements \IteratorAggregate{
 	 */
 	private array $elements = [];
 
-	/**
-	 * @var array<int, T>
-	 */
+	/** @var array<int, T> */
 	private array $allElements = [];
 
 	/**
@@ -54,7 +53,7 @@ final class EnumSet implements \IteratorAggregate{
 			throw new \InvalidArgumentException("$enumClass doen't uses EnumTrait");
 		}
 
-		foreach ($enumClass::getAll() as $element) {
+		foreach ($enumClass::getAll() as $element) { // @phpstan-ignore-line
 			$this->elements[$element->id()] = false; // @phpstan-ignore-line
 			$this->allElements[$element->id()] = $element; // @phpstan-ignore-line
 		}
