@@ -79,25 +79,16 @@ class Node extends Vector3 {
 		return World::blockHash($x, $y, $z);
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getX() : float|int{
-		return parent::getX();
+	public function x() : int{
+		return (int) $this->x;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getY() : float|int{
-		return parent::getY();
+	public function y() : int{
+		return (int) $this->y;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getZ() : float|int{
-		return parent::getZ();
+	public function z() : int{
+		return (int) $this->z;
 	}
 
 	public function hashCode() : int{

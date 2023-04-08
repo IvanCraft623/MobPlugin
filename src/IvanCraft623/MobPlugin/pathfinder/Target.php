@@ -37,7 +37,7 @@ class Target extends Node {
 	 * @return Target
 	 */
 	public static function fromObject(Node $node){
-		return new Target($node->getX(), $node->getY(), $node->getZ());
+		return new Target($node->x(), $node->y(), $node->z());
 	}
 
 	public function updateBest(float $heuristic, Node $node) : void{

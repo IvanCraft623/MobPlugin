@@ -115,7 +115,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	protected function getStartNode(Vector3 $position) : Node{
 		$node = $this->getNode($position);
-		$node->type = $this->getBlockPathTypeWithMob($this->world, $node->getX(), $node->getY(), $node->getZ(), $this->mob);
+		$node->type = $this->getBlockPathTypeWithMob($this->world, $node->x(), $node->y(), $node->z(), $this->mob);
 		$node->costMalus = $this->mob->getPathfindingMalus($node->type);
 
 		return $node;
@@ -132,8 +132,8 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		$nodes = [];
 		$maxUpStep = 0;
 
-		$pathType = $this->getBlockPathTypeWithMob($this->world, $node->getX(), $node->getY(), $node->getZ(), $this->mob);
-		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->world, $node->getX(), $node->getY() + 1, $node->getZ(), $this->mob);
+		$pathType = $this->getBlockPathTypeWithMob($this->world, $node->x(), $node->y(), $node->z(), $this->mob);
+		$pathTypeAbove = $this->getBlockPathTypeWithMob($this->world, $node->x(), $node->y() + 1, $node->z(), $this->mob);
 
 		if ($this->mob->getPathfindingMalus($pathTypeAbove) >= 0 && !$pathType->equals(BlockPathTypes::STICKY_HONEY())) {
 			$maxUpStep = (int) floor(max(1, $this->mob->getMaxUpStep()));
