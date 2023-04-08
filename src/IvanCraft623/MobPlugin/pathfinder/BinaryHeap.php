@@ -41,8 +41,8 @@ class BinaryHeap {
 	 * @throws \InvalidArgumentException If the node is already in the heap.
 	 */
 	public function insert(Node $node) : Node {
-		if ($node->heapIdx >= 0) {
-			throw new \InvalidArgumentException("Invalid node");
+		if ($node->inOpenSet()) {
+			throw new \InvalidArgumentException("Node is already in the heap");
 		} else {
 			$this->heap[$this->size] = $node;
 			$node->heapIdx = $this->size;

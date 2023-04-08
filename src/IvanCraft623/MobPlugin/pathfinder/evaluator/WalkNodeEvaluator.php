@@ -126,7 +126,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	/**
-	 * @return Node[] $nodes
+	 * @return Node[]
 	 */
 	public function getNeighbors(Node $node) : array{
 		$nodes = [];
@@ -140,6 +140,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		}
 
 		$floorLevel = $this->getFloorLevel($node);
+		var_dump($floorLevel);
 
 		/**
 		 * @var array<int, ?Node> $horizontalNeighbors face => node
@@ -194,8 +195,8 @@ class WalkNodeEvaluator extends NodeEvaluator {
 				$neighbor2->type->equals(BlockPathTypes::FENCE()) &&
 				$this->mob->getSize()->getWidth() < 0.5;
 			return $diagonal->costMalus >= 0 &&
-				($neighbor1->y < $node->y || $neighbor1->costMalus >= 0. || $isFence) &&
-				($neighbor2->y < $node->y || $neighbor2->costMalus >= 0. || $isFence);
+				($neighbor1->y < $node->y || $neighbor1->costMalus >= 0 || $isFence) &&
+				($neighbor2->y < $node->y || $neighbor2->costMalus >= 0 || $isFence);
 		}
 		return false;
 	}
@@ -238,14 +239,14 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		$down = $pos->down();
 		$traceResult = $world->getBlock($down)->calculateIntercept($pos, $down);
 
-		return $down->getY() + ($traceResult === null ? 0 : $traceResult->getHitVector()->getY());
+		return $traceResult === null ? $down->getY() : $traceResult->getHitVector()->getY();
 	}
 
 	protected function isAmphibious() : bool{
 		return false;
 	}
 
-	public function findAcceptedNode(int $x, int $y, int $z, int $targetY, float $floorLevel, int $facing, BlockPathTypes $preferredPathType) : ?Node{
+	public function findAcceptedNode(int $x, int $y, int $z, int $remainingJumpHeight, float $floorLevel, int $facing, BlockPathTypes $originPathType) : ?Node{
 		$resultNode = null;
 		$pos = new Vector3($x, $y, $z);
 
@@ -260,7 +261,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			$resultNode = $this->getNodeAndUpdateCostToMax($x, $y, $z, $currentPathType, $malus);
 		}
 
-		if (static::doesBlockHavePartialCollision($preferredPathType) &&
+		if (static::doesBlockHavePartialCollision($originPathType) &&
 			$resultNode !== null && $resultNode->costMalus >= 0 &&
 			!$this->canReachWithoutCollision($resultNode)
 		) {
@@ -269,13 +270,13 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 		if (!$currentPathType->equals(BlockPathTypes::WALKABLE()) && (!$this->isAmphibious() || !$currentPathType->equals(BlockPathTypes::WATER()))) {
 			if (($resultNode === null || $resultNode->costMalus < 0) &&
-				$targetY > 0 &&
+				$remainingJumpHeight > 0 &&
 				(!$currentPathType->equals(BlockPathTypes::FENCE()) || $this->canWalkOverFences()) &&
 				!$currentPathType->equals(BlockPathTypes::UNPASSABLE_RAIL()) &&
 				!$currentPathType->equals(BlockPathTypes::TRAPDOOR()) &&
 				!$currentPathType->equals(BlockPathTypes::POWDER_SNOW())
 			) {
-				$resultNode = $this->findAcceptedNode($x, $y + 1, $z, $targetY - 1, $floorLevel, $facing, $preferredPathType);
+				$resultNode = $this->findAcceptedNode($x, $y + 1, $z, $remainingJumpHeight - 1, $floorLevel, $facing, $originPathType);
 				$width = $this->mob->getSize()->getWidth();
 				if ($resultNode !== null &&
 					($resultNode->type->equals(BlockPathTypes::OPEN()) || $resultNode->type->equals(BlockPathTypes::WALKABLE())) &&

@@ -90,7 +90,7 @@ abstract class NodeEvaluator {
 	}
 
 	/**
-	 * @return Node[] $nodes
+	 * @return Node[]
 	 */
 	public abstract function getNeighbors(Node $node) : array;
 
