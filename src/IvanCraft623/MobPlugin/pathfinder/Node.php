@@ -80,21 +80,21 @@ class Node extends Vector3 {
 	}
 
 	/**
-	 * @phpstan-return int
+	 * @return int
 	 */
 	public function getX() : float|int{
 		return parent::getX();
 	}
 
 	/**
-	 * @phpstan-return int
+	 * @return int
 	 */
 	public function getY() : float|int{
 		return parent::getY();
 	}
 
 	/**
-	 * @phpstan-return int
+	 * @return int
 	 */
 	public function getZ() : float|int{
 		return parent::getZ();

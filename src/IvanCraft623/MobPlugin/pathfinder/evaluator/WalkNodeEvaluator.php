@@ -146,7 +146,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		 */
 		$horizontalNeighbors = [];
 		foreach (Facing::HORIZONTAL as $side) {
-			$neighborPos = $nodePos->getSide($side);
+			$neighborPos = $node->getSide($side);
 			$neighborNode = $this->findAcceptedNode((int) $neighborPos->x, (int) $neighborPos->y, (int) $neighborPos->z, $maxUpStep, $floorLevel, $side, $pathType);
 
 			$horizontalNeighbors[$side] = $neighborNode;
@@ -157,7 +157,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 		// Iterate diagonals
 		foreach ([Facing::NORTH, Facing::SOUTH] as $zFace) {
-			$zFacePos = $nodePos->getSide($zFace);
+			$zFacePos = $node->getSide($zFace);
 			foreach ([Facing::WEST, Facing::EAST] as $xFace) {
 				$diagonalPos = $zFacePos->getSide($xFace);
 				$diagonalNode = $this->findAcceptedNode((int) $diagonalPos->x, (int) $diagonalPos->y, (int) $diagonalPos->z, $maxUpStep, $floorLevel, $zFace, $pathType);
