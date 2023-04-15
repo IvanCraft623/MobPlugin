@@ -23,57 +23,27 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use function ceil;
+use IvanCraft623\MobPlugin\entity\Mob;
+use pocketmine\block\VanillaBlocks;
 
-abstract class Goal {
+class FloatGoal extends Goal {
 
-	public const FLAG_MOVE = 0;
-	public const FLAG_LOOK = 1;
-	public const FLAG_JUMP = 2;
-	public const FLAG_TARGET = 3;
-
-	/** @var int[] */
-	protected array $flags = [];
-
-	abstract public function canUse() : bool;
-
-	public function canContinueToUse() : bool{
-		return $this->canUse();
+	public function __construct(protected Mob $mob) {
+		$this->setFlags(Goal::FLAG_JUMP);
+		$mob->getNavigation()->setCanFloat();
 	}
 
-	public function isInterruptable() : bool{
-		return false;
-	}
-
-	public function start() : void{
-	}
-
-	public function stop() : void{
+	public function canUse() : bool{
+		return $this->mob->getImmersionPercentage(VanillaBlocks::WATER()) > $this->mob->getFluidJumpThreshold() || $this->mob->isInLava();
 	}
 
 	public function requiresUpdateEveryTick() : bool{
-		return false;
+		return true;
 	}
 
 	public function tick() : void{
-	}
-
-	/**
-	 * @return int[]
-	 */
-	public function getFlags() : array{
-		return $this->flags;
-	}
-
-	public function setFlags(int ...$flags) : void{
-		$this->flags = $flags;
-	}
-
-	public function adjustedTickDelay(int $ticks) : int{
-		return $this->requiresUpdateEveryTick() ? $ticks : $this->reducedTickDelay($ticks);
-	}
-
-	public function reducedTickDelay(int $ticks) : int{
-		return (int) ceil($ticks / 2);
+		if ($this->mob->getRandom()->nextFloat() < 0.8) {
+			$this->mob->getJumpControl()->jump();
+		}
 	}
 }

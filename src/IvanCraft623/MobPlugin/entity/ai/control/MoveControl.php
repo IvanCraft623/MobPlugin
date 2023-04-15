@@ -38,7 +38,7 @@ use function sin;
 use function sqrt;
 use const M_PI;
 
-class MoveControl {
+class MoveControl implements Control {
 
 	public const OPERATION_WAIT = 0;
 	public const OPERATION_MOVE_TO = 1;

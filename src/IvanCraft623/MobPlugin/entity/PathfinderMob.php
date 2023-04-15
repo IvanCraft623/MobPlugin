@@ -23,11 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
-use pocketmine\entity\Attribute;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\ChunkSelector;
-use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\ChunkListener;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
@@ -50,8 +48,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		parent::initEntity($nbt);
 
 		$this->chunkSelector = new ChunkSelector();
-		$followRange = $this->getAttributeMap()->get(Attribute::FOLLOW_RANGE)?->getValue() ?? throw new AssumptionFailedError("Follow range attribute is null");
-		$this->viewDistance = $followRange >> Chunk::COORD_BIT_SIZE;
+		$this->viewDistance = $this->getFollowRange() >> Chunk::COORD_BIT_SIZE;
 	}
 
 	protected function orderChunks() : void{
@@ -91,8 +88,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
 		$currentChunk = World::chunkHash($this->location->getFloorX() >> Chunk::COORD_BIT_SIZE, $this->location->getFloorZ() >> Chunk::COORD_BIT_SIZE);
-		$followRange = $this->getAttributeMap()->get(Attribute::FOLLOW_RANGE)?->getValue() ?? throw new AssumptionFailedError("Follow range attribute is null");
-		$currentViewDistance = $followRange >> Chunk::COORD_BIT_SIZE;
+		$currentViewDistance = $this->getFollowRange() >> Chunk::COORD_BIT_SIZE;
 
 		if ($this->viewAreaCenterPoint === -1 ||
 			$currentChunk !== $this->viewAreaCenterPoint ||

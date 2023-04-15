@@ -49,7 +49,6 @@ use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
 use function ceil;
-use function count;
 use function floor;
 use function max;
 
@@ -140,7 +139,6 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		}
 
 		$floorLevel = $this->getFloorLevel($node);
-		var_dump($floorLevel);
 
 		/**
 		 * @var array<int, ?Node> $horizontalNeighbors face => node
@@ -376,7 +374,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 		) {
 			return true;
 		}
-		
+
 		foreach ($this->world->getCollisionBlocks($bb) as $block) {
 			if ($block->isSolid()) {
 				return true;

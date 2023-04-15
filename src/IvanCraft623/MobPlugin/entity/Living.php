@@ -28,9 +28,11 @@ use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 
 use pocketmine\block\Liquid;
-use pocketmine\block\Water;
+use pocketmine\block\VanillaBlocks;
+use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\enchantment\VanillaEnchantments;
@@ -48,6 +50,8 @@ use function array_filter;
 use function array_key_exists;
 use function array_merge;
 use function array_values;
+use function floor;
+use function min;
 
 abstract class Living extends PMLiving {
 	//TODO!
@@ -59,6 +63,8 @@ abstract class Living extends PMLiving {
 	protected float $speed;
 
 	protected float $maxUpStep = 0.6;
+
+	protected int $noActionTime = 0; //TODO: logic
 
 	protected MobInventory $inventory;
 
@@ -178,15 +184,47 @@ abstract class Living extends PMLiving {
 		return true;
 	}
 
-	public function isTouchingWater() : bool{
-		foreach ($this->getWorld()->getCollisionBlocks($this->getBoundingBox()) as $block) {
-			if ($block instanceof Water) {
-				//TODO: waterlogging check and do not trigger with powder snow
-				return true;
+	public function jump() : void{
+		$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity(), null);
+	}
+
+	public function getJumpVelocity() : float{
+		if (!$this->onGround) {
+			return $this->jumpVelocity;
+		}
+		return $this->jumpVelocity + ((($jumpBoost = $this->effectManager->get(VanillaEffects::JUMP_BOOST())) !== null ? $jumpBoost->getEffectLevel() : 0) / 10);
+	}
+
+	public function isInWater() : bool{
+		return $this->getImmersionPercentage(VanillaBlocks::WATER()) > 0;
+	}
+
+	public function isInLava() : bool{
+		return $this->getImmersionPercentage(VanillaBlocks::LAVA()) > 0;
+	}
+
+	/**
+	 * Returns the immersion percentage in the specified liquid.
+	 *
+	 * @return float 0-1
+	 */
+	public function getImmersionPercentage(Liquid $liquid) : float{
+		$entityHeight = $this->getSize()->getHeight();
+		$floorX = (int) floor($this->location->x);
+		$floorY = (int) floor($this->location->y);
+		$floorZ = (int) floor($this->location->z);
+		for ($y = (int) floor($this->location->y + $entityHeight); $y >= $floorY; $y--) {
+			$block = $this->getWorld()->getBlockAt($floorX, $y, $floorZ);
+			if ($block instanceof $liquid) {
+				$liquidHeigh = ($y + 1) - ($block->getFluidHeightPercent() - 0.1111111);
+				return min(1, ($liquidHeigh - $this->location->y) / $entityHeight);
 			}
 		}
+		return 0;
+	}
 
-		return false;
+	public function getFluidJumpThreshold() : float{
+		return $this->getEyeHeight() < 0.4 ? 0 : 0.4;
 	}
 
 	public function canStandOnFluid(Liquid $liquid) : bool{
@@ -195,6 +233,14 @@ abstract class Living extends PMLiving {
 
 	public function getMaxFallDistance() : int{
 		return 3;
+	}
+
+	public function getNoActionTime() : int{
+		return $this->noActionTime;
+	}
+
+	public function setNoActionTime(int $time) : void{
+		$this->noActionTime = $time;
 	}
 
 	public function getDrops() : array {
@@ -227,6 +273,14 @@ abstract class Living extends PMLiving {
 			}
 
 			return $nbt;
+		}
+	}
+
+	public function attack(EntityDamageEvent $source) : void{
+		parent::attack($source);
+
+		if (!$source->isCancelled()) {
+			$this->noActionTime = 0;
 		}
 	}
 }

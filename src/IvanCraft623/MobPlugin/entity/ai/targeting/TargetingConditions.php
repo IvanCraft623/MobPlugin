@@ -23,31 +23,60 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
+use Closure;
 use IvanCraft623\MobPlugin\entity\Living;
-use IvanCraft623\MobPlugin\entity\Mob;
 
+use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\player\Player;
 use function max;
 
 class TargetingConditions {
 
-	public float $range = -1;
+	/**
+	 * @phpstan-param null|Closure(PMLiving) : bool $validator
+	 */
+	public function __construct(
+		protected float $range = -1,
+		protected bool $allowInvulnerable = false,
+		protected bool $allowUnseeable = false,
+		protected bool $allowNonAttackable = false,
+		protected bool $testInvisible = false,
+		protected ?Closure $validator = null
+	) {
+	}
 
-	public bool $allowInvulnerable;
-
-	public bool $allowUnseeable;
-
-	public bool $allowNonAttackable;
-
-	public bool $testInvisible = true;
-
-	public function __construct(float $range, bool $allowInvulnerable, bool $allowUnseeable, bool $allowNonAttackable, bool $testInvisible) {
+	public function setRange(float $range) : self{
 		$this->range = $range;
-		$this->allowInvulnerable = $allowInvulnerable;
-		$this->allowUnseeable = $allowUnseeable;
-		$this->allowNonAttackable = $allowNonAttackable;
-		$this->testInvisible = $testInvisible;
+		return $this;
+	}
+
+	/**
+	 * @phpstan-param null|Closure(PMLiving) : bool $validator
+	 */
+	public function setValidator(?Closure $validator) : self{
+		$this->validator = $validator;
+		return $this;
+	}
+
+	public function allowInvulnerable(bool $value = true) : self{
+		$this->allowInvulnerable = $value;
+		return $this;
+	}
+
+	public function allowUnseeable(bool $value = true) : self{
+		$this->allowUnseeable = $value;
+		return $this;
+	}
+
+	public function allowNonAttackable(bool $value = true) : self{
+		$this->allowNonAttackable = $value;
+		return $this;
+	}
+
+	public function testInvisible(bool $value = true) : self{
+		$this->testInvisible = $value;
+		return $this;
 	}
 
 	public function test(?PMLiving $entity, PMLiving $target) : bool {
@@ -61,6 +90,9 @@ class TargetingConditions {
 			return false;
 		}
 		if (!$this->allowInvulnerable && ($target instanceof Player && $target->isCreative())) {
+			return false;
+		}
+		if ($this->validator !== null && !($this->validator)($target)) {
 			return false;
 		}
 		if ($entity !== null) {

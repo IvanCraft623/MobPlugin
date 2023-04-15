@@ -54,4 +54,12 @@ class MobInventory extends SimpleInventory {
 	public function getOffHand() : Item {
 		return $this->getItem(self::SLOT_OFFHAND);
 	}
+
+	public function getItemInHand() : Item{
+		return $this->getMainHand();
+	}
+
+	public function setItemInHand(Item $item) : void{
+		$this->setItem(self::SLOT_MAIN_HAND, $item);
+	}
 }

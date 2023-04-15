@@ -73,10 +73,7 @@ class WrappedGoal extends Goal {
 		return $this->goal->getFlags();
 	}
 
-	/**
-	 * @param int[] $flags
-	 */
-	public function setFlags(array $flags) : void{
+	public function setFlags(int ...$flags) : void{
 		$this->goal->setFlags($flags);
 	}
 

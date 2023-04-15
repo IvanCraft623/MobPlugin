@@ -32,7 +32,7 @@ use function atan2;
 use function sqrt;
 use const M_PI;
 
-class LookControl {
+class LookControl implements Control {
 
 	protected Mob $mob;
 

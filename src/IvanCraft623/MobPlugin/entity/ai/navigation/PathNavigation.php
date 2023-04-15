@@ -34,11 +34,9 @@ use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\Liquid;
-use pocketmine\entity\Attribute;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
-use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\World;
 use function abs;
 use function count;
@@ -56,7 +54,7 @@ abstract class PathNavigation {
 
 	protected World $world;
 
-	protected ?Path $path;
+	protected ?Path $path = null;
 
 	protected float $speedModifier;
 
@@ -82,7 +80,7 @@ abstract class PathNavigation {
 
 	protected NodeEvaluator $nodeEvaluator;
 
-	protected ?Vector3 $targetPosition;
+	protected ?Vector3 $targetPosition = null;
 
 	protected int $reachRange;
 
@@ -95,10 +93,8 @@ abstract class PathNavigation {
 	public function __construct(Mob $mob, World $world) {
 		$this->mob = $mob;
 		$this->world = $world;
-
-		$followRange = $this->mob->getAttributeMap()->get(Attribute::FOLLOW_RANGE)?->getValue() ?? throw new AssumptionFailedError("Follow range attribute is null");
 		;
-		$this->pathfinder = $this->createPathFinder((int) floor($followRange * 16));
+		$this->pathfinder = $this->createPathFinder((int) floor($this->mob->getFollowRange() * 16));
 	}
 
 	public function resetMaxVisitedNodesMultiplier() : void{
@@ -113,7 +109,7 @@ abstract class PathNavigation {
 		return $this->targetPosition;
 	}
 
-	protected abstract function createPathFinder(int $maxVisitedNodes) : PathFinder;
+	protected abstract function createPathFinder(int $reach) : PathFinder;
 
 	public function setSpeedModifier(float $speed) : void{
 		$this->speedModifier = $speed;
@@ -123,7 +119,7 @@ abstract class PathNavigation {
 		if (($time = $this->world->getServer()->getTick()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
 			if ($this->targetPosition !== null) {
 				$this->path = null;
-				$this->path = $this->createPathFromPosition($this->targetPosition, $this->reachRange);
+				$this->path = $this->createPathToPosition($this->targetPosition, $this->reachRange);
 				$this->timeLastRecompute = $time;
 				$this->hasDelayedRecomputation = false;
 			}
@@ -132,22 +128,22 @@ abstract class PathNavigation {
 		}
 	}
 
-	public function createPathFromXYZ(float $x, float $y, float $z, int $maxVisitedNodes, ?float $range = null) : ?Path{
-		return $this->createPathFromPosition(new Vector3($x, $y, $z), $maxVisitedNodes, $range);
+	public function createPathToXYZ(float $x, float $y, float $z, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
+		return $this->createPathToPosition(new Vector3($x, $y, $z), $reach, $maxDistanceFromStart);
 	}
 
-	public function createPathFromEntity(Entity $target, int $maxVisitedNodes, ?float $range = null) : ?Path{
-		return $this->createPathFromPosition($target->getPosition(), $maxVisitedNodes, $range);
+	public function createPathToEntity(Entity $target, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
+		return $this->createPathToPosition($target->getPosition(), $reach, $maxDistanceFromStart);
 	}
 
-	public function createPathFromPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
-		return $this->createPath([$position->floor()], $maxVisitedNodes, $range);
+	public function createPathToPosition(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
+		return $this->createPath([$position->floor()], $reach, $maxDistanceFromStart);
 	}
 
 	/**
 	 * @param Vector3[] $positions
 	 */
-	public function createPath(array $positions, int $maxVisitedNodes, ?float $range = null) : ?Path{
+	public function createPath(array $positions, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
 		if (count($positions) === 0) {
 			return null;
 		}
@@ -161,12 +157,12 @@ abstract class PathNavigation {
 			return $this->path;
 		}
 
-		$range = $range ?? $this->mob->getAttributeMap()->get(Attribute::FOLLOW_RANGE)?->getValue() ?? throw new AssumptionFailedError("Follow range attribute is null");
-		$path = $this->pathfinder->findPath($this->world, $this->mob, $positions, $range, $maxVisitedNodes, $this->maxVisitedNodesMultiplier);
+		$maxDistanceFromStart = $maxDistanceFromStart ?? $this->mob->getFollowRange();
+		$path = $this->pathfinder->findPath($this->world, $this->mob, $positions, $maxDistanceFromStart, $reach, $this->maxVisitedNodesMultiplier);
 
 		if ($path !== null && ($target = $path->getTarget()) !== null) {
 			$this->targetPosition = $target;
-			$this->reachRange = $maxVisitedNodes;
+			$this->reachRange = $reach;
 			$this->resetStuckTimeout();
 		}
 
@@ -174,11 +170,11 @@ abstract class PathNavigation {
 	}
 
 	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier) : bool{
-		return $this->moveToPath($this->createPathFromXYZ($x, $y, $z, 1), $speedModifier);
+		return $this->moveToPath($this->createPathToXYZ($x, $y, $z, 1), $speedModifier);
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier) : bool{
-		$path = $this->createPathFromEntity($target, 1);
+		$path = $this->createPathToEntity($target, 1);
 		return $path !== null && $this->moveToPath($path, $speedModifier);
 	}
 

@@ -32,6 +32,7 @@ use pocketmine\block\Slab;
 use pocketmine\block\Water;
 use pocketmine\item\Bow;
 use pocketmine\item\Releasable;
+use function fmod;
 use function max;
 use function method_exists;
 use function min;
@@ -43,7 +44,7 @@ class Utils {
 	}
 
 	public static function wrapDegrees(float $degrees) : float {
-		$result = $degrees % 360;
+		$result = fmod($degrees, 360);
 		if ($result >= 180) {
 			$result -= 360;
 		}

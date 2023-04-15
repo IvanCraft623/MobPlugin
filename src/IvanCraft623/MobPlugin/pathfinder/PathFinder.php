@@ -57,10 +57,10 @@ class PathFinder {
 	/**
 	 * Attempts to find a path from the mob position to one of the specified targets.
 	 *
-	 * @param Vector3[] $targets              Targets to pathfind to.
-	 * @param float     $maxDistanceFromStart Maximum distance at which to search for a path.
-	 * @param int       $reachRange           Distance which the entity can interact with a node.
-	 * @param float     $maxDistanceFromStart Limiting factor of the nodes amount that can be visited.
+	 * @param Vector3[] $targets                   Targets to pathfind to.
+	 * @param float     $maxDistanceFromStart      Maximum distance at which to search for a path.
+	 * @param int       $reachRange                Distance which the entity can interact with a node.
+	 * @param float     $maxVisitedNodesPercentage Limiting factor of the nodes amount that can be visited.
 	 *
 	 * @return ?Path Resulting path, or null if no path could be found.
 	 */

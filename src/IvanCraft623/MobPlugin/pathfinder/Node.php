@@ -26,17 +26,13 @@ namespace IvanCraft623\MobPlugin\pathfinder;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
 use function abs;
-use function sqrt;
-use const PHP_INT_MIN;
 
 /**
  * @phpstan-import-type BlockPosHash from World
  */
 class Node extends Vector3 {
 
-	/**
-	 * @phpstan-var BlockPosHash
-	 */
+	/** @phpstan-var BlockPosHash */
 	private int $hash;
 
 	public int $heapIdx = -1;

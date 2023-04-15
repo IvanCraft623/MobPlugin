@@ -23,9 +23,25 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
+use IvanCraft623\MobPlugin\entity\CustomAttributes;
+use IvanCraft623\MobPlugin\entity\monster\Endermite;
+
+use pocketmine\data\bedrock\EntityLegacyIds as LegacyIds;
+use pocketmine\entity\AttributeFactory;
+use pocketmine\entity\Entity;
+use pocketmine\entity\EntityDataHelper as Helper;
+use pocketmine\entity\EntityFactory;
+use pocketmine\entity\Location;
+use pocketmine\item\ItemFactory;
+use pocketmine\item\ItemIdentifier as IID;
+use pocketmine\item\ItemIds as Ids;
+use pocketmine\item\SpawnEgg;
+use pocketmine\math\Vector3;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
+use pocketmine\world\World;
 use function mt_rand;
 
 class MobPlugin extends PluginBase {
@@ -38,7 +54,9 @@ class MobPlugin extends PluginBase {
 	}
 
 	public function onEnable() : void {
-		# Nothing >:D
+		$this->registerAttributes();
+		$this->registerEntities();
+		$this->registerSpawnEggs();
 	}
 
 	public function getRandom() : Random {
@@ -46,5 +64,29 @@ class MobPlugin extends PluginBase {
 			$this->random = new Random(mt_rand());
 		}
 		return $this->random;
+	}
+
+	private function registerAttributes() : void{
+		$factory = AttributeFactory::getInstance();
+
+		$factory->register(CustomAttributes::ATTACK_KNOCKBACK, 0.00, 340282346638528859811704183484516925440.00, 0.4, false);
+	}
+
+	private function registerEntities() : void{
+		$factory = EntityFactory::getInstance();
+
+		$factory->register(Endermite::class, function(World $world, CompoundTag $nbt) : Endermite{
+			return new Endermite(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:endermite', 'Endermite'], LegacyIds::ENDERMITE);
+	}
+
+	private function registerSpawnEggs() : void{
+		$factory = ItemFactory::getInstance();
+
+		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::ENDERMITE), "Endermite Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return new Endermite(Location::fromObject($pos, $world, $yaw, $pitch));
+			}
+		});
 	}
 }

@@ -21,28 +21,32 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity\ai\control;
+namespace IvanCraft623\MobPlugin\entity;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use pocketmine\utils\EnumTrait;
 
-class JumpControl implements Control {
+/**
+ * This doc-block is generated automatically, do not modify it manually.
+ * This must be regenerated whenever registry members are added, removed or changed.
+ * @see build/generate-registry-annotations.php
+ * @generate-registry-docblock
+ *
+ * @method static MobType ARTHROPOD()
+ * @method static MobType ILLAGER()
+ * @method static MobType UNDEAD()
+ * @method static MobType UNDEFINED()
+ * @method static MobType WATER()
+ */
+final class MobType {
+	use EnumTrait;
 
-	protected Mob $mob;
-
-	protected bool $jump = false;
-
-	public function __construct(Mob $mob) {
-		$this->mob = $mob;
-	}
-
-	public function jump() : void {
-		$this->jump = true;
-	}
-
-	public function tick() : void {
-		if ($this->jump) {
-			$this->mob->jump();
-		}
-		$this->jump = false;
+	protected static function setup() : void{
+		self::registerAll(
+			new self("undefined"),
+			new self("undead"),
+			new self("arthropod"),
+			new self("illager"),
+			new self("water")
+		);
 	}
 }

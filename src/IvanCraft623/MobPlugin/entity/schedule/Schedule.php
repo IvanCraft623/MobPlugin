@@ -65,7 +65,7 @@ final class Schedule {
 		$empty = (new ScheduleBuilder(new Schedule()))->changeActivityAt(0, Activity::IDLE())->build();
 		self::register("empty", $empty);
 		$simple = (new ScheduleBuilder(new Schedule()))->changeActivityAt(5000, Activity::WORK())->changeActivityAt(11000, Activity::REST())->build();
-		self::register("simple", $empty);
+		self::register("simple", $simple);
 		$villager_baby = (new ScheduleBuilder(new Schedule()))->changeActivityAt(3000, Activity::PLAY())->changeActivityAt(6000, Activity::IDLE())->changeActivityAt(10000, Activity::PLAY())->changeActivityAt(12000, Activity::REST())->build();
 		self::register("villager_baby", $villager_baby);
 		$villager_default = (new ScheduleBuilder(new Schedule()))->changeActivityAt(10, Activity::IDLE())->changeActivityAt(2000, Activity::WORK())->changeActivityAt(9000, Activity::MEET())->changeActivityAt(11000, Activity::IDLE())->changeActivityAt(12000, Activity::REST())->build();

@@ -55,7 +55,7 @@ class GroundPathNavigation extends PathNavigation{
 		return new Vector3($mobPosition->getX(), $this->getSurfaceY(), $mobPosition->getZ());
 	}
 
-	public function createPathFromPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
+	public function createPathToPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
 		if ($this->world->getBlock($position)->getId() === BlockLegacyIds::AIR) {
 			$currentPos = $position->down();
 
@@ -64,7 +64,7 @@ class GroundPathNavigation extends PathNavigation{
 			}
 
 			if ($currentPos->getY() > World::Y_MIN) {
-				return parent::createPathFromPosition($currentPos->up(), $maxVisitedNodes, $range);
+				return parent::createPathToPosition($currentPos->up(), $maxVisitedNodes, $range);
 			}
 
 			while($currentPos->getY() < World::Y_MAX && $this->world->getBlock($currentPos)->getId() === BlockLegacyIds::AIR) {
@@ -75,7 +75,7 @@ class GroundPathNavigation extends PathNavigation{
 		}
 
 		if (!$this->world->getBlock($position)->isSolid()) {
-			return parent::createPathFromPosition($position, $maxVisitedNodes, $range);
+			return parent::createPathToPosition($position, $maxVisitedNodes, $range);
 		}
 
 		$currentPos = $position->up();
@@ -84,12 +84,12 @@ class GroundPathNavigation extends PathNavigation{
 			$currentPos = $currentPos->up();
 		}
 
-		return parent::createPathFromPosition($currentPos, $maxVisitedNodes, $range);
+		return parent::createPathToPosition($currentPos, $maxVisitedNodes, $range);
 	}
 
 	public function getSurfaceY() : int{
 		$mobPos = $this->mob->getPosition();
-		if ($this->mob->isTouchingWater() && $this->canFloat()) {
+		if ($this->mob->isInWater() && $this->canFloat()) {
 			$y = (int) $mobPos->getY();
 			$block = $this->world->getBlock($mobPos);
 			$distDiff = 0;
