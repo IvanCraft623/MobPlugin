@@ -74,7 +74,7 @@ class WrappedGoal extends Goal {
 	}
 
 	public function setFlags(int ...$flags) : void{
-		$this->goal->setFlags($flags);
+		$this->goal->setFlags(...$flags);
 	}
 
 	public function requiresUpdateEveryTick() : bool{

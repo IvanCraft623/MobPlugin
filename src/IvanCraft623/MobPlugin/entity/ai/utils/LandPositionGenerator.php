@@ -66,15 +66,15 @@ class LandPositionGenerator {
 
 	/**
 	 * @param PathfinderMob $entity     The entity to generate the random position for.
-	 * @param float         $directionX the x component of the direction towards which the position is generated
-	 * @param float         $directionZ the z component of the direction towards which the position is generated
+	 * @param int           $directionX the x component of the direction towards which the position is generated
+	 * @param int           $directionZ the z component of the direction towards which the position is generated
 	 * @param Vector3       $targetPos  The position to move towards.
 	 *
 	 * Returns a random position within the specified horizontal and vertical range for the given entity, in the
 	 * direction of the specified target position.
 	 */
 	public static function getPosTowards(PathfinderMob $entity, int $directionX, int $directionZ, Vector3 $targetPos) : ?Vector3{
-		return static::getPosInDirection($entity, $directionX, $directionZ,
+		return self::getPosInDirection($entity, $directionX, $directionZ,
 			$targetPos->subtractVector($target->getPosition()),
 			PositionGenerator::isRestricted($entity, $directionX)
 		);
@@ -82,15 +82,15 @@ class LandPositionGenerator {
 
 	/**
 	 * @param PathfinderMob $entity     The entity to generate the random position for.
-	 * @param float         $directionX the x component of the direction towards which the position is generated
-	 * @param float         $directionZ the z component of the direction towards which the position is generated
+	 * @param int           $directionX the x component of the direction towards which the position is generated
+	 * @param int           $directionZ the z component of the direction towards which the position is generated
 	 * @param Vector3       $awayFrom   The position to move away from.
 	 *
 	 * Returns a random position within the specified horizontal and vertical range for the given entity, away from
 	 * the specified position.
 	 */
 	public static function getPosAway(PathfinderMob $entity, int $directionX, int $directionZ, Vector3 $awayFrom) : ?Vector3{
-		return static::getPosInDirection($entity, $directionX, $directionZ,
+		return self::getPosInDirection($entity, $directionX, $directionZ,
 			$entity->getPosition()->subtractVector($awayFrom),
 			PositionGenerator::isRestricted($entity, $directionX)
 		);

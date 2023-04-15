@@ -58,7 +58,7 @@ class HoverPositionGenerator {
 				return null;
 			}
 
-			$pos = LandPositionGenerator::generateRandomPosTowardDirection($entity, $xzRadius, $isRestricted, $randomDirection);
+			$pos = LandPositionGenerator::generateRandomPosTowardDirection($entity, $xzRadius, $isRestricted, $direction);
 			if ($pos === null) {
 				return null;
 			}

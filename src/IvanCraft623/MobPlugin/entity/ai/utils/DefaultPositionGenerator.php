@@ -52,7 +52,7 @@ class DefaultPositionGenerator {
 		return PositionGenerator::generateRandomPosForEntity($entity,
 			static function() use ($entity, $horizontalRange, $verticalRange, $isRestricted) : ?Vector3{
 				$pos = PositionGenerator::generateRandomDirection($entity->getRandom(), $horizontalRange, $verticalRange);
-				return static::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $pos);
+				return self::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $pos);
 			}
 		);
 	}
@@ -74,7 +74,7 @@ class DefaultPositionGenerator {
 		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
 
 		return PositionGenerator::generateRandomPosForEntity($entity,
-			static function() use ($entity, $horizontalRange, $verticalRange, $maxAngle, $diff) : ?Vector3{
+			static function() use ($entity, $horizontalRange, $verticalRange, $maxAngle, $diff, $isRestricted) : ?Vector3{
 				$direction = PositionGenerator::generateRandomDirectionWithinRadians($entity->getRandom(), $horizontalRange, $verticalRange, 0, $diff->x, $diff->z, $maxAngle);
 				return $direction === null ? null : static::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
 			}
@@ -99,7 +99,7 @@ class DefaultPositionGenerator {
 		return PositionGenerator::generateRandomPosForEntity($entity,
 			static function() use ($entity, $horizontalRange, $verticalRange, $diff, $isRestricted) : ?Vector3{
 				$direction = PositionGenerator::generateRandomDirectionWithinRadians($entity->getRandom(), $horizontalRange, $verticalRange, 0, $diff->x, $diff->z, M_PI_2);
-				return $direction === null ? null : static::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
+				return $direction === null ? null : self::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
 			}
 		);
 	}
@@ -120,7 +120,7 @@ class DefaultPositionGenerator {
 		return ($entity->getWorld()->isInWorld((int) $pos->x, (int) $pos->y, (int) $pos->z) &&
 			!($isConstrained && $entity->isWithinRestriction($pos)) &&
 			$entity->getNavigation()->isStableDestination($pos) &&
-			$entity->getPathfindingMalus(WalkNodeEvaluator::getBlockPathTypeStatic($world, (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+			$entity->getPathfindingMalus(WalkNodeEvaluator::getBlockPathTypeStatic($entity->getWorld(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 		) ? $pos : null;
 	}
 }

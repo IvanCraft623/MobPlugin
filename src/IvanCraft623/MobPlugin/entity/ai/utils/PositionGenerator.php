@@ -31,6 +31,7 @@ use function abs;
 use function atan2;
 use function cos;
 use function floor;
+use function intdiv;
 use function sin;
 use function sqrt;
 use const INF;
@@ -89,7 +90,7 @@ class PositionGenerator {
 		if (abs($x) < $xzRadius && abs($z) < $xzRadius) {
 			return new Vector3(
 				floor($x),
-				floor($random->nextInt(2 * $yRadius + 1) - $yRadius + $yCenter),
+				floor($random->nextBoundedInt(2 * $yRadius + 1) - $yRadius + $yCenter),
 				floor($z)
 			);
 		}
@@ -144,7 +145,7 @@ class PositionGenerator {
 		}
 
 		$newPos = $pos->up();
-		while ($newPos->y < $maxVerticalDistance && $isSolid($pos)) {
+		while ($newPos->y < $maxVerticalDistance && $isSolid($newPos)) {
 			$newPos = $newPos->up();
 		}
 
@@ -165,23 +166,23 @@ class PositionGenerator {
 	/**
 	 * Generates a random Vector3 position for a given entity.
 	 *
-	 * @param PathfinderMob entity       the entity for which to generate a random position.
-	 * @param \Closure posSupplier  a supplier for random BlockPos values.
+	 * @param PathfinderMob $entity      the entity for which to generate a random position.
+	 * @param \Closure      $posSupplier a supplier for random BlockPos values.
 	 *
 	 * @phpstan-param \Closure() : ?Vector3 $posSupplier
 	 *
 	 * Returns a random Vector3 position generated from a BlockPos, or null if none could be found.
 	 */
 	public static function generateRandomPosForEntity(PathfinderMob $entity, \Closure $posSupplier) : ?Vector3{
-		static::generateRandomPos($posSupplier, \Closure::fromCallable([$entity, 'getWalkTargetValue']));
+		return static::generateRandomPos($posSupplier, \Closure::fromCallable([$entity, 'getWalkTargetValue']));
 	}
 
 	/**
 	 * This function attempts to generate a random position and returns the position with
 	 * the highest target value, as determined by the target value function.
 	 *
-	 * @param \Closure posSupplier      a supplier function that returns a random block position.
-	 * @param \Closure targetValueFunc  a function that calculates the target value of a block position.
+	 * @param \Closure $posSupplier     a supplier function that returns a random block position.
+	 * @param \Closure $targetValueFunc a function that calculates the target value of a block position.
 	 *
 	 * @phpstan-param \Closure() : ?Vector3 $posSupplier
 	 * @phpstan-param \Closure(Vector3) : float $targetValueFunc
@@ -212,10 +213,10 @@ class PositionGenerator {
 	/**
 	 * Generates a random Vector3 towards a target position, with a specified radius.
 	 *
-	 * @param PathfinderMob entity     entity that will be moving towards the target position.
-	 * @param int radius     maximum radius that the Vector3 can be generated from the target position.
-	 * @param Random random     source of randomness used for generating the new Vector3.
-	 * @param Vector3 targetPos  target Vector3 that the new Vector3 will be generated towards.
+	 * @param PathfinderMob $entity    entity that will be moving towards the target position.
+	 * @param int           $radius    maximum radius that the Vector3 can be generated from the target position.
+	 * @param Random        $random    source of randomness used for generating the new Vector3.
+	 * @param Vector3       $targetPos target Vector3 that the new Vector3 will be generated towards.
 	 *
 	 * Returns a random generated Vector3.
 	 */
@@ -227,16 +228,18 @@ class PositionGenerator {
 
 		if ($entity->hasRestriction() && $radius > 1) {
 			$restrictionCenter = $entity->getRestrictCenter();
+			$halfRadius = intdiv($radius, 2);
+
 			if ($entityPos->x > $restrictionCenter->x) {
-				$targetX -= $random->nextBoundedInt($radius / 2);
+				$targetX -= $random->nextBoundedInt($halfRadius);
 			} else {
-				$targetX += $random->nextBoundedInt($radius / 2);
+				$targetX += $random->nextBoundedInt($halfRadius);
 			}
 
 			if ($entityPos->z > $restrictionCenter->z) {
-				$targetZ -= $random->nextBoundedInt($radius / 2);
+				$targetZ -= $random->nextBoundedInt($halfRadius);
 			} else {
-				$targetZ += $random->nextBoundedInt($radius / 2);
+				$targetZ += $random->nextBoundedInt($halfRadius);
 			}
 		}
 

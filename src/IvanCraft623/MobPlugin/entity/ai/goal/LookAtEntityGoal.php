@@ -93,7 +93,7 @@ class LookAtEntityGoal extends Goal {
 	}
 
 	public function start() : void{
-		$this->lookTime = $this->adjustedTickDelay(40 + $this->entity->getRandom()->nextInt(40));
+		$this->lookTime = $this->adjustedTickDelay(40 + $this->entity->getRandom()->nextBoundedInt(40));
 	}
 
 	public function stop() : void{

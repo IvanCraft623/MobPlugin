@@ -46,7 +46,7 @@ class AirPositionGenerator {
 	 *
 	 * Returns a random position in the air towards the target, or null if none could be generated
 	 */
-	public static function getPosTowards(PathfinderMob $entity, int $horizontalRange, int $verticalRange, int $yCenter, Vec3 $target, float $maxAngle) : Vector3{
+	public static function getPosTowards(PathfinderMob $entity, int $horizontalRange, int $verticalRange, int $yCenter, Vector3 $target, float $maxAngle) : ?Vector3{
 		$diff = $target->subtractVector($entity->getPosition());
 		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
 

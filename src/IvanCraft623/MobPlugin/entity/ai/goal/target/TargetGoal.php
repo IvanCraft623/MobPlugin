@@ -49,7 +49,7 @@ abstract class TargetGoal extends Goal {
 
 	public function canContinueToUse() : bool{
 		$target = $this->entity->getTargetEntity() ?? $this->target;
-		if ($target === null || !$this->entity->canAttack($target)) {
+		if (!$target instanceof Living || !$this->entity->canAttack($target)) {
 			return false;
 		}
 
@@ -117,7 +117,7 @@ abstract class TargetGoal extends Goal {
 	private function canReach(Living $victim) : bool{
 		$this->reachCheckTime = $this->reducedTickDelay(10 + $this->entity->getRandom()->nextBoundedInt(5));
 
-		$path = $this->mob->getNavigation()->createPathToEntity($victom, 0);
+		$path = $this->entity->getNavigation()->createPathToEntity($victim, 0);
 		if ($path === null) {
 			return false;
 		}
@@ -133,5 +133,6 @@ abstract class TargetGoal extends Goal {
 
 	public function setUnseenMemoryTicks(int $ticks) : self{
 		$this->unseenMemoryTicks = $ticks;
+		return $this;
 	}
 }

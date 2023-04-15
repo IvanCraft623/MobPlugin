@@ -33,13 +33,15 @@ class MeleeAttackGoal extends Goal {
 
 	public const CAN_USE_COOLDOWN = 20;
 
+	public const ATTACK_INTERVAL = 20;
+
 	private Vector3 $lastTargetPosition;
+
+	private Path $path;
 
 	private int $ticksToRecalculatePath = 0;
 
 	private int $ticksToAttack = 0;
-
-	private int $attackInterval = 20;
 
 	private int $lastCanUseCheck = 0;
 
@@ -64,7 +66,7 @@ class MeleeAttackGoal extends Goal {
 			return false;
 		}
 
-		$this->path = $this->mob->getNavigation()->createPath($target, 0);
+		$this->path = $this->mob->getNavigation()->createPathToEntity($target, 0);
 		if ($this->path !== null) {
 			return true;
 		}
@@ -132,7 +134,7 @@ class MeleeAttackGoal extends Goal {
 			)
 		) {
 			$this->lastTargetPosition = $target->getPosition();
-			$this->ticksToRecalculatePath = 4 + $this->mob->getRandom()->nextInt(7);
+			$this->ticksToRecalculatePath = 4 + $this->mob->getRandom()->nextBoundedInt(7);
 
 			if ($distSqr > 1024) { // 32 ** 2
 				$this->ticksToRecalculatePath += 10;
@@ -152,7 +154,7 @@ class MeleeAttackGoal extends Goal {
 	}
 
 	protected function checkAndPerformAttack(Entity $target, float $distanceSquared) : void{
-		if ($distanceSquared <= $this->getAttackReachSquared() && $this->isTimeToAttack()) {
+		if ($distanceSquared <= $this->getAttackReachSquared($target) && $this->isTimeToAttack()) {
 			$this->resetAttackCooldown();
 			$this->mob->attackEntity($target);
 		}
@@ -171,7 +173,7 @@ class MeleeAttackGoal extends Goal {
 	}
 
 	public function getAttackInterval() : int{
-		return $this->adjustedTickDelay(20);
+		return $this->adjustedTickDelay(self::ATTACK_INTERVAL);
 	}
 
 	public function getAttackReachSquared(Entity $target) : float{
