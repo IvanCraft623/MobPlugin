@@ -97,6 +97,6 @@ class LookControl implements Control {
 
 	protected function rotateTowards(float $currentDegrees, float $targetDegrees, float $maxRotation) : float {
 		$degreesDifference = Utils::degreesDifference($currentDegrees, $targetDegrees);
-		return $degreesDifference + Utils::clamp($degreesDifference, -$maxRotation, $maxRotation);
+		return $currentDegrees + Utils::clamp($degreesDifference, -$maxRotation, $maxRotation);
 	}
 }

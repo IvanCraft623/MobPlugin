@@ -76,7 +76,7 @@ class DefaultPositionGenerator {
 		return PositionGenerator::generateRandomPosForEntity($entity,
 			static function() use ($entity, $horizontalRange, $verticalRange, $maxAngle, $diff, $isRestricted) : ?Vector3{
 				$direction = PositionGenerator::generateRandomDirectionWithinRadians($entity->getRandom(), $horizontalRange, $verticalRange, 0, $diff->x, $diff->z, $maxAngle);
-				return $direction === null ? null : static::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
+				return $direction === null ? null : self::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
 			}
 		);
 	}

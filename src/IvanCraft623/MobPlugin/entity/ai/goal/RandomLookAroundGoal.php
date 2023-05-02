@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 use IvanCraft623\MobPlugin\entity\Mob;
 use function cos;
 use function sin;
+use const M_PI;
 
 class RandomLookAroundGoal extends Goal {
 
@@ -48,10 +49,10 @@ class RandomLookAroundGoal extends Goal {
 	}
 
 	public function start() : void{
-		$randomFloat = $this->entity->getRandom()->nextFloat();
+		$randomRadians = M_PI * 2 * $this->entity->getRandom()->nextFloat();
 
-		$this->relX = cos($randomFloat);
-		$this->relZ = sin($randomFloat);
+		$this->relX = cos($randomRadians);
+		$this->relZ = sin($randomRadians);
 
 		$this->lookTime = 20 + $this->entity->getRandom()->nextBoundedInt(20);
 	}

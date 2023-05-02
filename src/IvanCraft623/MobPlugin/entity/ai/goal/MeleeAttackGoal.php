@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\pathfinder\Path;
+
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
@@ -66,8 +68,9 @@ class MeleeAttackGoal extends Goal {
 			return false;
 		}
 
-		$this->path = $this->mob->getNavigation()->createPathToEntity($target, 0);
-		if ($this->path !== null) {
+		$path = $this->mob->getNavigation()->createPathToEntity($target, 0);
+		if ($path !== null) {
+			$this->path = $path;
 			return true;
 		}
 		return $this->getAttackReachSquared($target) >= $this->mob->getLocation()->distanceSquared($target->getLocation());

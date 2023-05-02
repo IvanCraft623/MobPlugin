@@ -75,7 +75,7 @@ class LandPositionGenerator {
 	 */
 	public static function getPosTowards(PathfinderMob $entity, int $directionX, int $directionZ, Vector3 $targetPos) : ?Vector3{
 		return self::getPosInDirection($entity, $directionX, $directionZ,
-			$targetPos->subtractVector($target->getPosition()),
+			$targetPos->subtractVector($entity->getPosition()),
 			PositionGenerator::isRestricted($entity, $directionX)
 		);
 	}

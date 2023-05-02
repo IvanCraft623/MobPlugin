@@ -81,7 +81,7 @@ class NearestAttackableGoal extends TargetGoal {
 
 	protected function findTarget() : void{
 		$pos = $this->entity->getEyePos();
-		$this->target = array_reduce($this->entity->getWorld()->getCollidingEntities($this->getTargetSearchArea($this->getFollowDistance())),
+		$this->target = array_reduce($this->entity->getWorld()->getCollidingEntities($this->getTargetSearchArea($this->getFollowDistance()), $this->entity),
 		function(?Living $carry, Entity $current) use ($pos) : ?Living {
 			if (!$current instanceof $this->targetType || !$this->targetingConditions->test($this->entity, $current)) {
 				return $carry;
