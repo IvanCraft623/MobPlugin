@@ -66,10 +66,10 @@ class LookControl implements Control {
 			$pitch = $this->rotateTowards($location->pitch, $this->getPitchD(), $this->pitchMaxRotationAngle);
 			$this->mob->setRotation($yaw, $pitch);
 		} else {
-			$this->mob->setRotation($this->rotateTowards($location->yaw, $location->yaw, 10.0), 0.0);
+			$this->mob->setRotation($this->rotateTowards($location->yaw, $location->yaw, 10.0), $location->pitch);
 		}
 		if (!$this->mob->getNavigation()->isDone()) {
-			$this->mob->setRotation(Utils::rotateIfNecessary($location->yaw, $location->yaw, $this->mob->getMaxYawRot()), 0.0);
+			$this->mob->setRotation(Utils::rotateIfNecessary($location->yaw, $location->yaw, $this->mob->getMaxYawRot()), $location->pitch);
 		}
 	}
 

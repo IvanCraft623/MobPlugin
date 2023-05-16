@@ -27,13 +27,10 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\Door;
-use pocketmine\block\Fence;
 use pocketmine\math\Vector3;
 use function atan2;
 use function cos;
 use function floor;
-use function max;
 use function sin;
 use function sqrt;
 use const M_PI;
@@ -102,41 +99,36 @@ class MoveControl implements Control {
 			$cos = cos($location->yaw * (M_PI / 180));
 
 			$x = $strafeForwards * $cos - $strafeRight * $sin;
-			$z = $strafeRight * $cos - $strafeForwards * $sin;
+			$z = $strafeRight * $cos + $strafeForwards * $sin;
 			if (!$this->isWalkable($x, $z)) {
 				$this->strafeForwards = 1;
 				$this->strafeRight = 0;
 			}
+
+			$this->mob->setSpeed($speed);
 			$this->mob->setZza($this->strafeForwards);
 			$this->mob->setXxa($this->strafeRight);
+
 			$this->operation = self::OPERATION_WAIT;
 		} elseif ($this->operation === self::OPERATION_MOVE_TO) {
 			$this->operation = self::OPERATION_WAIT;
-			$x = $this->wantedPosition->x - $location->x;
-			$y = $this->wantedPosition->y - $location->y;
-			$z = $this->wantedPosition->z - $location->z;
-			$distanceSquared = ($x ** 2) + ($y ** 2) + ($z ** 2);
-			if ($distanceSquared < (2.5 * 10 ** -7)) {
+
+			$dx = $this->wantedPosition->x - $location->x;
+			$dy = $this->wantedPosition->y - $location->y;
+			$dz = $this->wantedPosition->z - $location->z;
+			$distanceSquared = ($dx ** 2) + ($dy ** 2) + ($dz ** 2);
+
+			if ($distanceSquared < 2.5E-7) { // 0.0005 ** 2
 				$this->mob->setZza(0);
 				return;
 			}
-			$yaw = $this->rotateLerp($location->yaw, (atan2($z, $x) * (180 / M_PI)) - 90, 90);
-			$this->mob->setRotation($yaw, 0.0);
+
+			$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
+			$this->mob->setRotation($yaw, $location->pitch);
 			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
 
-			$motion = $this->mob->getMotion();
-			foreach ($location->getWorld()->getCollisionBlocks($this->mob->boundingBox->addCoord($motion->x, $motion->y, $motion->z)) as $block) {
-				if ($block->getCollisionBoxes()[0]->maxY - $this->mob->boundingBox->minY > 1) {
-					if ($y > $this->mob->getMaxUpStep() &&
-					($x ** 2) + ($z ** 2) < max(1.0, $this->mob->getSize()->getWidth()) &&
-					!$block instanceof Door &&
-					!$block instanceof Fence) {
-						$this->mob->getJumpControl()->jump();
-						$this->operation = self::OPERATION_JUMPING;
-						return;
-					}
-				}
-			}
+			$block = $this->mob->getWorld()->getBlock($location);
+			//TODO: jump check logic
 		} elseif ($this->operation === self::OPERATION_JUMPING) {
 			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
 			if ($this->mob->onGround) {

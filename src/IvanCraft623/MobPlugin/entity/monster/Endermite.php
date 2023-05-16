@@ -74,6 +74,14 @@ class Endermite extends Monster {
 		parent::initEntity($nbt);
 	}
 
+	public function saveNBT() : CompoundTag{
+		$nbt = parent::saveNBT();
+
+		$nbt->setInt(self::TAG_LIFE, $this->ticksLived);
+
+		return $nbt;
+	}
+
 	protected function initProperties() : void{
 		parent::initProperties();
 

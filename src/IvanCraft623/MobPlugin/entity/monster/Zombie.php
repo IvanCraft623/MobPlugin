@@ -33,7 +33,7 @@ class Zombie extends Monster {
 	public static function getNetworkTypeId() : string{ return EntityIds::ZOMBIE; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.8, 0.6); //TODO: eye height ??
+		return new EntitySizeInfo(1.8, 0.6, 1.62);
 	}
 
 	public function getName() : string{

@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
+
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
@@ -44,6 +45,8 @@ use pocketmine\item\enchantment\MeleeWeaponEnchantment;
 use pocketmine\item\Releasable;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\sound\ItemBreakSound;
 use function assert;
@@ -171,6 +174,14 @@ abstract class Mob extends Living {
 
 	public function getRotSpeed() : int {
 		return 10;
+	}
+
+	public function getAmbientSoundInterval() : float{
+		return 8;
+	}
+
+	public function getAmbientSoundIntervalRange() : float{
+		return 16;
 	}
 
 	public function getLifeTime() : int{
@@ -389,5 +400,13 @@ abstract class Mob extends Living {
 		}
 
 		return true;
+	}
+
+	protected function syncNetworkData(EntityMetadataCollection $properties) : void{
+		parent::syncNetworkData($properties);
+
+		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_MIN, $this->getAmbientSoundInterval());
+		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_RANGE, $this->getAmbientSoundIntervalRange());
+		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
 	}
 }
