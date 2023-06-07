@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d053af699cc6ef6da67568a114107763",
+    "content-hash": "e1c91567b28bf2007638c032d49c0834",
     "packages": [],
     "packages-dev": [
         {
@@ -250,16 +250,16 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "1.10.14",
+            "version": "1.10.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpstan.git",
-                "reference": "d232901b09e67538e5c86a724be841bea5768a7c"
+                "reference": "8aca56455b40846865e4fac9d24b010a574dc362"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/d232901b09e67538e5c86a724be841bea5768a7c",
-                "reference": "d232901b09e67538e5c86a724be841bea5768a7c",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/8aca56455b40846865e4fac9d24b010a574dc362",
+                "reference": "8aca56455b40846865e4fac9d24b010a574dc362",
                 "shasum": ""
             },
             "require": {
@@ -308,7 +308,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2023-04-19T13:47:27+00:00"
+            "time": "2023-06-07T15:55:47+00:00"
         },
         {
             "name": "pocketmine/bedrock-block-upgrade-schema",
