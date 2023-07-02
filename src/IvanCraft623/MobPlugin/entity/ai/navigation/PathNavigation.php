@@ -307,7 +307,7 @@ abstract class PathNavigation {
 	}
 
 	public function doStuckDetection(Vector3 $position) : void{
-		$mobSpeed = $this->mob->getSpeed();
+		$mobSpeed = $this->mob->getMovementSpeed();
 		if ($this->tick - $this->lastStuckCheck > self::STUCK_CHECK_INTERVAL) {
 			$speed = $mobSpeed >= 1 ? $mobSpeed : $mobSpeed ** 2;
 			if ($position->distanceSquared($this->lastStuckCheckPos) < (($speed * 100 * self::STUCK_THRESHOLD_DISTANCE_FACTOR) ** 2)) {

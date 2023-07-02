@@ -90,6 +90,10 @@ class Endermite extends Monster {
 		$this->setAttackDamage(2);
 	}
 
+	public function getDefaultMovementSpeed() : float{
+		return 0.25;
+	}
+
 	public function getMaxLifeTime() : int{
 		return self::MAX_LIFE;
 	}

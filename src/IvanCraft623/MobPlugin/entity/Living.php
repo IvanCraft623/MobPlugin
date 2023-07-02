@@ -58,10 +58,6 @@ abstract class Living extends PMLiving {
 
 	protected Random $random;
 
-	protected float $defaultSpeed = 1.0;
-
-	protected float $speed;
-
 	protected float $maxUpStep = 0.6;
 
 	protected int $noActionTime = 0; //TODO: logic
@@ -74,7 +70,6 @@ abstract class Living extends PMLiving {
 		parent::initEntity($nbt);
 
 		$this->random = MobPlugin::getInstance()->getRandom();
-		$this->speed = $this->defaultSpeed;
 
 		$this->inventory = new MobInventory($this);
 		$syncHeldItem = function() : void{
@@ -139,16 +134,8 @@ abstract class Living extends PMLiving {
 		return $this->random;
 	}
 
-	public function getDefaultSpeed() : float {
-		return $this->defaultSpeed;
-	}
-
-	public function getSpeed() : float {
-		return $this->speed;
-	}
-
-	public function setSpeed(float $speed) : void {
-		$this->speed = $speed;
+	public function getDefaultMovementSpeed() : float {
+		return 1.0;
 	}
 
 	public function getMaxUpStep() : float {

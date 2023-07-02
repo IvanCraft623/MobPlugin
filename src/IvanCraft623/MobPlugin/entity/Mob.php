@@ -72,11 +72,11 @@ abstract class Mob extends Living {
 	/** @var array<int, float> BlockPathTypes->id => malus */
 	protected array $pathfindingMalus = [];
 
-	protected float $xxa;
+	protected float $forwardSpeed = 0;
 
-	protected float $yya;
+	protected float $upwardSpeed = 0;
 
-	protected float $zza;
+	protected float $sidewaysSpeed = 0;
 
 	protected Vector3 $restrictCenter;
 
@@ -109,6 +109,7 @@ abstract class Mob extends Living {
 	}
 
 	protected function initProperties() : void{
+		$this->setMovementSpeed($this->getDefaultMovementSpeed());
 	}
 
 	protected function registerGoals() : void{
@@ -152,16 +153,16 @@ abstract class Mob extends Living {
 		return MobType::UNDEFINED();
 	}
 
-	public function setXxa(float $xxa) : void {
-		$this->xxa = $xxa;
+	public function setForwardSpeed(float $forwardSpeed) : void {
+		$this->forwardSpeed = $forwardSpeed;
 	}
 
-	public function setYya(float $yya) : void {
-		$this->yya = $yya;
+	public function setUpwardSpeed(float $upwardSpeed) : void {
+		$this->upwardSpeed = $upwardSpeed;
 	}
 
-	public function setZza(float $zza) : void {
-		$this->zza = $zza;
+	public function setSidewaysSpeed(float $sidewaysSpeed) : void {
+		$this->sidewaysSpeed = $sidewaysSpeed;
 	}
 
 	public function getMaxPitchRot() : int {
@@ -277,6 +278,33 @@ abstract class Mob extends Living {
 		$this->moveControl->tick();
 		$this->lookControl->tick();
 		$this->jumpControl->tick();
+
+		// Movement update
+		$this->sidewaysSpeed  *= 0.98;
+		$this->forwardSpeed *= 0.98;
+		$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+	}
+
+	public function travel(Vector3 $movementInput) : void{
+		// TODO: More complex movement suff :P
+		$motion = $this->movementInputToMotion($movementInput);
+		$this->addMotion($motion->x, $motion->y, $motion->z);
+	}
+
+	public function movementInputToMotion(Vector3 $movementInput) : Vector3{
+		$length = $movementInput->lengthSquared();
+		if ($length < 1.0E-7) {
+			return Vector3::zero();
+		}
+		
+		$vec3 = (($length > 1) ? $movementInput->normalize() : $movementInput)->multiply($this->getMovementSpeed());
+		$f = sin($this->location->yaw * (M_PI / 180));
+		$g = cos($this->location->yaw * (M_PI / 180));
+		return new Vector3(
+			$vec3->x * $g - $vec3->z * $f,
+			$vec3->y,
+			$vec3->z * $g + $vec3->x * $f
+		);
 	}
 
 	protected function updateControlFlags() : void{

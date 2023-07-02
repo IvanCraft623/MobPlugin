@@ -39,7 +39,7 @@ class MeleeAttackGoal extends Goal {
 
 	private Vector3 $lastTargetPosition;
 
-	private Path $path;
+	private ?Path $path = null;
 
 	private int $ticksToRecalculatePath = 0;
 

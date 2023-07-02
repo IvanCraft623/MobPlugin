@@ -27,6 +27,8 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\Door;
+use pocketmine\block\Fence;
 use pocketmine\math\Vector3;
 use function atan2;
 use function cos;
@@ -48,9 +50,9 @@ class MoveControl implements Control {
 
 	protected float $speedModifier;
 
-	protected float $strafeForwards;
+	protected float $forwardMovement;
 
-	protected float $strafeRight;
+	protected float $sidewaysMovement;
 
 	protected int $operation = self::OPERATION_WAIT;
 
@@ -74,40 +76,40 @@ class MoveControl implements Control {
 		}
 	}
 
-	public function strafe(float $strafeForwards, float $strafeRight) : void {
+	public function strafe(float $forwardMovement, float $sidewaysMovement) : void {
 		$this->operation = self::OPERATION_STRAFE;
-		$this->strafeForwards = $strafeForwards;
-		$this->strafeRight = $strafeRight;
+		$this->forwardMovement = $forwardMovement;
+		$this->sidewaysMovement = $sidewaysMovement;
 		$this->speedModifier = 1 / 4;
 	}
 
 	public function tick() : void {
 		$location = $this->mob->getLocation();
 		if ($this->operation === self::OPERATION_STRAFE) {
-			$speed = $this->speedModifier * $this->mob->getDefaultSpeed();
-			$strafeForwards = $this->strafeForwards;
-			$strafeRight = $this->strafeRight;
-			$strafe = sqrt(($strafeForwards ** 2) + ($strafeRight ** 2));
+			$speed = $this->speedModifier * $this->mob->getDefaultMovementSpeed();
+			$forwardMovement = $this->forwardMovement;
+			$sidewaysMovement = $this->sidewaysMovement;
+			$strafe = sqrt(($forwardMovement ** 2) + ($sidewaysMovement ** 2));
 			if ($strafe < 1) {
 				$strafe = 1;
 			}
 			$strafe = $speed / $strafe;
-			$strafeForwards *= $strafe;
-			$strafeRight *= $strafe;
+			$forwardMovement *= $strafe;
+			$sidewaysMovement *= $strafe;
 
 			$sin = sin($location->yaw * (M_PI / 180));
 			$cos = cos($location->yaw * (M_PI / 180));
 
-			$x = $strafeForwards * $cos - $strafeRight * $sin;
-			$z = $strafeRight * $cos + $strafeForwards * $sin;
+			$x = $forwardMovement * $cos - $sidewaysMovement * $sin;
+			$z = $sidewaysMovement * $cos + $forwardMovement * $sin;
 			if (!$this->isWalkable($x, $z)) {
-				$this->strafeForwards = 1;
-				$this->strafeRight = 0;
+				$this->forwardMovement = 1;
+				$this->sidewaysMovement = 0;
 			}
 
-			$this->mob->setSpeed($speed);
-			$this->mob->setZza($this->strafeForwards);
-			$this->mob->setXxa($this->strafeRight);
+			$this->mob->setMovementSpeed($speed);
+			$this->mob->setForwardSpeed($this->forwardMovement);
+			$this->mob->setSidewaysSpeed($this->sidewaysMovement);
 
 			$this->operation = self::OPERATION_WAIT;
 		} elseif ($this->operation === self::OPERATION_MOVE_TO) {
@@ -119,23 +121,34 @@ class MoveControl implements Control {
 			$distanceSquared = ($dx ** 2) + ($dy ** 2) + ($dz ** 2);
 
 			if ($distanceSquared < 2.5E-7) { // 0.0005 ** 2
-				$this->mob->setZza(0);
+				$this->mob->setForwardSpeed(0);
 				return;
 			}
 
 			$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
 			$this->mob->setRotation($yaw, $location->pitch);
-			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
+			$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
 
-			$block = $this->mob->getWorld()->getBlock($location);
-			//TODO: jump check logic
+			$motion = $this->mob->getMotion();
+			foreach ($location->getWorld()->getCollisionBlocks($this->mob->boundingBox->addCoord($motion->x, $motion->y, $motion->z)) as $block) {
+				if ($block->getCollisionBoxes()[0]->maxY - $this->mob->boundingBox->minY > 1) {
+					if ($dy > $this->mob->getMaxUpStep() &&
+					($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth()) &&
+					!$block instanceof Door &&
+					!$block instanceof Fence) {
+						$this->mob->getJumpControl()->jump();
+						$this->operation = self::OPERATION_JUMPING;
+						return;
+					}
+				}
+			}
 		} elseif ($this->operation === self::OPERATION_JUMPING) {
-			$this->mob->setSpeed($this->speedModifier * $this->mob->getDefaultSpeed());
+			$this->mob->setMovementSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
 			if ($this->mob->onGround) {
 				$this->operation = self::OPERATION_WAIT;
 			}
 		} else {
-			$this->mob->setZza(0);
+			$this->mob->setForwardSpeed(0);
 		}
 	}
 
