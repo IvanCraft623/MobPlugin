@@ -23,8 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 abstract class Monster extends PathfinderMob implements Enemy {
 	//TODO!
+
+	public function getMobCategory() : MobCategory{
+		return MobCategory::MONSTER();
+	}
+
+	public function shouldDespawnInPeaceful() : bool{
+		return true;
+	}
 }

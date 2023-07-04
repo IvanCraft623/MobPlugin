@@ -33,6 +33,7 @@ use pocketmine\math\Vector3;
 use function atan2;
 use function cos;
 use function floor;
+use function max;
 use function sin;
 use function sqrt;
 use const M_PI;

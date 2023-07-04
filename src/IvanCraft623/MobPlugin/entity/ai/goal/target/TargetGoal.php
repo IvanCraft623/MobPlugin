@@ -49,7 +49,7 @@ abstract class TargetGoal extends Goal {
 
 	public function canContinueToUse() : bool{
 		$target = $this->entity->getTargetEntity() ?? $this->target;
-		if (!$target instanceof Living || !$this->entity->canAttack($target)) {
+		if (!$target instanceof Living || $target->isClosed() || !$this->entity->canAttack($target)) {
 			return false;
 		}
 

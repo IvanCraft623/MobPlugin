@@ -32,6 +32,9 @@ use pocketmine\block\Slab;
 use pocketmine\block\Water;
 use pocketmine\item\Bow;
 use pocketmine\item\Releasable;
+use pocketmine\player\Player;
+use pocketmine\world\Position;
+use function array_reduce;
 use function fmod;
 use function max;
 use function method_exists;
@@ -125,5 +128,20 @@ class Utils {
 		}
 
 		return false;
+	}
+
+	public static function getNearestPlayer(Position $pos, float $maxDistance = -1) : ?Player{
+		return array_reduce($pos->getWorld()->getPlayers(), function(?Player $carry, Player $current) use ($pos, $maxDistance) : Player{
+			if ($carry === null) {
+				return $current;
+			}
+
+			$distanceSquared = $current->getPosition()->distanceSquared($pos);
+			if ($maxDistance > 0 && $distanceSquared > ($maxDistance ** 2)) {
+				return $carry;
+			}
+
+			return $carry->getPosition()->distanceSquared($pos) < $distanceSquared ? $carry : $current;
+		}, null);
 	}
 }

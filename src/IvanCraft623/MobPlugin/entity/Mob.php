@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
@@ -49,8 +50,12 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\sound\ItemBreakSound;
+use pocketmine\world\World;
 use function assert;
+use function cos;
 use function max;
+use function sin;
+use const M_PI;
 
 abstract class Mob extends Living {
 	//TODO!
@@ -153,6 +158,10 @@ abstract class Mob extends Living {
 		return MobType::UNDEFINED();
 	}
 
+	public function getMobCategory() : MobCategory{
+		return MobCategory::CREATURE();
+	}
+
 	public function setForwardSpeed(float $forwardSpeed) : void {
 		$this->forwardSpeed = $forwardSpeed;
 	}
@@ -232,6 +241,7 @@ abstract class Mob extends Living {
 	}
 
 	public function isPersistenceRequired() : bool{
+		//TODO: check if is passenger
 		return $this->persistenceRequired;
 	}
 
@@ -244,11 +254,7 @@ abstract class Mob extends Living {
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		$maxLifetime = $this->getMaxLifeTime();
-		if (!$this->isPersistenceRequired() && $maxLifetime !== -1 && $this->ticksLived >= $maxLifetime) {
-			$this->flagForDespawn();
-			return true;
-		}
+		$this->checkDespawn();
 
 		//TODO: leash check
 
@@ -258,6 +264,57 @@ abstract class Mob extends Living {
 		}*/
 
 		return $hasUpdate;
+	}
+
+	public function checkDespawn() : void{
+		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL && $this->shouldDespawnInPeaceful()) {
+			$this->flagForDespawn();
+			return;
+		}
+
+		if (!$this->isPersistenceRequired()) {
+			$maxLifetime = $this->getMaxLifeTime();
+			if ($maxLifetime !== -1 && $this->ticksLived >= $maxLifetime) {
+				$this->flagForDespawn();
+				return;
+			}
+
+			$nearestPlayer = Utils::getNearestPlayer($this->getPosition());
+			if ($nearestPlayer !== null) {
+				$mobCategory = $this->getMobCategory();
+				$distanceSquared = $this->location->distanceSquared($nearestPlayer->getPosition());
+				if ($this->shouldDespawnWhenFarAway($distanceSquared) &&
+					$distanceSquared > $mobCategory->getDespawnDistance() ** 2
+				) {
+					$this->flagForDespawn();
+				}
+
+				$noDespawnSquared = $mobCategory->getNoDespawnDistance() ** 2;
+				if ($this->noActionTime > 600 &&
+					$this->random->nextBoundedInt(800) === 0 &&
+					$distanceSquared > $noDespawnSquared &&
+					$this->shouldDespawnWhenFarAway($distanceSquared)
+				) {
+					$this->flagForDespawn();
+				} elseif ($distanceSquared < $noDespawnSquared) {
+					$this->noActionTime = 0;
+				}
+			}
+		} else {
+			$this->noActionTime = 0;
+		}
+	}
+
+	public function shouldDespawnInPeaceful() : bool{
+		return false;
+	}
+
+	public function shouldDespawnWhenFarAway(float $distanceSquared) : bool{
+		return true;
+	}
+
+	public function getDespawnDistance() : int{
+		return 32;
 	}
 
 	public function tickAi() : void{
@@ -280,7 +337,7 @@ abstract class Mob extends Living {
 		$this->jumpControl->tick();
 
 		// Movement update
-		$this->sidewaysSpeed  *= 0.98;
+		$this->sidewaysSpeed *= 0.98;
 		$this->forwardSpeed *= 0.98;
 		$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
 	}
@@ -296,7 +353,7 @@ abstract class Mob extends Living {
 		if ($length < 1.0E-7) {
 			return Vector3::zero();
 		}
-		
+
 		$vec3 = (($length > 1) ? $movementInput->normalize() : $movementInput)->multiply($this->getMovementSpeed());
 		$f = sin($this->location->yaw * (M_PI / 180));
 		$g = cos($this->location->yaw * (M_PI / 180));
