@@ -41,7 +41,7 @@ class TargetingConditions {
 		protected bool $allowInvulnerable = false,
 		protected bool $allowUnseeable = false,
 		protected bool $allowNonAttackable = false,
-		protected bool $testInvisible = false,
+		protected bool $testInvisible = true,
 		protected ?Closure $validator = null
 	) {
 	}

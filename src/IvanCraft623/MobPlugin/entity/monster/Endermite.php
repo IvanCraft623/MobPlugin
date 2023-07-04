@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\MobType;
@@ -64,7 +65,7 @@ class Endermite extends Monster {
 		$this->goalSelector->addGoal(7, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
 
-		//TODO: hurt by target goal
+		$this->targetSelector->addGoal(1, (new HurtByTargetGoal($this))->setAlertOthers());
 		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, Player::class));
 	}
 
@@ -86,7 +87,6 @@ class Endermite extends Monster {
 		parent::initProperties();
 
 		$this->setMaxHealth(8);
-		$this->setMovementSpeed(0.25);
 		$this->setAttackDamage(2);
 	}
 

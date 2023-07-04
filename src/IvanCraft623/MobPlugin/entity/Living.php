@@ -32,6 +32,7 @@ use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
@@ -65,6 +66,10 @@ abstract class Living extends PMLiving {
 	protected MobInventory $inventory;
 
 	protected Brain $brain;
+
+	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
+
+	protected int $lastDamageByEntityTick = -1; //server tick
 
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
@@ -269,5 +274,18 @@ abstract class Living extends PMLiving {
 		if (!$source->isCancelled()) {
 			$this->noActionTime = 0;
 		}
+
+		if ($source instanceof EntityDamageByEntityEvent) {
+			$this->lastDamageByEntity = $source;
+			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
+		}
+	}
+
+	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
+		return $this->lastDamageByEntity;
+	}
+
+	public function getLastDamageByEntityTick() : int{
+		return $this->lastDamageByEntityTick;
 	}
 }
