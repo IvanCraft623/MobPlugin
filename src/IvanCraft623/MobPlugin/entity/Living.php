@@ -38,6 +38,7 @@ use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
+use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
@@ -59,7 +60,13 @@ abstract class Living extends PMLiving {
 
 	protected Random $random;
 
-	protected float $maxUpStep = 0.6;
+	protected float $upStepVelocity = 0.37;
+
+	/** @var float */
+	protected $stepHeight = 0.6;
+
+	/** @var float */
+	protected $jumpVelocity = 0.475;
 
 	protected int $noActionTime = 0; //TODO: logic
 
@@ -144,7 +151,7 @@ abstract class Living extends PMLiving {
 	}
 
 	public function getMaxUpStep() : float {
-		return $this->maxUpStep;
+		return $this->stepHeight;
 	}
 
 	public function getInventory() : MobInventory{
@@ -177,7 +184,10 @@ abstract class Living extends PMLiving {
 	}
 
 	public function jump() : void{
-		$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity(), null);
+		if ($this->onGround || $this->getWorld()->getBlock($this->location) instanceof Liquid) {
+			//$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity(), null);
+			$this->motion = new Vector3(0, $this->getJumpVelocity(), 0);
+		}
 	}
 
 	public function getJumpVelocity() : float{

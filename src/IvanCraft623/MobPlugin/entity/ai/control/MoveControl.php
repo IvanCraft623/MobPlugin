@@ -27,8 +27,6 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\Door;
-use pocketmine\block\Fence;
 use pocketmine\math\Vector3;
 use function atan2;
 use function cos;
@@ -130,21 +128,14 @@ class MoveControl implements Control {
 			$this->mob->setRotation($yaw, $location->pitch);
 			$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
 
-			$motion = $this->mob->getMotion();
-			foreach ($location->getWorld()->getCollisionBlocks($this->mob->boundingBox->addCoord($motion->x, $motion->y, $motion->z)) as $block) {
-				if ($block->getCollisionBoxes()[0]->maxY - $this->mob->boundingBox->minY > 1) {
-					if ($dy > $this->mob->getMaxUpStep() &&
-					($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth()) &&
-					!$block instanceof Door &&
-					!$block instanceof Fence) {
-						$this->mob->getJumpControl()->jump();
-						$this->operation = self::OPERATION_JUMPING;
-						return;
-					}
-				}
+			$block = $location->getWorld()->getBlock($location);
+			if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
+				$this->mob->getJumpControl()->jump();
+				$this->operation = self::OPERATION_JUMPING;
+				return;
 			}
 		} elseif ($this->operation === self::OPERATION_JUMPING) {
-			$this->mob->setMovementSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
+			$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
 			if ($this->mob->onGround) {
 				$this->operation = self::OPERATION_WAIT;
 			}

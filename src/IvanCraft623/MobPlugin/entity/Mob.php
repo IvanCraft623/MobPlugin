@@ -52,10 +52,7 @@ use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
 use function assert;
-use function cos;
 use function max;
-use function sin;
-use const M_PI;
 
 abstract class Mob extends Living {
 	//TODO!
@@ -344,24 +341,8 @@ abstract class Mob extends Living {
 
 	public function travel(Vector3 $movementInput) : void{
 		// TODO: More complex movement suff :P
-		$motion = $this->movementInputToMotion($movementInput);
+		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $this->getMovementSpeed());
 		$this->addMotion($motion->x, $motion->y, $motion->z);
-	}
-
-	public function movementInputToMotion(Vector3 $movementInput) : Vector3{
-		$length = $movementInput->lengthSquared();
-		if ($length < 1.0E-7) {
-			return Vector3::zero();
-		}
-
-		$vec3 = (($length > 1) ? $movementInput->normalize() : $movementInput)->multiply($this->getMovementSpeed());
-		$f = sin($this->location->yaw * (M_PI / 180));
-		$g = cos($this->location->yaw * (M_PI / 180));
-		return new Vector3(
-			$vec3->x * $g - $vec3->z * $f,
-			$vec3->y,
-			$vec3->z * $g + $vec3->x * $f
-		);
 	}
 
 	protected function updateControlFlags() : void{

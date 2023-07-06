@@ -27,12 +27,9 @@ use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\math\AxisAlignedBB;
-
-use pocketmine\utils\Utils;
 
 class HurtByTargetGoal extends TargetGoal {
 
@@ -50,14 +47,10 @@ class HurtByTargetGoal extends TargetGoal {
 
 	private int $lastDamageTick = -1;
 
-	/**
-	 * @phpstan-var class-string<Living>[]
-	 */
+	/** @phpstan-var class-string<Living>[] */
 	private array $ignoredDamagers = [];
 
-	/**
-	 * @phpstan-var class-string<Living>[]
-	 */
+	/** @phpstan-var class-string<Living>[] */
 	private array $ignoredAlert = [];
 
 	/**

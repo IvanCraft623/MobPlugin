@@ -244,8 +244,7 @@ abstract class PathNavigation {
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
-		$blockPos = $position->floor();
-		return $this->world->getBlock($position->down())->getId() === BlockLegacyIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->world, $blockPos);
+		return $this->world->getBlock($position->down())->getId() === BlockLegacyIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->world, $position);
 	}
 
 	protected function followThePath() : void{

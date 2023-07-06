@@ -51,6 +51,7 @@ use pocketmine\world\World;
 use function ceil;
 use function floor;
 use function max;
+use function min;
 
 class WalkNodeEvaluator extends NodeEvaluator {
 
@@ -282,13 +283,15 @@ class WalkNodeEvaluator extends NodeEvaluator {
 				) {
 					$halfWidth = $width / 2;
 					$sidePos = $pos->getSide($facing)->add(0.5, 0, 0.5);
+					$y1 = $this->getFloorLevel(new Vector3($sidePos->x, $y + 1, $sidePos->z));
+					$y2 = $this->getFloorLevel(new Vector3($resultNode->x, $resultNode->y, $resultNode->z));
 					$bb = new AxisAlignedBB(
-						$sidePos->x - $halfWidth,
-						$this->getFloorLevel(new Vector3($sidePos->x, $y + 1, $sidePos->z)) + 0.001,
-						$sidePos->z - $halfWidth,
-						$sidePos->x + $halfWidth,
-						$this->mob->getSize()->getHeight() + $this->getFloorLevel(new Vector3($resultNode->x, $resultNode->y, $resultNode->z)) - 0.002,
-						$sidePos->z + $halfWidth
+						minX: $sidePos->x - $halfWidth,
+						minY: min($y1, $y2) + 0.001,
+						minZ: $sidePos->z - $halfWidth,
+						maxX: $sidePos->x + $halfWidth,
+						maxY: $this->mob->getSize()->getHeight() + max($y1, $y2) - 0.002,
+						maxZ: $sidePos->z + $halfWidth
 					);
 					if ($this->hasCollisions($bb)) {
 						$resultNode = null;
