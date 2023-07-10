@@ -276,7 +276,7 @@ abstract class Mob extends Living {
 				return;
 			}
 
-			$nearestPlayer = Utils::getNearestPlayer($this->getPosition());
+			$nearestPlayer = Utils::getNearestPlayer($this);
 			if ($nearestPlayer !== null) {
 				$mobCategory = $this->getMobCategory();
 				$distanceSquared = $this->location->distanceSquared($nearestPlayer->getPosition());

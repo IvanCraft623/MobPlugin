@@ -128,7 +128,6 @@ class MoveControl implements Control {
 			$this->mob->setRotation($yaw, $location->pitch);
 			$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
 
-			$block = $location->getWorld()->getBlock($location);
 			if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 				$this->mob->getJumpControl()->jump();
 				$this->operation = self::OPERATION_JUMPING;

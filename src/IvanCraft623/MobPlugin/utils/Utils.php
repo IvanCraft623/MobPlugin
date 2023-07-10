@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\utils;
 
+use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\pathfinder\PathComputationType;
 
 use pocketmine\block\Block;
@@ -30,11 +31,13 @@ use pocketmine\block\BlockLegacyIds;
 use pocketmine\block\Door;
 use pocketmine\block\Slab;
 use pocketmine\block\Water;
+use pocketmine\entity\Living;
 use pocketmine\item\Bow;
+use pocketmine\item\Item;
 use pocketmine\item\Releasable;
+use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
-use pocketmine\world\Position;
 use function array_reduce;
 use function cos;
 use function fmod;
@@ -134,15 +137,20 @@ class Utils {
 		return false;
 	}
 
-	public static function getNearestPlayer(Position $pos, float $maxDistance = -1) : ?Player{
-		return array_reduce($pos->getWorld()->getPlayers(), function(?Player $carry, Player $current) use ($pos, $maxDistance) : Player{
-			if ($carry === null) {
-				return $current;
+	public static function getNearestPlayer(Living $entity, float $maxDistance = -1, ?TargetingConditions $conditions = null) : ?Player{
+		$pos = $entity->getPosition();
+		return array_reduce($pos->getWorld()->getPlayers(), function(?Player $carry, Player $current) use ($entity, $pos, $maxDistance, $conditions) : ?Player{
+			if ($conditions !== null && !$conditions->test($entity, $current)) {
+				return $carry;
 			}
 
 			$distanceSquared = $current->getPosition()->distanceSquared($pos);
 			if ($maxDistance > 0 && $distanceSquared > ($maxDistance ** 2)) {
 				return $carry;
+			}
+
+			if ($carry === null) {
+				return $current;
 			}
 
 			return $carry->getPosition()->distanceSquared($pos) < $distanceSquared ? $carry : $current;
@@ -163,5 +171,34 @@ class Utils {
 			$vec3->y,
 			$vec3->z * $g + $vec3->x * $f
 		);
+	}
+
+	public static function popItemInHand(Player $player, int $amount = 1) : void{
+		if ($player->hasFiniteResources()) {
+			$item = $player->getInventory()->getItemInHand();
+			$item->pop($amount);
+
+			if ($item->isNull()) {
+				$item = VanillaItems::AIR();
+			}
+
+			$player->getInventory()->setItemInHand($item);
+		}
+	}
+
+	public static function transformItemInHand(Player $player, Item $result) : void{
+		if ($player->hasFiniteResources()) {
+			$item = $player->getInventory()->getItemInHand();
+			$item->pop($result->getCount());
+
+			if ($item->isNull()) {
+				$player->getInventory()->setItemInHand($result);
+				return;
+			}
+
+			$player->getInventory()->setItemInHand($item);
+		}
+
+		$player->getInventory()->addItem($result);
 	}
 }

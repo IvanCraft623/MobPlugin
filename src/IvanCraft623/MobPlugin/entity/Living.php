@@ -273,9 +273,9 @@ abstract class Living extends PMLiving {
 					$inventoryTag->push($item->nbtSerialize($slot));
 				}
 			}
-
-			return $nbt;
 		}
+
+		return $nbt;
 	}
 
 	public function attack(EntityDamageEvent $source) : void{
@@ -292,6 +292,14 @@ abstract class Living extends PMLiving {
 	}
 
 	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
+		return $this->lastDamageByEntity;
+	}
+
+	public function getExpirableLastDamageByEntity() : ?EntityDamageByEntityEvent{
+		if ($this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100) {
+			return null;
+		}
+
 		return $this->lastDamageByEntity;
 	}
 
