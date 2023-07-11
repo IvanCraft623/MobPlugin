@@ -42,7 +42,7 @@ abstract class Goal {
 	}
 
 	public function isInterruptable() : bool{
-		return false;
+		return true;
 	}
 
 	public function start() : void{

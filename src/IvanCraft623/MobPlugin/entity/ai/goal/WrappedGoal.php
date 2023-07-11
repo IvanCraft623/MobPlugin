@@ -48,6 +48,10 @@ class WrappedGoal extends Goal {
 		return $this->goal->canContinueToUse();
 	}
 
+	public function isInterruptable() : bool{
+		return $this->goal->isInterruptable();
+	}
+
 	public function start() : void{
 		if (!$this->isRunning) {
 			$this->isRunning = true;
