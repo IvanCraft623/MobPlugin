@@ -21,27 +21,21 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity\monster;
+namespace IvanCraft623\MobPlugin\entity\animation;
 
-use IvanCraft623\MobPlugin\entity\MobCategory;
-use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\entity\animal\Animal;
 
-abstract class Monster extends PathfinderMob implements Enemy {
-	//TODO!
+use pocketmine\entity\animation\Animation;
+use pocketmine\network\mcpe\protocol\ActorEventPacket;
+use pocketmine\network\mcpe\protocol\types\ActorEvent;
 
-	public function getMobCategory() : MobCategory{
-		return MobCategory::MONSTER();
-	}
+final class BreedingAnimation implements Animation{
 
-	public function shouldDespawnInPeaceful() : bool{
-		return true;
-	}
+	public function __construct(private Animal $animal){}
 
-	public function getXpDropAmount() : int{
-		if ($this->hasBeenDamagedByPlayer()) {
-			return 5;
-		}
-
-		return 0;
+	public function encode() : array{
+		return [
+			ActorEventPacket::create($this->animal->getId(), ActorEvent::LOVE_PARTICLES, 0)
+		];
 	}
 }

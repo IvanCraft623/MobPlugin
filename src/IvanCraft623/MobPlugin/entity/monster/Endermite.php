@@ -98,5 +98,13 @@ class Endermite extends Monster {
 		return self::MAX_LIFE;
 	}
 
+	public function getXpDropAmount() : int{
+		if ($this->hasBeenDamagedByPlayer()) {
+			return 3;
+		}
+
+		return 0;
+	}
+
 	//TODO: spawn rules code
 }

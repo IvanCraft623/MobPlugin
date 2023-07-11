@@ -42,6 +42,7 @@ use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
+use function mt_rand;
 
 class Cow extends Animal {
 
@@ -57,7 +58,7 @@ class Cow extends Animal {
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(1, new PanicGoal($this, 3));
+		$this->goalSelector->addGoal(1, new PanicGoal($this, 1.25));
 		$this->goalSelector->addGoal(2, new BreedGoal($this, 1));
 		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.25, (new ItemSet())->add(VanillaItems::WHEAT()), false));
 		$this->goalSelector->addGoal(4, new FollowParentGoal($this, 1.1));
@@ -89,5 +90,12 @@ class Cow extends Animal {
 
 	public function getBreedOffspring(AgeableMob $partner) : Cow{
 		return new Cow($this->getLocation());
+	}
+
+	public function getDrops() : array{
+		return [
+			VanillaItems::LEATHER()->setCount(mt_rand(0, 2)),
+			($this->shouldDropCookedItems() ? VanillaItems::STEAK() : VanillaItems::RAW_BEEF())->setCount(mt_rand(1, 3))
+		];
 	}
 }

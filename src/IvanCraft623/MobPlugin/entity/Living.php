@@ -47,6 +47,7 @@ use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
+use pocketmine\player\Player;
 use pocketmine\utils\Random;
 use function array_filter;
 use function array_key_exists;
@@ -77,6 +78,8 @@ abstract class Living extends PMLiving {
 	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
 
 	protected int $lastDamageByEntityTick = -1; //server tick
+
+	protected bool $hasBeenDamagedByPlayer = false;
 
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
@@ -284,10 +287,18 @@ abstract class Living extends PMLiving {
 		if (!$source->isCancelled()) {
 			$this->noActionTime = 0;
 		}
+	}
 
-		if ($source instanceof EntityDamageByEntityEvent) {
-			$this->lastDamageByEntity = $source;
+	public function setLastDamageCause(EntityDamageEvent $type) : void{
+		parent::setLastDamageCause($type);
+
+		if ($type instanceof EntityDamageByEntityEvent) {
+			$this->lastDamageByEntity = $type;
 			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
+
+			if ($type->getDamager() instanceof Player) {
+				$this->hasBeenDamagedByPlayer = true;
+			}
 		}
 	}
 
@@ -305,5 +316,18 @@ abstract class Living extends PMLiving {
 
 	public function getLastDamageByEntityTick() : int{
 		return $this->lastDamageByEntityTick;
+	}
+
+	public function hasBeenDamagedByPlayer() : bool{
+		return $this->hasBeenDamagedByPlayer;
+	}
+
+	protected function shouldDropCookedItems() : bool{
+		$deathCause = $this->getLastDamageCause()?->getCause() ?? null;
+		return $this->isOnFire() || (!$this->isAlive() && (
+			$deathCause === EntityDamageEvent::CAUSE_FIRE ||
+			$deathCause === EntityDamageEvent::CAUSE_FIRE_TICK ||
+			$deathCause === EntityDamageEvent::CAUSE_LAVA
+		));
 	}
 }

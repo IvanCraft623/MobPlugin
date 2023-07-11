@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
+use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\BlockLegacyIds;
@@ -38,8 +39,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
 use pocketmine\utils\Binary;
-use pocketmine\world\particle\HeartParticle;
-use function lcg_value;
+use function mt_rand;
 
 abstract class Animal extends AgeableMob {
 
@@ -87,14 +87,7 @@ abstract class Animal extends AgeableMob {
 			$this->inLoveTicks--;
 
 			if ($this->inLoveTicks % 16 === 0) {
-				$width = $this->size->getWidth();
-				for ($i = 0; $i < 3; $i++) {
-					$this->getWorld()->addParticle(new Vector3(
-						$this->location->x + $width * (2 * lcg_value() - 1),
-						$this->location->y + $this->size->getHeight() * lcg_value(),
-						$this->location->z + $width * (2 * lcg_value() - 1)
-					), new HeartParticle()); //TODO: Heart particle scale
-				}
+				$this->broadcastAnimation(new BreedingAnimation($this));
 			}
 		}
 	}
@@ -123,7 +116,11 @@ abstract class Animal extends AgeableMob {
 	}
 
 	public function getXpDropAmount() : int{
-		return 1 + $this->random->nextBoundedInt(3); //TODO: check out this
+		if (!$this->isBaby() && $this->hasBeenDamagedByPlayer()) {
+			return mt_rand(1, 3);
+		}
+
+		return 0;
 	}
 
 	public function isFood(Item $item) : bool {
