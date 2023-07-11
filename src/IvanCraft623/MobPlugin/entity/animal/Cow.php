@@ -37,7 +37,7 @@ use IvanCraft623\MobPlugin\utils\ItemSet;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\EntitySizeInfo;
-use pocketmine\item\ItemIds;
+use pocketmine\item\Bucket;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -78,7 +78,7 @@ class Cow extends Animal {
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$item = $player->getInventory()->getItemInHand();
-		if (!$this->isBaby() && $item->getId() === ItemIds::BUCKET) {
+		if (!$this->isBaby() && $item instanceof Bucket) {
 			Utils::transformItemInHand($player, VanillaItems::MILK_BUCKET());
 			$this->broadcastSound(new CowMilkSound());
 			return true;
