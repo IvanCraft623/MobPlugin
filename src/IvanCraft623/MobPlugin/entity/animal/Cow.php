@@ -93,9 +93,14 @@ class Cow extends Animal {
 	}
 
 	public function getDrops() : array{
-		return [
-			VanillaItems::LEATHER()->setCount(mt_rand(0, 2)),
-			($this->shouldDropCookedItems() ? VanillaItems::STEAK() : VanillaItems::RAW_BEEF())->setCount(mt_rand(1, 3))
-		];
+		$drops = [];
+		if (!$this->isBaby()) {
+			$drops = [
+				VanillaItems::LEATHER()->setCount(mt_rand(0, 2)),
+				($this->shouldDropCookedItems() ? VanillaItems::STEAK() : VanillaItems::RAW_BEEF())->setCount(mt_rand(1, 3))
+			];
+		}
+
+		return $drops;
 	}
 }

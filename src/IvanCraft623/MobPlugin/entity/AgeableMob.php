@@ -28,6 +28,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\utils\Binary;
+use function min;
 
 abstract class AgeableMob extends PathfinderMob implements Ageable {
 
@@ -35,13 +36,14 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 
 	public const STARTING_BABY_AGE = -24000;
 	public const ADULT_AGE = 0;
-	public const FORCED_AGE_PARTICLE_TICKS = 40;
 
 	protected int $age = self::ADULT_AGE;
-	protected int $forcedAge = 0;
 
-	public static function getSpeedUpSecondsWhenFeeding(int $age) : int {
-		return (int) (($age / 20) * 0.1);
+	public static function getAgeUpWhenFeeding(int $currentAge) : int {
+		if ($currentAge < self::ADULT_AGE) {
+			return (int) min(-(self::STARTING_BABY_AGE / 10), -$currentAge);
+		}
+		return 0;
 	}
 
 	public abstract function getBreedOffspring(AgeableMob $partner) : AgeableMob;
@@ -49,7 +51,7 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->setAge(Binary::unsignInt($nbt->getInt(self::TAG_AGE, self::ADULT_AGE)));
+		$this->setAge($nbt->getInt(self::TAG_AGE, self::ADULT_AGE));
 	}
 
 	public function saveNBT() : CompoundTag{
@@ -86,23 +88,14 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 		}
 	}
 
-	public function ageUp(int $ageAmount, bool $force = false) : void{
+	public function ageUp(int $ageAmount) : void{
 		$currentAge = $this->getAge();
-		$currentAge += $ageAmount * 20;
+		$currentAge += $ageAmount;
 
 		if ($currentAge > self::ADULT_AGE) {
 			$currentAge = self::ADULT_AGE;
 		}
-
-		$ageDifference = $currentAge - $this->age;
 		$this->setAge($currentAge);
-		if ($force) {
-			$this->forcedAge += $ageDifference;
-		}
-
-		if ($this->getAge() === self::ADULT_AGE) {
-			$this->setAge($this->forcedAge);
-		}
 	}
 
 	public function tickAi() : void{

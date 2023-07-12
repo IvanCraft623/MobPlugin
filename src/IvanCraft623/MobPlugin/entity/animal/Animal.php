@@ -60,7 +60,7 @@ abstract class Animal extends AgeableMob {
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->setAge(Binary::unsignInt($nbt->getInt(self::TAG_IN_LOVE_TICKS, 0)));
+		$this->inLoveTicks = $nbt->getInt(self::TAG_IN_LOVE_TICKS, 0);
 	}
 
 	public function saveNBT() : CompoundTag{
@@ -140,7 +140,7 @@ abstract class Animal extends AgeableMob {
 
 			if ($this->isBaby()) {
 				Utils::popItemInHand($player);
-				$this->ageUp(static::getSpeedUpSecondsWhenFeeding(-$age), true);
+				$this->ageUp(static::getAgeUpWhenFeeding($age));
 
 				$this->broadcastAnimation(new BabyAnimalFeedAnimation($this));
 
