@@ -33,6 +33,7 @@ use pocketmine\block\Slab;
 use pocketmine\block\Water;
 use pocketmine\entity\Living;
 use pocketmine\item\Bow;
+use pocketmine\item\Durable;
 use pocketmine\item\Item;
 use pocketmine\item\Releasable;
 use pocketmine\item\VanillaItems;
@@ -200,5 +201,20 @@ class Utils {
 		}
 
 		$player->getInventory()->addItem($result);
+	}
+
+	public static function damageItemInHand(Player $player, int $amount = 1) : void{
+		if ($player->hasFiniteResources()) {
+			$item = $player->getInventory()->getItemInHand();
+			if ($item instanceof Durable) {
+				$item->applyDamage($amount);
+
+				if ($item->isNull()) {
+					$item = VanillaItems::AIR();
+				}
+
+				$player->getInventory()->setItemInHand($item);
+			}
+		}
 	}
 }

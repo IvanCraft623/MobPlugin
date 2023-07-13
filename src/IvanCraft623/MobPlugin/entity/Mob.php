@@ -468,6 +468,9 @@ abstract class Mob extends Living {
 		return true;
 	}
 
+	public function onEat() : void{
+	}
+
 	protected function syncNetworkData(EntityMetadataCollection $properties) : void{
 		parent::syncNetworkData($properties);
 

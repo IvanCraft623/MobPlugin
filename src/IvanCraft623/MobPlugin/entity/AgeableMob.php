@@ -29,6 +29,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\utils\Binary;
 use function min;
+use function mt_rand;
 
 abstract class AgeableMob extends PathfinderMob implements Ageable {
 
@@ -38,6 +39,13 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 	public const ADULT_AGE = 0;
 
 	protected int $age = self::ADULT_AGE;
+
+	public static function getRandomStartAge() : int{
+		if (mt_rand(1, 19) === 1) { //5% baby chance
+			return self::STARTING_BABY_AGE;
+		}
+		return self::ADULT_AGE;
+	}
 
 	public static function getAgeUpWhenFeeding(int $currentAge) : int {
 		if ($currentAge < self::ADULT_AGE) {
@@ -51,7 +59,7 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->setAge($nbt->getInt(self::TAG_AGE, self::ADULT_AGE));
+		$this->setAge($nbt->getInt(self::TAG_AGE, static::getRandomStartAge()));
 	}
 
 	public function saveNBT() : CompoundTag{
