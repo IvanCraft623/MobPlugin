@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin;
 
 use IvanCraft623\MobPlugin\entity\animal\Cow;
+use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
@@ -85,6 +86,10 @@ class MobPlugin extends PluginBase {
 			return new Cow(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:cow', 'Cow'], LegacyIds::COW);
 
+		$factory->register(MooshroomCow::class, function(World $world, CompoundTag $nbt) : MooshroomCow{
+			return new MooshroomCow(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:mooshroom', 'Mooshroom'], LegacyIds::MOOSHROOM);
+
 		$factory->register(Sheep::class, function(World $world, CompoundTag $nbt) : Sheep{
 			return new Sheep(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:sheep', 'Sheep'], LegacyIds::SHEEP);
@@ -96,6 +101,12 @@ class MobPlugin extends PluginBase {
 		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::ENDERMITE), "Endermite Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return new Endermite(Location::fromObject($pos, $world, $yaw, $pitch));
+			}
+		});
+
+		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::MOOSHROOM), "Mooshroom Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return new MooshroomCow(Location::fromObject($pos, $world, $yaw, $pitch));
 			}
 		});
 

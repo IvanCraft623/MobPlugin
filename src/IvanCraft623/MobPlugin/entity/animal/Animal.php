@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
+use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\BlockLegacyIds;
@@ -134,6 +135,8 @@ abstract class Animal extends AgeableMob {
 			if ($age === AgeableMob::ADULT_AGE && $this->canFallInLove()) {
 				Utils::popItemInHand($player);
 				$this->setInLove($player);
+
+				$this->broadcastAnimation(new ConsumingItemAnimation($this, $item));
 
 				return true;
 			}
