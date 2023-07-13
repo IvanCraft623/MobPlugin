@@ -30,7 +30,6 @@ use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\BlockLegacyIds;
-use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemIds;
 use pocketmine\math\Vector3;
@@ -90,14 +89,6 @@ abstract class Animal extends AgeableMob {
 			if ($this->inLoveTicks % 16 === 0) {
 				$this->broadcastAnimation(new BreedingAnimation($this));
 			}
-		}
-	}
-
-	public function attack(EntityDamageEvent $source) : void{
-		parent::attack($source);
-
-		if (!$source->isCancelled()) {
-			$this->inLoveTicks = 0;
 		}
 	}
 
