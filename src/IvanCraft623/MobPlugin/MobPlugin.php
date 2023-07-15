@@ -28,18 +28,11 @@ use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 
-use pocketmine\data\bedrock\EntityLegacyIds as LegacyIds;
 use pocketmine\entity\AttributeFactory;
-use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper as Helper;
 use pocketmine\entity\EntityFactory;
-use pocketmine\entity\Location;
-use pocketmine\item\ItemFactory;
-use pocketmine\item\ItemIdentifier as IID;
-use pocketmine\item\ItemIds as Ids;
-use pocketmine\item\SpawnEgg;
-use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Random;
@@ -59,7 +52,8 @@ class MobPlugin extends PluginBase {
 	public function onEnable() : void {
 		$this->registerAttributes();
 		$this->registerEntities();
-		$this->registerSpawnEggs();
+
+		ExtraItemRegisterHelper::init();
 	}
 
 	public function getRandom() : Random {
@@ -80,46 +74,18 @@ class MobPlugin extends PluginBase {
 
 		$factory->register(Endermite::class, function(World $world, CompoundTag $nbt) : Endermite{
 			return new Endermite(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:endermite', 'Endermite'], LegacyIds::ENDERMITE);
+		}, ['minecraft:endermite', 'Endermite']);
 
 		$factory->register(Cow::class, function(World $world, CompoundTag $nbt) : Cow{
 			return new Cow(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:cow', 'Cow'], LegacyIds::COW);
+		}, ['minecraft:cow', 'Cow']);
 
 		$factory->register(MooshroomCow::class, function(World $world, CompoundTag $nbt) : MooshroomCow{
 			return new MooshroomCow(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:mooshroom', 'Mooshroom'], LegacyIds::MOOSHROOM);
+		}, ['minecraft:mooshroom', 'Mooshroom']);
 
 		$factory->register(Sheep::class, function(World $world, CompoundTag $nbt) : Sheep{
 			return new Sheep(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:sheep', 'Sheep'], LegacyIds::SHEEP);
-	}
-
-	private function registerSpawnEggs() : void{
-		$factory = ItemFactory::getInstance();
-
-		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::ENDERMITE), "Endermite Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new Endermite(Location::fromObject($pos, $world, $yaw, $pitch));
-			}
-		});
-
-		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::MOOSHROOM), "Mooshroom Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new MooshroomCow(Location::fromObject($pos, $world, $yaw, $pitch));
-			}
-		});
-
-		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::COW), "Cow Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new Cow(Location::fromObject($pos, $world, $yaw, $pitch));
-			}
-		});
-
-		$factory->register(new class(new IID(Ids::SPAWN_EGG, LegacyIds::SHEEP), "Sheep Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new Sheep(Location::fromObject($pos, $world, $yaw, $pitch));
-			}
-		});
+		}, ['minecraft:sheep', 'Sheep']);
 	}
 }

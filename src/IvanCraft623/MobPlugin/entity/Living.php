@@ -63,11 +63,9 @@ abstract class Living extends PMLiving {
 
 	protected float $upStepVelocity = 0.37;
 
-	/** @var float */
-	protected $stepHeight = 0.6;
+	protected float $stepHeight = 0.6;
 
-	/** @var float */
-	protected $jumpVelocity = 0.475;
+	protected float $jumpVelocity = 0.475;
 
 	protected int $noActionTime = 0; //TODO: logic
 
@@ -251,7 +249,7 @@ abstract class Living extends PMLiving {
 	public function getDrops() : array {
 		return array_filter(array_merge(
 			array_values($this->inventory->getContents()),
-			$this->armorInventory !== null ? array_values($this->armorInventory->getContents()) : []
+			array_values($this->armorInventory->getContents())
 		), function(Item $item) : bool{ return !$item->hasEnchantment(VanillaEnchantments::VANISHING()); });
 	}
 

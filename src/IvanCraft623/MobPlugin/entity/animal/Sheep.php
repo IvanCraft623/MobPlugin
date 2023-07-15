@@ -44,7 +44,7 @@ use pocketmine\block\VanillaBlocks;
 use pocketmine\data\bedrock\DyeColorIdMap;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Dye;
-use pocketmine\item\ItemIds;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -150,7 +150,7 @@ class Sheep extends Animal implements Shearable{
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$item = $player->getInventory()->getItemInHand();
-		if ($item->getId() === ItemIds::SHEARS && $this->isReadyForShearing()) {
+		if ($item->getTypeId() === ItemTypeIds::SHEARS && $this->isReadyForShearing()) {
 			$this->shear();
 			Utils::damageItemInHand($player);
 

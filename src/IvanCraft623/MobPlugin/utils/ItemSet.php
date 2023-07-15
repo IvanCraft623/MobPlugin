@@ -38,7 +38,7 @@ final class ItemSet implements \IteratorAggregate{
 	 */
 	public function add(Item ...$elements) : self{
 		foreach ($elements as $element) {
-			$this->elements[$element->getId()] = $element;
+			$this->elements[$element->getTypeId()] = $element;
 		}
 
 		return $this;
@@ -49,7 +49,7 @@ final class ItemSet implements \IteratorAggregate{
 	 */
 	public function remove(Item ...$elements) : self{
 		foreach ($elements as $element) {
-			unset($this->elements[$element->getId()]);
+			unset($this->elements[$element->getTypeId()]);
 		}
 
 		return $this;
@@ -65,7 +65,7 @@ final class ItemSet implements \IteratorAggregate{
 	}
 
 	public function contains(Item $element, bool $compareEquals = false) : bool{
-		$id = $element->getId();
+		$id = $element->getTypeId();
 		return isset($this->elements[$id]) && (!$compareEquals || $this->elements[$id]->equals($element));
 	}
 

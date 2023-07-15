@@ -25,10 +25,10 @@ namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 
-use pocketmine\block\utils\SkullType;
+use pocketmine\block\MobHead;
+use pocketmine\block\utils\MobHeadType;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
-use pocketmine\item\Skull;
 use function count;
 
 class TargetingUtils {
@@ -47,12 +47,13 @@ class TargetingUtils {
 		}
 		if ($target !== null) {
 			$head = $entity->getArmorInventory()->getHelmet();
-			if ($head instanceof Skull) {
-				$skullType = $head->getSkullType();
+			$headBlock = $head->getBlock();
+			if ($headBlock instanceof MobHead) {
+				$headType = $headBlock->getMobHeadType();
 				if (
-					//($target instanceof Skeleton && $skullType->equals(SkullType::SKELETON())) ||
-					($target instanceof Zombie && $skullType->equals(SkullType::ZOMBIE())) //||
-					//($target instanceof Creeper && $skullType->equals(SkullType::CREEPER()))
+					//($target instanceof Skeleton && $headType->equals(MobHeadType::SKELETON())) ||
+					($target instanceof Zombie && $headType->equals(MobHeadType::ZOMBIE())) //||
+					//($target instanceof Creeper && $headType->equals(MobHeadType::CREEPER()))
 				) {
 					$visibilityPercent *= 0.5;
 				}

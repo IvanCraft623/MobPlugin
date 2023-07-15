@@ -33,7 +33,7 @@ use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BaseRail;
 use pocketmine\block\Block;
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Door;
 use pocketmine\block\Fence;
 use pocketmine\block\FenceGate;
@@ -94,7 +94,7 @@ class WalkNodeEvaluator extends NodeEvaluator {
 			} else {
 				$pos = $this->mob->getPosition()->floor();
 
-				while ((($b = $this->world->getBlock($pos))->getId() === BlockLegacyIds::AIR || Utils::isPathfindable($b,PathComputationType::LAND())) && $pos->y > World::Y_MIN) {
+				while ((($b = $this->world->getBlock($pos))->getTypeId() === BlockTypeIds::AIR || Utils::isPathfindable($b,PathComputationType::LAND())) && $pos->y > World::Y_MIN) {
 					$pos = $pos->down();
 				}
 
@@ -507,9 +507,9 @@ class WalkNodeEvaluator extends NodeEvaluator {
 					}
 
 					$block = $world->getBlockAt($x + $currentX, $y + $currentY, $z + $currentZ);
-					$id = $block->getId();
+					$id = $block->getTypeId();
 
-					if ($id === BlockLegacyIds::CACTUS || $id === BlockLegacyIds::SWEET_BERRY_BUSH) {
+					if ($id === BlockTypeIds::CACTUS || $id === BlockTypeIds::SWEET_BERRY_BUSH) {
 						return BlockPathTypes::DANGER_OTHER();
 					}
 
@@ -528,26 +528,26 @@ class WalkNodeEvaluator extends NodeEvaluator {
 
 	public static function getBlockPathTypeRaw(World $world, int $x, int $y, int $z) : BlockPathTypes{
 		$block = $world->getBlockAt($x, $y, $z);
-		$blockId = $block->getId();
+		$blockId = $block->getTypeId();
 
 		switch (true) {
-			case ($blockId === BlockLegacyIds::AIR):
+			case ($blockId === BlockTypeIds::AIR):
 				return BlockPathTypes::OPEN();
 
 			case ($block instanceof Trapdoor):
-			case ($blockId === BlockLegacyIds::LILY_PAD):
+			case ($blockId === BlockTypeIds::LILY_PAD):
 			//TODO: big dripleaf
 				return BlockPathTypes::TRAPDOOR();
 
 			//TODO: powder snow
 
-			case ($blockId === BlockLegacyIds::CACTUS):
-			case ($blockId === BlockLegacyIds::SWEET_BERRY_BUSH):
+			case ($blockId === BlockTypeIds::CACTUS):
+			case ($blockId === BlockTypeIds::SWEET_BERRY_BUSH):
 				return BlockPathTypes::DAMAGE_OTHER();
 
 			//TODO: honey
 
-			case ($blockId === BlockLegacyIds::COCOA):
+			case ($blockId === BlockTypeIds::COCOA_POD):
 				return BlockPathTypes::COCOA();
 
 			case ($block instanceof Water):
@@ -586,11 +586,11 @@ class WalkNodeEvaluator extends NodeEvaluator {
 	}
 
 	public static function isBurningBlock(Block $block) : bool{
-		$blockId = $block->getId();
+		$blockId = $block->getTypeId();
 
-		return $blockId === BlockLegacyIds::FIRE ||
+		return $blockId === BlockTypeIds::FIRE ||
 			$block instanceof Lava ||
-			$blockId === BlockLegacyIds::MAGMA;
+			$blockId === BlockTypeIds::MAGMA;
 			//TODO: lava cauldron
 			//TODO: lit camfire
 	}

@@ -50,7 +50,7 @@ class EatBlockGoal extends Goal {
 	}
 
 	public static function addEatableBlock(Block $block, Block $replacer) : void{
-		$id = $block->getFullId();
+		$id = $block->getStateId();
 		self::$eatableBlocks[$id] = $block;
 		self::$eatableBlockReplacers[$id] = $replacer;
 	}
@@ -58,7 +58,7 @@ class EatBlockGoal extends Goal {
 	public static function isEatable(Block $block) : bool{
 		self::initEatableBlocks();
 
-		return isset(self::$eatableBlocks[$block->getFullId()]);
+		return isset(self::$eatableBlocks[$block->getStateId()]);
 	}
 
 	public static function getEatableReplacer(Block $block) : Block{
@@ -68,7 +68,7 @@ class EatBlockGoal extends Goal {
 			throw new \InvalidArgumentException("Block provided is not eatable");
 		}
 
-		return clone self::$eatableBlockReplacers[$block->getFullId()];
+		return clone self::$eatableBlockReplacers[$block->getStateId()];
 	}
 
 	private int $eatAnimationTick = 0;

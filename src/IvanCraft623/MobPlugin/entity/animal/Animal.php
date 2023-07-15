@@ -29,9 +29,9 @@ use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\item\Item;
-use pocketmine\item\ItemIds;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
@@ -93,7 +93,7 @@ abstract class Animal extends AgeableMob {
 	}
 
 	public function getWalkTargetValue(Vector3 $position) : float{
-		return $this->getWorld()->getBlock($position)->getId() === BlockLegacyIds::GRASS ? 10 : 0;
+		return $this->getWorld()->getBlock($position)->getTypeId() === BlockTypeIds::GRASS ? 10 : 0;
 		//TODO: If it is not grass calculate the value using light level
 	}
 
@@ -116,7 +116,7 @@ abstract class Animal extends AgeableMob {
 	}
 
 	public function isFood(Item $item) : bool {
-		return $item->getId() === ItemIds::WHEAT;
+		return $item->getTypeId() === ItemTypeIds::WHEAT;
 	}
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{

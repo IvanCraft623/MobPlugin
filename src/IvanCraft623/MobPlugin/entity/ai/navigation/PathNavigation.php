@@ -32,7 +32,8 @@ use IvanCraft623\MobPlugin\pathfinder\Path;
 use IvanCraft623\MobPlugin\pathfinder\PathFinder;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
+use pocketmine\block\FillableCauldron;
 use pocketmine\block\Liquid;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
@@ -244,7 +245,7 @@ abstract class PathNavigation {
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
-		return $this->world->getBlock($position->down())->getId() === BlockLegacyIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->world, $position);
+		return $this->world->getBlock($position->down())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->world, $position);
 	}
 
 	protected function followThePath() : void{
@@ -380,21 +381,19 @@ abstract class PathNavigation {
 	}
 
 	protected function trimPath() : void{
-		//TODO: activate this when PM5 is out
-
-		/*if ($this->path !== null) {
+		if ($this->path !== null) {
 			for ($i = 0; $i < $this->path->getNodeCount(); $i++) {
 				$node = $this->path->getNode($i);
 				if ($this->world->getBlock($node->asVector3()) instanceof FillableCauldron) {
-					$this->path->replaceNode($i, $node->cloneAndMove($node->getX(), $node->getY() + 1, $node->getZ()));
+					$this->path->replaceNode($i, $node->cloneAndMove($node->x(), $node->y() + 1, $node->z()));
 
 					$nextNode = $i + 1 < $this->path->getNodeCount() ? $this->path->getNode($i + 1) : null;
 					if ($nextNode !== null && $node->y >= $nextNode->y) {
-						$this->path->replaceNode($i + 1, $node->cloneAndMove($nextNode->getX(), $node->getY() + 1, $nextNode->getZ()));
+						$this->path->replaceNode($i + 1, $node->cloneAndMove($nextNode->x(), $node->y() + 1, $nextNode->z()));
 					}
 				}
 			}
-		}*/
+		}
 	}
 
 	protected function canMoveDirectly(Vector3 $from, Vector3 $to) : bool{

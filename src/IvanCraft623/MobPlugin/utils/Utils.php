@@ -27,7 +27,7 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\pathfinder\PathComputationType;
 
 use pocketmine\block\Block;
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Door;
 use pocketmine\block\Slab;
 use pocketmine\block\Water;
@@ -91,18 +91,17 @@ class Utils {
 			return false;
 		}
 
-		switch ($block->getId()) {
-			case BlockLegacyIds::ANVIL:
-			case BlockLegacyIds::BREWING_STAND_BLOCK:
-			case BlockLegacyIds::BREWING_STAND_BLOCK:
-			case BlockLegacyIds::DRAGON_EGG:
+		switch ($block->getTypeId()) {
+			case BlockTypeIds::ANVIL:
+			case BlockTypeIds::BREWING_STAND:
+			case BlockTypeIds::DRAGON_EGG:
 			//TODO: respawn anchor
-			case BlockLegacyIds::END_ROD:
+			case BlockTypeIds::END_ROD:
 			//TODO: lightning rod
-			case BlockLegacyIds::PISTON_ARM_COLLISION:
+			//TODO: piston arm
 				return false;
 
-			case BlockLegacyIds::DEAD_BUSH:
+			case BlockTypeIds::DEAD_BUSH:
 				return $pathType->equals(PathComputationType::AIR()) ? true : self::getDefaultPathfindable($block, $pathType);
 
 			default:

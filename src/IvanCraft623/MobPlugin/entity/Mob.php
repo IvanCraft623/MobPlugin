@@ -457,7 +457,9 @@ abstract class Mob extends Living {
 		if($this->isAlive()){
 			//reactive damage like thorns might cause us to be killed by attacking another mob, which
 			//would mean we'd already have dropped the inventory by the time we reached here
-			if($heldItem->onAttackEntity($entity) && $oldItem->equalsExact($this->inventory->getItemInHand())){
+
+			$returnedItems = []; //TODO: do something with returned items
+			if($heldItem->onAttackEntity($entity, $returnedItems) && $oldItem->equalsExact($this->inventory->getItemInHand())){
 				if($heldItem instanceof Durable && $heldItem->isBroken()){
 					$this->broadcastSound(new ItemBreakSound());
 				}

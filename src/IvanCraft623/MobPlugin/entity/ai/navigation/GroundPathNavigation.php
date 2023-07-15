@@ -29,7 +29,7 @@ use IvanCraft623\MobPlugin\pathfinder\evaluator\WalkNodeEvaluator;
 use IvanCraft623\MobPlugin\pathfinder\Path;
 use IvanCraft623\MobPlugin\pathfinder\PathFinder;
 
-use pocketmine\block\BlockLegacyIds;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
@@ -56,10 +56,10 @@ class GroundPathNavigation extends PathNavigation{
 	}
 
 	public function createPathToPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
-		if ($this->world->getBlock($position)->getId() === BlockLegacyIds::AIR) {
+		if ($this->world->getBlock($position)->getTypeId() === BlockTypeIds::AIR) {
 			$currentPos = $position->down();
 
-			while ($currentPos->y > World::Y_MIN && $this->world->getBlock($currentPos)->getId() === BlockLegacyIds::AIR) {
+			while ($currentPos->y > World::Y_MIN && $this->world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
 				$currentPos = $currentPos->down();
 			}
 
@@ -67,7 +67,7 @@ class GroundPathNavigation extends PathNavigation{
 				return parent::createPathToPosition($currentPos->up(), $maxVisitedNodes, $range);
 			}
 
-			while($currentPos->getY() < World::Y_MAX && $this->world->getBlock($currentPos)->getId() === BlockLegacyIds::AIR) {
+			while($currentPos->getY() < World::Y_MAX && $this->world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
 				$currentPos = $currentPos->up();
 			}
 

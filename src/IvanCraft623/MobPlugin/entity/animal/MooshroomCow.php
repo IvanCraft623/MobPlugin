@@ -25,12 +25,18 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 
 use IvanCraft623\MobPlugin\data\bedrock\MooshroomCowTypeIdMap;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
+use IvanCraft623\MobPlugin\entity\animal\utils\SuspiciousStewTypeFlowerMap;
+use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
 use IvanCraft623\MobPlugin\entity\Shearable;
+use IvanCraft623\MobPlugin\sound\MilkSuspiciouslySound;
 use IvanCraft623\MobPlugin\sound\MooshroomCowConvertSound;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\item\ItemIds;
+use pocketmine\data\bedrock\SuspiciousStewTypeIdMap;
+use pocketmine\item\ItemTypeIds;
+use pocketmine\item\SuspiciousStewType;
+use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -38,6 +44,8 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
 use pocketmine\world\particle\HugeExplodeParticle;
+use pocketmine\world\particle\SmokeParticle;
+use function lcg_value;
 use function mt_rand;
 
 class MooshroomCow extends Cow implements Shearable{
@@ -60,7 +68,7 @@ class MooshroomCow extends Cow implements Shearable{
 
 	protected MooshroomCowType $mooshroomType;
 
-	//TODO: suspicious stew type
+	protected ?SuspiciousStewType $stewType = null;
 
 	public function getName() : string{
 		return "Mooshroom";
@@ -70,13 +78,19 @@ class MooshroomCow extends Cow implements Shearable{
 		parent::initEntity($nbt);
 
 		$this->mooshroomType = MooshroomCowTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_TYPE, -1)) ?? MooshroomCowType::RED();
+		$this->stewType = SuspiciousStewTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_SUSPICIOUS_STEW_TYPE, -1));
 	}
 
 	public function saveNBT() : CompoundTag{
 		$nbt = parent::saveNBT();
 
 		$nbt->setInt(self::TAG_TYPE, MooshroomCowTypeIdMap::getInstance()->toId($this->mooshroomType));
-		$nbt->setInt(self::TAG_SUSPICIOUS_STEW_TYPE, -1); //TODO!
+
+		$stewId = -1;
+		if ($this->stewType !== null) {
+			$stewId = SuspiciousStewTypeIdMap::getInstance()->toId($this->stewType);
+		}
+		$nbt->setInt(self::TAG_SUSPICIOUS_STEW_TYPE, $stewId); //TODO!
 
 		return $nbt;
 	}
@@ -89,13 +103,49 @@ class MooshroomCow extends Cow implements Shearable{
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$item = $player->getInventory()->getItemInHand();
-		if ($item->getId() === ItemIds::SHEARS && $this->isReadyForShearing()) {
+		if ($item->getTypeId() === ItemTypeIds::SHEARS && $this->isReadyForShearing()) {
 			$this->shear();
 			Utils::damageItemInHand($player);
 
 			return true;
 		}
-		//TODO: flowers and suspicious stew type.
+
+		if ($item->getTypeId() === ItemTypeIds::BOWL && !$this->isBaby()) {
+			if ($this->stewType !== null) {
+				$result = VanillaItems::SUSPICIOUS_STEW()->setType($this->stewType);
+
+				$this->setSuspiciousStewType(null);
+			} else{
+				$result = VanillaItems::MUSHROOM_STEW();
+			}
+
+			$this->broadcastSound(new MilkSuspiciouslySound());
+
+			Utils::transformItemInHand($player, $result);
+
+			return true;
+		}
+
+		if (!$this->isBaby() &&
+			$this->mooshroomType->equals(MooshroomCowType::BROWN()) &&
+			($stewType = SuspiciousStewTypeFlowerMap::getInstance()->fromFlower($item->getBlock())) !== null &&
+			($this->stewType === null || !$stewType->equals($this->stewType))
+		) {
+			$this->setSuspiciousStewType($stewType);
+
+			$this->broadcastAnimation(new ConsumingItemAnimation($this, $item));
+
+			$size = $this->getSize();
+			$this->getWorld()->addParticle($this->location->add(
+				lcg_value() / 2,
+				$this->getSize()->getHeight(),
+				lcg_value() / 2,
+			), new SmokeParticle());
+
+			Utils::popItemInHand($player);
+
+			return true;
+		}
 
 		return parent::onInteract($player, $clickPos);
 	}
@@ -110,6 +160,17 @@ class MooshroomCow extends Cow implements Shearable{
 
 	public function getType() : MooshroomCowType{
 		return $this->mooshroomType;
+	}
+
+	/** @return $this */
+	public function setSuspiciousStewType(?SuspiciousStewType $type) : self{
+		$this->stewType = $type;
+
+		return $this;
+	}
+
+	public function getSuspiciousStewType() : ?SuspiciousStewType{
+		return $this->stewType;
 	}
 
 	public function shear() : void{
@@ -156,6 +217,10 @@ class MooshroomCow extends Cow implements Shearable{
 
 	public function onLightningBoltHit() : bool{
 		$this->setType($this->mooshroomType->equals(MooshroomCowType::RED()) ? MooshroomCowType::BROWN() : MooshroomCowType::RED());
+		if ($this->mooshroomType->equals(MooshroomCowType::RED())) {
+			$this->setSuspiciousStewType(null);
+		}
+
 		$this->broadcastSound(new MooshroomCowConvertSound());
 
 		return true;
