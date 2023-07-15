@@ -246,7 +246,7 @@ class PositionGenerator {
 		return new Vector3(
 			floor($targetX + $entityPos->x),
 			floor($targetPos->y + $entityPos->y),
-			floor($targetX + $entityPos->z)
+			floor($targetZ + $entityPos->z)
 		);
 	}
 

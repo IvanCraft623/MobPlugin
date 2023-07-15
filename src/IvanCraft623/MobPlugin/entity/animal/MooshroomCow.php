@@ -90,7 +90,7 @@ class MooshroomCow extends Cow implements Shearable{
 		if ($this->stewType !== null) {
 			$stewId = SuspiciousStewTypeIdMap::getInstance()->toId($this->stewType);
 		}
-		$nbt->setInt(self::TAG_SUSPICIOUS_STEW_TYPE, $stewId); //TODO!
+		$nbt->setInt(self::TAG_SUSPICIOUS_STEW_TYPE, $stewId);
 
 		return $nbt;
 	}
