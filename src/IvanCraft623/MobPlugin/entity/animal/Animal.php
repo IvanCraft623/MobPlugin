@@ -103,10 +103,6 @@ abstract class Animal extends AgeableMob {
 		return 12;
 	}
 
-	public function shouldDespawnWhenFarAway(float $distanceSquared) : bool{
-		return false;
-	}
-
 	public function getXpDropAmount() : int{
 		if (!$this->isBaby() && $this->hasBeenDamagedByPlayer()) {
 			return mt_rand(1, 3);
@@ -126,6 +122,7 @@ abstract class Animal extends AgeableMob {
 			if ($age === AgeableMob::ADULT_AGE && $this->canFallInLove()) {
 				Utils::popItemInHand($player);
 				$this->setInLove($player);
+				$this->setPersistent();
 
 				$this->broadcastAnimation(new ConsumingItemAnimation($this, $item));
 
@@ -135,6 +132,7 @@ abstract class Animal extends AgeableMob {
 			if ($this->isBaby()) {
 				Utils::popItemInHand($player);
 				$this->ageUp(static::getAgeUpWhenFeeding($age));
+				$this->setPersistent();
 
 				$this->broadcastAnimation(new BabyAnimalFeedAnimation($this));
 
@@ -192,13 +190,14 @@ abstract class Animal extends AgeableMob {
 		$offspring = $this->getBreedOffspring($partner);
 		if ($offspring !== null) {
 			$offspring->setBaby();
+			$offspring->setPersistent();
 			$offspring->spawnToAll();
 
 			$this->finalizeSpawnChildFromBreeding($partner, $offspring);
 		}
 	}
 
-	public function finalizeSpawnChildFromBreeding(Animal $partner, ?AgeableMob $offspring) : void{
+	public function finalizeSpawnChildFromBreeding(Animal $partner, AgeableMob $offspring) : void{
 		foreach ([$this, $partner] as $parent) {
 			$parent->setAge(self::PARENT_AGE_AFTER_BREEDING);
 			$parent->setInLoveTicks(0);

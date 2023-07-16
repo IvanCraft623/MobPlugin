@@ -78,25 +78,25 @@ final class ExtraVanillaItems{
 	private static function registerSpawnEggs() : void{
 		self::register("endermite_spawn_egg", new class(new IID(Ids::ENDERMITE_SPAWN_EGG()), "Endermite Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new Endermite(Location::fromObject($pos, $world, $yaw, $pitch));
+				return (new Endermite(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 
 		self::register("mooshroom_spawn_egg", new class(new IID(Ids::MOOSHROOM_SPAWN_EGG()), "Mooshroom Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new MooshroomCow(Location::fromObject($pos, $world, $yaw, $pitch));
+				return (new MooshroomCow(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 
 		self::register("cow_spawn_egg", new class(new IID(Ids::COW_SPAWN_EGG()), "Cow Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new Cow(Location::fromObject($pos, $world, $yaw, $pitch));
+				return (new Cow(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 
 		self::register("sheep_spawn_egg", new class(new IID(Ids::SHEEP_SPAWN_EGG()), "Sheep Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return new Sheep(Location::fromObject($pos, $world, $yaw, $pitch));
+				return (new Sheep(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

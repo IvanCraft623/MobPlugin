@@ -47,14 +47,14 @@ final class MobCategory {
 
 	protected static function setup() : void{
 		self::registerAll(
-			new self("monster", 70, false, false, 128),
-			new self("creature", 10, true, true, 128),
-			new self("ambient", 15, true, false, 128),
-			new self("axolotls", 5, true, false, 128),
-			new self("underground_water_creature", 5, true, false, 128),
-			new self("water_creature", 5, true, false, 128),
-			new self("water_ambient", 20, true, false, 64),
-			new self("misc", -1, true, true, 128)
+			new self("monster", 70, false, false, 64),
+			new self("creature", 10, true, true, 64),
+			new self("ambient", 15, true, false, 64),
+			new self("axolotls", 5, true, false, 64),
+			new self("underground_water_creature", 5, true, false, 64),
+			new self("water_creature", 5, true, false, 64),
+			new self("water_ambient", 20, true, false, 40),
+			new self("misc", -1, true, true, 64)
 		);
 	}
 

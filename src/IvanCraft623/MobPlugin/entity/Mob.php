@@ -57,6 +57,8 @@ use function max;
 abstract class Mob extends Living {
 	//TODO!
 
+	private const TAG_PERSISTENT = "Persistent"; //TAG_Byte
+
 	protected PathNavigation $navigation;
 
 	protected LookControl $lookControl;
@@ -86,7 +88,7 @@ abstract class Mob extends Living {
 
 	protected bool $aggressive = false;
 
-	protected bool $persistenceRequired = false;
+	protected bool $isPersistent = false;
 
 	protected Attribute $attackDamageAttr;
 
@@ -99,6 +101,8 @@ abstract class Mob extends Living {
 
 		parent::initEntity($nbt);
 
+		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
+
 		$this->goalSelector = new GoalSelector();
 		$this->targetSelector = new GoalSelector();
 		$this->lookControl = new LookControl($this);
@@ -108,6 +112,14 @@ abstract class Mob extends Living {
 		$this->sensing = new Sensing($this);
 
 		$this->registerGoals();
+	}
+
+	public function saveNBT() : CompoundTag{
+		$nbt = parent::saveNBT();
+
+		$nbt->setByte(self::TAG_PERSISTENT, $this->isPersistent ? 1 : 0);
+
+		return $nbt;
 	}
 
 	protected function initProperties() : void{
@@ -237,13 +249,30 @@ abstract class Mob extends Living {
 		return max(0, $maxFallDistance + $defaultMax);
 	}
 
-	public function isPersistenceRequired() : bool{
-		//TODO: check if is passenger
-		return $this->persistenceRequired;
+	/**
+	 * Sets whether this entity is forced to not despawn naturally.
+	 *
+	 * @return $this
+	 */
+	public function setPersistent(bool $value = true) : self{
+		$this->isPersistent = $value;
+
+		return $this;
 	}
 
-	public function setPersistenceRequired(bool $value = true) : void{
-		$this->persistenceRequired = $value;
+	/**
+	 * Returns whether this entity is forced to not despawn naturally.
+	 */
+	public function isPersistent() : bool{
+		return $this->isPersistent;
+	}
+
+	/**
+	 * Returns whether this entity cannot despawn naturally.
+	 */
+	public function isPersistenceRequired() : bool{
+		//TODO: check if is passenger
+		return $this->isPersistent() || $this->getNameTag() !== "";
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
@@ -308,10 +337,6 @@ abstract class Mob extends Living {
 
 	public function shouldDespawnWhenFarAway(float $distanceSquared) : bool{
 		return true;
-	}
-
-	public function getDespawnDistance() : int{
-		return 32;
 	}
 
 	public function tickAi() : void{
