@@ -34,6 +34,7 @@ use function preg_match;
  * identify and compare item types efficiently using {@link Item::getTypeId()}.
  *
  * @method static int COW_SPAWN_EGG()
+ * @method static int CREEPER_SPAWN_EGG()
  * @method static int ENDERMITE_SPAWN_EGG()
  * @method static int MOOSHROOM_SPAWN_EGG()
  * @method static int SHEEP_SPAWN_EGG()
@@ -50,6 +51,7 @@ final class ExtraItemTypeIds{
 		self::register("mooshroom_spawn_egg");
 		self::register("cow_spawn_egg");
 		self::register("sheep_spawn_egg");
+		self::register("creeper_spawn_egg");
 	}
 
 	private static function verifyName(string $name) : void{

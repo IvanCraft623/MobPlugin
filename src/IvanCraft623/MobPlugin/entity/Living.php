@@ -31,6 +31,7 @@ use pocketmine\block\Liquid;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntityFactory;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
@@ -59,7 +60,11 @@ use function min;
 abstract class Living extends PMLiving {
 	//TODO!
 
+	private const TAG_COMPONENT_GROUPS = "definitions"; //TAG_List
+
 	protected Random $random;
+
+	protected ComponentGroups $componentGroups;
 
 	protected float $upStepVelocity = 0.37;
 
@@ -83,6 +88,15 @@ abstract class Living extends PMLiving {
 		parent::initEntity($nbt);
 
 		$this->random = MobPlugin::getInstance()->getRandom();
+
+		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
+			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
+		} else {
+			$this->componentGroups = new ComponentGroups();
+			if ($this->canSaveWithChunk()) {
+				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
+			}
+		}
 
 		$this->inventory = new MobInventory($this);
 		$syncHeldItem = function() : void{
@@ -255,6 +269,8 @@ abstract class Living extends PMLiving {
 
 	public function saveNBT() : CompoundTag {
 		$nbt = parent::saveNBT();
+
+		$nbt->setTag(self::TAG_COMPONENT_GROUPS, $this->componentGroups->toListTag());
 
 		$inventoryTag = new ListTag([], NBT::TAG_Compound);
 		$nbt->setTag("Inventory", $inventoryTag);

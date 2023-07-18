@@ -52,8 +52,7 @@ class TargetingUtils {
 				$headType = $headBlock->getMobHeadType();
 				if (
 					//($target instanceof Skeleton && $headType->equals(MobHeadType::SKELETON())) ||
-					($target instanceof Zombie && $headType->equals(MobHeadType::ZOMBIE())) //||
-					//($target instanceof Creeper && $headType->equals(MobHeadType::CREEPER()))
+					($target instanceof Zombie && $headType->equals(MobHeadType::ZOMBIE()))
 				) {
 					$visibilityPercent *= 0.5;
 				}

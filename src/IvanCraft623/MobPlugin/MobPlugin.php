@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
+use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 
@@ -87,5 +88,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(Sheep::class, function(World $world, CompoundTag $nbt) : Sheep{
 			return new Sheep(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:sheep', 'Sheep']);
+
+		$factory->register(Creeper::class, function(World $world, CompoundTag $nbt) : Creeper{
+			return new Creeper(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:creeper', 'Creeper']);
 	}
 }
