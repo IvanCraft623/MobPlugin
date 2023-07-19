@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
+use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
@@ -92,5 +93,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(Creeper::class, function(World $world, CompoundTag $nbt) : Creeper{
 			return new Creeper(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:creeper', 'Creeper']);
+
+		$factory->register(Chicken::class, function(World $world, CompoundTag $nbt) : Chicken{
+			return new Chicken(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:chicken', 'Chicken']);
 	}
 }

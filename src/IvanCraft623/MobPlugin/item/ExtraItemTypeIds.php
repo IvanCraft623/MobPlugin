@@ -33,6 +33,7 @@ use function preg_match;
  * Every item in {@link ExtraVanillaItems} has a corresponding constant in this class. These constants can be used to
  * identify and compare item types efficiently using {@link Item::getTypeId()}.
  *
+ * @method static int CHICKEN_SPAWN_EGG()
  * @method static int COW_SPAWN_EGG()
  * @method static int CREEPER_SPAWN_EGG()
  * @method static int ENDERMITE_SPAWN_EGG()
@@ -52,6 +53,7 @@ final class ExtraItemTypeIds{
 		self::register("cow_spawn_egg");
 		self::register("sheep_spawn_egg");
 		self::register("creeper_spawn_egg");
+		self::register("chicken_spawn_egg");
 	}
 
 	private static function verifyName(string $name) : void{
