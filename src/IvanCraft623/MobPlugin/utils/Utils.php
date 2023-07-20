@@ -39,6 +39,7 @@ use pocketmine\item\Releasable;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use function abs;
 use function array_reduce;
 use function cos;
 use function fmod;
@@ -213,6 +214,86 @@ class Utils {
 				}
 
 				$player->getInventory()->setItemInHand($item);
+			}
+		}
+	}
+
+	/**
+	 * Generate adjacent positions in a sphere around the given starting position within specified maximum distances in each axis.
+	 *
+	 * The function uses a generator to efficiently compute and yield adjacent positions in a sphere shape
+	 * around the starting position. It calculates positions within the maximum distances specified along the X, Y, and Z axes.
+	 *
+	 * @param Vector3 $startingPosition The starting position around which the adjacent positions are generated.
+	 * @param int     $maxDistanceX     The maximum distance in the X-axis from the starting position.
+	 * @param int     $maxDistanceY     The maximum distance in the Y-axis from the starting position.
+	 * @param int     $maxDistanceZ     The maximum distance in the Z-axis from the starting position.
+	 *
+	 * @return Vector[]|\Generator The function returns a generator that yields Vector3 objects representing
+	 *                             adjacent positions within the specified sphere shape around the starting position.
+	 *
+	 * @phpstan-return \Generator<int, Vector3, void, void>
+	 */
+	public static function getAdjacentPositions(Vector3 $startingPosition, int $maxDistanceX, int $maxDistanceY, int $maxDistanceZ) : \Generator {
+		$totalDistance = $maxDistanceX + $maxDistanceY + $maxDistanceZ;
+		$startX = $startingPosition->getX();
+		$startY = $startingPosition->getY();
+		$startZ = $startingPosition->getZ();
+
+		$cursor = Vector3::zero();
+		$currentDistance = 0;
+		$maxX = 0;
+		$maxY = 0;
+		$x = 0;
+		$y = 0;
+		$zMirror = false;
+
+		while (true) {
+			if ($zMirror) {
+				//Generate positions in the mirrored Z-axis direction
+				$zMirror = false;
+				$cursor->z = ($startZ - ($cursor->getZ() - $startZ));
+				yield clone $cursor;
+			} else {
+				//Generate positions in the positive X, Y, and Z-axis directions
+				$generatedPosition = null;
+				while ($generatedPosition === null) {
+					if ($y > $maxY) {
+						//Update X and Y values for the next iteration
+						$x++;
+						if ($x > $maxX) {
+							$currentDistance++;
+							if ($currentDistance > $totalDistance) {
+								return; //Finished generating all positions within the sphere
+							}
+
+							//Update maxX and reset X for the next distance level
+							$maxX = min($maxDistanceX, $currentDistance);
+							$x = -$maxX;
+						}
+
+						//Update maxY and reset Y for the next distance level
+						$maxY = min($maxDistanceY, $currentDistance - abs($x));
+						$y = -$maxY;
+					}
+
+					//Calculate the current X, Y, and Z coordinates for the position
+					$currentX = $x;
+					$currentY = $y;
+					$currentZ = $currentDistance - abs($currentX) - abs($currentY);
+
+					if ($currentZ <= $maxDistanceZ) {
+						//Check if the current position is within the specified maximum distance along the Z-axis
+						//If yes, set the zMirror flag if Z is non-zero to ensure symmetry in the sphere generation
+						$zMirror = $currentZ !== 0;
+
+						//Generate the position and update the cursor
+						$generatedPosition = $cursor = new Vector3($startX + $currentX, $startY + $currentY, $startZ + $currentZ);
+					}
+					$y++;
+				}
+
+				yield clone $generatedPosition;
 			}
 		}
 	}

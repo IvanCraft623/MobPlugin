@@ -25,9 +25,12 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\utils\DefaultPositionGenerator;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
+use function count;
 
 class PanicGoal extends Goal {
 
@@ -49,6 +52,7 @@ class PanicGoal extends Goal {
 			return false;
 		}
 
+		//Actually this behavior only happens in java, but it's a cool feature B)
 		if ($this->entity->isOnFire()) {
 			$target = $this->lookForWater($this->entity, 5);
 			if ($target !== null) {
@@ -80,7 +84,19 @@ class PanicGoal extends Goal {
 	}
 
 	protected function lookForWater(Entity $entity, int $horizontalRange) : ?Vector3 {
-		return null; //TODO: Implement this!
+		$world = $this->entity->getWorld();
+		$ePosition = $entity->getPosition()->floor();
+
+		if (count($world->getBlock($ePosition)->getCollisionBoxes()) > 0) {
+			return null;
+		}
+
+		foreach (Utils::getAdjacentPositions($ePosition, $horizontalRange, 1, $horizontalRange) as $pos) {
+			if ($world->getBlock($pos)->getTypeId() === BlockTypeIds::WATER) {
+				return $pos;
+			}
+		}
+		return null;
 	}
 
 	public function start() : void{
