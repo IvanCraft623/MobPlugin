@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\pathfinder\evaluator\NodeEvaluator;
@@ -159,7 +160,12 @@ abstract class PathNavigation {
 		}
 
 		$maxDistanceFromStart = $maxDistanceFromStart ?? $this->mob->getFollowRange();
+
+		CustomTimings::$pathfinding->startTiming();
+
 		$path = $this->pathfinder->findPath($this->world, $this->mob, $positions, $maxDistanceFromStart, $reach, $this->maxVisitedNodesMultiplier);
+
+		CustomTimings::$pathfinding->stopTiming();
 
 		if ($path !== null && ($target = $path->getTarget()) !== null) {
 			$this->targetPosition = $target;

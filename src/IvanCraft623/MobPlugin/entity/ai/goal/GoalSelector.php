@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
+use IvanCraft623\MobPlugin\CustomTimings;
+
 use function array_filter;
 
 class GoalSelector {
@@ -87,6 +89,8 @@ class GoalSelector {
 	}
 
 	public function tick() : void{
+		CustomTimings::$goalSelectorCleanup->startTiming();
+
 		foreach ($this->availableGoals as $wrappedGoal) {
 			if ($wrappedGoal->isRunning() && (self::goalContainsAnyFlags($wrappedGoal, $this->disabledFlags) || !$wrappedGoal->canContinueToUse())) {
 				$wrappedGoal->stop();
@@ -98,6 +102,10 @@ class GoalSelector {
 				unset($this->lockedFlags[$flag]);
 			}
 		}
+
+		CustomTimings::$goalSelectorCleanup->stopTiming();
+
+		CustomTimings::$goalSelectorUpdate->startTiming();
 
 		foreach ($this->availableGoals as $wrappedGoal) {
 			if (!$wrappedGoal->isRunning() &&
@@ -116,15 +124,21 @@ class GoalSelector {
 			}
 		}
 
+		CustomTimings::$goalSelectorUpdate->stopTiming();
+
 		$this->tickRunningGoals(true);
 	}
 
 	public function tickRunningGoals(bool $force = false) : void{
+		CustomTimings::$goalSelectorTick->startTiming();
+
 		foreach ($this->availableGoals as $wrappedGoal) {
 			if ($wrappedGoal->isRunning() && ($force || $wrappedGoal->requiresUpdateEveryTick())) {
 				$wrappedGoal->tick();
 			}
 		}
+
+		CustomTimings::$goalSelectorTick->stopTiming();
 	}
 
 	/**

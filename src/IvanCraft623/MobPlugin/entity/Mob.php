@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
@@ -276,7 +277,9 @@ abstract class Mob extends Living {
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
+		CustomTimings::$entityAiTick->startTiming();
 		$this->tickAi();
+		CustomTimings::$entityAiTick->stopTiming();
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
@@ -344,6 +347,8 @@ abstract class Mob extends Living {
 
 		$this->sensing->tick();
 
+		CustomTimings::$goalSelector->startTiming();
+
 		$n = $this->ticksLived + $this->getId();
 		if ($n % 2 !== 0 && !$this->justCreated) {
 			$this->targetSelector->tickRunningGoals(false);
@@ -353,7 +358,12 @@ abstract class Mob extends Living {
 			$this->goalSelector->tick();
 		}
 
+		CustomTimings::$goalSelector->stopTiming();
+
+		CustomTimings::$navigation->startTiming();
 		$this->navigation->tick();
+		CustomTimings::$navigation->stopTiming();
+
 		$this->moveControl->tick();
 		$this->lookControl->tick();
 		$this->jumpControl->tick();
