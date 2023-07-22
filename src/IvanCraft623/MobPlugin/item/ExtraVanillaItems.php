@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\item;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
+use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
@@ -51,6 +52,7 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg CREEPER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ENDERMITE_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg MOOSHROOM_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SHEEP_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
@@ -113,6 +115,12 @@ final class ExtraVanillaItems{
 		self::register("chicken_spawn_egg", new class(new IID(Ids::CHICKEN_SPAWN_EGG()), "Chicken Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new Chicken(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("pig_spawn_egg", new class(new IID(Ids::PIG_SPAWN_EGG()), "Pig Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Pig(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}
