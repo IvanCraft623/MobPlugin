@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
+use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
@@ -104,5 +105,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(Pig::class, function(World $world, CompoundTag $nbt) : Pig{
 			return new Pig(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:pig', 'Pig']);
+
+		$factory->register(Bat::class, function(World $world, CompoundTag $nbt) : Bat{
+			return new Bat(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:bat', 'Bat']);
 	}
 }

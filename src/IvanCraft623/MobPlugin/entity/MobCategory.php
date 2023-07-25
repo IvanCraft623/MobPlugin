@@ -49,7 +49,7 @@ final class MobCategory {
 		self::registerAll(
 			new self("monster", 70, false, false, 64),
 			new self("creature", 10, true, true, 64),
-			new self("ambient", 15, true, false, 64),
+			new self("ambient", 15, true, false, 32),
 			new self("axolotls", 5, true, false, 64),
 			new self("underground_water_creature", 5, true, false, 64),
 			new self("water_creature", 5, true, false, 64),

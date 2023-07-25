@@ -297,4 +297,8 @@ class Utils {
 			}
 		}
 	}
+
+	public static function signum(int|float $i) : int{
+		return $i <=> 0;
+	}
 }
