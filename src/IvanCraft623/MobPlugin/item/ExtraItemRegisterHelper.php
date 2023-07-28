@@ -54,6 +54,7 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::CHICKEN_SPAWN_EGG, ExtraVanillaItems::CHICKEN_SPAWN_EGG(), ["chicken_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::PIG_SPAWN_EGG, ExtraVanillaItems::PIG_SPAWN_EGG(), ["pig_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::BAT_SPAWN_EGG, ExtraVanillaItems::BAT_SPAWN_EGG(), ["bat_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::SLIME_SPAWN_EGG, ExtraVanillaItems::SLIME_SPAWN_EGG(), ["slime_spawn_egg"]);
 	}
 
 	/**

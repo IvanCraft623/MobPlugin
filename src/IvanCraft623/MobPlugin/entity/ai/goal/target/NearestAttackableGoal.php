@@ -54,7 +54,9 @@ class NearestAttackableGoal extends TargetGoal {
 		bool $mustReach = false,
 		?Closure $targetValidator = null
 	) {
-		Utils::testValidInstance($targetType, Living::class);
+		if ($targetType !== Living::class) {
+			Utils::testValidInstance($targetType, Living::class);
+		}
 
 		parent::__construct($entity, $mustSee, $mustReach);
 

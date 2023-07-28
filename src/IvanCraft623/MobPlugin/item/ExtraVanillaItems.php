@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
 
 use pocketmine\entity\Entity;
@@ -56,6 +57,7 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg MOOSHROOM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SHEEP_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg SLIME_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -129,6 +131,12 @@ final class ExtraVanillaItems{
 		self::register("bat_spawn_egg", new class(new IID(Ids::BAT_SPAWN_EGG()), "Bat Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new Bat(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("slime_spawn_egg", new class(new IID(Ids::SLIME_SPAWN_EGG()), "Slime Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Slime(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}
