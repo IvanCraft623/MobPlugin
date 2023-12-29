@@ -66,8 +66,6 @@ abstract class Living extends PMLiving {
 
 	protected ComponentGroups $componentGroups;
 
-	protected float $upStepVelocity = 0.37;
-
 	protected float $stepHeight = 0.6;
 
 	protected float $jumpVelocity = 0.475;
@@ -84,10 +82,13 @@ abstract class Living extends PMLiving {
 
 	protected bool $hasBeenDamagedByPlayer = false;
 
+	protected \Closure $syncHeldItem;
+
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
 		$this->random = MobPlugin::getInstance()->getRandom();
+		$this->inventory = new MobInventory($this);
 
 		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
 			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
@@ -97,24 +98,28 @@ abstract class Living extends PMLiving {
 				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
 			}
 		}
-
-		$this->inventory = new MobInventory($this);
-		$syncHeldItem = function() : void{
+		$this->syncHeldItem = function() : void{
 			$inv = $this->getInventory();
-			$packet = MobEquipmentPacket::create($this->getId(), ItemStackWrapper::legacy(TypeConverter::getInstance()->coreItemStackToNet($inv->getMainHand())), $inv->getHeldItemIndex(), $inv->getHeldItemIndex(), ContainerIds::INVENTORY);
 			foreach($this->getViewers() as $viewer){
-				$viewer->getNetworkSession()->sendDataPacket($packet);
+				$networksession = $viewer->getNetworkSession();
+				$networksession->sendDataPacket(MobEquipmentPacket::create(
+					$this->getId(),
+					ItemStackWrapper::legacy($networksession->getTypeConverter()->coreItemStackToNet($inv->getMainHand())),
+					$inv->getHeldItemIndex(),
+					$inv->getHeldItemIndex(),
+					ContainerIds::INVENTORY
+				));
 			}
 		};
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(
-			function(Inventory $unused, int $slot, Item $unused2) use ($syncHeldItem) : void{
+			function(Inventory $unused, int $slot, Item $unused2) : void{
 				if($slot === $this->inventory->getHeldItemIndex()){
-					$syncHeldItem();
+					($this->syncHeldItem)();
 				}
 			},
-			function(Inventory $unused, array $oldItems) use ($syncHeldItem) : void{
+			function(Inventory $unused, array $oldItems) : void{
 				if(array_key_exists($this->inventory->getHeldItemIndex(), $oldItems)){
-					$syncHeldItem();
+					($this->syncHeldItem)();
 				}
 			}
 		));
@@ -137,8 +142,26 @@ abstract class Living extends PMLiving {
 			self::populateInventoryFromListTag($this->armorInventory, $armorInventoryItems);
 		}
 
+		if ($nbt->count() === 0) { //Entity just created!
+			$this->onCreate();
+		}
+
 		$this->brain = $this->makeBrain();
 	}
+
+	protected function sendSpawnPacket(Player $player) : void{
+		parent::sendSpawnPacket($player);
+		($this->syncHeldItem)();
+	}
+
+	/**
+	 * Called when this entity has just been created and is completely clean.
+	 */
+	public function onCreate() : void{
+		$this->generateEquipment();
+	}
+
+	public function generateEquipment() : void{}
 
 	protected function makeBrain() : Brain{
 		return new Brain([], [], []);
@@ -200,8 +223,7 @@ abstract class Living extends PMLiving {
 
 	public function jump() : void{
 		if ($this->onGround || $this->getWorld()->getBlock($this->location) instanceof Liquid) {
-			//$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity(), null);
-			$this->motion = new Vector3(0, $this->getJumpVelocity(), 0);
+			$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity(), null);
 		}
 	}
 
@@ -258,13 +280,6 @@ abstract class Living extends PMLiving {
 
 	public function setNoActionTime(int $time) : void{
 		$this->noActionTime = $time;
-	}
-
-	public function getDrops() : array {
-		return array_filter(array_merge(
-			array_values($this->inventory->getContents()),
-			array_values($this->armorInventory->getContents())
-		), function(Item $item) : bool{ return !$item->hasEnchantment(VanillaEnchantments::VANISHING()); });
 	}
 
 	public function saveNBT() : CompoundTag {

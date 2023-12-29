@@ -68,11 +68,11 @@ class SlimeMoveControl extends MoveControl{
 					$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
 					$this->slime->getJumpControl()->jump();
 				}
-			} else {
+			} elseif (!$this->slime->isJumping()) {
 				$this->mob->setForwardSpeed(0);
 				$this->mob->setSidewaysSpeed(0);
 			}
-		} else {
+		} elseif (!$this->slime->isJumping()) {
 			$this->mob->setForwardSpeed(0);
 		}
 	}

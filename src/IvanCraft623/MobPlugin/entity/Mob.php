@@ -44,6 +44,8 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Durable;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\MeleeWeaponEnchantment;
+use pocketmine\item\enchantment\VanillaEnchantments;
+use pocketmine\item\Item;
 use pocketmine\item\Releasable;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -503,6 +505,36 @@ abstract class Mob extends Living {
 		}
 
 		return true;
+	}
+
+	public function getEquipmentDropProbability() : float{
+		return 0.25;
+	}
+
+	/**
+	 * @return Item[]
+	 */
+	public function getEquipmentDrops() : array{
+		$drops = [];
+
+		$dropChance = $this->getEquipmentDropProbability();
+		foreach ([$this->inventory, $this->armorInventory] as $inventory) {
+			foreach ($inventory->getContents() as $item) {
+				if (!$item->hasEnchantment(VanillaEnchantments::VANISHING()) && lcg_value() <= $dropChance) {
+					if ($item instanceof Durable) {
+						$maxDurability = $item->getMaxDurability();
+						$item->setDamage($maxDurability - $this->random->nextBoundedInt(1 + $this->random->nextBoundedInt(max($maxDurability - 3, 1))));
+					}
+					$drops[] = $item;
+				}
+			}
+		}
+
+		return $drops;
+	}
+
+	public function getDrops() : array {
+		return $this->getEquipmentDrops();
 	}
 
 	public function onEat() : void{
