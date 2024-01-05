@@ -82,8 +82,6 @@ abstract class Living extends PMLiving {
 
 	protected bool $hasBeenDamagedByPlayer = false;
 
-	protected \Closure $syncHeldItem;
-
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
@@ -98,31 +96,12 @@ abstract class Living extends PMLiving {
 				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
 			}
 		}
-		$this->syncHeldItem = function() : void{
-			$inv = $this->getInventory();
+		$syncHeldItem = function() : void{
 			foreach($this->getViewers() as $viewer){
-				$networksession = $viewer->getNetworkSession();
-				$networksession->sendDataPacket(MobEquipmentPacket::create(
-					$this->getId(),
-					ItemStackWrapper::legacy($networksession->getTypeConverter()->coreItemStackToNet($inv->getMainHand())),
-					$inv->getHeldItemIndex(),
-					$inv->getHeldItemIndex(),
-					ContainerIds::INVENTORY
-				));
+				$this->sendHeldItemsPacket($viewer);
 			}
 		};
-		$this->inventory->getListeners()->add(new CallbackInventoryListener(
-			function(Inventory $unused, int $slot, Item $unused2) : void{
-				if($slot === $this->inventory->getHeldItemIndex()){
-					($this->syncHeldItem)();
-				}
-			},
-			function(Inventory $unused, array $oldItems) : void{
-				if(array_key_exists($this->inventory->getHeldItemIndex(), $oldItems)){
-					($this->syncHeldItem)();
-				}
-			}
-		));
+		$this->inventory->getListeners()->add(CallbackInventoryListener::onAnyChange(fn() => $syncHeldItem()));
 		$inventoryTag = $nbt->getListTag("Inventory");
 		if($inventoryTag !== null){
 			$inventoryItems = [];
@@ -151,7 +130,25 @@ abstract class Living extends PMLiving {
 
 	protected function sendSpawnPacket(Player $player) : void{
 		parent::sendSpawnPacket($player);
-		($this->syncHeldItem)();
+		$this->sendHeldItemsPacket($player);
+	}
+
+	protected function sendHeldItemsPacket(Player $player) : void{
+		$networksession = $player->getNetworkSession();
+		$networksession->sendDataPacket(MobEquipmentPacket::create(
+			$this->getId(),
+			ItemStackWrapper::legacy($networksession->getTypeConverter()->coreItemStackToNet($this->inventory->getMainHand())),
+			$this->inventory->getHeldItemIndex(),
+			$this->inventory->getHeldItemIndex(),
+			ContainerIds::INVENTORY
+		));
+		$networksession->sendDataPacket(MobEquipmentPacket::create(
+			$this->getId(),
+			ItemStackWrapper::legacy($networksession->getTypeConverter()->coreItemStackToNet($this->inventory->getOffHand())),
+			0,
+			0,
+			ContainerIds::OFFHAND
+		));
 	}
 
 	/**
