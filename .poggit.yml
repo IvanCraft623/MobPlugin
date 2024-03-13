@@ -2,6 +2,7 @@
 build-by-default: true
 branches:
 - main
+- wip-mobs
 projects:
   MobPlugin:
     path: ""
