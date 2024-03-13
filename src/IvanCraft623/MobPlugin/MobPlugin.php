@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
@@ -114,5 +115,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(Slime::class, function(World $world, CompoundTag $nbt) : Slime{
 			return new Slime(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:slime', 'Slime']);
+
+		$factory->register(Enderman::class, function(World $world, CompoundTag $nbt) : Enderman{
+			return new Enderman(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:enderman', 'Enderman']);
 	}
 }

@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
+use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\animation\ArmSwingAnimation;
@@ -505,6 +506,39 @@ abstract class Mob extends Living {
 		}
 
 		return true;
+	}
+
+	public function canStandAt(Vector3 $pos) : bool{
+		$world = $this->getWorld();
+
+		$below = $world->getBlock($pos->down());
+		if (!$below->isSolid()) {
+			return false;
+		}
+
+		$diff = $this->location->subtractVector($pos);
+		return count($world->getCollisionBlocks($this->boundingBox->addCoord($diff->x, $diff->y, $diff->z), true)) === 0;
+	}
+
+	public function onRandomTeleport(Vector3 $from, Vector3 $to) : void{
+	}
+
+	public function setTargetEntity(?Entity $target) : void{
+		if ($target !== null && $target->getId() !== $this->targetId) {
+			$this->broadcastSound(new MobWarningSound($this));
+		}
+
+		parent::setTargetEntity($target);
+	}
+
+	public function teleport(Vector3 $pos, ?float $yaw = null, ?float $pitch = null) : bool{
+		if (parent::teleport($pos, $yaw, $pitch)) {
+			$this->navigation->stop();
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public function getEquipmentDropProbability() : float{
