@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
@@ -52,6 +53,7 @@ use pocketmine\world\World;
  * @generate-registry-docblock
  *
  * @method static \pocketmine\item\SpawnEgg BAT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg CAVE_SPIDER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CHICKEN_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg COW_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CREEPER_SPAWN_EGG()
@@ -153,6 +155,12 @@ final class ExtraVanillaItems{
 		self::register("spider_spawn_egg", new class(new IID(Ids::SPIDER_SPAWN_EGG()), "Spider Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new Spider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("cave_spider_spawn_egg", new class(new IID(Ids::CAVE_SPIDER_SPAWN_EGG()), "Cave Spider Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new CaveSpider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

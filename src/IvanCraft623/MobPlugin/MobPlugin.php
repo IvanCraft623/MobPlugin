@@ -30,6 +30,7 @@ use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
+use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
@@ -124,5 +125,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(Spider::class, function(World $world, CompoundTag $nbt) : Spider{
 			return new Spider(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:spider', 'Spider']);
+
+		$factory->register(CaveSpider::class, function(World $world, CompoundTag $nbt) : CaveSpider{
+			return new CaveSpider(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:cave_spider', 'Cave Spider']);
 	}
 }

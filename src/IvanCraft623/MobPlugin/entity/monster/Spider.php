@@ -105,6 +105,7 @@ class Spider extends Monster {
 		parent::initProperties();
 
 		$this->setMaxHealth(16);
+		$this->setAttackDamage(2);
 	}
 
 	public function getDefaultMovementSpeed() : float{
