@@ -27,7 +27,6 @@ use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 
 use pocketmine\player\Player;
-use pocketmine\entity\Living;
 
 class FreezeWhenLookedAt extends Goal {
 

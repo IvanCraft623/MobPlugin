@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity;
 use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
 use pocketmine\block\Liquid;
@@ -38,24 +39,20 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
-use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
-use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\utils\Random;
-use function array_filter;
-use function array_key_exists;
-use function array_merge;
-use function array_values;
+use pocketmine\world\Position;
+use function count;
 use function floor;
 use function min;
 
@@ -398,5 +395,9 @@ abstract class Living extends PMLiving {
 
 	public function onInsideBlock(Block $block) : bool{
 		return false;
+	}
+
+	public function getLightLevelDependentMagicValue() : float{
+		return Utils::getLightLevelDependentMagicValue(Position::fromObject($this->getEyePos(), $this->location->world));
 	}
 }

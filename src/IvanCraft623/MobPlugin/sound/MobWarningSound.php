@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\sound;
 
-use pocketmine\entity\Entity;
 use pocketmine\entity\Ageable;
+use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
 use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;

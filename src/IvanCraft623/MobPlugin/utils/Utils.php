@@ -39,6 +39,7 @@ use pocketmine\item\Releasable;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\world\Position;
 use function abs;
 use function array_reduce;
 use function cos;
@@ -298,7 +299,18 @@ class Utils {
 		}
 	}
 
+	public static function getLightLevelDependentMagicValue(Position $pos) : float{
+		$lightPercentage = $pos->getWorld()->getFullLight($pos) / 15;
+
+		$ambientLight = 0; //TODO: 0.1 in nether
+		return (float) self::lerp($ambientLight, $lightPercentage / (4 - 3 * $lightPercentage), 1);
+	}
+
 	public static function signum(int|float $i) : int{
 		return $i <=> 0;
+	}
+
+	public static function lerp(int|float $start, int|float $end, int|float $t) : int|float {
+		return $end + $start * ($t - $end);
 	}
 }

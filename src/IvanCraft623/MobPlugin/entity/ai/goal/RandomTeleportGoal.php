@@ -23,15 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\Mob;
 
-use pocketmine\player\Player;
-use pocketmine\entity\Living;
+use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\world\Position;
-use pocketmine\world\World;
-use pocketmine\block\Liquid;
+use function min;
+use function mt_rand;
 
 class RandomTeleportGoal extends Goal {
 
@@ -138,7 +136,7 @@ class RandomTeleportGoal extends Goal {
 			}
 
 			//TODO: Use $entity->canStandAt() instead of this, but is somehow broken
-			for ($extraY = 1; $extraY <= 3; $extraY++) { 
+			for ($extraY = 1; $extraY <= 3; $extraY++) {
 				if (($block = $world->getBlockAt($x, $y + $extraY, $z))->isSolid() || $block instanceof Liquid) {
 					continue 2;
 				}

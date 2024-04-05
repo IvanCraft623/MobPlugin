@@ -27,7 +27,6 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\world\World;
 
 trait NeutralMobTrait {
 

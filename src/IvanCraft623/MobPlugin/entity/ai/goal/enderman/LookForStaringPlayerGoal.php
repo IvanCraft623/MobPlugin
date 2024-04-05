@@ -24,16 +24,14 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal\enderman;
 
 use IvanCraft623\MobPlugin\entity\ai\goal\target\TargetGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
-use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
+use IvanCraft623\MobPlugin\entity\monster\Enderman;
 
 use pocketmine\entity\Entity;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\player\Player;
-use pocketmine\entity\Living as PMLiving;
 
-use Closure;
+use function array_reduce;
 
 class LookForStaringPlayerGoal extends TargetGoal {
 

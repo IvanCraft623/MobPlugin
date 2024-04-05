@@ -56,6 +56,8 @@ use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
 use function assert;
+use function count;
+use function lcg_value;
 use function max;
 
 abstract class Mob extends Living {
@@ -144,7 +146,7 @@ abstract class Mob extends Living {
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new GroundPathNavigation($this, $this->getWorld());
+		return new GroundPathNavigation($this);
 	}
 
 	public function getLookControl() : LookControl {
@@ -380,7 +382,17 @@ abstract class Mob extends Living {
 	public function travel(Vector3 $movementInput) : void{
 		// TODO: More complex movement suff :P
 		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $this->getMovementSpeed());
+
+		//Climb stuff
+		if ($this->isCollidedHorizontally && $this->onClimbable()) {
+			$motion->y = 0.2 - $this->motion->y;
+		}
+
 		$this->addMotion($motion->x, $motion->y, $motion->z);
+	}
+
+	protected function onClimbable() : bool{
+		return false;
 	}
 
 	protected function updateControlFlags() : void{

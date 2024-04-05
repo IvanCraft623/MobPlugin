@@ -43,6 +43,7 @@ use function preg_match;
  * @method static int PIG_SPAWN_EGG()
  * @method static int SHEEP_SPAWN_EGG()
  * @method static int SLIME_SPAWN_EGG()
+ * @method static int SPIDER_SPAWN_EGG()
  */
 final class ExtraItemTypeIds{
 	/**
@@ -62,6 +63,7 @@ final class ExtraItemTypeIds{
 		self::register("bat_spawn_egg");
 		self::register("slime_spawn_egg");
 		self::register("enderman_spawn_egg");
+		self::register("spider_spawn_egg");
 	}
 
 	private static function verifyName(string $name) : void{

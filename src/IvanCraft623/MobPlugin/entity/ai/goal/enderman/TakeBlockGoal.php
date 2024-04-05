@@ -26,15 +26,11 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal\enderman;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 
-use pocketmine\player\Player;
-use pocketmine\entity\Living;
-use pocketmine\math\Vector3;
-use pocketmine\world\World;
-use pocketmine\world\BlockTransaction;
-use pocketmine\block\VanillaBlocks;
 use pocketmine\block\BlockTypeIds;
-use pocketmine\math\AxisAlignedBB;
+use pocketmine\block\VanillaBlocks;
+use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
+use function floor;
 
 class TakeBlockGoal extends Goal {
 

@@ -33,6 +33,7 @@ use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
+use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
 
 use pocketmine\entity\Entity;
@@ -60,6 +61,7 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SHEEP_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SLIME_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg SPIDER_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -145,6 +147,12 @@ final class ExtraVanillaItems{
 		self::register("enderman_spawn_egg", new class(new IID(Ids::ENDERMAN_SPAWN_EGG()), "Enderman Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new Enderman(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("spider_spawn_egg", new class(new IID(Ids::SPIDER_SPAWN_EGG()), "Spider Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Spider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

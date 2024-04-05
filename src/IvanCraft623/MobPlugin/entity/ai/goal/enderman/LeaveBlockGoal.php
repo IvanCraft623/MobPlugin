@@ -26,13 +26,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal\enderman;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 
-use pocketmine\player\Player;
-use pocketmine\entity\Living;
-use pocketmine\world\World;
-use pocketmine\block\BlockTypeIds;
-use pocketmine\block\Block;
-use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
+use function floor;
 
 class LeaveBlockGoal extends Goal {
 

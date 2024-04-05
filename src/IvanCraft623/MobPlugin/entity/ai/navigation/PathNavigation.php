@@ -54,8 +54,6 @@ abstract class PathNavigation {
 
 	protected Mob $mob;
 
-	protected World $world;
-
 	protected ?Path $path = null;
 
 	protected float $speedModifier;
@@ -92,11 +90,13 @@ abstract class PathNavigation {
 
 	protected bool $isStuck = false;
 
-	public function __construct(Mob $mob, World $world) {
+	public function __construct(Mob $mob) {
 		$this->mob = $mob;
-		$this->world = $world;
-		;
 		$this->pathfinder = $this->createPathFinder((int) floor($this->mob->getFollowRange() * 16));
+	}
+
+	public function getWorld() : World{
+		return $this->mob->getWorld();
 	}
 
 	public function resetMaxVisitedNodesMultiplier() : void{
@@ -118,7 +118,7 @@ abstract class PathNavigation {
 	}
 
 	public function recomputePath() : void{
-		if (($time = $this->world->getServer()->getTick()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
+		if (($time = $this->getWorld()->getServer()->getTick()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
 			if ($this->targetPosition !== null) {
 				$this->path = null;
 				$this->path = $this->createPathToPosition($this->targetPosition, $this->reachRange);
@@ -163,7 +163,7 @@ abstract class PathNavigation {
 
 		CustomTimings::$pathfinding->startTiming();
 
-		$path = $this->pathfinder->findPath($this->world, $this->mob, $positions, $maxDistanceFromStart, $reach, $this->maxVisitedNodesMultiplier);
+		$path = $this->pathfinder->findPath($this->getWorld(), $this->mob, $positions, $maxDistanceFromStart, $reach, $this->maxVisitedNodesMultiplier);
 
 		CustomTimings::$pathfinding->stopTiming();
 
@@ -251,7 +251,7 @@ abstract class PathNavigation {
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
-		return $this->world->getBlock($position->down())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->world, $position);
+		return $this->getWorld()->getBlock($position->down())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->getWorld(), $position);
 	}
 
 	protected function followThePath() : void{
@@ -329,7 +329,7 @@ abstract class PathNavigation {
 
 		if ($this->path !== null && !$this->path->isDone()) {
 			$nextNodePos = $this->path->getNextNodePos();
-			$time = $this->world->getTime();
+			$time = $this->getWorld()->getTime();
 
 			if ($nextNodePos->equals($this->timeoutCachedNode)) {
 				$this->timeoutTimer += $time - $this->lastTimeoutCheck;
@@ -376,7 +376,7 @@ abstract class PathNavigation {
 	protected abstract function canUpdatePath() : bool;
 
 	protected function isInLiquid() : bool{
-		foreach ($this->world->getCollisionBlocks($this->mob->getBoundingBox()) as $block) {
+		foreach ($this->getWorld()->getCollisionBlocks($this->mob->getBoundingBox()) as $block) {
 			if ($block instanceof Liquid) {
 				//TODO: waterlogging check and do not trigger with powder snow
 				return true;
@@ -388,9 +388,10 @@ abstract class PathNavigation {
 
 	protected function trimPath() : void{
 		if ($this->path !== null) {
+			$world = $this->getWorld();
 			for ($i = 0; $i < $this->path->getNodeCount(); $i++) {
 				$node = $this->path->getNode($i);
-				if ($this->world->getBlock($node->asVector3()) instanceof FillableCauldron) {
+				if ($world->getBlock($node->asVector3()) instanceof FillableCauldron) {
 					$this->path->replaceNode($i, $node->cloneAndMove($node->x(), $node->y() + 1, $node->z()));
 
 					$nextNode = $i + 1 < $this->path->getNodeCount() ? $this->path->getNode($i + 1) : null;
@@ -431,7 +432,7 @@ abstract class PathNavigation {
 	}
 
 	public function isStableDestination(Vector3 $position) : bool{
-		return $this->world->getBlock($position->down())->isSolid();
+		return $this->getWorld()->getBlock($position->down())->isSolid();
 	}
 
 	public function getNodeEvaluator() : NodeEvaluator{

@@ -24,10 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\particle;
 
 use pocketmine\math\Vector3;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\LevelEventGenericPacket;
 use pocketmine\network\mcpe\protocol\types\LevelEvent;
-use pocketmine\network\mcpe\protocol\types\ParticleIds;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\world\particle\Particle;
 
 class TeleportTrailParticle implements Particle{
