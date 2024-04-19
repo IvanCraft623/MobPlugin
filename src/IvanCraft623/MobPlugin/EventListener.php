@@ -57,6 +57,10 @@ class EventListener implements Listener {
 						$totalHeight = $patternMatch->getHeight();
 						for ($currentHeight = 0; $currentHeight < $totalHeight; $currentHeight++) {
 							$b = $patternMatch->getBlock($currentWidth, $currentHeight, 0, $world);
+							if ($b->getTypeId() === BlockTypeIds::AIR) {
+								continue;
+							}
+
 							$p = $b->getPosition();
 
 							$world->addParticle($p->add(0.5, 0.5, 0.5), new BlockBreakParticle($b));
