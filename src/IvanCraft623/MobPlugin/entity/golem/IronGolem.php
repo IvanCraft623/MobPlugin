@@ -39,6 +39,7 @@ use IvanCraft623\MobPlugin\pattern\BlockPattern;
 use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
 use IvanCraft623\MobPlugin\sound\IronGolemCrackSound;
 use IvanCraft623\MobPlugin\sound\IronGolemRepairSound;
+use IvanCraft623\MobPlugin\sound\ThrowSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
@@ -212,6 +213,12 @@ class IronGolem extends Golem implements NeutralMob{
 		$this->updateAnger(true);
 
 		return $hasUpdate;
+	}
+
+	protected function doAttackAnimation() : void{
+		parent::doAttackAnimation();
+
+		$this->broadcastSound(new ThrowSound($this));
 	}
 
 	public function attack(EntityDamageEvent $source) : void{

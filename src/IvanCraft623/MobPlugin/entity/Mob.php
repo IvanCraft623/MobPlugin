@@ -457,6 +457,10 @@ abstract class Mob extends Living {
 		return $this->location->distanceSquared($target->getPosition());
 	}
 
+	protected function doAttackAnimation() : void{
+		$this->broadcastAnimation(new ArmSwingAnimation($this));
+	}
+
 	/**
 	 * Attacks the given entity with the currently-held item.
 	 * TODO: make a PR that implements this un PM core.
@@ -492,7 +496,7 @@ abstract class Mob extends Living {
 
 		$entity->attack($ev);
 
-		$this->broadcastAnimation(new ArmSwingAnimation($this), $this->getViewers());
+		$this->doAttackAnimation();
 
 		if ($this->isOnFire()) {
 			$entity->setOnFire(8);
