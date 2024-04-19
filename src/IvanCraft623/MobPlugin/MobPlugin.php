@@ -30,6 +30,7 @@ use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
+use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -64,6 +65,8 @@ class MobPlugin extends PluginBase {
 		$this->registerEntities();
 
 		ExtraItemRegisterHelper::init();
+
+		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 	}
 
 	public function getRandom() : Random {
@@ -129,5 +132,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(CaveSpider::class, function(World $world, CompoundTag $nbt) : CaveSpider{
 			return new CaveSpider(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:cave_spider', 'Cave Spider']);
+
+		$factory->register(IronGolem::class, function(World $world, CompoundTag $nbt) : IronGolem{
+			return new IronGolem(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:iron_golem', 'Iron Golem']);
 	}
 }

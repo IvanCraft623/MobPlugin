@@ -286,6 +286,14 @@ abstract class Living extends PMLiving {
 		$this->noActionTime = $time;
 	}
 
+	public function getKnockbackResistance() : float{
+		return $this->knockbackResistanceAttr->getValue();
+	}
+
+	public function setKnockbackResistance(float $value) : void{
+		$this->knockbackResistanceAttr->setValue($value);
+	}
+
 	public function saveNBT() : CompoundTag {
 		$nbt = parent::saveNBT();
 

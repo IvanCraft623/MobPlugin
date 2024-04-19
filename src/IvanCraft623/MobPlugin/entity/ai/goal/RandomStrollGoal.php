@@ -86,7 +86,16 @@ class RandomStrollGoal extends Goal {
 		$this->forceTrigger = true;
 	}
 
-	public function setInterval(int $interval) : void{
+	public function getInterval() : int{
+		return $this->interval;
+	}
+
+	/**
+	 * @return $this
+	 */
+	public function setInterval(int $interval) : self{
 		$this->interval = $interval;
+
+		return $this;
 	}
 }

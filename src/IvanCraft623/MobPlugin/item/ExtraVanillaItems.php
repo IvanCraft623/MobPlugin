@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -59,6 +60,7 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg CREEPER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ENDERMAN_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ENDERMITE_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg IRON_GOLEM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg MOOSHROOM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SHEEP_SPAWN_EGG()
@@ -161,6 +163,12 @@ final class ExtraVanillaItems{
 		self::register("cave_spider_spawn_egg", new class(new IID(Ids::CAVE_SPIDER_SPAWN_EGG()), "Cave Spider Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new CaveSpider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("iron_golem_spawn_egg", new class(new IID(Ids::IRON_GOLEM_SPAWN_EGG()), "Iron Golem Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new IronGolem(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}
