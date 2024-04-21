@@ -524,6 +524,9 @@ abstract class Mob extends Living {
 		return true;
 	}
 
+	public function performRangedAttack(Entity $target, float $force) : void{
+	}
+
 	public function canStandAt(Vector3 $pos) : bool{
 		$world = $this->getWorld();
 

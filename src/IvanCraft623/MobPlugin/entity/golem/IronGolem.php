@@ -75,7 +75,11 @@ class IronGolem extends Golem implements NeutralMob{
 					"###",
 					"*#*"
 				])
-				->where('O', fn(Block $block) => $block->getTypeId() === BlockTypeIds::CARVED_PUMPKIN)
+				->where('O', fn(Block $block) =>
+					($id = $block->getTypeId()) === BlockTypeIds::CARVED_PUMPKIN ||
+					$id === BlockTypeIds::LIT_PUMPKIN ||
+					$id === BlockTypeIds::PUMPKIN
+				)
 				->where('*', fn(Block $block) => $block->getTypeId() === BlockTypeIds::AIR)
 				->where('#', fn(Block $block) => $block->getTypeId() === BlockTypeIds::IRON)
 				->build();

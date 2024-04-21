@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -136,5 +137,9 @@ class MobPlugin extends PluginBase {
 		$factory->register(IronGolem::class, function(World $world, CompoundTag $nbt) : IronGolem{
 			return new IronGolem(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:iron_golem', 'Iron Golem']);
+
+		$factory->register(SnowGolem::class, function(World $world, CompoundTag $nbt) : SnowGolem{
+			return new SnowGolem(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:snow_golem', 'Snow Golem']);
 	}
 }

@@ -59,6 +59,7 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::SPIDER_SPAWN_EGG, ExtraVanillaItems::SPIDER_SPAWN_EGG(), ["spider_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::CAVE_SPIDER_SPAWN_EGG, ExtraVanillaItems::CAVE_SPIDER_SPAWN_EGG(), ["cave_spider_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::IRON_GOLEM_SPAWN_EGG, ExtraVanillaItems::IRON_GOLEM_SPAWN_EGG(), ["iron_golem_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::SNOW_GOLEM_SPAWN_EGG, ExtraVanillaItems::SNOW_GOLEM_SPAWN_EGG(), ["snow_golem_spawn_egg"]);
 	}
 
 	/**
