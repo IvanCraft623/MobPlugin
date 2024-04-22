@@ -39,8 +39,10 @@ use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\AttributeFactory;
+use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper as Helper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
@@ -52,6 +54,23 @@ use function mt_rand;
 
 class MobPlugin extends PluginBase {
 	use SingletonTrait;
+
+	public const ALL_ENTITIES = [
+		Bat::class,
+		Chicken::class,
+		Cow::class,
+		MooshroomCow::class,
+		Pig::class,
+		Sheep::class,
+		IronGolem::class,
+		SnowGolem::class,
+		CaveSpider::class,
+		Creeper::class,
+		Enderman::class,
+		Endermite::class,
+		Slime::class,
+		Spider::class
+	];
 
 	private ?Random $random = null;
 
@@ -86,60 +105,20 @@ class MobPlugin extends PluginBase {
 	private function registerEntities() : void{
 		$factory = EntityFactory::getInstance();
 
-		$factory->register(Endermite::class, function(World $world, CompoundTag $nbt) : Endermite{
-			return new Endermite(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:endermite', 'Endermite']);
+		foreach (self::ALL_ENTITIES as $entityClass) {
+			$this->registerEntity($factory, $entityClass);
+		}
+	}
 
-		$factory->register(Cow::class, function(World $world, CompoundTag $nbt) : Cow{
-			return new Cow(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:cow', 'Cow']);
+	/**
+	 * @phpstan-param class-string<Entity> $entityClass
+	 */
+	private function registerEntity(EntityFactory $factory, string $entityClass) : void{
+		//Did you know that bedrock entity's save ids are the same as network ids?
+		$entityId = $entityClass::getNetworkTypeId();
 
-		$factory->register(MooshroomCow::class, function(World $world, CompoundTag $nbt) : MooshroomCow{
-			return new MooshroomCow(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:mooshroom', 'Mooshroom']);
-
-		$factory->register(Sheep::class, function(World $world, CompoundTag $nbt) : Sheep{
-			return new Sheep(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:sheep', 'Sheep']);
-
-		$factory->register(Creeper::class, function(World $world, CompoundTag $nbt) : Creeper{
-			return new Creeper(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:creeper', 'Creeper']);
-
-		$factory->register(Chicken::class, function(World $world, CompoundTag $nbt) : Chicken{
-			return new Chicken(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:chicken', 'Chicken']);
-
-		$factory->register(Pig::class, function(World $world, CompoundTag $nbt) : Pig{
-			return new Pig(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:pig', 'Pig']);
-
-		$factory->register(Bat::class, function(World $world, CompoundTag $nbt) : Bat{
-			return new Bat(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:bat', 'Bat']);
-
-		$factory->register(Slime::class, function(World $world, CompoundTag $nbt) : Slime{
-			return new Slime(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:slime', 'Slime']);
-
-		$factory->register(Enderman::class, function(World $world, CompoundTag $nbt) : Enderman{
-			return new Enderman(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:enderman', 'Enderman']);
-
-		$factory->register(Spider::class, function(World $world, CompoundTag $nbt) : Spider{
-			return new Spider(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:spider', 'Spider']);
-
-		$factory->register(CaveSpider::class, function(World $world, CompoundTag $nbt) : CaveSpider{
-			return new CaveSpider(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:cave_spider', 'Cave Spider']);
-
-		$factory->register(IronGolem::class, function(World $world, CompoundTag $nbt) : IronGolem{
-			return new IronGolem(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:iron_golem', 'Iron Golem']);
-
-		$factory->register(SnowGolem::class, function(World $world, CompoundTag $nbt) : SnowGolem{
-			return new SnowGolem(Helper::parseLocation($nbt, $world), $nbt);
-		}, ['minecraft:snow_golem', 'Snow Golem']);
+		$factory->register($entityClass, function(World $world, CompoundTag $nbt) use ($entityClass) : Entity{
+			return new $entityClass(Helper::parseLocation($nbt, $world), $nbt);
+		}, [$entityId, Utils::getEntityNameFromId($entityId)]);
 	}
 }

@@ -313,4 +313,8 @@ class Utils {
 	public static function lerp(int|float $start, int|float $end, int|float $t) : int|float {
 		return $end + $start * ($t - $end);
 	}
+
+	public static function getEntityNameFromId(string $id) : string{
+		return ucwords(strtolower(str_replace(["_", "minecraft:"], [" ", ""], trim($id))));
+	}
 }
