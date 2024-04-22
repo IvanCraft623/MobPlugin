@@ -26,7 +26,9 @@ namespace IvanCraft623\MobPlugin\entity;
 use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
+use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\Block;
 use pocketmine\block\Liquid;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\effect\VanillaEffects;
@@ -37,23 +39,20 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
-use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
-use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\player\Player;
+use pocketmine\Server;
 use pocketmine\utils\Random;
-use function array_filter;
-use function array_key_exists;
-use function array_merge;
-use function array_values;
+use pocketmine\world\Position;
+use function count;
 use function floor;
 use function min;
 
@@ -197,8 +196,16 @@ abstract class Living extends PMLiving {
 		return $this->brain;
 	}
 
+	public function getServer() : Server{
+		return $this->location->getWorld()->getServer();
+	}
+
 	public function canAttack(PMLiving $target) : bool {
 		return true;
+	}
+
+	public function isSensitiveToWater() : bool{
+		return false;
 	}
 
 	public function canSee(Entity $entity) : bool{
@@ -279,6 +286,14 @@ abstract class Living extends PMLiving {
 		$this->noActionTime = $time;
 	}
 
+	public function getKnockbackResistance() : float{
+		return $this->knockbackResistanceAttr->getValue();
+	}
+
+	public function setKnockbackResistance(float $value) : void{
+		$this->knockbackResistanceAttr->setValue($value);
+	}
+
 	public function saveNBT() : CompoundTag {
 		$nbt = parent::saveNBT();
 
@@ -319,8 +334,7 @@ abstract class Living extends PMLiving {
 		parent::setLastDamageCause($type);
 
 		if ($type instanceof EntityDamageByEntityEvent) {
-			$this->lastDamageByEntity = $type;
-			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
+			$this->setLastDamageByEntity($type);
 
 			if ($type->getDamager() instanceof Player) {
 				$this->hasBeenDamagedByPlayer = true;
@@ -330,6 +344,15 @@ abstract class Living extends PMLiving {
 
 	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
 		return $this->lastDamageByEntity;
+	}
+
+	public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void{
+		$this->lastDamageByEntity = $type;
+		if ($type === null) {
+			$this->lastDamageByEntityTick = -1;
+		} else {
+			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
+		}
 	}
 
 	public function getExpirableLastDamageByEntity() : ?EntityDamageByEntityEvent{
@@ -355,5 +378,34 @@ abstract class Living extends PMLiving {
 			$deathCause === EntityDamageEvent::CAUSE_FIRE_TICK ||
 			$deathCause === EntityDamageEvent::CAUSE_LAVA
 		));
+	}
+
+	protected function checkBlockIntersections() : void{
+		$vectors = [];
+
+		foreach($this->getBlocksAroundWithEntityInsideActions() as $block){
+			if(!$block->onEntityInside($this) || $this->onInsideBlock($block)){
+				$this->blocksAround = null;
+			}
+			if(($v = $block->addVelocityToEntity($this)) !== null){
+				$vectors[] = $v;
+			}
+		}
+
+		if(count($vectors) > 0){
+			$vector = Vector3::sum(...$vectors);
+			if($vector->lengthSquared() > 0){
+				$d = 0.014;
+				$this->motion = $this->motion->addVector($vector->normalize()->multiply($d));
+			}
+		}
+	}
+
+	public function onInsideBlock(Block $block) : bool{
+		return false;
+	}
+
+	public function getLightLevelDependentMagicValue() : float{
+		return Utils::getLightLevelDependentMagicValue(Position::fromObject($this->getEyePos(), $this->location->world));
 	}
 }

@@ -29,9 +29,14 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
+use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
+use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
 
 use pocketmine\entity\Entity;
@@ -50,14 +55,19 @@ use pocketmine\world\World;
  * @generate-registry-docblock
  *
  * @method static \pocketmine\item\SpawnEgg BAT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg CAVE_SPIDER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CHICKEN_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg COW_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CREEPER_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg ENDERMAN_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ENDERMITE_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg IRON_GOLEM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg MOOSHROOM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SHEEP_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SLIME_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg SNOW_GOLEM_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg SPIDER_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -137,6 +147,36 @@ final class ExtraVanillaItems{
 		self::register("slime_spawn_egg", new class(new IID(Ids::SLIME_SPAWN_EGG()), "Slime Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new Slime(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("enderman_spawn_egg", new class(new IID(Ids::ENDERMAN_SPAWN_EGG()), "Enderman Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Enderman(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("spider_spawn_egg", new class(new IID(Ids::SPIDER_SPAWN_EGG()), "Spider Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Spider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("cave_spider_spawn_egg", new class(new IID(Ids::CAVE_SPIDER_SPAWN_EGG()), "Cave Spider Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new CaveSpider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("iron_golem_spawn_egg", new class(new IID(Ids::IRON_GOLEM_SPAWN_EGG()), "Iron Golem Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new IronGolem(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("snow_golem_spawn_egg", new class(new IID(Ids::SNOW_GOLEM_SPAWN_EGG()), "Snow Golem Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new SnowGolem(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

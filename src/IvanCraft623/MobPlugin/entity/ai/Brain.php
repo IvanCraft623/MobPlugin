@@ -292,7 +292,7 @@ class Brain {
 	}
 
 	/**
-	 * @param Behavior[] $behaviors
+	 * @param Behavior[]                             $behaviors
 	 * @param Pair<MemoryModuleType, MemoryStatus>[] $conditions
 	 */
 	public function addActivityWithConditions(Activity $activity, int $startPriority, array $behaviors, array $conditions) : void {
@@ -300,9 +300,9 @@ class Brain {
 	}
 
 	/**
-	 * @param Pair<int, Behavior>[] $behaviorPairs
+	 * @param Pair<int, Behavior>[]                  $behaviorPairs
 	 * @param Pair<MemoryModuleType, MemoryStatus>[] $conditions
-	 * @param MemoryModuleType[] $memoryModules
+	 * @param MemoryModuleType[]                     $memoryModules
 	 */
 	public function addActivityAndRemoveMemoriesWhenStopped(Activity $activity, array $behaviorPairs, array $conditions, array $memoryModules) : void {
 		$this->activityRequirements[$activity->id()] = $conditions;

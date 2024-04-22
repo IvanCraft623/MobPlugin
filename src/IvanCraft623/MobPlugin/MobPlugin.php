@@ -30,9 +30,14 @@ use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
+use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
+use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
+use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 
 use pocketmine\entity\AttributeFactory;
@@ -61,6 +66,8 @@ class MobPlugin extends PluginBase {
 		$this->registerEntities();
 
 		ExtraItemRegisterHelper::init();
+
+		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 	}
 
 	public function getRandom() : Random {
@@ -114,5 +121,25 @@ class MobPlugin extends PluginBase {
 		$factory->register(Slime::class, function(World $world, CompoundTag $nbt) : Slime{
 			return new Slime(Helper::parseLocation($nbt, $world), $nbt);
 		}, ['minecraft:slime', 'Slime']);
+
+		$factory->register(Enderman::class, function(World $world, CompoundTag $nbt) : Enderman{
+			return new Enderman(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:enderman', 'Enderman']);
+
+		$factory->register(Spider::class, function(World $world, CompoundTag $nbt) : Spider{
+			return new Spider(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:spider', 'Spider']);
+
+		$factory->register(CaveSpider::class, function(World $world, CompoundTag $nbt) : CaveSpider{
+			return new CaveSpider(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:cave_spider', 'Cave Spider']);
+
+		$factory->register(IronGolem::class, function(World $world, CompoundTag $nbt) : IronGolem{
+			return new IronGolem(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:iron_golem', 'Iron Golem']);
+
+		$factory->register(SnowGolem::class, function(World $world, CompoundTag $nbt) : SnowGolem{
+			return new SnowGolem(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['minecraft:snow_golem', 'Snow Golem']);
 	}
 }

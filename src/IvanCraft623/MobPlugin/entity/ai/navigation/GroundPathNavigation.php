@@ -56,10 +56,11 @@ class GroundPathNavigation extends PathNavigation{
 	}
 
 	public function createPathToPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
-		if ($this->world->getBlock($position)->getTypeId() === BlockTypeIds::AIR) {
+		$world = $this->getWorld();
+		if ($world->getBlock($position)->getTypeId() === BlockTypeIds::AIR) {
 			$currentPos = $position->down();
 
-			while ($currentPos->y > World::Y_MIN && $this->world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
+			while ($currentPos->y > World::Y_MIN && $world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
 				$currentPos = $currentPos->down();
 			}
 
@@ -67,20 +68,20 @@ class GroundPathNavigation extends PathNavigation{
 				return parent::createPathToPosition($currentPos->up(), $maxVisitedNodes, $range);
 			}
 
-			while($currentPos->getY() < World::Y_MAX && $this->world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
+			while($currentPos->getY() < World::Y_MAX && $world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
 				$currentPos = $currentPos->up();
 			}
 
 			$position = $currentPos;
 		}
 
-		if (!$this->world->getBlock($position)->isSolid()) {
+		if (!$world->getBlock($position)->isSolid()) {
 			return parent::createPathToPosition($position, $maxVisitedNodes, $range);
 		}
 
 		$currentPos = $position->up();
 
-		while($currentPos->getY() < World::Y_MAX && $this->world->getBlock($currentPos)->isSolid()) {
+		while($currentPos->getY() < World::Y_MAX && $world->getBlock($currentPos)->isSolid()) {
 			$currentPos = $currentPos->up();
 		}
 
@@ -91,11 +92,12 @@ class GroundPathNavigation extends PathNavigation{
 		$mobPos = $this->mob->getPosition();
 		if ($this->mob->isInWater() && $this->canFloat()) {
 			$y = (int) $mobPos->getY();
-			$block = $this->world->getBlock($mobPos);
+			$world = $this->getWorld();
+			$block = $world->getBlock($mobPos);
 			$distDiff = 0;
 
 			while ($block instanceof Water) {
-				$block = $this->world->getBlockAt((int) floor($mobPos->x), ++$y, (int) floor($mobPos->z));
+				$block = $world->getBlockAt((int) floor($mobPos->x), ++$y, (int) floor($mobPos->z));
 				if (++$distDiff > 16) {
 					return (int) $mobPos->getY();
 				}
@@ -116,13 +118,14 @@ class GroundPathNavigation extends PathNavigation{
 
 		if ($this->avoidSun) {
 			$mobPos = $this->mob->getPosition();
-			if ($this->world->getRealBlockSkyLightAt((int) floor($mobPos->x), (int) floor($mobPos->y + 0.5), (int) floor($mobPos->z)) >= 15) {
+			$world = $this->getWorld();
+			if ($world->getRealBlockSkyLightAt((int) floor($mobPos->x), (int) floor($mobPos->y + 0.5), (int) floor($mobPos->z)) >= 15) {
 				return;
 			}
 
 			for($i = 0; $i < $this->path->getNodeCount(); ++$i) {
 				$node = $this->path->getNode($i);
-				if ($this->world->getRealBlockSkyLightAt($node->x(), $node->y(), $node->z()) >= 15) {
+				if ($world->getRealBlockSkyLightAt($node->x(), $node->y(), $node->z()) >= 15) {
 					$this->path->truncateNodes($i);
 					return;
 				}

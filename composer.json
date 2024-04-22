@@ -5,7 +5,7 @@
     "license": "Apache-2.0",
     "require-dev": {
         "php": "^8.0",
-        "pocketmine/pocketmine-mp": "^5.0.0",
+        "pocketmine/pocketmine-mp": "^5.6.0",
         "phpstan/phpstan": "1.10.21"
     },
     "autoload": {

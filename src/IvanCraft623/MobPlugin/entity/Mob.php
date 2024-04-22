@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
+use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\animation\ArmSwingAnimation;
@@ -55,6 +56,8 @@ use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
 use function assert;
+use function count;
+use function lcg_value;
 use function max;
 
 abstract class Mob extends Living {
@@ -143,7 +146,7 @@ abstract class Mob extends Living {
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new GroundPathNavigation($this, $this->getWorld());
+		return new GroundPathNavigation($this);
 	}
 
 	public function getLookControl() : LookControl {
@@ -379,7 +382,17 @@ abstract class Mob extends Living {
 	public function travel(Vector3 $movementInput) : void{
 		// TODO: More complex movement suff :P
 		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $this->getMovementSpeed());
+
+		//Climb stuff
+		if ($this->isCollidedHorizontally && $this->onClimbable()) {
+			$motion->y = 0.2 - $this->motion->y;
+		}
+
 		$this->addMotion($motion->x, $motion->y, $motion->z);
+	}
+
+	protected function onClimbable() : bool{
+		return false;
 	}
 
 	protected function updateControlFlags() : void{
@@ -444,6 +457,10 @@ abstract class Mob extends Living {
 		return $this->location->distanceSquared($target->getPosition());
 	}
 
+	protected function doAttackAnimation() : void{
+		$this->broadcastAnimation(new ArmSwingAnimation($this));
+	}
+
 	/**
 	 * Attacks the given entity with the currently-held item.
 	 * TODO: make a PR that implements this un PM core.
@@ -479,7 +496,7 @@ abstract class Mob extends Living {
 
 		$entity->attack($ev);
 
-		$this->broadcastAnimation(new ArmSwingAnimation($this), $this->getViewers());
+		$this->doAttackAnimation();
 
 		if ($this->isOnFire()) {
 			$entity->setOnFire(8);
@@ -505,6 +522,42 @@ abstract class Mob extends Living {
 		}
 
 		return true;
+	}
+
+	public function performRangedAttack(Entity $target, float $force) : void{
+	}
+
+	public function canStandAt(Vector3 $pos) : bool{
+		$world = $this->getWorld();
+
+		$below = $world->getBlock($pos->down());
+		if (!$below->isSolid()) {
+			return false;
+		}
+
+		$diff = $this->location->subtractVector($pos);
+		return count($world->getCollisionBlocks($this->boundingBox->addCoord($diff->x, $diff->y, $diff->z), true)) === 0;
+	}
+
+	public function onRandomTeleport(Vector3 $from, Vector3 $to) : void{
+	}
+
+	public function setTargetEntity(?Entity $target) : void{
+		if ($target !== null && $target->getId() !== $this->targetId) {
+			$this->broadcastSound(new MobWarningSound($this));
+		}
+
+		parent::setTargetEntity($target);
+	}
+
+	public function teleport(Vector3 $pos, ?float $yaw = null, ?float $pitch = null) : bool{
+		if (parent::teleport($pos, $yaw, $pitch)) {
+			$this->navigation->stop();
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public function getEquipmentDropProbability() : float{
