@@ -2,10 +2,8 @@
 build-by-default: true
 branches:
 - main
-- wip-mobs
 projects:
   MobPlugin:
     path: ""
-    lint:
-      phpstan: false
+    lint: false
 ...
