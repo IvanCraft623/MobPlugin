@@ -31,9 +31,10 @@ use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
-use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
@@ -79,8 +80,7 @@ abstract class Mob extends Living {
 
 	protected Sensing $sensing;
 
-	/** @var array<int, float> BlockPathTypes->id => malus */
-	protected array $pathfindingMalus = [];
+	protected BlockPathTypeCostMap $pathTypeCostMap;
 
 	protected float $forwardSpeed = 0;
 
@@ -399,13 +399,20 @@ abstract class Mob extends Living {
 		// TODO!
 	}
 
-	public function getPathfindingMalus(BlockPathTypes $pathType) : float{
-		// TODO: vehicle checks
-		return $this->pathfindingMalus[$pathType->id()] ?? $pathType->getMalus();
+	public function getPathTypeCostMap() : BlockPathTypeCostMap{
+		if (!isset($this->pathTypeCostMap)) {
+			$this->pathTypeCostMap = new BlockPathTypeCostMap();
+		}
+		return $this->pathTypeCostMap;
 	}
 
-	public function setPathfindingMalus(BlockPathTypes $pathType, float $malus) : void{
-		$this->pathfindingMalus[$pathType->id()] = $malus;
+	public function getPathfindingMalus(BlockPathType $pathType) : float{
+		// TODO: vehicle checks
+		return $this->getPathTypeCostMap()->getPathfindingMalus($pathType);
+	}
+
+	public function setPathfindingMalus(BlockPathType $pathType, float $malus) : void{
+		$this->getPathTypeCostMap()->setPathfindingMalus($pathType, $malus);
 	}
 
 	public function canUseReleasable(Releasable $item) : bool{

@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\pathfinder\Path;
+use IvanCraft623\Pathfinder\Path;
 
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
@@ -36,6 +36,8 @@ class MeleeAttackGoal extends Goal {
 	public const CAN_USE_COOLDOWN = 20;
 
 	public const ATTACK_INTERVAL = 20;
+
+	private bool $pathfinding = false;
 
 	private Vector3 $lastTargetPosition;
 
@@ -68,11 +70,17 @@ class MeleeAttackGoal extends Goal {
 			return false;
 		}
 
-		$path = $this->mob->getNavigation()->createPathToEntity($target, 0);
-		if ($path !== null) {
-			$this->path = $path;
+		if ($this->path !== null) {
 			return true;
 		}
+		if (!$this->pathfinding) {
+			$this->mob->getNavigation()->createPathToEntity($target, 0)->onCompletion(function(Path $path) : void{
+				$this->path = $path;
+				$this->pathfinding = false;
+			}, function(){});
+			$this->pathfinding = true;
+		}
+
 		return $this->getAttackReachSquared($target) >= $this->mob->getLocation()->distanceSquared($target->getLocation());
 	}
 
@@ -145,10 +153,7 @@ class MeleeAttackGoal extends Goal {
 				$this->ticksToRecalculatePath += 5;
 			}
 
-			if (!$this->mob->getNavigation()->moveToEntity($target, $this->speedModifier)) {
-				$this->ticksToRecalculatePath += 15;
-			}
-
+			$this->mob->getNavigation()->moveToEntity($target, $this->speedModifier);
 			$this->ticksToRecalculatePath = $this->adjustedTickDelay($this->ticksToRecalculatePath);
 		}
 

@@ -23,15 +23,14 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
-use IvanCraft623\MobPlugin\pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\MobPlugin\pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\pathfinder\Node;
-use IvanCraft623\MobPlugin\pathfinder\Path;
-use IvanCraft623\MobPlugin\pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
+use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\Pathfinder\Node;
+use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
@@ -39,9 +38,10 @@ use pocketmine\block\Liquid;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
+use pocketmine\promise\Promise;
+use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
 use function abs;
-use function count;
 use function floor;
 
 abstract class PathNavigation {
@@ -78,7 +78,9 @@ abstract class PathNavigation {
 
 	protected int $timeLastRecompute;
 
-	protected NodeEvaluator $nodeEvaluator;
+	protected EntityNodeEvaluator $nodeEvaluator;
+
+	protected int $maxVisitedNodes;
 
 	protected ?Vector3 $targetPosition = null;
 
@@ -90,9 +92,12 @@ abstract class PathNavigation {
 
 	protected bool $isStuck = false;
 
+	protected int $pathFindingPos;
+
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
-		$this->pathfinder = $this->createPathFinder((int) floor($this->mob->getFollowRange() * 16));
+		$this->maxVisitedNodes = (int) floor($this->mob->getFollowRange() * 16);
+		$this->createPathFinder();
 	}
 
 	public function getWorld() : World{
@@ -111,7 +116,7 @@ abstract class PathNavigation {
 		return $this->targetPosition;
 	}
 
-	protected abstract function createPathFinder(int $reach) : PathFinder;
+	protected abstract function createPathFinder() : void;
 
 	public function setSpeedModifier(float $speed) : void{
 		$this->speedModifier = $speed;
@@ -121,68 +126,110 @@ abstract class PathNavigation {
 		if (($time = $this->getWorld()->getServer()->getTick()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
 			if ($this->targetPosition !== null) {
 				$this->path = null;
-				$this->path = $this->createPathToPosition($this->targetPosition, $this->reachRange);
 				$this->timeLastRecompute = $time;
 				$this->hasDelayedRecomputation = false;
+				$this->createPathToPosition($this->targetPosition, $this->reachRange)->onCompletion(function(Path $path) : void{
+					$this->path = $path;
+				}, function(){});
 			}
 		} else {
 			$this->hasDelayedRecomputation = true;
 		}
 	}
 
-	public function createPathToXYZ(float $x, float $y, float $z, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
+	/**
+	 * @phpstan-return Promise<Path>
+	 */
+	public function createPathToXYZ(float $x, float $y, float $z, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		return $this->createPathToPosition(new Vector3($x, $y, $z), $reach, $maxDistanceFromStart);
 	}
 
-	public function createPathToEntity(Entity $target, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
+	/**
+	 * @phpstan-return Promise<Path>
+	 */
+	public function createPathToEntity(Entity $target, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		return $this->createPathToPosition($target->getPosition(), $reach, $maxDistanceFromStart);
 	}
 
-	public function createPathToPosition(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
-		return $this->createPath([$position->floor()], $reach, $maxDistanceFromStart);
+	/**
+	 * @phpstan-return Promise<Path>
+	 */
+	public function createPathToPosition(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+		return $this->createPath($position, $reach, $maxDistanceFromStart);
 	}
 
 	/**
-	 * @param Vector3[] $positions
+	 * @phpstan-return Promise<Path>
 	 */
-	public function createPath(array $positions, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
-		if (count($positions) === 0) {
-			return null;
-		}
+	public function createPath(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+		$pathResolver = new PromiseResolver();
 		if ($this->mob->getPosition()->getY() < World::Y_MIN) {
-			return null;
+			$pathResolver->reject();
+			return $pathResolver->getPromise();
 		}
 		if (!$this->canUpdatePath()) {
-			return null;
-		}
-		if ($this->targetPosition !== null && $this->path !== null && !$this->path->isDone() && Utils::arrayContains($this->targetPosition, $positions)) {
-			return $this->path;
+			$pathResolver->reject();
+			return $pathResolver->getPromise();
 		}
 
-		$maxDistanceFromStart = $maxDistanceFromStart ?? $this->mob->getFollowRange();
-
-		CustomTimings::$pathfinding->startTiming();
-
-		$path = $this->pathfinder->findPath($this->getWorld(), $this->mob, $positions, $maxDistanceFromStart, $reach, $this->maxVisitedNodesMultiplier);
-
-		CustomTimings::$pathfinding->stopTiming();
-
-		if ($path !== null && ($target = $path->getTarget()) !== null) {
-			$this->targetPosition = $target;
-			$this->reachRange = $reach;
-			$this->resetStuckTimeout();
+		if ($this->targetPosition !== null &&
+			$this->path !== null &&
+			!$this->path->isDone() &&
+			$this->targetPosition->equals($position)
+		) {
+			$pathResolver->resolve($this->path);
+			return $pathResolver->getPromise();
 		}
 
-		return $path;
+		//TODO: update evaluator values
+		$this->pathFindingPos = World::blockHash(
+			(int) floor($position->getX()),
+			(int) floor($position->getY()),
+			(int) floor($position->getZ())
+		);
+
+		$this->resetStuckTimeout();
+		$this->updateNodeEvaluatorAttributes();
+		PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach) : void{
+				$target = $path->getTarget();
+				if ($this->pathFindingPos === World::blockHash((int) $target->x, (int) $target->y, (int) $target->z)) {
+					$this->targetPosition = $target;
+					$this->reachRange = $reach;
+				}
+
+				//todo!
+				$pathResolver->resolve($path);
+			},
+			$this->nodeEvaluator,
+			$this->mob->getWorld(),
+			$this->mob->getPosition(),
+			$position,
+			(int) floor($this->maxVisitedNodes * $this->maxVisitedNodesMultiplier),
+			$maxDistanceFromStart ?? $this->mob->getFollowRange(),
+			$reach
+		);
+
+		return $pathResolver->getPromise();
 	}
 
-	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier) : bool{
-		return $this->moveToPath($this->createPathToXYZ($x, $y, $z, 1), $speedModifier);
+	protected function updateNodeEvaluatorAttributes() : void{
+		$this->nodeEvaluator->setEntitySize($this->mob->getSize());
+		$this->nodeEvaluator->setEntityBoundingBox(clone $this->mob->getBoundingBox());
+		$this->nodeEvaluator->setEntityOnGround($this->mob->isOnGround());
+		$this->nodeEvaluator->setMaxUpStep($this->mob->getStepHeight());
+		$this->nodeEvaluator->setMaxFallDistance($this->mob->getMaxFallDistance());
 	}
 
-	public function moveToEntity(Entity $target, float $speedModifier) : bool{
-		$path = $this->createPathToEntity($target, 1);
-		return $path !== null && $this->moveToPath($path, $speedModifier);
+	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier) : void{
+		$this->createPathToXYZ($x, $y, $z, 1)->onCompletion(function(Path $path) use ($speedModifier){
+			$this->moveToPath($path, $speedModifier);
+		}, function(){});
+	}
+
+	public function moveToEntity(Entity $target, float $speedModifier) : void{
+		$this->createPathToEntity($target, 1)->onCompletion(function(Path $path) use ($speedModifier){
+			$this->moveToPath($path, $speedModifier);
+		}, function(){});
 	}
 
 	public function moveToPath(?Path $path, float $speedModifier) : bool{
@@ -251,7 +298,7 @@ abstract class PathNavigation {
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
-		return $this->getWorld()->getBlock($position->down())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt($this->getWorld(), $position);
+		return $this->getWorld()->getBlock($position->down())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt(new SyncBlockGetter($this->getWorld()), $position);
 	}
 
 	protected function followThePath() : void{
@@ -407,10 +454,10 @@ abstract class PathNavigation {
 		return false;
 	}
 
-	protected function canCutCorner(BlockPathTypes $pathType) : bool{
-		return $pathType !== BlockPathTypes::DANGER_FIRE() &&
-			$pathType !== BlockPathTypes::DANGER_OTHER() &&
-			$pathType !== BlockPathTypes::WALKABLE_DOOR();
+	protected function canCutCorner(BlockPathType $pathType) : bool{
+		return $pathType !== BlockPathType::DANGER_FIRE &&
+			$pathType !== BlockPathType::DANGER_OTHER &&
+			$pathType !== BlockPathType::WALKABLE_DOOR;
 	}
 
 	protected static function isClearForMovementBetween(Mob $mob, Vector3 $from, Vector3 $to, bool $detectLiquids) : bool{
@@ -435,7 +482,7 @@ abstract class PathNavigation {
 		return $this->getWorld()->getBlock($position->down())->isSolid();
 	}
 
-	public function getNodeEvaluator() : NodeEvaluator{
+	public function getNodeEvaluator() : EntityNodeEvaluator{
 		return $this->nodeEvaluator;
 	}
 

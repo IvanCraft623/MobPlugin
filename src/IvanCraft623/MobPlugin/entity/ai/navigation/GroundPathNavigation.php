@@ -24,14 +24,14 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
-use IvanCraft623\MobPlugin\pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\pathfinder\Path;
-use IvanCraft623\MobPlugin\pathfinder\PathFinder;
+use IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\Pathfinder\Path;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
+use pocketmine\promise\Promise;
 use pocketmine\world\World;
 use function floor;
 
@@ -39,11 +39,9 @@ class GroundPathNavigation extends PathNavigation{
 
 	private bool $avoidSun = false;
 
-	protected function createPathFinder(int $maxVisitedNodes) : PathFinder{
-		$this->nodeEvaluator = new WalkNodeEvaluator();
+	protected function createPathFinder() : void{
+		$this->nodeEvaluator = new WalkNodeEvaluator($this->mob->getPathTypeCostMap());
 		$this->nodeEvaluator->setCanPassDoors();
-
-		return new PathFinder($this->nodeEvaluator, $maxVisitedNodes);
 	}
 
 	public function canUpdatePath() : bool{
@@ -55,7 +53,10 @@ class GroundPathNavigation extends PathNavigation{
 		return new Vector3($mobPosition->getX(), $this->getSurfaceY(), $mobPosition->getZ());
 	}
 
-	public function createPathToPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : ?Path{
+	/**
+	 * @phpstan-return Promise<Path>
+	 */
+	public function createPathToPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : Promise{
 		$world = $this->getWorld();
 		if ($world->getBlock($position)->getTypeId() === BlockTypeIds::AIR) {
 			$currentPos = $position->down();
@@ -133,11 +134,11 @@ class GroundPathNavigation extends PathNavigation{
 		}
 	}
 
-	public function hasValidPathType(BlockPathTypes $pathType) : bool{
-		if ($pathType->equals(BlockPathTypes::WATER()) || $pathType->equals(BlockPathTypes::LAVA())) {
+	public function hasValidPathType(BlockPathType $pathType) : bool{
+		if ($pathType->equals(BlockPathType::WATER) || $pathType->equals(BlockPathType::LAVA)) {
 			return false;
 		}
-		return !$pathType->equals(BlockPathTypes::OPEN());
+		return !$pathType->equals(BlockPathType::OPEN);
 	}
 
 	public function setCanOpenDoors(bool $value = true) : void{

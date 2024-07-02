@@ -38,8 +38,8 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
-use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
+use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -239,7 +239,7 @@ class Enderman extends Monster implements NeutralMob{
 		$this->setAttackDamage(7);
 		$this->setFollowRange(64);
 
-		$this->setPathfindingMalus(BlockPathTypes::WATER(), -1);
+		$this->setPathfindingMalus(BlockPathType::WATER, -1);
 	}
 
 	public function getDefaultMovementSpeed() : float{
