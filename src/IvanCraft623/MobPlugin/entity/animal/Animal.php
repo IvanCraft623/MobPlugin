@@ -27,8 +27,8 @@ use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
-use IvanCraft623\MobPlugin\pathfinder\BlockPathTypes;
 use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
@@ -53,8 +53,8 @@ abstract class Animal extends AgeableMob {
 	protected function initProperties() : void{
 		parent::initProperties();
 
-		$this->setPathfindingMalus(BlockPathTypes::DANGER_FIRE(), 16);
-		$this->setPathfindingMalus(BlockPathTypes::DAMAGE_FIRE(), -1);
+		$this->setPathfindingMalus(BlockPathType::DANGER_FIRE, 16);
+		$this->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, -1);
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{

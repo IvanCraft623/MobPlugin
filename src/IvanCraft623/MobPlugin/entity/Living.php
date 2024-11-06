@@ -294,6 +294,10 @@ abstract class Living extends PMLiving {
 		$this->knockbackResistanceAttr->setValue($value);
 	}
 
+	public function getStepHeight() : float{
+		return $this->stepHeight;
+	}
+
 	public function saveNBT() : CompoundTag {
 		$nbt = parent::saveNBT();
 

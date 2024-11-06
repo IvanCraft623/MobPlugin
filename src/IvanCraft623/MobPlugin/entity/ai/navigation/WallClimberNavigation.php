@@ -23,32 +23,33 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\pathfinder\Path;
+use IvanCraft623\Pathfinder\Path;
 
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
+use pocketmine\promise\Promise;
 
 class WallClimberNavigation extends GroundPathNavigation{
 
 	private ?Vector3 $pathToPosition = null;
 
-	public function createPathToPosition(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : ?Path{
+	/**
+	 * @phpstan-return Promise<Path>
+	 */
+	public function createPathToPosition(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		$this->pathToPosition = $position->floor();
 		$this->speedModifier = 1;
 
 		return parent::createPathToPosition($position, $reach, $maxDistanceFromStart);
 	}
 
-	public function moveToEntity(Entity $target, float $speedModifier) : bool{
-		$path = $this->createPathToEntity($target, 0);
-		if ($path !== null) {
-			return $this->moveToPath($path, $speedModifier);
-		}
+	public function moveToEntity(Entity $target, float $speedModifier) : void{
+		$this->createPathToEntity($target, 0)->onCompletion(function(Path $path) use ($speedModifier) : void {
+			$this->moveToPath($path, $speedModifier);
+		}, function(){});
 
 		$this->pathToPosition = $target->getPosition()->floor();
 		$this->speedModifier = $speedModifier;
-
-		return true;
 	}
 
 	public function tick() : void{

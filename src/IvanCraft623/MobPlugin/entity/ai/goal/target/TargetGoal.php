@@ -97,38 +97,7 @@ abstract class TargetGoal extends Goal {
 			return false;
 		}
 
-		if ($this->mustReach) {
-			if (--$this->reachCheckTime <= 0) {
-				unset($this->canReachCache);
-			}
-
-			if (!isset($this->canReachCache)) {
-				$this->canReachCache = $this->canReach($victim);
-			}
-
-			if (!$this->canReachCache) {
-				return false;
-			}
-		}
-
 		return true;
-	}
-
-	private function canReach(Living $victim) : bool{
-		$this->reachCheckTime = $this->reducedTickDelay(10 + $this->entity->getRandom()->nextBoundedInt(5));
-
-		$path = $this->entity->getNavigation()->createPathToEntity($victim, 0);
-		if ($path === null) {
-			return false;
-		}
-
-		$endNode = $path->getEndNode();
-		if ($endNode === null) {
-			return false;
-		}
-
-		$diff = $endNode->subtractVector($victim->getPosition()->floor());
-		return ($diff->x ** 2) + ($diff->z ** 2) <= 2.25;
 	}
 
 	public function setUnseenMemoryTicks(int $ticks) : self{
