@@ -611,4 +611,18 @@ abstract class Mob extends Living {
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_RANGE, $this->getAmbientSoundIntervalRange());
 		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
 	}
+
+	protected function destroyCycles() : void{
+		unset(
+			$this->goalSelector,
+			$this->targetSelector,
+			$this->lookControl,
+			$this->moveControl,
+			$this->jumpControl,
+			$this->navigation,
+			$this->sensing,
+		);
+
+		parent::destroyCycles();
+	}
 }

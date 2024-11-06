@@ -143,4 +143,16 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	public function getWalkTargetValue(Vector3 $position) : float{
 		return 0;
 	}
+
+	protected function onDispose() : void{
+		if($this->location->isValid()){
+			$world = $this->getWorld();
+			foreach($this->usedChunks as $index => $status){
+				World::getXZ($index, $X, $Z);
+				$world->unregisterChunkListener($this, $X, $Z);
+			}
+		}
+
+		parent::onDispose();
+	}
 }
