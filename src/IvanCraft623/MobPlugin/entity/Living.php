@@ -408,4 +408,13 @@ abstract class Living extends PMLiving {
 	public function getLightLevelDependentMagicValue() : float{
 		return Utils::getLightLevelDependentMagicValue(Position::fromObject($this->getEyePos(), $this->location->world));
 	}
+
+	protected function destroyCycles() : void{
+		$this->lastDamageByEntity = null;
+
+		unset(
+			$this->inventory,
+		);
+		parent::destroyCycles();
+	}
 }
