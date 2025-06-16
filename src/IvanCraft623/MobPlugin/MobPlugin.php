@@ -38,6 +38,7 @@ use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
+use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -69,7 +70,8 @@ class MobPlugin extends PluginBase {
 		Enderman::class,
 		Endermite::class,
 		Slime::class,
-		Spider::class
+		Spider::class,
+		Zombie::class
 	];
 
 	private ?Random $random = null;

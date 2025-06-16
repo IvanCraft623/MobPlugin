@@ -217,7 +217,7 @@ class SnowGolem extends Golem implements Shearable{
 		$this->doAttackAnimation();
 	}
 
-	protected function doAttackAnimation() : void{
+	public function doAttackAnimation() : void{
 		$this->broadcastSound(new EntityShootSound($this));
 	}
 

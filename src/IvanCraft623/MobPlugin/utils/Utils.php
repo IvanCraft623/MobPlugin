@@ -23,8 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\utils;
 
-use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
+use DateTime;
 
+use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use pocketmine\entity\Living;
 use pocketmine\item\Bow;
 use pocketmine\item\Durable;
@@ -275,5 +276,9 @@ class Utils {
 
 	public static function getEntityNameFromId(string $id) : string{
 		return ucwords(strtolower(str_replace(["_", "minecraft:"], [" ", ""], trim($id))));
+	}
+
+	public static function isHalloween(?DateTime $date = null) : bool{
+		return ($date ?? new DateTime())->format('m-d') === '10-31';
 	}
 }

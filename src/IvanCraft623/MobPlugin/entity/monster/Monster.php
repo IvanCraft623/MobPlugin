@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster;
 
 use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use function floor;
 
 abstract class Monster extends PathfinderMob implements Enemy {
 	//TODO!
@@ -43,5 +44,34 @@ abstract class Monster extends PathfinderMob implements Enemy {
 		}
 
 		return 0;
+	}
+
+	public function isSunSensitive() : bool{
+		return false;
+	}
+
+	public function tickAi() : void{
+		parent::tickAi();
+
+		if (!$this->isOnFire() && $this->isSunSensitive()) {
+			$world = $this->getWorld();
+			$pos = $this->getEyePos();
+			if ($world->getSkyLightReduction() <= 3 &&
+				$world->getPotentialBlockSkyLightAt((int) floor($pos->x), (int) floor($pos->y), (int) floor($pos->z)) === 15 &&
+				!$this->isInWater() //TODO: Powder snow also prevents this
+			) {
+				$helmet = $this->getArmorInventory()->getHelmet();
+				if ($helmet->isNull()) {
+					$this->setOnFire(8);
+				}/* elseif ($helmet instanceof Durable) {
+					//TODO: Not sure if these are the right values
+					$helmet->applyDamage(mt_rand(0, 2));
+					if ($helmet->isBroken()) {
+						$helmet = VanillaItems::AIR();
+					}
+					$this->getArmorInventory()->setHelmet($helmet);
+				}*/
+			}
+		}
 	}
 }

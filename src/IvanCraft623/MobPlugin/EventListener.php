@@ -25,7 +25,9 @@ namespace IvanCraft623\MobPlugin;
 
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
+use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\pattern\BlockPattern;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\VanillaBlocks;
@@ -33,12 +35,37 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\Listener;
+use pocketmine\event\player\PlayerInteractEvent;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\world\particle\BlockBreakParticle;
 use pocketmine\world\Position;
+use function lcg_value;
 
 class EventListener implements Listener {
+
+	/**
+	 * Overrides pocketmine's built-in mobs spawn logic
+	 */
+	public function onPlayerInteract(PlayerInteractEvent $event) : void{
+		$item = $event->getItem();
+		if ($item->getTypeId() === ItemTypeIds::ZOMBIE_SPAWN_EGG) {
+			$event->cancel();
+
+			$blockPosition = $event->getBlock()->getPosition();
+			$entity = (new Zombie(
+				Location::fromObject($blockPosition->add(0.5, 1, 0.5),
+				$blockPosition->getWorld(), lcg_value() * 360, 0))
+			)->setPersistent()->setCanBreakDoors();
+
+			if($item->hasCustomName()){
+				$entity->setNameTag($item->getCustomName());
+			}
+			Utils::popItemInHand($event->getPlayer());
+			$entity->spawnToAll();
+		}
+	}
 
 	/**
 	 * @priority HIGH

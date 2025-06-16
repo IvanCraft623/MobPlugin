@@ -219,7 +219,7 @@ class IronGolem extends Golem implements NeutralMob{
 		return $hasUpdate;
 	}
 
-	protected function doAttackAnimation() : void{
+	public function doAttackAnimation() : void{
 		parent::doAttackAnimation();
 
 		$this->broadcastSound(new ThrowSound($this));

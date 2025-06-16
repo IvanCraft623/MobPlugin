@@ -464,7 +464,7 @@ abstract class Mob extends Living {
 		return $this->location->distanceSquared($target->getPosition());
 	}
 
-	protected function doAttackAnimation() : void{
+	public function doAttackAnimation() : void{
 		$this->broadcastAnimation(new ArmSwingAnimation($this));
 	}
 

@@ -422,7 +422,5 @@ class Enderman extends Monster implements NeutralMob{
 		}
 	}
 
-	//TODO: try to teleport when damaged
-
 	//TODO: spawn rules code
 }
