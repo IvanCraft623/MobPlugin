@@ -81,6 +81,7 @@ class MobPlugin extends PluginBase {
 	}
 
 	public function onEnable() : void {
+		Settings::init();
 		CustomTimings::init();
 
 		$this->registerAttributes();

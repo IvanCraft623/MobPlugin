@@ -31,14 +31,16 @@ use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
+use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
+use pocketmine\color\Color;
 use pocketmine\entity\animation\ArmSwingAnimation;
-use pocketmine\entity\Attribute;
 
+use pocketmine\entity\Attribute;
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
@@ -54,12 +56,16 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\utils\AssumptionFailedError;
+use pocketmine\world\particle\DustParticle;
 use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
 use function assert;
+use function basename;
 use function count;
+use function implode;
 use function lcg_value;
 use function max;
+use function str_replace;
 
 abstract class Mob extends Living {
 	//TODO!
@@ -101,6 +107,10 @@ abstract class Mob extends Living {
 	protected Attribute $attackKnockbackAttr;
 
 	protected Attribute $followRangeAttr;
+
+	public function getSettings() : Settings{
+		return Settings::getSettings($this->getWorld()->getFolderName());
+	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
 		$this->initProperties();
@@ -290,6 +300,24 @@ abstract class Mob extends Living {
 
 		$this->checkDespawn();
 
+		if (!$this->getSettings()->isMobGriefingEnabled()) {
+			return false;
+		}
+
+		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
+			$this->setNameTagVisible(true);
+			$this->setNameTagAlwaysVisible(true);
+			$this->setNameTag(implode("\n", $this->getCurrentDebugInfo()));
+
+			$path = $this->navigation->getPath();
+			if ($path !== null) {
+				$world = $this->getWorld();
+				foreach ($path->getNodes() as $node) {
+					$world->addParticle($node->add(0.5, 0.5, 0.5), new DustParticle(new Color(255, 0, 0))); //red particle
+				}
+			}
+		}
+
 		//TODO: leash check
 
 		/*if ($this->ticksLived % 5 === 0) {
@@ -300,7 +328,23 @@ abstract class Mob extends Living {
 		return $hasUpdate;
 	}
 
+	/**
+	 * @return string[]
+	 */
+	protected function getCurrentDebugInfo() : array{
+		$data = [];
+		foreach ($this->goalSelector->getRunningGoals() as $wrappedGoal) {
+			$data[] = basename(str_replace('\\', '/', $wrappedGoal->getGoal()::class));
+		}
+
+		return $data;
+	}
+
 	public function checkDespawn() : void{
+		if (!$this->getSettings()->isMobNaturalDespawningEnabled()) {
+			return;
+		}
+
 		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL && $this->shouldDespawnInPeaceful()) {
 			$this->flagForDespawn();
 			return;

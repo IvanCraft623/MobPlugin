@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/IvanCraft623/Pahtfinder.git",
-                "reference": "1d64b118d55e4d7f2eabd1533336c61b3853389e"
+                "reference": "6630848a42caa4db0c577415d965cb9e4a065e42"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/1d64b118d55e4d7f2eabd1533336c61b3853389e",
-                "reference": "1d64b118d55e4d7f2eabd1533336c61b3853389e",
+                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/6630848a42caa4db0c577415d965cb9e4a065e42",
+                "reference": "6630848a42caa4db0c577415d965cb9e4a065e42",
                 "shasum": ""
             },
             "require-dev": {
@@ -40,7 +40,7 @@
                 "source": "https://github.com/IvanCraft623/Pahtfinder/tree/main",
                 "issues": "https://github.com/IvanCraft623/Pahtfinder/issues"
             },
-            "time": "2024-07-02T21:38:55+00:00"
+            "time": "2025-06-16T16:45:37+00:00"
         }
     ],
     "packages-dev": [

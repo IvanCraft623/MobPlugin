@@ -49,7 +49,9 @@ class BreakDoorGoal extends DoorInteractGoal {
 			return false;
 		}
 
-		//TODO: DO_MOB_GRIEFING gamerule check!
+		if (!$this->entity->getSettings()->isMobGriefingEnabled()) {
+			return false;
+		}
 
 		return $this->entity->getWorld()->getDifficulty() >= $this->minDifficulty && !$this->isDoorOpen();
 	}

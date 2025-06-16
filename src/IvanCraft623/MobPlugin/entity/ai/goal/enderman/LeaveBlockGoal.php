@@ -40,7 +40,9 @@ class LeaveBlockGoal extends Goal {
 			return false;
 		}
 
-		//TODO: Mob griefing gamerule check
+		if (!$this->entity->getSettings()->isMobGriefingEnabled()) {
+			return false;
+		}
 
 		return $this->entity->getRandom()->nextBoundedInt($this->reducedTickDelay(2000)) === 0;
 	}

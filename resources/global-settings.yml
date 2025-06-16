@@ -1,0 +1,33 @@
+---
+# Global Settings File
+# Settings defined here will apply to all worlds that don't have their own settings file.
+# 
+# To create world-specific settings:
+# 1. Copy this file to the 'worlds-settings' folder
+# 2. Rename it to match the world's folder name
+# Example: For a world named "lobby", the path should be:
+# plugin-data/MobPlugin/worlds-settings/lobby.yml
+
+## Debug Settings
+# Enables debug mode, which displays:
+# - Extra information on entity name tags
+# - Current pathfinding routes
+# Recommended only for development or bug reporting
+debug-mode: false
+
+## Spawning Behavior
+# Note: Natural spawning feature will be implemented in a future update
+# mob-natural-spawning: false
+
+# Enables natural despawning of mobs
+# Note: Persistent mobs are unaffected by this setting
+mob-natural-despawning: true
+
+## Mob Behavior
+# Controls whether mobs can:
+# - Modify blocks in the world
+# - Pick up items from the ground
+mob-griefing: true
+
+# Additional settings options will be added soon :)
+...
