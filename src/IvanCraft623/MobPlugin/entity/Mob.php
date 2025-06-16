@@ -300,10 +300,6 @@ abstract class Mob extends Living {
 
 		$this->checkDespawn();
 
-		if (!$this->getSettings()->isMobGriefingEnabled()) {
-			return false;
-		}
-
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
 			$this->setNameTagVisible(true);
 			$this->setNameTagAlwaysVisible(true);
