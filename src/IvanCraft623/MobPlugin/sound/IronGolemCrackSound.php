@@ -40,7 +40,8 @@ class IronGolemCrackSound implements Sound{
 			-1,
 			$this->entity::getNetworkTypeId(),
 			false,
-			false
+			false,
+			$this->entity->getId()
 		)];
 	}
 }

@@ -42,7 +42,8 @@ class MobWarningSound implements Sound{
 			-1,
 			$this->entity::getNetworkTypeId(),
 			$isBaby,
-			false
+			false,
+			$this->entity->getId()
 		)];
 	}
 }

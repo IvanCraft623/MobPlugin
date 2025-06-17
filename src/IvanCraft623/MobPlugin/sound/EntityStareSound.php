@@ -40,7 +40,8 @@ class EntityStareSound implements Sound{
 			-1,
 			$this->entity::getNetworkTypeId(),
 			false, //TODO: does isBaby have any relevance here?
-			false
+			false,
+			$this->entity->getId()
 		)];
 	}
 }
