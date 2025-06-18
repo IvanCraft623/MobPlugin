@@ -130,7 +130,11 @@ abstract class DoorInteractGoal extends Goal {
 		}
 	}
 
-	public function shouldTickEveryTick() : bool {
+	public function stop() : void {
+		unset($this->doorPosition);
+	}
+
+	public function requiresUpdateEveryTick() : bool {
 		return true;
 	}
 }

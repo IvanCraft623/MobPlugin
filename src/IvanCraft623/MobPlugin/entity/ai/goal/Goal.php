@@ -76,4 +76,8 @@ abstract class Goal {
 	public function reducedTickDelay(int $ticks) : int{
 		return (int) ceil($ticks / 2);
 	}
+
+	public function getCurrentDebugInfo() : ?string{
+		return null;
+	}
 }

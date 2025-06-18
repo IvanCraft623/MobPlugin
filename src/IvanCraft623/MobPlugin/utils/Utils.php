@@ -34,7 +34,9 @@ use pocketmine\item\Releasable;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\world\particle\BlockBreakParticle;
 use pocketmine\world\Position;
+use pocketmine\world\World;
 use function abs;
 use function array_reduce;
 use function cos;
@@ -180,6 +182,27 @@ class Utils {
 	}
 
 	/**
+	 * Basic logic of World::useBreakOn() but without player-specific logic and drops.
+	 */
+	public static function destroyBlock(World $world, Vector3 $postiion, bool $createParticles = true) : void{
+		$item = VanillaItems::AIR();
+		$destroyedBlock = $world->getBlock($postiion);
+
+		if ($createParticles) {
+			$world->addParticle($postiion->add(0.5, 0.5, 0.5), new BlockBreakParticle($destroyedBlock));
+		}
+
+		foreach ($destroyedBlock->getAffectedBlocks() as $b) {
+			$b->onBreak($item);
+
+			$tile = $world->getTile($b->getPosition());
+			if ($tile !== null) {
+				$tile->onBlockDestroyed();
+			}
+		}
+	}
+
+	/**
 	 * Generate adjacent positions in a sphere around the given starting position within specified maximum distances in each axis.
 	 *
 	 * The function uses a generator to efficiently compute and yield adjacent positions in a sphere shape
@@ -279,6 +302,7 @@ class Utils {
 	}
 
 	public static function isHalloween(?DateTime $date = null) : bool{
-		return ($date ?? new DateTime())->format('m-d') === '10-31';
+		//return ($date ?? new DateTime())->format('m-d') === '10-31';
+		return true;
 	}
 }

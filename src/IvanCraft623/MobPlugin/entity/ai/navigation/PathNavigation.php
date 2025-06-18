@@ -181,7 +181,6 @@ abstract class PathNavigation {
 			return $pathResolver->getPromise();
 		}
 
-		//TODO: update evaluator values
 		$this->pathFindingPos = World::blockHash(
 			(int) floor($position->getX()),
 			(int) floor($position->getY()),

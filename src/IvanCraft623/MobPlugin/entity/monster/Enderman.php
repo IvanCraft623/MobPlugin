@@ -73,6 +73,7 @@ use pocketmine\world\sound\EndermanTeleportSound;
 use function array_merge;
 use function count;
 use function mt_rand;
+use function round;
 
 class Enderman extends Monster implements NeutralMob{
 	use NeutralMobTrait;
@@ -420,6 +421,15 @@ class Enderman extends Monster implements NeutralMob{
 		} elseif (!$source->isCancelled() || $cause === EntityDamageEvent::CAUSE_PROJECTILE) {
 			$this->teleportGoal->setTeleportTick(0);
 		}
+	}
+
+	/**
+	 * @return string[]
+	 */
+	protected function getCurrentDebugInfo() : array{
+		$data = parent::getCurrentDebugInfo();
+		$data[] = "Teleporting in: " . round(($this->teleportGoal->getTeleportTick() - $this->getServer()->getTick()) / 20, 1) . "s";
+		return $data;
 	}
 
 	//TODO: spawn rules code

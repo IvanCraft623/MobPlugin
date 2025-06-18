@@ -30,7 +30,6 @@ use IvanCraft623\MobPlugin\pattern\BlockPattern;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockTypeIds;
-use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
 use pocketmine\event\block\BlockPlaceEvent;
@@ -39,7 +38,6 @@ use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\scheduler\ClosureTask;
-use pocketmine\world\particle\BlockBreakParticle;
 use pocketmine\world\Position;
 use function lcg_value;
 
@@ -109,10 +107,7 @@ class EventListener implements Listener {
 					continue;
 				}
 
-				$p = $b->getPosition();
-
-				$world->addParticle($p->add(0.5, 0.5, 0.5), new BlockBreakParticle($b));
-				$world->setBlock($p, VanillaBlocks::AIR());
+				Utils::destroyBlock($world, $b->getPosition());
 			}
 		}
 

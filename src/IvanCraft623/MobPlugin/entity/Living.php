@@ -226,7 +226,10 @@ abstract class Living extends PMLiving {
 	}
 
 	public function jump() : void{
-		if ($this->onGround || $this->getWorld()->getBlock($this->location) instanceof Liquid) {
+		if ($this->getWorld()->getBlock($this->location) instanceof Liquid) {
+			//Hardcode liquid friction because PM doesn't implement it yet :(
+			$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity() * 0.55, null);
+		} elseif ($this->onGround) {
 			$this->motion = $this->motion->withComponents(null, $this->getJumpVelocity(), null);
 		}
 	}

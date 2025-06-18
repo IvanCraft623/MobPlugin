@@ -107,4 +107,8 @@ class WrappedGoal extends Goal {
 		}
 		return $goal instanceof WrappedGoal && $this->goal::class === $goal->goal::class;
 	}
+
+	public function getCurrentDebugInfo() : ?string{
+		return $this->goal->getCurrentDebugInfo();
+	}
 }

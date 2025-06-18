@@ -24,24 +24,32 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\sound\DoorBumpSound;
+use IvanCraft623\MobPlugin\sound\DoorCrashSound;
+use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\Block;
-use pocketmine\world\sound\DoorCrashSound;
+use pocketmine\network\mcpe\protocol\LevelEventPacket;
+use pocketmine\network\mcpe\protocol\types\LevelEvent;
 use function max;
+use function min;
+use function round;
 
 class BreakDoorGoal extends DoorInteractGoal {
 
+	public const DEFAULT_MAX_PROGRESS = 240; //in ticks
+
+	private const SIXTEEN_BITS_INT_MAX = 65535;
+
 	private int $breakProgress = 0;
-	private int $lastBreakProgress = -1;
 	private int $maxProgress;
 
 	public function __construct(
 		PathfinderMob $entity,
 		protected int $minDifficulty,
-		int $maxProgress = 240
+		int $maxProgress = self::DEFAULT_MAX_PROGRESS
 	) {
 		parent::__construct($entity);
-		$this->maxProgress = max(240, $maxProgress);
+		$this->maxProgress = min(max(self::DEFAULT_MAX_PROGRESS, $maxProgress), self::SIXTEEN_BITS_INT_MAX);
 	}
 
 	public function canUse() : bool{
@@ -59,11 +67,21 @@ class BreakDoorGoal extends DoorInteractGoal {
 	public function start() : void{
 		parent::start();
 		$this->breakProgress = 0;
+
+		$this->entity->getWorld()->broadcastPacketToViewers($this->doorPosition, LevelEventPacket::create(
+			LevelEvent::BLOCK_START_BREAK,
+			(int) (self::SIXTEEN_BITS_INT_MAX / $this->maxProgress),
+			$this->doorPosition
+		));
 	}
 
 	public function stop() : void{
+		$this->entity->getWorld()->broadcastPacketToViewers(
+			$this->doorPosition,
+			LevelEventPacket::create(LevelEvent::BLOCK_STOP_BREAK, 0, $this->doorPosition)
+		);
+
 		parent::stop();
-		//TODO: stop destruction progress
 	}
 
 	public function canContinueToUse() : bool{
@@ -77,24 +95,22 @@ class BreakDoorGoal extends DoorInteractGoal {
 		parent::tick();
 
 		if ($this->entity->getRandom()->nextBoundedInt(20) === 0) {
-			//$this->entity->getWorld()->addSound($this->doorPosition, new DoorCrashSound()); TODO: register sound!
+			$this->entity->getWorld()->addSound($this->doorPosition->add(0.5, 0.5, 0.5), new DoorBumpSound());
 			$this->entity->doAttackAnimation();
 		}
 
 		$this->breakProgress++;
-		$i = (int) ($this->breakProgress / $this->maxProgress * 10);
-		if ($i !== $this->lastBreakProgress) {
-			//TOOD: replace this ai generated code with valid one broadcasting block destruction progress
-			//$this->entity->getWorld()->broadcastBlockDestruction($this->entity->getId(), $this->doorPosition, $i);
-			$this->lastBreakProgress = $i;
-		}
-
-		if ($this->breakProgress === $this->maxProgress && $this->entity->getWorld()->getDifficulty() >= $this->minDifficulty) {
+		if ($this->breakProgress >= $this->maxProgress && $this->entity->getWorld()->getDifficulty() >= $this->minDifficulty) {
 			$world = $this->entity->getWorld();
 			$block = $world->getBlock($this->doorPosition);
 
-			$world->useBreakOn($this->doorPosition);
-			//TODO: check if any effect need to be bradcasted: sound & particles
+			$this->entity->getWorld()->addSound($this->doorPosition->add(0.5, 0.5, 0.5), new DoorCrashSound());
+			Utils::destroyBlock($world, $this->doorPosition);
+			//$world->useBreakOn(vector: $this->doorPosition, createParticles: true);
 		}
+	}
+
+	public function getCurrentDebugInfo() : ?string{
+		return "BreakProgress: " . round(($this->breakProgress / $this->maxProgress) * 100, 1) . "%";
 	}
 }

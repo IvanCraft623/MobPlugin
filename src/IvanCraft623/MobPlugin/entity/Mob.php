@@ -330,7 +330,10 @@ abstract class Mob extends Living {
 	protected function getCurrentDebugInfo() : array{
 		$data = [];
 		foreach ($this->goalSelector->getRunningGoals() as $wrappedGoal) {
-			$data[] = basename(str_replace('\\', '/', $wrappedGoal->getGoal()::class));
+			$goalInfo = $wrappedGoal->getCurrentDebugInfo();
+			$data[] = basename(str_replace('\\', '/', $wrappedGoal->getGoal()::class)) . ($goalInfo === null ?
+				"" : " (" . $goalInfo . ")"
+			);
 		}
 
 		return $data;
