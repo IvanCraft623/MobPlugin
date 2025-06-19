@@ -117,6 +117,11 @@ abstract class Mob extends Living {
 
 		parent::initEntity($nbt);
 
+		if ($this->getSettings()->isDebugModeEnabled()) {
+			$this->setNameTagVisible(true);
+			$this->setNameTagAlwaysVisible(true);
+		}
+
 		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
 
 		$this->goalSelector = new GoalSelector();
@@ -301,8 +306,6 @@ abstract class Mob extends Living {
 		$this->checkDespawn();
 
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
-			$this->setNameTagVisible(true);
-			$this->setNameTagAlwaysVisible(true);
 			$this->setNameTag(implode("\n", $this->getCurrentDebugInfo()));
 
 			$path = $this->navigation->getPath();
