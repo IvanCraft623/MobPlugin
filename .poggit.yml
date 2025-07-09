@@ -6,4 +6,8 @@ projects:
   MobPlugin:
     path: ""
     lint: false
+    libs:
+      - src: IvanCraft623/Pahtfinder/pathfinder
+        version: ^0.0.3
+        branch: main
 ...
