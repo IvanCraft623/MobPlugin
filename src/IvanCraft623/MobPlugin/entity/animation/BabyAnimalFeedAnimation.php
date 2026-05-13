@@ -35,7 +35,7 @@ final class BabyAnimalFeedAnimation implements Animation{
 
 	public function encode() : array{
 		return [
-			ActorEventPacket::create($this->animal->getId(), ActorEvent::BABY_ANIMAL_FEED, 0)
+			ActorEventPacket::create($this->animal->getId(), ActorEvent::BABY_ANIMAL_FEED, 0, null)
 		];
 	}
 }

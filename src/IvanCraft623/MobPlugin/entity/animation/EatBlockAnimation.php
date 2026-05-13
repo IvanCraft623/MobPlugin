@@ -35,7 +35,7 @@ final class EatBlockAnimation implements Animation{
 
 	public function encode() : array{
 		return [
-			ActorEventPacket::create($this->animal->getId(), ActorEvent::EAT_GRASS_ANIMATION, 0)
+			ActorEventPacket::create($this->animal->getId(), ActorEvent::EAT_GRASS_ANIMATION, 0, null)
 		];
 	}
 }
