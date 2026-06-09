@@ -26,14 +26,13 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\data\bedrock\MooshroomCowTypeIdMap;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animal\utils\SuspiciousStewTypeFlowerMap;
-use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
 use IvanCraft623\MobPlugin\entity\Shearable;
 use IvanCraft623\MobPlugin\sound\MilkSuspiciouslySound;
 use IvanCraft623\MobPlugin\sound\MooshroomCowConvertSound;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-
 use pocketmine\data\bedrock\SuspiciousStewTypeIdMap;
+use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\SuspiciousStewType;
 use pocketmine\item\VanillaItems;

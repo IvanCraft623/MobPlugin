@@ -35,7 +35,7 @@ final class WithdrawFlowerAnimation implements Animation{
 
 	public function encode() : array{
 		return [
-			ActorEventPacket::create($this->golem->getId(), ActorEvent::IRON_GOLEM_WITHDRAW_FLOWER, 0)
+			ActorEventPacket::create($this->golem->getId(), ActorEvent::IRON_GOLEM_WITHDRAW_FLOWER, 0, null)
 		];
 	}
 }
