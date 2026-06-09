@@ -35,7 +35,7 @@ final class OfferFlowerAnimation implements Animation{
 
 	public function encode() : array{
 		return [
-			ActorEventPacket::create($this->golem->getId(), ActorEvent::IRON_GOLEM_OFFER_FLOWER, $this->durationTicks)
+			ActorEventPacket::create($this->golem->getId(), ActorEvent::IRON_GOLEM_OFFER_FLOWER, $this->durationTicks, null)
 		];
 	}
 }

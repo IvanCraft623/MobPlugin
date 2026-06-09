@@ -41,7 +41,8 @@ class EntityPlopSound implements Sound{
 			$this->entity::getNetworkTypeId(),
 			false, //TODO: does isBaby have any relevance here?
 			false,
-			$this->entity->getId()
+			$this->entity->getId(),
+			null
 		)];
 	}
 }

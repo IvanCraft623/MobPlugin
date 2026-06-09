@@ -35,7 +35,7 @@ final class BreedingAnimation implements Animation{
 
 	public function encode() : array{
 		return [
-			ActorEventPacket::create($this->animal->getId(), ActorEvent::LOVE_PARTICLES, 0)
+			ActorEventPacket::create($this->animal->getId(), ActorEvent::LOVE_PARTICLES, 0, null)
 		];
 	}
 }

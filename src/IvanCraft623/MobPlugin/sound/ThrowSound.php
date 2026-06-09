@@ -41,7 +41,8 @@ class ThrowSound implements Sound{
 			$this->entity::getNetworkTypeId(),
 			false,
 			false,
-			$this->entity->getId()
+			$this->entity->getId(),
+			null
 		)];
 	}
 }

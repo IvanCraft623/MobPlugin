@@ -26,16 +26,15 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
-use IvanCraft623\MobPlugin\entity\animation\ConsumingItemAnimation;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
-
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
 use pocketmine\utils\Binary;
