@@ -40,6 +40,7 @@ use pocketmine\world\World;
 use function abs;
 use function array_reduce;
 use function cos;
+use function floor;
 use function fmod;
 use function max;
 use function method_exists;
@@ -289,6 +290,10 @@ class Utils {
 		return (float) self::lerp($ambientLight, $lightPercentage / (4 - 3 * $lightPercentage), 1);
 	}
 
+	public static function isSkyVisible(World $world, Vector3 $pos) : bool{
+		return $world->getPotentialBlockSkyLightAt((int) floor($pos->x), (int) floor($pos->y), (int) floor($pos->z)) === 15;
+	}
+
 	public static function signum(int|float $i) : int{
 		return $i <=> 0;
 	}
@@ -302,7 +307,6 @@ class Utils {
 	}
 
 	public static function isHalloween(?DateTime $date = null) : bool{
-		//return ($date ?? new DateTime())->format('m-d') === '10-31';
-		return true;
+		return ($date ?? new DateTime())->format('m-d') === '10-31';
 	}
 }

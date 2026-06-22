@@ -40,7 +40,7 @@ class LookControl implements Control {
 
 	protected float $pitchMaxRotationAngle;
 
-	protected bool $hasWanted = false;
+	protected int $lookAtTimer = 0;
 
 	protected Vector3 $wanted;
 
@@ -52,18 +52,19 @@ class LookControl implements Control {
 		$this->wanted = $lookAt instanceof Entity ? $lookAt->getEyePos() : $lookAt;
 		$this->yawMaxRotationAngle = $yawMaxRotationAngle ?? $this->mob->getRotSpeed();
 		$this->pitchMaxRotationAngle = $pitchMaxRotationAngle ?? $this->mob->getMaxPitchRot();
-		$this->hasWanted = true;
+		$this->lookAtTimer = 2;
 	}
 
 	public function tick() : void {
 		//TODO: head yaw rotation logic!
 
-		$location = $this->mob->getLocation();
 		if ($this->resetPitchOnTick()) {
-			$this->mob->setRotation($location->yaw, 0.0);
+			$this->mob->setRotation($this->mob->getLocation()->yaw, 0.0);
 		}
-		if ($this->hasWanted) {
-			$this->hasWanted = false;
+
+		$location = $this->mob->getLocation();
+		if ($this->lookAtTimer > 0) {
+			$this->lookAtTimer--;
 			$yaw = $this->rotateTowards($location->yaw, $this->getYawD(), $this->yawMaxRotationAngle);
 			$pitch = $this->rotateTowards($location->pitch, $this->getPitchD(), $this->pitchMaxRotationAngle);
 			$this->mob->setRotation($yaw, $pitch);
@@ -80,7 +81,7 @@ class LookControl implements Control {
 	}
 
 	public function hasWanted() : bool {
-		return $this->hasWanted;
+		return $this->lookAtTimer > 0;
 	}
 
 	public function getWanted() : ?Vector3 {

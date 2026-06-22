@@ -31,28 +31,37 @@ use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
+use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
+use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
 use pocketmine\entity\animation\ArmSwingAnimation;
-
 use pocketmine\entity\Attribute;
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
+use pocketmine\entity\object\ItemEntity;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\event\entity\EntityItemPickupEvent;
+use pocketmine\inventory\ArmorInventory;
+use pocketmine\inventory\Inventory;
+use pocketmine\item\Armor;
 use pocketmine\item\Durable;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\MeleeWeaponEnchantment;
 use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\item\Releasable;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\network\mcpe\EntityEventBroadcaster;
+use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\utils\AssumptionFailedError;
@@ -65,6 +74,7 @@ use function count;
 use function implode;
 use function lcg_value;
 use function max;
+use function min;
 use function str_replace;
 
 abstract class Mob extends Living {
@@ -93,6 +103,8 @@ abstract class Mob extends Living {
 	protected float $upwardSpeed = 0;
 
 	protected float $sidewaysSpeed = 0;
+
+	protected float $motionSpeed = 0;
 
 	protected Vector3 $restrictCenter;
 
@@ -144,7 +156,8 @@ abstract class Mob extends Living {
 	}
 
 	protected function initProperties() : void{
-		$this->setMovementSpeed($this->getDefaultMovementSpeed());
+		$this->moveSpeedAttr->setDefaultValue($this->getDefaultMovementSpeed());
+		$this->moveSpeedAttr->setValue($this->getDefaultMovementSpeed());
 	}
 
 	protected function registerGoals() : void{
@@ -202,6 +215,22 @@ abstract class Mob extends Living {
 
 	public function setSidewaysSpeed(float $sidewaysSpeed) : void {
 		$this->sidewaysSpeed = $sidewaysSpeed;
+	}
+
+	/**
+	 * The speed MoveControl wants to apply this tick, used to drive forwardSpeed.
+	 * Not to be confused with getMovementSpeed(), which reads the MOVEMENT_SPEED attribute.
+	 */
+	public function getMotionSpeed() : float {
+		return $this->motionSpeed;
+	}
+
+	/**
+	 * Sets the speed MoveControl wants to apply this tick and pushes it as forwardSpeed.
+	 */
+	public function setMotionSpeed(float $motionSpeed) : void {
+		$this->motionSpeed = $motionSpeed;
+		$this->setForwardSpeed($motionSpeed);
 	}
 
 	public function getMaxPitchRot() : int {
@@ -422,6 +451,7 @@ abstract class Mob extends Living {
 		// Movement update
 		$this->sidewaysSpeed *= 0.98;
 		$this->forwardSpeed *= 0.98;
+		//TODO: is being controlled by passenger check!
 		$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
 	}
 
@@ -648,6 +678,119 @@ abstract class Mob extends Living {
 
 	public function onLightningBoltHit() : bool{
 		return false;
+	}
+
+	public function pickupItem(ItemEntity $entity, int $count) : void {
+		$item = $entity->getItem();
+		if ($count > $item->getCount()) {
+			throw new \InvalidArgumentException("Pickup take count cannot be larger than item count");
+		}
+
+		$equipSlot = 0;
+		$equipInventory = $this->getEquipInventoryAndSlot($item, $equipSlot);
+
+		$equippedItem = $equipInventory->getItem($equipSlot);
+		$originalCount = $item->getCount();
+
+		// How many units fit in the target slot
+		// in vanilla bedrock they actually don't care, mobs will equip one stack of
+		// carved pumpkins even if armor inventory stack size is 1.
+		$canStack = !$equippedItem->isNull() && $equippedItem->canStackWith($item);
+		$maxStackSize = min($equipInventory->getMaxStackSize(), $item->getMaxStackSize());
+		$canAdd = max(0, $maxStackSize - ($canStack ? $equippedItem->getCount() : 0));
+		$pickupCount = min($count, $canAdd);
+
+		if ($pickupCount <= 0) {
+			return;
+		}
+		$item->setCount($pickupCount);
+
+		$ev = new EntityItemPickupEvent($this, $entity, $item, $equipInventory);
+		$ev->call();
+		if ($ev->isCancelled()) {
+			return;
+		}
+
+		$evItem = $ev->getItem();
+
+		if ($evItem->getCount() <= 0) {
+			$entity->flagForDespawn();
+			return;
+		}
+
+		$equipInventory = $ev->getInventory();
+		if ($equipInventory === null || !$equipInventory->slotExists($equipSlot)) {
+			$entity->flagForDespawn();
+			return;
+		}
+
+		// Re-read slot since inventory may have changed, re-evaluate stackability once
+		$equippedItem = $equipInventory->getItem($equipSlot);
+		$canStack = !$equippedItem->isNull() && $equippedItem->canStackWith($evItem);
+
+		if (!$canStack && !$equippedItem->isNull()) {
+			$this->getWorld()->dropItem($this->location, $equippedItem);
+			$equipInventory->clear($equipSlot);
+		}
+
+		// Reclamp count in case plugins increased it beyond what fits
+		$currentCount = $canStack ? $equippedItem->getCount() : 0;
+		$canAddAfterEv = max(0, min($equipInventory->getMaxStackSize(), $evItem->getMaxStackSize()) - $currentCount);
+		$finalCount = min($evItem->getCount(), $canAddAfterEv);
+
+		if ($finalCount <= 0) {
+			return;
+		}
+		$evItem->setCount($finalCount);
+
+		// Visual and sound effects
+		NetworkBroadcastUtils::broadcastEntityEvent($this->getViewers(),
+			fn(EntityEventBroadcaster $broadcaster, array $recipients) =>
+				$broadcaster->onPickUpItem($recipients, $this, $entity)
+		);
+		if ($equipInventory instanceof ArmorInventory &&
+			$evItem instanceof Armor &&
+			($equipSound = $evItem->getMaterial()->getEquipSound()) !== null
+		) {
+			$this->broadcastSound($equipSound);
+		}
+
+		$slotItem = $equipInventory->getItem($equipSlot);
+		if ($slotItem->isNull()) {
+			$equipInventory->setItem($equipSlot, $evItem);
+		} else {
+			$slotItem->setCount($slotItem->getCount() + $evItem->getCount());
+			$equipInventory->setItem($equipSlot, $slotItem);
+		}
+
+		$remaining = $originalCount - $finalCount;
+		if ($remaining > 0) {
+			$entity->getWorld()->dropItem($entity->getLocation(), (clone $item)->setCount($remaining), Vector3::zero(), 0);
+		}
+		$entity->flagForDespawn();
+
+		$this->setPersistent(); //mobs that have pickup items became persistent
+	}
+
+	public function getEquipInventoryAndSlot(Item $item, int &$slot) : Inventory{
+		if ($item instanceof Armor) {
+			$slot = $item->getArmorSlot();
+			return $this->getArmorInventory();
+		}
+
+		$typeId = $item->getTypeId();
+		if ($typeId === ItemTypeIds::fromBlockTypeId(BlockTypeIds::CARVED_PUMPKIN) ||
+			$typeId === ItemTypeIds::fromBlockTypeId(BlockTypeIds::MOB_HEAD)
+		) {
+			$slot = ArmorInventory::SLOT_HEAD;
+			return $this->getArmorInventory();
+		}
+
+		//TODO: other items like elytra may be equiped on an armor slot
+		//TODO: it could be items equiped on offhand
+
+		$slot = MobInventory::SLOT_MAIN_HAND;
+		return $this->getInventory();
 	}
 
 	protected function syncNetworkData(EntityMetadataCollection $properties) : void{

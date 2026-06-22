@@ -31,8 +31,11 @@ use function substr;
 final class ComponentGroups{
 
 	private const ENABLED_CHARACTER = "+";
-	private const DISABLED_CHARACTER = "+";
+	private const DISABLED_CHARACTER = "-";
 
+	/**
+	 * @phpstan-param ListTag<StringTag> $tag
+	 */
 	public static function fromListTag(ListTag $tag) : ComponentGroups{
 		$componentGroupList = new ComponentGroups();
 
@@ -102,6 +105,9 @@ final class ComponentGroups{
 		return $componentGroups;
 	}
 
+	/**
+	 * @phpstan-return ListTag<StringTag>
+	 */
 	public function toListTag() : ListTag{
 		$tag = new ListTag([], NBT::TAG_String);
 		foreach ($this->componentGroups as $componentGroup => $enabled) {

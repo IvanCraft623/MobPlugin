@@ -23,26 +23,38 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use Closure;
+
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreakDoorGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\DestroyEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\PickupItemsGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
+use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
 use IvanCraft623\MobPlugin\sound\SoundEvents;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\BlockTypeIds;
+use pocketmine\block\MobHead;
+use pocketmine\block\utils\MobHeadType;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Ageable;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Villager;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\item\Item;
+use pocketmine\item\ItemBlock;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -55,9 +67,13 @@ use function assert;
 use function count;
 use function mt_rand;
 
-class Zombie extends Monster implements Ageable {
+class Zombie extends Monster implements Ageable, ItemPickupCapable {
+	use ItemPickupCapableTrait {
+		initEntity as initEntityPickupTrait;
+		saveNBT as saveNBTPickupTrait;
+	}
 
-	private const TAG_IS_BABY = "IsBaby"; //TAG_Int
+	private const TAG_IS_BABY = "IsBaby"; //TAG_Byte
 
 	private const COMPONENT_GROUP_CAN_BREAK_DOORS = "minecraft:can_break_doors";
 
@@ -75,6 +91,8 @@ class Zombie extends Monster implements Ageable {
 	private bool $isConvertingInWater = false;
 
 	private BreakDoorGoal $breakDoorGoal;
+
+	private PickupItemsGoal $pickupItemsGoal;
 
 	public static function getNetworkTypeId() : string {
 		return EntityIds::ZOMBIE;
@@ -98,6 +116,7 @@ class Zombie extends Monster implements Ageable {
 
 	protected function registerGoals() : void {
 		$this->breakDoorGoal = new BreakDoorGoal($this, World::DIFFICULTY_HARD);
+		$this->pickupItemsGoal = (new PickupItemsGoal($this, 1, 2, 4))->setWantedItems(self::getWantedItems());
 
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
 		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
@@ -113,6 +132,13 @@ class Zombie extends Monster implements Ageable {
 
 		//TODO: Attack baby turtles!
 		//$this->targetSelector->addGoal(5, new NearestAttackableGoal($this, Turtle::class, 10, true, false, fn($turtle) => $turtle->isBaby()));
+	}
+
+	protected function onFirstUpdate(int $currentTick) : void{
+		parent::onFirstUpdate($currentTick);
+
+		$this->updatePickupItemsGoal($this->canPickupItems());
+		$this->updateBreakDoorGoal($this->canBreakDoors);
 	}
 
 	public function isBaby() : bool{
@@ -132,6 +158,14 @@ class Zombie extends Monster implements Ageable {
 		return 0.5;
 	}
 
+	protected function updatePickupItemsGoal(bool $enabled) : void{
+		if ($enabled) {
+			$this->goalSelector->addGoal(6, $this->pickupItemsGoal);
+		} else {
+			$this->goalSelector->removeGoal($this->pickupItemsGoal);
+		}
+	}
+
 	public function canBreakDoors() : bool {
 		return $this->canBreakDoors;
 	}
@@ -145,13 +179,17 @@ class Zombie extends Monster implements Ageable {
 
 			assert($this->navigation instanceof GroundPathNavigation);
 			$this->navigation->setCanOpenDoors($value);
-			if ($value) {
-				$this->goalSelector->addGoal(1, $this->breakDoorGoal);
-			} else {
-				$this->goalSelector->removeGoal($this->breakDoorGoal);
-			}
+			$this->updateBreakDoorGoal($value);
 		}
 		return $this;
+	}
+
+	protected function updateBreakDoorGoal(bool $enabled) : void{
+		if ($enabled) {
+			$this->goalSelector->addGoal(1, $this->breakDoorGoal);
+		} else {
+			$this->goalSelector->removeGoal($this->breakDoorGoal);
+		}
 	}
 
 	public function isConvertingInWater() : bool {
@@ -216,21 +254,20 @@ class Zombie extends Monster implements Ageable {
 		$drops[] = VanillaItems::ROTTEN_FLESH()->setCount(mt_rand(0, 2));
 
 		// Rare iron drop
-		if (mt_rand(1, 200) < 5) { // 2.5% chance
-			switch(mt_rand(0, 2)) {
-				case 0:
-					$drops[] = VanillaItems::IRON_INGOT();
-					break;
-				case 1:
-					$drops[] = VanillaItems::CARROT();
-					break;
-				case 2:
-					$drops[] = VanillaItems::POTATO();
-					break;
-			}
+		//TODO: looting enchantment logic
+		if (mt_rand(1, 40) === 1) { // 2.5% chance
+			$drops[] = match(mt_rand(0, 2)){
+				0 => VanillaItems::IRON_INGOT(),
+				1 => VanillaItems::CARROT(),
+				2 => VanillaItems::POTATO(),
+			};
 		}
 
-		//TODO: looting enchantment logic
+		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
+			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()
+		) {
+			$drops[] = VanillaBlocks::MOB_HEAD()->setMobHeadType(MobHeadType::ZOMBIE)->asItem();
+		}
 
 		return $drops;
 	}
@@ -245,6 +282,7 @@ class Zombie extends Monster implements Ageable {
 
 	protected function initEntity(CompoundTag $nbt) : void {
 		parent::initEntity($nbt);
+		$this->initEntityPickupTrait($nbt);
 
 		$isBabyByte = $nbt->getByte(self::TAG_IS_BABY, -1);
 		if ($isBabyByte === 1 || ($isBabyByte === -1 && AgeableMob::getRandomStartAge() !== AgeableMob::ADULT_AGE)) {
@@ -252,20 +290,24 @@ class Zombie extends Monster implements Ageable {
 			//TODO: 0.75% chance of zombie jockey
 		}
 
-		$this->canBreakDoors = $this->componentGroups->has(self::COMPONENT_GROUP_CAN_BREAK_DOORS);
+		if ($nbt->count() !== 0) {
+			$this->setCanBreakDoors($this->componentGroups->has(self::COMPONENT_GROUP_CAN_BREAK_DOORS));
+		} else { // First spawn
+			$this->setCanBreakDoors(mt_rand(1, 10) === 1);
 
-		// Halloween pumpkin head chance, this is a java only feature, but whhy not?
-		if ($this->getArmorInventory()->getHelmet()->isNull() && Utils::isHalloween() && mt_rand(1, 4) === 1) {
-			$this->getArmorInventory()->setHelmet(
-				mt_rand(1, 10) === 1 ?
-				VanillaBlocks::LIT_PUMPKIN()->asItem() :
-				VanillaBlocks::CARVED_PUMPKIN()->asItem()
-			);
+			// Halloween pumpkin head chance, this is a java only feature, but whhy not?
+			if ($this->getArmorInventory()->getHelmet()->isNull() && Utils::isHalloween() && mt_rand(1, 4) === 1) {
+				$this->getArmorInventory()->setHelmet(
+					mt_rand(1, 10) === 1 ?
+					VanillaBlocks::LIT_PUMPKIN()->asItem() :
+					VanillaBlocks::CARVED_PUMPKIN()->asItem()
+				);
+			}
 		}
 	}
 
 	public function saveNBT() : CompoundTag {
-		$nbt = parent::saveNBT();
+		$nbt = parent::saveNBT()->merge($this->saveNBTPickupTrait());
 
 		$nbt->setByte(self::TAG_IS_BABY, $this->isBaby() ? 1 : 0);
 
@@ -298,5 +340,80 @@ class Zombie extends Monster implements Ageable {
 
 	public function getDefaultMovementSpeed() : float {
 		return $this->isBaby() ? 0.35 : 0.23;
+	}
+
+	/**
+	 * @phpstan-return array<int, int|Closure(Item): int>
+	 */
+	public static function getWantedItems() : array {
+		$items = [];
+
+		$items[] = ItemTypeIds::NETHERITE_SWORD;
+		// TODO: netherite spear
+		$items[] = ItemTypeIds::NETHERITE_HELMET;
+		$items[] = ItemTypeIds::NETHERITE_CHESTPLATE;
+		$items[] = ItemTypeIds::NETHERITE_LEGGINGS;
+		$items[] = ItemTypeIds::NETHERITE_BOOTS;
+
+		$items[] = ItemTypeIds::DIAMOND_SWORD;
+		// TODO: diamond spear
+		$items[] = ItemTypeIds::DIAMOND_HELMET;
+		$items[] = ItemTypeIds::DIAMOND_CHESTPLATE;
+		$items[] = ItemTypeIds::DIAMOND_LEGGINGS;
+		$items[] = ItemTypeIds::DIAMOND_BOOTS;
+
+		$items[] = ItemTypeIds::IRON_SWORD;
+		// TODO: iron spear
+		$items[] = ItemTypeIds::IRON_HELMET;
+		$items[] = ItemTypeIds::IRON_CHESTPLATE;
+		$items[] = ItemTypeIds::IRON_LEGGINGS;
+		$items[] = ItemTypeIds::IRON_BOOTS;
+
+		$items[] = ItemTypeIds::COPPER_SWORD;
+		// TODO: copper spear
+
+		$items[] = ItemTypeIds::CHAINMAIL_HELMET;
+		$items[] = ItemTypeIds::CHAINMAIL_CHESTPLATE;
+		$items[] = ItemTypeIds::CHAINMAIL_LEGGINGS;
+		$items[] = ItemTypeIds::CHAINMAIL_BOOTS;
+
+		$items[] = ItemTypeIds::GOLDEN_SWORD;
+		// TODO: golden spear
+		$items[] = ItemTypeIds::GOLDEN_HELMET;
+		$items[] = ItemTypeIds::GOLDEN_CHESTPLATE;
+		$items[] = ItemTypeIds::GOLDEN_LEGGINGS;
+		$items[] = ItemTypeIds::GOLDEN_BOOTS;
+
+		$items[] = ItemTypeIds::COPPER_HELMET;
+		$items[] = ItemTypeIds::COPPER_CHESTPLATE;
+		$items[] = ItemTypeIds::COPPER_LEGGINGS;
+		$items[] = ItemTypeIds::COPPER_BOOTS;
+
+		$items[] = ItemTypeIds::STONE_SWORD;
+		// TODO: stone spear
+
+		$items[] = ItemTypeIds::WOODEN_SWORD;
+		// TODO: wooden spear
+		$items[] = ItemTypeIds::LEATHER_CAP;
+		$items[] = ItemTypeIds::LEATHER_TUNIC;
+		$items[] = ItemTypeIds::LEATHER_PANTS;
+		$items[] = ItemTypeIds::LEATHER_BOOTS;
+
+		$items[] = ItemTypeIds::TURTLE_HELMET;
+
+		// skeleton and wither skeleton skulls
+		$items[] = static function(Item $i) : int {
+			if ($i instanceof ItemBlock && ($b = $i->getBlock()) instanceof MobHead) {
+				$type = $b->getMobHeadType();
+				return ($type === MobHeadType::SKELETON || $type === MobHeadType::WITHER_SKELETON) ? 1 : 0;
+			}
+			return 0;
+		};
+
+		$items[] = ItemTypeIds::fromBlockTypeId(BlockTypeIds::CARVED_PUMPKIN);
+
+		$items[] = static fn (Item $i) => $i->getCount(); // pickup all other items
+
+		return $items;
 	}
 }

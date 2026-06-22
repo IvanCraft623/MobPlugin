@@ -56,24 +56,29 @@ class SlimeMoveControl extends MoveControl{
 
 		$this->mob->setRotation($this->rotateLerp($location->yaw, $this->yaw, 90), $location->pitch);
 
-		if ($this->operation === MoveControl::OPERATION_MOVE_TO) {
-			$this->operation = MoveControl::OPERATION_WAIT;
-			if ($this->mob->isOnGround()) {
-				if (--$this->jumpDelay <= 0) {
-					$this->jumpDelay = $this->slime->getJumpDelay();
-					if ($this->isAggresive) {
-						$this->jumpDelay = (int) ($this->jumpDelay / 3);
-					}
-
-					$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
-					$this->slime->getJumpControl()->jump();
-				}
-			} elseif (!$this->slime->isJumping()) {
-				$this->mob->setForwardSpeed(0);
-				$this->mob->setSidewaysSpeed(0);
-			}
-		} elseif (!$this->slime->isJumping()) {
+		if ($this->operation !== MoveControl::OPERATION_MOVE_TO) {
 			$this->mob->setForwardSpeed(0);
+			return;
+		}
+
+		$this->operation = MoveControl::OPERATION_WAIT;
+
+		if ($this->mob->isOnGround()) {
+			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+
+			if ($this->jumpDelay-- <= 0) {
+				$this->jumpDelay = $this->slime->getJumpDelay();
+				if ($this->isAggresive) {
+					$this->jumpDelay = (int) ($this->jumpDelay / 3);
+				}
+
+				$this->slime->getJumpControl()->jump();
+			} else {
+				$this->mob->setSidewaysSpeed(0);
+				$this->mob->setMotionSpeed(0);
+			}
+		} else {
+			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 		}
 	}
 }

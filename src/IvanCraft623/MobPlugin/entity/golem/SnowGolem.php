@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RangedAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\monster\Enemy;
+use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\entity\Shearable;
 use IvanCraft623\MobPlugin\pattern\BlockPattern;
 use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
@@ -61,7 +62,7 @@ use function floor;
 use function mt_rand;
 use function sqrt;
 
-class SnowGolem extends Golem implements Shearable{
+class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 
 	private static BlockPattern $spawnPattern;
 

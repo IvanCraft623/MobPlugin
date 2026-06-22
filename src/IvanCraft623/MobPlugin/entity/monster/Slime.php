@@ -43,6 +43,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
 use function array_rand;
+use function assert;
 
 class Slime extends Mob implements Enemy {
 
@@ -139,10 +140,8 @@ class Slime extends Mob implements Enemy {
 	}
 
 	public function getMoveControl() : SlimeMoveControl{
-		/** @var SlimeMoveControl*/
-		$moveControl = $this->moveControl;
-
-		return $moveControl;
+		assert($this->moveControl instanceof SlimeMoveControl);
+		return $this->moveControl;
 	}
 
 	public function getDefaultMovementSpeed() : float{

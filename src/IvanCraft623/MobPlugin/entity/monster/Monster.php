@@ -25,7 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster;
 
 use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use function floor;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 abstract class Monster extends PathfinderMob implements Enemy {
 	//TODO!
@@ -57,7 +57,7 @@ abstract class Monster extends PathfinderMob implements Enemy {
 			$world = $this->getWorld();
 			$pos = $this->getEyePos();
 			if ($world->getSkyLightReduction() <= 3 &&
-				$world->getPotentialBlockSkyLightAt((int) floor($pos->x), (int) floor($pos->y), (int) floor($pos->z)) === 15 &&
+				Utils::isSkyVisible($world, $pos) &&
 				!$this->isInWater() //TODO: Powder snow also prevents this
 			) {
 				$helmet = $this->getArmorInventory()->getHelmet();
