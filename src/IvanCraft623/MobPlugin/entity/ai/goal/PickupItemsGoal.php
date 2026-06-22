@@ -216,8 +216,8 @@ class PickupItemsGoal extends Goal {
 		$count = 0;
 	}
 
-	public function close() : void{
+	public function destroyCycles() : void{
 		$this->wantedItems = [];
-		parent::close();
+		parent::destroyCycles();
 	}
 }

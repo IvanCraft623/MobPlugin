@@ -147,8 +147,8 @@ class TemptGoal extends Goal {
 		return $this->isRunning;
 	}
 
-	public function close() : void{
+	public function destroyCycles() : void{
 		unset($this->targetingConditions);
-		parent::close();
+		parent::destroyCycles();
 	}
 }

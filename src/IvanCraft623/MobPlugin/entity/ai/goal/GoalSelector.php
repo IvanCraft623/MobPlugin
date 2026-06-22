@@ -185,11 +185,11 @@ class GoalSelector {
 
 	public function close() : void{
 		foreach($this->availableGoals as $wrappedGoal){
-			$wrappedGoal->close();
+			$wrappedGoal->destroyCycles();
 		}
 		$this->availableGoals = [];
 		foreach($this->lockedFlags as $wrappedGoal){
-			$wrappedGoal->close();
+			$wrappedGoal->destroyCycles();
 		}
 		$this->lockedFlags = [];
 	}

@@ -119,8 +119,8 @@ class OfferFlowerGoal extends Goal {
 		$this->mob->getLookControl()->setLookAt($this->target, 30, 30);
 	}
 
-	public function close() : void{
+	public function destroyCycles() : void{
 		unset($this->targetValidator);
-		parent::close();
+		parent::destroyCycles();
 	}
 }

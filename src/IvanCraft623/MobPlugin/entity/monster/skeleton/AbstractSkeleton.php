@@ -207,7 +207,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		unset(
 			$this->bowAttackGoal,
 			$this->meleeAttackGoal,
-			$this->pickupItemsGoal,
+			$this->pickupItemsGoal
 		);
 		parent::destroyCycles();
 	}

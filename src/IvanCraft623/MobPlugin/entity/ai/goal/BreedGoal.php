@@ -122,8 +122,8 @@ class BreedGoal extends Goal {
 		$this->entity->spawnChildFromBreeding($this->partner);
 	}
 
-	public function close() : void{
+	public function destroyCycles() : void{
 		unset($this->partnerConditions);
-		parent::close();
+		parent::destroyCycles();
 	}
 }

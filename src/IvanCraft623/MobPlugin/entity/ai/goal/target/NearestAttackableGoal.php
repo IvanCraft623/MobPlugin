@@ -104,8 +104,8 @@ class NearestAttackableGoal extends TargetGoal {
 		$this->target = $target;
 	}
 
-	public function close() : void{
+	public function destroyCycles() : void{
 		unset($this->targetingConditions);
-		parent::close();
+		parent::destroyCycles();
 	}
 }
