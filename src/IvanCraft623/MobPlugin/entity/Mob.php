@@ -65,6 +65,7 @@ use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\utils\AssumptionFailedError;
+use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\particle\DustParticle;
 use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
@@ -72,7 +73,6 @@ use function assert;
 use function basename;
 use function count;
 use function implode;
-use function lcg_value;
 use function max;
 use function min;
 use function str_replace;
@@ -656,7 +656,7 @@ abstract class Mob extends Living {
 		$dropChance = $this->getEquipmentDropProbability();
 		foreach ([$this->inventory, $this->armorInventory] as $inventory) {
 			foreach ($inventory->getContents() as $item) {
-				if (!$item->hasEnchantment(VanillaEnchantments::VANISHING()) && lcg_value() <= $dropChance) {
+				if (!$item->hasEnchantment(VanillaEnchantments::VANISHING()) && PMUtils::getRandomFloat() <= $dropChance) {
 					if ($item instanceof Durable) {
 						$maxDurability = $item->getMaxDurability();
 						$item->setDamage($maxDurability - $this->random->nextBoundedInt(1 + $this->random->nextBoundedInt(max($maxDurability - 3, 1))));

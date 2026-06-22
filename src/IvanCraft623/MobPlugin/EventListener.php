@@ -38,8 +38,8 @@ use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\scheduler\ClosureTask;
+use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\Position;
-use function lcg_value;
 
 class EventListener implements Listener {
 
@@ -54,7 +54,7 @@ class EventListener implements Listener {
 			$blockPosition = $event->getBlock()->getPosition();
 			$entity = (new Zombie(
 				Location::fromObject($blockPosition->add(0.5, 1, 0.5),
-				$blockPosition->getWorld(), lcg_value() * 360, 0))
+				$blockPosition->getWorld(), PMUtils::getRandomFloat() * 360, 0))
 			)->setPersistent();
 
 			if($item->hasCustomName()){
