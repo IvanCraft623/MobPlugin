@@ -121,4 +121,9 @@ class BreedGoal extends Goal {
 	public function bread() : void{
 		$this->entity->spawnChildFromBreeding($this->partner);
 	}
+
+	public function close() : void{
+		unset($this->partnerConditions);
+		parent::close();
+	}
 }

@@ -146,4 +146,9 @@ class TemptGoal extends Goal {
 	public function isRunning() : bool{
 		return $this->isRunning;
 	}
+
+	public function close() : void{
+		unset($this->targetingConditions);
+		parent::close();
+	}
 }

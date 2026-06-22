@@ -416,4 +416,12 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 
 		return $items;
 	}
+
+	protected function destroyCycles() : void{
+		unset(
+			$this->breakDoorGoal,
+			$this->pickupItemsGoal,
+		);
+		parent::destroyCycles();
+	}
 }

@@ -80,4 +80,7 @@ abstract class Goal {
 	public function getCurrentDebugInfo() : ?string{
 		return null;
 	}
+
+	public function close() : void{
+	}
 }

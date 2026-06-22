@@ -182,4 +182,15 @@ class GoalSelector {
 			$this->disableControlFlag($flag);
 		}
 	}
+
+	public function close() : void{
+		foreach($this->availableGoals as $wrappedGoal){
+			$wrappedGoal->close();
+		}
+		$this->availableGoals = [];
+		foreach($this->lockedFlags as $wrappedGoal){
+			$wrappedGoal->close();
+		}
+		$this->lockedFlags = [];
+	}
 }

@@ -215,4 +215,9 @@ class PickupItemsGoal extends Goal {
 		$priority = -1;
 		$count = 0;
 	}
+
+	public function close() : void{
+		$this->wantedItems = [];
+		parent::close();
+	}
 }

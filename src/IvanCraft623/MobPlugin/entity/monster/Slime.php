@@ -88,7 +88,7 @@ class Slime extends Mob implements Enemy {
 		$this->goalSelector->addGoal(3, new SlimeRandomDirectionGoal($this));
 		$this->goalSelector->addGoal(5, new SlimeKeepOnJumpingGoal($this));
 
-		$this->attackableValidator = function(Living $entity) : bool{
+		$this->attackableValidator = static function(Living $entity) : bool{
 			return $entity instanceof Player; //TODO: Attack iron golems and snow golems.
 		};
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal($this, Living::class, targetValidator: $this->attackableValidator));
@@ -229,5 +229,10 @@ class Slime extends Mob implements Enemy {
 		}
 
 		return 0;
+	}
+
+	protected function destroyCycles() : void{
+		unset($this->attackableValidator);
+		parent::destroyCycles();
 	}
 }
