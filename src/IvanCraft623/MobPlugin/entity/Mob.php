@@ -811,7 +811,7 @@ abstract class Mob extends Living {
 			$this->moveControl,
 			$this->jumpControl,
 			$this->navigation,
-			$this->sensing,
+			$this->sensing
 		);
 
 		parent::destroyCycles();

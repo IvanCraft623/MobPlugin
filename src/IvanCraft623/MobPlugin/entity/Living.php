@@ -428,9 +428,7 @@ abstract class Living extends PMLiving {
 	protected function destroyCycles() : void{
 		$this->lastDamageByEntity = null;
 
-		unset(
-			$this->inventory,
-		);
+		unset($this->inventory);
 		parent::destroyCycles();
 	}
 }
