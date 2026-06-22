@@ -287,6 +287,7 @@ abstract class Mob extends Living {
 	public function setFollowRange(float $range) : void{
 		$this->followRangeAttr->setValue($range);
 	}
+
 	public function getMaxFallDistance() : int{
 		$defaultMax = parent::getMaxFallDistance();
 		if ($this->targetId === null) {
@@ -296,7 +297,11 @@ abstract class Mob extends Living {
 		$maxFallDistance = (int) ($this->getHealth() - $this->getMaxHealth() / 3);
 		$maxFallDistance -= (3 - $this->getWorld()->getDifficulty()) * 4;
 
-		return max(0, $maxFallDistance + $defaultMax);
+		if ($maxFallDistance < 0) {
+			$maxFallDistance = 0;
+		}
+
+		return $maxFallDistance + $defaultMax;
 	}
 
 	/**
@@ -367,6 +372,8 @@ abstract class Mob extends Living {
 				"" : " (" . $goalInfo . ")"
 			);
 		}
+
+		$data[] = "Healt: " . round($this->getHealth(), 1);
 
 		return $data;
 	}
