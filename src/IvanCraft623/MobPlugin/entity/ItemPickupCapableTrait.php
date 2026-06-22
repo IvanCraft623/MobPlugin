@@ -29,9 +29,9 @@ use pocketmine\entity\object\ItemEntity;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\World;
 use function exp;
-use function lcg_value;
 use function pow;
 
 trait ItemPickupCapableTrait {
@@ -80,7 +80,7 @@ trait ItemPickupCapableTrait {
 				$gaussianFactor = exp(-pow($timeOfDay - World::TIME_MIDNIGHT, 2) / (2 * pow($curveWidth, 2)));
 				$timeOfDayFactor = $floorMin + ($maxPeak - $floorMin) * $gaussianFactor;
 
-				$this->setCanPickUpItems(lcg_value() <= (
+				$this->setCanPickUpItems(PMUtils::getRandomFloat() <= (
 					0.55 * ($difficulty / World::DIFFICULTY_HARD) * $timeOfDayFactor
 				));
 			}

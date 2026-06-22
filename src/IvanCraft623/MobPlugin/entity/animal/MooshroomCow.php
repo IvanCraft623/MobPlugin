@@ -42,9 +42,9 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
+use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\particle\HugeExplodeParticle;
 use pocketmine\world\particle\SmokeParticle;
-use function lcg_value;
 use function mt_rand;
 
 class MooshroomCow extends Cow implements Shearable{
@@ -136,9 +136,9 @@ class MooshroomCow extends Cow implements Shearable{
 
 			$size = $this->getSize();
 			$this->getWorld()->addParticle($this->location->add(
-				lcg_value() / 2,
+				PMUtils::getRandomFloat() / 2,
 				$this->getSize()->getHeight(),
-				lcg_value() / 2,
+				PMUtils::getRandomFloat() / 2,
 			), new SmokeParticle());
 
 			Utils::popItemInHand($player);
