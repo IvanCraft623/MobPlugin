@@ -26,12 +26,20 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 
+use pocketmine\entity\Entity;
 use pocketmine\item\ItemTypeIds;
 use function max;
 use function min;
 use const M_SQRT2;
 
 class RangedBowAttackGoal extends Goal {
+
+/**
+	 * Minimum ticks the skeleton's bow should be pulled to shoot an arrow.
+	 * Bedrock doesn't actually have a pull behavior right now so we use 1,
+	 * but some day they might implement it (Java uses a value of 20).
+	 */
+	public const BOW_PULL_TICKS = 1;
 
 	private float $attackRadiusSqr;
 	private int $attackCooldown = -1;
@@ -45,15 +53,20 @@ class RangedBowAttackGoal extends Goal {
 	public function __construct(
 		protected Mob&RangedAttackMob $entity,
 		protected float $speedModifier,
-		private int $attackInterval,
+		private int $minAttackInterval,
+		private int $maxAttackInterval,
 		float $attackRadius
 	) {
 		$this->attackRadiusSqr = $attackRadius * $attackRadius;
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
 
-	public function setAttackInterval(int $attackInterval) : void {
-		$this->attackInterval = $attackInterval;
+	public function setMinAttackInterval(int $attackInterval) : void {
+		$this->minAttackInterval = $attackInterval;
+	}
+
+	public function setMaxAttackInterval(int $attackInterval) : void {
+		$this->maxAttackInterval = $attackInterval;
 	}
 
 	public function canUse() : bool {
@@ -152,15 +165,34 @@ class RangedBowAttackGoal extends Goal {
 			if (!$canSeeTarget && $this->targetVisibilityTicks <= -60) {
 				$this->startActionTick = -1;
 			} elseif ($canSeeTarget) {
-				if ($useTicks >= 20) {
+				if ($useTicks >= self::BOW_PULL_TICKS) {
 					$this->startActionTick = -1;
-					$pullProgress = min($useTicks / 20.0, 1.0);
+					$pullProgress = min($useTicks / self::BOW_PULL_TICKS, 1.0);
 					$this->entity->performRangedAttack($target, $pullProgress);
-					$this->attackCooldown = $this->attackInterval;
+					$this->attackCooldown = $this->adjustedTickDelay($this->getAttackInterval($target));
 				}
 			}
 		} elseif (--$this->attackCooldown <= 0 && $this->targetVisibilityTicks >= -60) {
 			$this->startActionTick = $this->entity->getWorld()->getServer()->getTick();
 		}
+	}
+
+	public function getAttackInterval(Entity $target) : int {
+		$distanceSqr = $this->entity->getLocation()->distanceSquared($target->getLocation());
+
+		if ($distanceSqr >= $this->attackRadiusSqr) {
+			return $this->maxAttackInterval;
+		}
+
+		return (int) round($this->minAttackInterval + (
+			($distanceSqr / $this->attackRadiusSqr) * ($this->maxAttackInterval - $this->minAttackInterval)
+		));
+	}
+
+	public function getCurrentDebugInfo() : ?string {
+		if ($this->attackCooldown >= 0) {
+			return "Shooting in: " . round($this->attackCooldown / $this->adjustedTickDelay(20), 1) . "s";
+		}
+		return null;
 	}
 }

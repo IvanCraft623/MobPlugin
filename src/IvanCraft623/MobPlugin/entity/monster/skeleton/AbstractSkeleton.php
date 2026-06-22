@@ -64,8 +64,8 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		saveNBT as saveNBTPickupTrait;
 	}
 
-	protected const HARD_ATTACK_INTERVAL = 20;
-	protected const REGULAR_ATTACK_INTERVAL = 40;
+	protected const MIN_ATTACK_INTERVAL = 20; // in ticks
+	protected const MAX_ATTACK_INTERVAL = 60; // in ticks
 
 	private RangedBowAttackGoal $bowAttackGoal;
 	private MeleeAttackGoal $meleeAttackGoal;
@@ -91,7 +91,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
 		//TODO: attack baby turtles
 
-		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, 20, 15);
+		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, self::MIN_ATTACK_INTERVAL, self::MAX_ATTACK_INTERVAL, 15);
 		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.2, false);
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(function(Inventory $inventory, int $slot, Item $oldItem) : void {
 			if ($slot !== MobInventory::SLOT_MAIN_HAND) {
@@ -111,10 +111,6 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 
 	public function getDefaultMovementSpeed() : float{
 		return 0.25;
-	}
-
-	protected function getAttackInterval() : int{
-		return $this->getWorld()->getDifficulty() === World::DIFFICULTY_HARD ? self::HARD_ATTACK_INTERVAL : self::REGULAR_ATTACK_INTERVAL;
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void {
@@ -157,8 +153,6 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 
 		$this->goalSelector->removeGoal($useMeleeAttackGoal ? $this->bowAttackGoal : $this->meleeAttackGoal);
 		$this->goalSelector->addGoal(0, $useMeleeAttackGoal ? $this->meleeAttackGoal : $this->bowAttackGoal);
-
-		$this->bowAttackGoal->setAttackInterval($this->getAttackInterval());
 	}
 
 	public function performRangedAttack(Entity $target, float $force) : void {

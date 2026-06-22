@@ -111,7 +111,7 @@ class IronGolem extends Golem implements NeutralMob{
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(1, new MeleeAttackGoal($this, 1, false));
-		//$this->goalSelector->addGoal(2, new MoveTowardsTargetGoal($this, 0.9, 32));
+		$this->goalSelector->addGoal(2, new MoveTowardsTargetGoal($this, 0.9, 32));
 		$this->goalSelector->addGoal(4, new RandomStrollGoal($this, 0.6, 240));
 		$this->goalSelector->addGoal(5, new OfferFlowerGoal($this));
 		$this->goalSelector->addGoal(7, new LookAtEntityGoal($this, Player::class, 6));
