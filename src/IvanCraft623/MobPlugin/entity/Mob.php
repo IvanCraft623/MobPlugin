@@ -802,8 +802,8 @@ abstract class Mob extends Living {
 	}
 
 	protected function destroyCycles() : void{
-		$this->goalSelector->close();
-		$this->targetSelector->close();
+		$this->goalSelector->destroyCycles();
+		$this->targetSelector->destroyCycles();
 		unset(
 			$this->goalSelector,
 			$this->targetSelector,

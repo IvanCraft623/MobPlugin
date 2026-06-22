@@ -183,7 +183,7 @@ class GoalSelector {
 		}
 	}
 
-	public function close() : void{
+	public function destroyCycles() : void{
 		foreach($this->availableGoals as $wrappedGoal){
 			$wrappedGoal->destroyCycles();
 		}
