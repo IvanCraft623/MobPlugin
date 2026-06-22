@@ -85,8 +85,11 @@ class MoveControl implements Control {
 
 	public function tick() : void {
 		$location = $this->mob->getLocation();
+
+		$movementSpeed = $this->mob->getMovementSpeed(); // atrribute speed
+
 		if ($this->operation === self::OPERATION_STRAFE) {
-			$speed = $this->speedModifier * $this->mob->getDefaultMovementSpeed();
+			$speed = $this->speedModifier * $movementSpeed;
 			$forwardMovement = $this->forwardMovement;
 			$sidewaysMovement = $this->sidewaysMovement;
 			$strafe = sqrt(($forwardMovement ** 2) + ($sidewaysMovement ** 2));
@@ -105,9 +108,10 @@ class MoveControl implements Control {
 			if (!$this->isWalkable($x, $z)) {
 				$this->forwardMovement = 1;
 				$this->sidewaysMovement = 0;
+				$speed = $movementSpeed;
 			}
 
-			$this->mob->setMovementSpeed($speed);
+			$this->mob->setMotionSpeed($speed);
 			$this->mob->setForwardSpeed($this->forwardMovement);
 			$this->mob->setSidewaysSpeed($this->sidewaysMovement);
 
@@ -127,7 +131,7 @@ class MoveControl implements Control {
 
 			$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
 			$this->mob->setRotation($yaw, $location->pitch);
-			$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
+			$this->mob->setMotionSpeed($this->speedModifier * $movementSpeed);
 
 			if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 				$this->mob->getJumpControl()->jump();
@@ -135,7 +139,7 @@ class MoveControl implements Control {
 				return;
 			}
 		} elseif ($this->operation === self::OPERATION_JUMPING) {
-			$this->mob->setForwardSpeed($this->speedModifier * $this->mob->getDefaultMovementSpeed());
+			$this->mob->setMotionSpeed($this->speedModifier * $movementSpeed);
 			if ($this->mob->onGround) {
 				$this->operation = self::OPERATION_WAIT;
 			}

@@ -24,30 +24,28 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\Pathfinder\Path;
 
 use pocketmine\entity\Entity;
-use pocketmine\math\Vector3;
+use pocketmine\entity\Living;
 use pocketmine\player\Player;
 use function max;
 
+/**
+ * Custom melee attack goal (NOT a vanilla port).
+ *
+ * Chases the current target and hits it once it's within attack reach.
+ * Re-paths periodically instead of relying on the navigator's internal
+ * "done" state.
+ */
 class MeleeAttackGoal extends Goal {
-
-	public const CAN_USE_COOLDOWN = 20;
 
 	public const ATTACK_INTERVAL = 20;
 
-	private bool $pathfinding = false;
-
-	private Vector3 $lastTargetPosition;
-
-	private ?Path $path = null;
-
-	private int $ticksToRecalculatePath = 0;
+	public const REPATH_INTERVAL = 10;
 
 	private int $ticksToAttack = 0;
 
-	private int $lastCanUseCheck = 0;
+	private int $ticksToRepath = 0;
 
 	public function __construct(
 		protected PathfinderMob $mob,
@@ -58,65 +56,40 @@ class MeleeAttackGoal extends Goal {
 	}
 
 	public function canUse() : bool{
-		$time = $this->mob->getWorld()->getServer()->getTick();
-		if ($time - $this->lastCanUseCheck < self::CAN_USE_COOLDOWN) {
-			return false;
-		}
-
-		$this->lastCanUseCheck = $time;
-
-		$target = $this->mob->getTargetEntity();
-		if ($target === null || !$target->isAlive()) {
-			return false;
-		}
-
-		if ($this->path !== null) {
-			return true;
-		}
-		if (!$this->pathfinding) {
-			$this->mob->getNavigation()->createPathToEntity($target, 0)->onCompletion(function(Path $path) : void{
-				$this->path = $path;
-				$this->pathfinding = false;
-			}, function(){});
-			$this->pathfinding = true;
-		}
-
-		return $this->getAttackReachSquared($target) >= $this->mob->getLocation()->distanceSquared($target->getLocation());
+		return $this->isTargetValid($this->mob->getTargetEntity());
 	}
 
 	public function canContinueToUse() : bool{
-		$target = $this->mob->getTargetEntity();
-		if ($target === null || !$target->isAlive()) {
+		return $this->isTargetValid($this->mob->getTargetEntity());
+	}
+
+	protected function isTargetValid(?Entity $target) : bool{
+		if (!$target instanceof Living || !$target->isAlive()) {
 			return false;
 		}
 
-		if (!$this->alwaysFollowTarget) {
-			return !$this->mob->getNavigation()->isDone();
-		}
-		if (!$this->mob->isWithinRestriction($target->getPosition())) {
+		if (!$this->mob->canAttack($target)) {
 			return false;
 		}
-		if ($target instanceof Player) {
-			return !$target->isCreative();
+
+		if (!$this->alwaysFollowTarget && !$this->mob->isWithinRestriction($target->getPosition())) {
+			return false;
+		}
+
+		if ($target instanceof Player && $target->isCreative()) {
+			return false;
 		}
 
 		return true;
 	}
 
 	public function start() : void{
-		$this->mob->getNavigation()->moveToPath($this->path, $this->speedModifier);
 		$this->mob->setAggressive();
-
-		$this->ticksToRecalculatePath = 0;
 		$this->ticksToAttack = 0;
+		$this->ticksToRepath = 0;
 	}
 
 	public function stop() : void{
-		$target = $this->mob->getTargetEntity();
-		if ($target instanceof Player && $target->isCreative()) {
-			$this->mob->setTargetEntity(null);
-		}
-
 		$this->mob->setAggressive(false);
 		$this->mob->getNavigation()->stop();
 	}
@@ -133,36 +106,17 @@ class MeleeAttackGoal extends Goal {
 
 		$this->mob->getLookControl()->setLookAt($target, 30, 30);
 
-		$distSqr = $this->mob->getPerceivedDistanceSqrForMeleeAttack($target);
-		$this->ticksToRecalculatePath = max($this->ticksToRecalculatePath - 1, 0);
+		$distanceSquared = $this->mob->getPerceivedDistanceSqrForMeleeAttack($target);
+		$attackReachSquared = $this->getAttackReachSquared($target);
 
-		if (($this->alwaysFollowTarget || $this->mob->getSensing()->canSee($target)) &&
-			$this->ticksToRecalculatePath <= 0 &&
-			(
-				!isset($this->lastTargetPosition) ||
-				$target->getPosition()->distanceSquared($this->lastTargetPosition) >= 1 ||
-				$this->mob->getRandom()->nextFloat() < 0.05
-			)
-		) {
-			$this->lastTargetPosition = $target->getPosition();
-			$this->ticksToRecalculatePath = 4 + $this->mob->getRandom()->nextBoundedInt(7);
-
-			if ($distSqr > 1024) { // 32 ** 2
-				$this->ticksToRecalculatePath += 10;
-			} elseif ($distSqr > 256) { // 16 ** 2
-				$this->ticksToRecalculatePath += 5;
-			}
-
-			$this->mob->getNavigation()->moveToEntity($target, $this->speedModifier);
-			$this->ticksToRecalculatePath = $this->adjustedTickDelay($this->ticksToRecalculatePath);
+		$this->ticksToRepath = max($this->ticksToRepath - 1, 0);
+		if ($distanceSquared > $attackReachSquared && $this->ticksToRepath <= 0) {
+			$this->mob->getNavigation()->moveToEntity($target, $this->speedModifier, 0);
+			$this->ticksToRepath = $this->adjustedTickDelay(self::REPATH_INTERVAL);
 		}
 
 		$this->ticksToAttack = max($this->ticksToAttack - 1, 0);
-		$this->checkAndPerformAttack($target, $distSqr);
-	}
-
-	protected function checkAndPerformAttack(Entity $target, float $distanceSquared) : void{
-		if ($distanceSquared <= $this->getAttackReachSquared($target) && $this->isTimeToAttack()) {
+		if ($distanceSquared <= $attackReachSquared && $this->isTimeToAttack()) {
 			$this->resetAttackCooldown();
 			$this->mob->attackEntity($target);
 		}

@@ -35,6 +35,7 @@ use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
@@ -65,6 +66,7 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg MOOSHROOM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SHEEP_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg SKELETON_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SLIME_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SNOW_GOLEM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SPIDER_SPAWN_EGG()
@@ -177,6 +179,12 @@ final class ExtraVanillaItems{
 		self::register("snow_golem_spawn_egg", new class(new IID(Ids::SNOW_GOLEM_SPAWN_EGG()), "Snow Golem Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new SnowGolem(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("skeleton_spawn_egg", new class(new IID(Ids::SKELETON_SPAWN_EGG()), "Skeleton Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Skeleton(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

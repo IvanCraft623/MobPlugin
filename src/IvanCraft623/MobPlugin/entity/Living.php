@@ -52,6 +52,7 @@ use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;
+use pocketmine\world\World;
 use function count;
 use function floor;
 use function min;
@@ -181,7 +182,7 @@ abstract class Living extends PMLiving {
 	}
 
 	public function getDefaultMovementSpeed() : float {
-		return 1.0;
+		return 0.25;
 	}
 
 	public function getMaxUpStep() : float {
@@ -201,6 +202,14 @@ abstract class Living extends PMLiving {
 	}
 
 	public function canAttack(PMLiving $target) : bool {
+		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL) {
+			return false;
+		}
+
+		if ($target instanceof Player && $target->isCreative()) {
+			return false;
+		}
+
 		return true;
 	}
 

@@ -55,7 +55,7 @@ class EventListener implements Listener {
 			$entity = (new Zombie(
 				Location::fromObject($blockPosition->add(0.5, 1, 0.5),
 				$blockPosition->getWorld(), lcg_value() * 360, 0))
-			)->setPersistent()->setCanBreakDoors();
+			)->setPersistent();
 
 			if($item->hasCustomName()){
 				$entity->setNameTag($item->getCustomName());

@@ -92,7 +92,9 @@ abstract class PathNavigation {
 
 	protected bool $isStuck = false;
 
-	protected int $pathFindingPos;
+	protected int $pathComputationId = 0;
+
+	protected bool $isPathComputationPending = false;
 
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
@@ -123,18 +125,47 @@ abstract class PathNavigation {
 	}
 
 	public function recomputePath() : void{
-		if (($time = $this->getWorld()->getServer()->getTick()) - $this->timeLastRecompute > self::MAX_TIME_RECOMPUTE) {
-			if ($this->targetPosition !== null) {
-				$this->path = null;
-				$this->timeLastRecompute = $time;
-				$this->hasDelayedRecomputation = false;
-				$this->createPathToPosition($this->targetPosition, $this->reachRange)->onCompletion(function(Path $path) : void{
-					$this->path = $path;
-				}, function(){});
-			}
-		} else {
+		$time = $this->getWorld()->getServer()->getTick();
+
+		if ($time - $this->timeLastRecompute <= self::MAX_TIME_RECOMPUTE) {
 			$this->hasDelayedRecomputation = true;
+			return;
 		}
+
+		if ($this->targetPosition === null) {
+			return;
+		}
+
+		$this->timeLastRecompute = $time;
+		$this->hasDelayedRecomputation = false;
+
+		$requestId = ++$this->pathComputationId;
+		$this->isPathComputationPending = true;
+
+		$targetPosition = clone $this->targetPosition;
+		$reachRange = $this->reachRange;
+
+		$this->createPathToPosition($targetPosition, $reachRange)->onCompletion(
+			function(Path $path) use ($requestId) : void{
+				if ($requestId !== $this->pathComputationId) {
+					return;
+				}
+
+				$this->isPathComputationPending = false;
+				$this->path = $path;
+				$this->resetStuckTimeout();
+			},
+			function() use ($requestId) : void{
+				if ($requestId !== $this->pathComputationId) {
+					return;
+				}
+
+				$this->isPathComputationPending = false;
+
+				// Vanilla terminaría con currentPath = null si findPathTo devuelve null.
+				$this->path = null;
+			}
+		);
 	}
 
 	/**
@@ -175,24 +206,28 @@ abstract class PathNavigation {
 		if ($this->targetPosition !== null &&
 			$this->path !== null &&
 			!$this->path->isDone() &&
-			$this->targetPosition->equals($position)
+			$this->sameBlock($this->targetPosition, $position)
 		) {
 			$pathResolver->resolve($this->path);
 			return $pathResolver->getPromise();
 		}
 
-		$this->pathFindingPos = World::blockHash(
-			(int) floor($position->getX()),
-			(int) floor($position->getY()),
-			(int) floor($position->getZ())
-		);
-
 		$this->resetStuckTimeout();
 		$this->updateNodeEvaluatorAttributes();
-		PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach) : void{
+
+		$requestId = ++$this->pathComputationId;
+		$this->isPathComputationPending = true;
+
+		PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach, $requestId) : void{
+				if ($requestId !== $this->pathComputationId) {
+					return;
+				}
+
+				$this->isPathComputationPending = false;
+
 				$target = $path->getTarget();
-				if ($this->pathFindingPos === World::blockHash((int) $target->x, (int) $target->y, (int) $target->z)) {
-					$this->targetPosition = $target;
+				if ($target !== null) {
+					$this->targetPosition = $this->toBlockVector($target);
 					$this->reachRange = $reach;
 				}
 
@@ -211,6 +246,16 @@ abstract class PathNavigation {
 		return $pathResolver->getPromise();
 	}
 
+	protected function toBlockVector(Vector3 $position) : Vector3{
+		return $position->floor();
+	}
+
+	protected function sameBlock(Vector3 $a, Vector3 $b) : bool{
+		return (int) floor($a->getX()) === (int) floor($b->getX()) &&
+			(int) floor($a->getY()) === (int) floor($b->getY()) &&
+			(int) floor($a->getZ()) === (int) floor($b->getZ());
+	}
+
 	protected function updateNodeEvaluatorAttributes() : void{
 		$this->nodeEvaluator->setEntitySize($this->mob->getSize());
 		$this->nodeEvaluator->setEntityBoundingBox(clone $this->mob->getBoundingBox());
@@ -219,14 +264,14 @@ abstract class PathNavigation {
 		$this->nodeEvaluator->setMaxFallDistance($this->mob->getMaxFallDistance());
 	}
 
-	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier) : void{
-		$this->createPathToXYZ($x, $y, $z, 1)->onCompletion(function(Path $path) use ($speedModifier){
+	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier, int $reach = 1) : void{
+		$this->createPathToXYZ($x, $y, $z, $reach)->onCompletion(function(Path $path) use ($speedModifier){
 			$this->moveToPath($path, $speedModifier);
 		}, function(){});
 	}
 
-	public function moveToEntity(Entity $target, float $speedModifier) : void{
-		$this->createPathToEntity($target, 1)->onCompletion(function(Path $path) use ($speedModifier){
+	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 1) : void{
+		$this->createPathToEntity($target, $reach)->onCompletion(function(Path $path) use ($speedModifier){
 			$this->moveToPath($path, $speedModifier);
 		}, function(){});
 	}
@@ -239,6 +284,7 @@ abstract class PathNavigation {
 
 		if ($this->path === null || !$path->equals($this->path)) {
 			$this->path = $path;
+			$this->resetStuckTimeout();
 		}
 
 		if ($this->isDone()) {
@@ -290,8 +336,8 @@ abstract class PathNavigation {
 
 			if ($this->path !== null && !$this->isDone()) {
 				$nextPos = $this->path->getNextEntityPosition($this->mob);
-				$nextPos->y = $this->getGroundY($nextPos);
-				$this->mob->getMoveControl()->setWantedPosition($nextPos, $this->speedModifier);
+				$adjustedY = $this->getGroundY($nextPos);
+				$this->mob->getMoveControl()->setWantedPosition(new Vector3($nextPos->x, $adjustedY, $nextPos->z), $this->speedModifier);
 			}
 		}
 	}
@@ -348,10 +394,12 @@ abstract class PathNavigation {
 		$nextNodeToDirection = $nextNodePos->subtractVector($direction);
 
 		$currentNodeToDirectionLengthSqr = $currentNodeToDirection->lengthSquared();
+		$nextNodeToDirectionLengthSqr = $nextNodeToDirection->lengthSquared();
 
-		if ($nextNodeToDirection->lengthSquared() > $currentNodeToDirectionLengthSqr &&
-			$currentNodeToDirectionLengthSqr > 0.5
-		) {
+		$nextIsCloser = $nextNodeToDirectionLengthSqr < $currentNodeToDirectionLengthSqr;
+		$currentIsVeryClose = $currentNodeToDirectionLengthSqr < 0.5;
+
+		if (!$nextIsCloser && !$currentIsVeryClose) {
 			return false;
 		}
 
@@ -359,7 +407,7 @@ abstract class PathNavigation {
 	}
 
 	public function doStuckDetection(Vector3 $position) : void{
-		$mobSpeed = $this->mob->getMovementSpeed();
+		$mobSpeed = $this->mob->getMotionSpeed();
 		if ($this->tick - $this->lastStuckCheck > self::STUCK_CHECK_INTERVAL) {
 			$speed = $mobSpeed >= 1 ? $mobSpeed : $mobSpeed ** 2;
 			if ($position->distanceSquared($this->lastStuckCheckPos) < (($speed * 100 * self::STUCK_THRESHOLD_DISTANCE_FACTOR) ** 2)) {
@@ -494,21 +542,21 @@ abstract class PathNavigation {
 	}
 
 	public function shouldRecomputePath(Vector3 $updatedBlock) : bool{
-		if ($this->hasDelayedRecomputation &&
-			$this->path !== null &&
-			!$this->path->isDone() &&
-			$this->path->getNodeCount() !== 0
-		) {
-			/** @var Node $endNode */
-			$endNode = $this->path->getEndNode();
-			$targetPos = $endNode->addVector($this->mob->getPosition())->divide(2);
-
-			$updatedCenter = $updatedBlock->add(0.5, 0.5, 0.5);
-
-			return $updatedCenter->distanceSquared($targetPos) < ($this->path->getNodeCount() - $this->path->getNextNodeIndex()) ** 2;
+		if ($this->hasDelayedRecomputation) {
+			return false;
 		}
 
-		return false;
+		if ($this->path === null || $this->path->isDone() || $this->path->getNodeCount() === 0) {
+			return false;
+		}
+
+		/** @var Node $endNode */
+		$endNode = $this->path->getEndNode();
+		$targetPos = $endNode->addVector($this->mob->getPosition())->divide(2);
+
+		$updatedCenter = $updatedBlock->add(0.5, 0.5, 0.5);
+
+		return $updatedCenter->distanceSquared($targetPos) < ($this->path->getNodeCount() - $this->path->getNextNodeIndex()) ** 2;
 	}
 
 	public function getMaxDistanceToWaypoint() : float{
