@@ -56,7 +56,7 @@ class OfferFlowerGoal extends Goal {
 		protected int $offerFlowerTicks = self::DEFAULT_FLOWER_OFFER_TICKS,
 		?Closure $targetValidator = null
 	) {
-		$this->targetValidator = $targetValidator ?? fn(Entity $e) => $e instanceof Villager;
+		$this->targetValidator = $targetValidator ?? static fn(Entity $e) => $e instanceof Villager;
 
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
@@ -117,5 +117,10 @@ class OfferFlowerGoal extends Goal {
 
 	public function tick() : void {
 		$this->mob->getLookControl()->setLookAt($this->target, 30, 30);
+	}
+
+	public function destroyCycles() : void{
+		unset($this->targetValidator);
+		parent::destroyCycles();
 	}
 }

@@ -809,6 +809,8 @@ abstract class Mob extends Living {
 	}
 
 	protected function destroyCycles() : void{
+		$this->goalSelector->destroyCycles();
+		$this->targetSelector->destroyCycles();
 		unset(
 			$this->goalSelector,
 			$this->targetSelector,
@@ -816,7 +818,7 @@ abstract class Mob extends Living {
 			$this->moveControl,
 			$this->jumpControl,
 			$this->navigation,
-			$this->sensing,
+			$this->sensing
 		);
 
 		parent::destroyCycles();

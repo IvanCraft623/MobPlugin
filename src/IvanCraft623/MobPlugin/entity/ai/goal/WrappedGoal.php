@@ -111,4 +111,10 @@ class WrappedGoal extends Goal {
 	public function getCurrentDebugInfo() : ?string{
 		return $this->goal->getCurrentDebugInfo();
 	}
+
+	public function destroyCycles() : void{
+		$this->stop();
+		$this->goal->destroyCycles();
+		parent::destroyCycles();
+	}
 }

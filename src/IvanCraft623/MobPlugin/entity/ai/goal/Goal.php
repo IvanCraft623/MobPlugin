@@ -80,4 +80,15 @@ abstract class Goal {
 	public function getCurrentDebugInfo() : ?string{
 		return null;
 	}
+
+	/**
+	 * @internal
+	 *
+	 * Called when the entity is disposed, after all events have been fired. This should be used to perform destructive
+	 * circular object references and things which could impact memory usage.
+	 *
+	 * It is expected that the object is unusable after this is called.
+	 */
+	public function destroyCycles() : void{
+	}
 }
