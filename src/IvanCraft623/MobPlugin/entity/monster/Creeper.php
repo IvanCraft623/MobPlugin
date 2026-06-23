@@ -36,6 +36,8 @@ use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Explosive;
+use pocketmine\entity\Location;
+use pocketmine\entity\object\AreaEffectCloud;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityPreExplodeEvent;
 use pocketmine\item\ItemTypeIds;
@@ -50,6 +52,7 @@ use pocketmine\player\Player;
 use pocketmine\utils\Binary;
 use pocketmine\world\Explosion;
 use pocketmine\world\sound\IgniteSound;
+use function count;
 use function mt_rand;
 
 class Creeper extends Monster implements Explosive{
@@ -281,7 +284,22 @@ class Creeper extends Monster implements Explosive{
 			}
 			$explosion->explodeB();
 
-			//TODO: spawn area effect cloud if the creeper has some effect
+			// Spawn area effect cloud is a java-only feauture, but why not?
+			$effects = $this->effectManager->all();
+			if (count($effects) > 0) {
+				$area = new AreaEffectCloud(Location::fromObject($this->location, $this->getWorld()));
+				//TODO: BLAME DYLAN! You cannot set an initial radius for AreaEffectClouds.
+				//$area->setInitialRadius(2.5);
+				$area->setMaxAge(AreaEffectCloud::DEFAULT_DURATION / 2);
+				$area->setRadiusChangePerTick(-($area->getRadius() / $area->getMaxAge()));
+
+				foreach($effects as $effect){
+					$area->getEffects()->add(clone $effect);
+				}
+
+				$area->setOwningEntity($this);
+				$area->spawnToAll();
+			}
 		}
 	}
 
