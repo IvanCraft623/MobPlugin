@@ -47,7 +47,9 @@ use function preg_match;
  * @method static int SKELETON_SPAWN_EGG()
  * @method static int SLIME_SPAWN_EGG()
  * @method static int SNOW_GOLEM_SPAWN_EGG()
+ * @method static int STRAY_SPAWN_EGG()
  * @method static int SPIDER_SPAWN_EGG()
+ * @method static int WITHER_SKELETON_SPAWN_EGG()
  */
 final class ExtraItemTypeIds{
 	/**
@@ -72,6 +74,8 @@ final class ExtraItemTypeIds{
 		self::register("iron_golem_spawn_egg");
 		self::register("snow_golem_spawn_egg");
 		self::register("skeleton_spawn_egg");
+		self::register("stray_spawn_egg");
+		self::register("wither_skeleton_spawn_egg");
 	}
 
 	private static function verifyName(string $name) : void{

@@ -30,15 +30,16 @@ use pocketmine\entity\Entity;
 use pocketmine\item\ItemTypeIds;
 use function max;
 use function min;
+use function round;
 use const M_SQRT2;
 
 class RangedBowAttackGoal extends Goal {
 
 /**
-	 * Minimum ticks the skeleton's bow should be pulled to shoot an arrow.
-	 * Bedrock doesn't actually have a pull behavior right now so we use 1,
-	 * but some day they might implement it (Java uses a value of 20).
-	 */
+ * Minimum ticks the skeleton's bow should be pulled to shoot an arrow.
+ * Bedrock doesn't actually have a pull behavior right now so we use 1,
+ * but some day they might implement it (Java uses a value of 20).
+ */
 	public const BOW_PULL_TICKS = 1;
 
 	private float $attackRadiusSqr;

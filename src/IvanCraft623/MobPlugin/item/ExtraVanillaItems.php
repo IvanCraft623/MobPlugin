@@ -36,6 +36,8 @@ use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
+use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
+use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
@@ -70,6 +72,8 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg SLIME_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SNOW_GOLEM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg SPIDER_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg STRAY_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg WITHER_SKELETON_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -185,6 +189,18 @@ final class ExtraVanillaItems{
 		self::register("skeleton_spawn_egg", new class(new IID(Ids::SKELETON_SPAWN_EGG()), "Skeleton Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new Skeleton(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("stray_spawn_egg", new class(new IID(Ids::STRAY_SPAWN_EGG()), "Stray Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Stray(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("wither_skeleton_spawn_egg", new class(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new WitherSkeleton(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

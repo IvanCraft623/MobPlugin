@@ -75,6 +75,7 @@ use function count;
 use function implode;
 use function max;
 use function min;
+use function round;
 use function str_replace;
 
 abstract class Mob extends Living {

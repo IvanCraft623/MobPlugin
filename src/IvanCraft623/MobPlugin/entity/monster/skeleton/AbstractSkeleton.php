@@ -44,6 +44,7 @@ use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\inventory\CallbackInventoryListener;
@@ -54,7 +55,7 @@ use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\Player;
 use pocketmine\world\sound\BowShootSound;
-use pocketmine\world\World;
+use function count;
 use function mt_rand;
 use function sqrt;
 
@@ -76,6 +77,10 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		return MobType::UNDEAD();
 	}
 
+	protected function getInitialSizeInfo() : EntitySizeInfo {
+		return new EntitySizeInfo(1.9, 0.6, 1.71);
+	}
+
 	protected function registerGoals() : void{
 		$this->pickupItemsGoal = (new PickupItemsGoal($this, 1, 2, 4))->setWantedItems(static::getWantedItems());
 
@@ -92,7 +97,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		//TODO: attack baby turtles
 
 		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, self::MIN_ATTACK_INTERVAL, self::MAX_ATTACK_INTERVAL, 15);
-		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.2, false);
+		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25, false);
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(function(Inventory $inventory, int $slot, Item $oldItem) : void {
 			if ($slot !== MobInventory::SLOT_MAIN_HAND) {
 				return;
@@ -193,6 +198,14 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 			$vec->y + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
 			$vec->z + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence
 		))->normalize()->multiply($power);
+	}
+
+	public function getXpDropAmount() : int{
+		if ($this->hasBeenDamagedByPlayer()) {
+			return 5 + (count($this->getArmorInventory()->getContents()) * mt_rand(1, 3));
+		}
+
+		return 0;
 	}
 
 	//TODO: spawn rules code
