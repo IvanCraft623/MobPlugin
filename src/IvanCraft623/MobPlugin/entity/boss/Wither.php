@@ -448,6 +448,10 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		return true;
 	}
 
+	public function canBreathe() : bool{
+		return true;
+	}
+
 	/**
 	 * Returns the entity ID of the entity's left head target, or null if it doesn't have a target.
 	 */
