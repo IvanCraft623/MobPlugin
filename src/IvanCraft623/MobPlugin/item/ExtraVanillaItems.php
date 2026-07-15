@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
@@ -74,6 +75,7 @@ use pocketmine\world\World;
  * @method static \pocketmine\item\SpawnEgg SPIDER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg STRAY_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WITHER_SKELETON_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg WITHER_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -201,6 +203,12 @@ final class ExtraVanillaItems{
 		self::register("wither_skeleton_spawn_egg", new class(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg") extends SpawnEgg{
 			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
 				return (new WitherSkeleton(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
+			}
+		});
+
+		self::register("wither_spawn_egg", new class(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg") extends SpawnEgg{
+			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+				return (new Wither(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
 			}
 		});
 	}

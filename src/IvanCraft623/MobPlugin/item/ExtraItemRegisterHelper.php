@@ -63,6 +63,7 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::SKELETON_SPAWN_EGG, ExtraVanillaItems::SKELETON_SPAWN_EGG(), ["skeleton_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::STRAY_SPAWN_EGG, ExtraVanillaItems::STRAY_SPAWN_EGG(), ["stray_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::WITHER_SKELETON_SPAWN_EGG, ExtraVanillaItems::WITHER_SKELETON_SPAWN_EGG(), ["wither_skeleton_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::WITHER_SPAWN_EGG, ExtraVanillaItems::WITHER_SPAWN_EGG(), ["wither_spawn_egg"]);
 	}
 
 	/**
