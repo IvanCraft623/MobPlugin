@@ -303,6 +303,14 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		return 0.25; // java uses 0.6 on ground
 	}
 
+	public function isFireProof() : bool{
+		return true;
+	}
+
+	public function canBreathe() : bool{
+		return true;
+	}
+
 	protected function tryChangeMovement() : void{
 		$motionX = $this->motion->x;
 		$motionY = $this->motion->y * 0.6;
