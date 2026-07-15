@@ -40,8 +40,8 @@ class GoalSelector {
 
 	protected int $newGoalRate = 3;
 
-	public function addGoal(int $priority, Goal $goal) : void{
-		$this->availableGoals[] = new WrappedGoal($priority, $goal);
+	public function addGoal(int $priority, Goal $goal) : WrappedGoal{
+		return $this->availableGoals[] = new WrappedGoal($priority, $goal);
 	}
 
 	/**

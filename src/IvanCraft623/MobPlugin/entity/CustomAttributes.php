@@ -23,8 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
-use pocketmine\entity\Attribute;
-
 final class CustomAttributes {
-	public const ATTACK_KNOCKBACK = Attribute::MC_PREFIX . "attack_knockback";
+	public const MP_PREFIX = "mobplugin:";
+
+	public const ATTACK_KNOCKBACK = self::MP_PREFIX . "attack_knockback";
+	public const FLYING_MOVEMENT = self::MP_PREFIX . "flying_movement";
 }

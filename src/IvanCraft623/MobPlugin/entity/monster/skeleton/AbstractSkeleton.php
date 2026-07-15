@@ -68,10 +68,12 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 	protected const MIN_ATTACK_INTERVAL = 20; // in ticks
 	protected const MAX_ATTACK_INTERVAL = 60; // in ticks
 
-	private RangedBowAttackGoal $bowAttackGoal;
-	private MeleeAttackGoal $meleeAttackGoal;
+	protected HurtByTargetGoal $hurtByTargetGoal;
 
-	private PickupItemsGoal $pickupItemsGoal;
+	protected RangedBowAttackGoal $bowAttackGoal;
+	protected MeleeAttackGoal $meleeAttackGoal;
+
+	protected PickupItemsGoal $pickupItemsGoal;
 
 	public function getMobType() : MobType{
 		return MobType::UNDEAD();
@@ -91,7 +93,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(6, new RandomLookAroundGoal($this));
 
-		$this->targetSelector->addGoal(1, (new HurtByTargetGoal($this))->setAlertOthers());
+		$this->targetSelector->addGoal(1, $this->hurtByTargetGoal = new HurtByTargetGoal($this));
 		$this->targetSelector->addGoal(2, new NearestAttackableGoal(entity: $this, targetType: Player::class, mustSee: true));
 		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
 		//TODO: attack baby turtles
@@ -208,10 +210,15 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		return 0;
 	}
 
+	public function getHurtByTargetGoal() : HurtByTargetGoal{
+		return $this->hurtByTargetGoal;
+	}
+
 	//TODO: spawn rules code
 
 	protected function destroyCycles() : void{
 		unset(
+			$this->hurtByTargetGoal,
 			$this->bowAttackGoal,
 			$this->meleeAttackGoal,
 			$this->pickupItemsGoal

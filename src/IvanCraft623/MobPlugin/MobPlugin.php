@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
@@ -54,6 +55,9 @@ use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
+
+use xenialdan\apibossbar\API as BossBarAPI;
+
 use function mt_rand;
 
 class MobPlugin extends PluginBase {
@@ -77,7 +81,8 @@ class MobPlugin extends PluginBase {
 		Zombie::class,
 		Skeleton::class,
 		Stray::class,
-		WitherSkeleton::class
+		WitherSkeleton::class,
+		Wither::class
 	];
 
 	private ?Random $random = null;
@@ -95,6 +100,8 @@ class MobPlugin extends PluginBase {
 
 		ExtraItemRegisterHelper::init();
 
+		BossBarAPI::load($this);
+
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 	}
 
@@ -109,6 +116,7 @@ class MobPlugin extends PluginBase {
 		$factory = AttributeFactory::getInstance();
 
 		$factory->register(CustomAttributes::ATTACK_KNOCKBACK, 0.00, 340282346638528859811704183484516925440.00, 0.4, false);
+		$factory->register(CustomAttributes::FLYING_MOVEMENT, 0.00, 340282346638528859811704183484516925440.00, 0.0, false);
 	}
 
 	private function registerEntities() : void{

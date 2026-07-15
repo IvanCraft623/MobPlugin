@@ -21,30 +21,15 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity;
+namespace IvanCraft623\MobPlugin\entity\projectile;
 
-use pocketmine\entity\Entity;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
-interface NeutralMob {
+class DangerousWitherSkull extends WitherSkull{
 
-	public function getRemainingAngerTime() : int;
+	public static function getNetworkTypeId() : string{ return EntityIds::WITHER_SKULL_DANGEROUS; }
 
-	public function setRemainingAngerTime(int $ticks) : void;
+	protected function getInitialDragMultiplier() : float{ return 0.2; }
 
-	public function startAngerTimer() : void;
-
-	public function stopBeingAngry() : void;
-
-	public function getTargetEntity() : ?Entity;
-
-	public function setTargetEntity(?Entity $target) : void;
-
-	public function isAngryAt(Entity $entity) : bool;
-
-	public function isAngry() : bool;
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent;
-
-	public function canAttack(Entity $target) : bool;
+	//TODO: When exploding block max blast resistance must be 4.
 }

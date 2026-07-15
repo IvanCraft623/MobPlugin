@@ -104,4 +104,9 @@ abstract class TargetGoal extends Goal {
 		$this->unseenMemoryTicks = $ticks;
 		return $this;
 	}
+
+	public function destroyCycles() : void{
+		unset($this->entity);
+		parent::destroyCycles();
+	}
 }

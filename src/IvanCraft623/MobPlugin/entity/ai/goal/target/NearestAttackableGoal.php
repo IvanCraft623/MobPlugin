@@ -77,8 +77,12 @@ class NearestAttackableGoal extends TargetGoal {
 		return $this->target !== null;
 	}
 
+	public function getTargetingConditions() : TargetingConditions{
+		return $this->targetingConditions;
+	}
+
 	public function getTargetSearchArea(float $range) : AxisAlignedBB{
-		return $this->entity->getBoundingBox()->expandedCopy($range, 4, $range);
+		return $this->entity->getBoundingBox()->expandedCopy($range, $range, $range);
 	}
 
 	protected function findTarget() : void{

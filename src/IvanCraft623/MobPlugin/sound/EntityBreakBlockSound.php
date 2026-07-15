@@ -21,30 +21,28 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity;
+namespace IvanCraft623\MobPlugin\sound;
 
 use pocketmine\entity\Entity;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\math\Vector3;
+use pocketmine\network\mcpe\protocol\LevelSoundEventPacket;
+use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
+use pocketmine\world\sound\Sound;
 
-interface NeutralMob {
+class EntityBreakBlockSound implements Sound{
 
-	public function getRemainingAngerTime() : int;
+	public function __construct(private Entity $entity){}
 
-	public function setRemainingAngerTime(int $ticks) : void;
-
-	public function startAngerTimer() : void;
-
-	public function stopBeingAngry() : void;
-
-	public function getTargetEntity() : ?Entity;
-
-	public function setTargetEntity(?Entity $target) : void;
-
-	public function isAngryAt(Entity $entity) : bool;
-
-	public function isAngry() : bool;
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent;
-
-	public function canAttack(Entity $target) : bool;
+	public function encode(Vector3 $pos) : array{
+		return [LevelSoundEventPacket::create(
+			LevelSoundEvent::BREAK_BLOCK,
+			$pos,
+			-1,
+			$this->entity::getNetworkTypeId(),
+			false,
+			false,
+			$this->entity->getId(),
+			null
+		)];
+	}
 }

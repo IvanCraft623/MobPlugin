@@ -65,6 +65,10 @@ class HurtByTargetGoal extends TargetGoal {
 		$this->setFlags(Goal::FLAG_TARGET);
 	}
 
+	public function getTargetingConditions() : TargetingConditions{
+		return $this->targetingConditions;
+	}
+
 	/**
 	 * @phpstan-param class-string<Living> $ignoredAlert
 	 *

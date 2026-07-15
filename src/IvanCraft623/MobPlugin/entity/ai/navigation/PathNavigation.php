@@ -118,6 +118,10 @@ abstract class PathNavigation {
 		return $this->targetPosition;
 	}
 
+	public function isPathComputationPending() : bool{
+		return $this->isPathComputationPending;
+	}
+
 	protected abstract function createPathFinder() : void;
 
 	public function setSpeedModifier(float $speed) : void{
@@ -161,8 +165,6 @@ abstract class PathNavigation {
 				}
 
 				$this->isPathComputationPending = false;
-
-				// Vanilla terminaría con currentPath = null si findPathTo devuelve null.
 				$this->path = null;
 			}
 		);

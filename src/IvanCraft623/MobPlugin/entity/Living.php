@@ -26,11 +26,13 @@ namespace IvanCraft623\MobPlugin\entity;
 use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
+use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
 use pocketmine\block\Liquid;
 use pocketmine\block\VanillaBlocks;
+use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntityFactory;
@@ -70,6 +72,8 @@ abstract class Living extends PMLiving {
 
 	protected float $jumpVelocity = 0.475;
 
+	protected float $verticalDrag;
+
 	protected int $noActionTime = 0; //TODO: logic
 
 	protected MobInventory $inventory;
@@ -82,11 +86,18 @@ abstract class Living extends PMLiving {
 
 	protected bool $hasBeenDamagedByPlayer = false;
 
+	protected function getInitialDragMultiplier() : float{ return 0.09; }
+
+	protected function getInitialVerticalDragMultiplier() : float{ return 0.02; }
+
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
 		$this->random = MobPlugin::getInstance()->getRandom();
 		$this->inventory = new MobInventory($this);
+		$this->effectManager = new CustomEffectManager($this);
+
+		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
 
 		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
 			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
@@ -160,6 +171,13 @@ abstract class Living extends PMLiving {
 
 	public function generateEquipment() : void{}
 
+	/**
+	 * @param Player[]|null $targets
+	 */
+	public function playSpawnSound(?array $targets = null) : void{
+		$this->broadcastSound(new EntitySpawnSound($this), $targets);
+	}
+
 	protected function makeBrain() : Brain{
 		return new Brain([], [], []);
 	}
@@ -201,7 +219,7 @@ abstract class Living extends PMLiving {
 		return $this->location->getWorld()->getServer();
 	}
 
-	public function canAttack(PMLiving $target) : bool {
+	public function canAttack(Entity $target) : bool {
 		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL) {
 			return false;
 		}
@@ -217,11 +235,31 @@ abstract class Living extends PMLiving {
 		return false;
 	}
 
+	protected function tryChangeMovement() : void{
+		$xzFriction = 1 - $this->drag;
+		$gravity = $this->gravityEnabled ? $this->gravity : 0;
+
+		if($this->onGround){
+			$xzFriction *= $this->getWorld()->getBlockAt(
+				(int) floor($this->location->x),
+				(int) floor($this->location->y - 1),
+				(int) floor($this->location->z)
+			)->getFrictionFactor();
+		}
+
+		$this->motion = new Vector3(
+			$this->motion->x * $xzFriction,
+			$this->applyDragBeforeGravity() ?
+				(($this->motion->y * (1 - $this->verticalDrag)) - $gravity) :
+				(($this->motion->y - $gravity) * (1 - $this->verticalDrag)),
+			$this->motion->z * $xzFriction
+		);
+	}
+
 	public function canSee(Entity $entity) : bool{
 		$start = $this->getEyePos();
 		$end = $entity->getEyePos();
-		$directionVector = $end->subtractVector($start)->normalize();
-		if ($directionVector->lengthSquared() > 0) {
+		if ($start->distanceSquared($end) > 0.01) {
 			foreach(VoxelRayTrace::betweenPoints($start, $end) as $vector3){
 				$block = $this->getWorld()->getBlockAt((int) $vector3->x, (int) $vector3->y, (int) $vector3->z);
 
@@ -421,8 +459,17 @@ abstract class Living extends PMLiving {
 		return false;
 	}
 
+	public function canAddEffect(EffectInstance $effect) : bool{
+		return true;
+	}
+
 	public function getLightLevelDependentMagicValue() : float{
 		return Utils::getLightLevelDependentMagicValue(Position::fromObject($this->getEyePos(), $this->location->world));
+	}
+
+	public function spawnTo(Player $player) : void{
+		parent::spawnTo($player);
+		$this->playSpawnSound([$player]);
 	}
 
 	protected function destroyCycles() : void{

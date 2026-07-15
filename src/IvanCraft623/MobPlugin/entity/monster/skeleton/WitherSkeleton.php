@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\Pathfinder\BlockPathType;
 
@@ -65,6 +66,10 @@ class WitherSkeleton extends AbstractSkeleton {
 
 	protected function registerGoals() : void{
 		parent::registerGoals();
+
+		$this->hurtByTargetGoal->getTargetingConditions()->setValidator(static function(Living $e) : bool{
+			return !$e instanceof Wither;
+		});
 		//TODO: NearestAttackableGoal to piglins
 	}
 

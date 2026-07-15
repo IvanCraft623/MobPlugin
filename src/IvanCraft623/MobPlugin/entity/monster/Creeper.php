@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\AbstractSkeleton;
+use IvanCraft623\MobPlugin\entity\Powerable;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\EntitySizeInfo;
@@ -55,7 +56,7 @@ use pocketmine\world\sound\IgniteSound;
 use function count;
 use function mt_rand;
 
-class Creeper extends Monster implements Explosive{
+class Creeper extends Monster implements Explosive, Powerable{
 
 	private const TAG_FUSE = "Fuse"; //TAG_Byte
 	private const TAG_IGNITED = "IsFuseLit"; //TAG_Byte

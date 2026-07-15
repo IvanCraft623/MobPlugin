@@ -25,26 +25,34 @@ namespace IvanCraft623\MobPlugin\entity;
 
 use pocketmine\entity\Entity;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDamageEvent;
 
-interface NeutralMob {
+trait DamageTrackerTrait {
 
-	public function getRemainingAngerTime() : int;
+	/**
+	 * @var array<int, float>
+	 * entityId => damage
+	 */
+	protected array $damagers = [];
 
-	public function setRemainingAngerTime(int $ticks) : void;
+	public function attack(EntityDamageEvent $source) : void {
+		if ($source->isCancelled()) {
+			return;
+		}
 
-	public function startAngerTimer() : void;
+		if (!$source instanceof EntityDamageByEntityEvent) {
+			return;
+		}
 
-	public function stopBeingAngry() : void;
+		$damager = $source->getDamager();
+		if ($damager === null) {
+			return;
+		}
 
-	public function getTargetEntity() : ?Entity;
+		$this->damagers[$damager->getId()] = $this->getTotalDamageFrom($damager) + $source->getFinalDamage();
+	}
 
-	public function setTargetEntity(?Entity $target) : void;
-
-	public function isAngryAt(Entity $entity) : bool;
-
-	public function isAngry() : bool;
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent;
-
-	public function canAttack(Entity $target) : bool;
+	public function getTotalDamageFrom(Entity $entity) : float{
+		return $this->damagers[$entity->getId()] ?? 0;
+	}
 }

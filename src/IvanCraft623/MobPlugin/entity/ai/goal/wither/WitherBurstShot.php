@@ -21,30 +21,27 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity;
+namespace IvanCraft623\MobPlugin\entity\ai\goal\wither;
 
 use pocketmine\entity\Entity;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\Server;
 
-interface NeutralMob {
+final class WitherBurstShot{
 
-	public function getRemainingAngerTime() : int;
+	readonly ?int $targetEntityId;
 
-	public function setRemainingAngerTime(int $ticks) : void;
+	public function __construct(
+		?Entity $target,
+		readonly bool $dangerous,
+		readonly int $delay
+	) {
+		$this->targetEntityId = $target?->getId() ?? null;
+	}
 
-	public function startAngerTimer() : void;
-
-	public function stopBeingAngry() : void;
-
-	public function getTargetEntity() : ?Entity;
-
-	public function setTargetEntity(?Entity $target) : void;
-
-	public function isAngryAt(Entity $entity) : bool;
-
-	public function isAngry() : bool;
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent;
-
-	public function canAttack(Entity $target) : bool;
+	public function getTargetEntity() : ?Entity {
+		return $this->targetEntityId !== null ?
+			Server::getInstance()->getWorldManager()->findEntity($this->targetEntityId) :
+			null
+		;
+	}
 }

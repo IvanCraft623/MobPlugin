@@ -43,11 +43,17 @@ use pocketmine\color\Color;
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
 use pocketmine\entity\AttributeFactory;
+use pocketmine\entity\effect\EffectInstance;
+use pocketmine\entity\effect\InstantHealthEffect;
+use pocketmine\entity\effect\PoisonEffect;
+use pocketmine\entity\effect\RegenerationEffect;
+use pocketmine\entity\effect\WitherEffect;
 use pocketmine\entity\Entity;
 use pocketmine\entity\object\ItemEntity;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityItemPickupEvent;
+use pocketmine\event\entity\EntityRegainHealthEvent;
 use pocketmine\inventory\ArmorInventory;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Armor;
@@ -72,11 +78,13 @@ use pocketmine\world\World;
 use function assert;
 use function basename;
 use function count;
+use function debug_backtrace;
 use function implode;
 use function max;
 use function min;
 use function round;
 use function str_replace;
+use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 abstract class Mob extends Living {
 	//TODO!
@@ -120,6 +128,8 @@ abstract class Mob extends Living {
 	protected Attribute $attackKnockbackAttr;
 
 	protected Attribute $followRangeAttr;
+
+	private bool $invertingHealAndDamageEffect = false;
 
 	public function getSettings() : Settings{
 		return Settings::getSettings($this->getWorld()->getFolderName());
@@ -550,6 +560,95 @@ abstract class Mob extends Living {
 
 	public function doAttackAnimation() : void{
 		$this->broadcastAnimation(new ArmSwingAnimation($this));
+	}
+
+	public function canAddEffect(EffectInstance $effect) : bool{
+		if ($this->getMobType()->equals(MobType::UNDEAD()) &&
+			(($type = $effect->getType()) instanceof RegenerationEffect || $type instanceof PoisonEffect || $type instanceof WitherEffect)
+		) {
+			return false;
+		}
+
+		return parent::canAddEffect($effect);
+	}
+
+	/**
+	 * TODO: HACK! PMMP core's `InstantHealthEffect::applyEffect()` completely skips
+	 * the call to `Entity::heal()` when the entity is already at its real max
+	 * health, roughly:
+	 *
+	 *     if ($entity->getHealth() < $entity->getMaxHealth()) {
+	 *         $entity->heal(...);
+	 *     }
+	 *
+	 * Since undead mobs invert Instant Health into damage via our `heal()`
+	 * override, an undead entity already at full health would never receive
+	 * that damage: PM's guard above prevents `heal()` from being called
+	 * at all in that case.
+	 */
+	public function getMaxHealth() : int {
+		$actualMaxHealth = parent::getMaxHealth();
+		if ($this->getHealth() < $actualMaxHealth) {
+			return $actualMaxHealth;
+		}
+
+		if ($this->getMobType()->equals(MobType::UNDEAD()) &&
+			(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['class'] ?? null) === InstantHealthEffect::class
+		) {
+			return $actualMaxHealth + 1;
+		}
+
+		return $actualMaxHealth;
+	}
+
+	/**
+	 * A very hacky way to implement the reversal of instant damage and
+	 * instant healing effects, due to pocketmine API limitations.
+	 */
+	public function attack(EntityDamageEvent $source) : void {
+		$invertHealAndDamageEffect = !$this->invertingHealAndDamageEffect &&
+			$this->getMobType()->equals(MobType::UNDEAD()) &&
+			$source->getCause() === EntityDamageEvent::CAUSE_MAGIC
+		;
+
+		if ($invertHealAndDamageEffect) {
+			$source->cancel();
+		}
+
+		parent::attack($source);
+
+		if ($source->isCancelled() && $invertHealAndDamageEffect) {
+			$this->invertingHealAndDamageEffect = true;
+			$this->heal(new EntityRegainHealthEvent(
+				$this,
+				$source->getOriginalBaseDamage() * (4 / 6),
+				EntityRegainHealthEvent::CAUSE_MAGIC)
+			);
+			$this->invertingHealAndDamageEffect = false;
+		}
+	}
+
+	/**
+	 * A very hacky way to implement the reversal of instant damage and
+	 * instant healing effects, due to pocketmine API limitations.
+	 */
+	public function heal(EntityRegainHealthEvent $source) : void {
+		$invertHealAndDamageEffect = !$this->invertingHealAndDamageEffect &&
+			$this->getMobType()->equals(MobType::UNDEAD()) &&
+			$source->getRegainReason() === EntityRegainHealthEvent::CAUSE_MAGIC
+		;
+
+		if ($invertHealAndDamageEffect) {
+			$source->cancel();
+		}
+
+		parent::heal($source);
+
+		if ($source->isCancelled() && $invertHealAndDamageEffect) {
+			$this->invertingHealAndDamageEffect = true;
+			$this->attack(new EntityDamageEvent($this, EntityDamageEvent::CAUSE_MAGIC, $source->getAmount() * (6 / 4)));
+			$this->invertingHealAndDamageEffect = false;
+		}
 	}
 
 	/**

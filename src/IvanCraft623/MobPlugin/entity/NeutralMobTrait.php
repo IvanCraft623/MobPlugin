@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity;
 
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
-use pocketmine\entity\Living as PMLiving;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 
 trait NeutralMobTrait {
@@ -61,7 +60,7 @@ trait NeutralMobTrait {
 	}
 
 	public function isAngryAt(Entity $entity) : bool{
-		if (!$entity instanceof PMLiving || !$this->canAttack($entity)) {
+		if (!$this->canAttack($entity)) {
 			return false;
 		}
 

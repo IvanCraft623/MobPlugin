@@ -4,7 +4,8 @@
     "type": "project",
     "license": "Apache-2.0",
     "require": {
-        "ivancraft623/pathfinder": "dev-main"
+        "ivancraft623/pathfinder": "dev-main",
+        "inxomnyaa/apibossbar": "dev-pm5"
     },
     "require-dev": {
         "php": "^8.0",
@@ -15,6 +16,10 @@
         {
             "type": "vcs",
             "url": "https://github.com/IvanCraft623/Pahtfinder.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/LatamPMDevs/apibossbar.git"
         }
     ],
     "autoload": {

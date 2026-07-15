@@ -40,6 +40,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
+use IvanCraft623\MobPlugin\entity\MobType;
 use IvanCraft623\MobPlugin\sound\SoundEvents;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -100,6 +101,10 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 
 	public function getName() : string {
 		return "Zombie";
+	}
+
+	public function getMobType() : MobType{
+		return MobType::UNDEAD();
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{

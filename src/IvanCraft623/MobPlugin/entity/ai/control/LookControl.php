@@ -44,6 +44,8 @@ class LookControl implements Control {
 
 	protected Vector3 $wanted;
 
+	protected bool $resetPitchOnTick = true;
+
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
 	}
@@ -56,8 +58,6 @@ class LookControl implements Control {
 	}
 
 	public function tick() : void {
-		//TODO: head yaw rotation logic!
-
 		if ($this->resetPitchOnTick()) {
 			$this->mob->setRotation($this->mob->getLocation()->yaw, 0.0);
 		}
@@ -65,19 +65,25 @@ class LookControl implements Control {
 		$location = $this->mob->getLocation();
 		if ($this->lookAtTimer > 0) {
 			$this->lookAtTimer--;
-			$yaw = $this->rotateTowards($location->yaw, $this->getYawD(), $this->yawMaxRotationAngle);
-			$pitch = $this->rotateTowards($location->pitch, $this->getPitchD(), $this->pitchMaxRotationAngle);
-			$this->mob->setRotation($yaw, $pitch);
-		} else {
-			$this->mob->setRotation($this->rotateTowards($location->yaw, $location->yaw, 10.0), $location->pitch);
+			$this->mob->setRotation(
+				static::rotateTowards($location->yaw, $this->getYawD(), $this->yawMaxRotationAngle),
+				static::rotateTowards($location->pitch, $this->getPitchD(), $this->pitchMaxRotationAngle)
+			);
+		}/* else {
+			$this->mob->setRotation(static::rotateTowards($location->yaw, $location->bodyYaw, 10.0), $location->pitch);
 		}
 		if (!$this->mob->getNavigation()->isDone()) {
-			$this->mob->setRotation(Utils::rotateIfNecessary($location->yaw, $location->yaw, $this->mob->getMaxYawRot()), $location->pitch);
-		}
+			$this->mob->setRotation(Utils::rotateIfNecessary($location->yaw, $location->bodyYaw, $this->mob->getMaxYawRot()), $location->pitch);
+		}*/
+		//TODO: Body yaw rotation!!!
 	}
 
-	protected function resetPitchOnTick() : bool {
-		return true;
+	public function resetPitchOnTick() : bool {
+		return $this->resetPitchOnTick;
+	}
+
+	public function setResetPitchOnTick(bool $value) : void {
+		$this->resetPitchOnTick = $value;
 	}
 
 	public function hasWanted() : bool {
@@ -98,7 +104,7 @@ class LookControl implements Control {
 		return (atan2($diff->z, $diff->x) * (180 / M_PI)) - 90;
 	}
 
-	protected function rotateTowards(float $currentDegrees, float $targetDegrees, float $maxRotation) : float {
+	public static function rotateTowards(float $currentDegrees, float $targetDegrees, float $maxRotation) : float {
 		$degreesDifference = Utils::degreesDifference($currentDegrees, $targetDegrees);
 		return $currentDegrees + Utils::clamp($degreesDifference, -$maxRotation, $maxRotation);
 	}

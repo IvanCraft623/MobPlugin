@@ -21,30 +21,12 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity;
+namespace IvanCraft623\MobPlugin\entity\ai\goal\wither;
 
-use pocketmine\entity\Entity;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
+enum WitherAttackPhase{
 
-interface NeutralMob {
-
-	public function getRemainingAngerTime() : int;
-
-	public function setRemainingAngerTime(int $ticks) : void;
-
-	public function startAngerTimer() : void;
-
-	public function stopBeingAngry() : void;
-
-	public function getTargetEntity() : ?Entity;
-
-	public function setTargetEntity(?Entity $target) : void;
-
-	public function isAngryAt(Entity $entity) : bool;
-
-	public function isAngry() : bool;
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent;
-
-	public function canAttack(Entity $target) : bool;
+	case REPOSITIONING;
+	case SHOOTING;
+	case DASH_WINDUP;
+	case DASHING;
 }

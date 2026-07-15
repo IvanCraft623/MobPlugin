@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
+use IvanCraft623\MobPlugin\entity\boss\Boss;
+use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
@@ -30,16 +32,27 @@ use IvanCraft623\MobPlugin\pattern\BlockPattern;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockTypeIds;
+use pocketmine\block\MobHead;
+use pocketmine\block\utils\MobHeadType;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
+use pocketmine\entity\Living;
 use pocketmine\entity\Location;
+use pocketmine\entity\projectile\Projectile;
 use pocketmine\event\block\BlockPlaceEvent;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
+use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\item\ItemTypeIds;
+use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
+use pocketmine\player\UsedChunkStatus;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\Position;
+use pocketmine\world\World;
 
 class EventListener implements Listener {
 
@@ -85,6 +98,15 @@ class EventListener implements Listener {
 						$pos, SnowGolem::getSpawnPattern(), fn(Location $l) => new SnowGolem($l), new Vector3(0, 2, 0)
 					))?->setOwningEntity($player->isClosed() ? null : $player); //Player may have been disconnected
 				}), 1);
+			} elseif ($block instanceof MobHead && $block->getMobHeadType() === MobHeadType::WITHER_SKELETON) {
+				$player = $event->getPlayer();
+				MobPlugin::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use ($block, $player) : void{
+					$pos = $block->getPosition();
+
+					$this->tryToSpawnFromPattern(
+						$pos, Wither::getSpawnPattern(), fn(Location $l) => new Wither($l), new Vector3(1, 2, 0)
+					)?->setOwningEntity($player->isClosed() ? null : $player); //Player may have been disconnected
+				}), 1);
 			}
 		}
 	}
@@ -121,5 +143,61 @@ class EventListener implements Listener {
 		$e->spawnToAll();
 
 		return $e;
+	}
+
+	public function onEntityDeath(EntityDeathEvent $event) : void{
+		$entity = $event->getEntity();
+		if (!$entity instanceof Living) {
+			return;
+		}
+
+		$deathCause = $entity->getLastDamageCause();
+		if (!$deathCause instanceof EntityDamageByEntityEvent) {
+			return;
+		}
+
+		$killer = $deathCause->getDamager();
+		if (!$killer instanceof Wither &&
+			!($killer instanceof Projectile && $killer->getOwningEntity() instanceof Wither)
+		) {
+			// When a projectile explodes, the event that fires is always EntityDamageByEntityEvent
+			// instead of EntityDamageByChildEntityEvent, which is why the check is done this way.
+			return;
+		}
+
+		$witherRose = VanillaBlocks::WITHER_ROSE();
+		$blockPosition = $entity->getPosition();
+		$world = $entity->getWorld();
+		if ($witherRose->canBePlacedAt($world->getBlock($blockPosition), Vector3::zero(), Facing::UP, false)) {
+			$world->setBlock($blockPosition, $witherRose);
+		} else {
+			$drops = $event->getDrops();
+			$drops[] = $witherRose->asItem();
+			$event->setDrops($drops);
+		}
+	}
+
+	/**
+	 * TODO: HACK! The client ignores the BossEventPackets sent during the login sequence.
+	 * This is a problem because bosses near the player when they log in won't display their boss bar,
+	 * so we resend the packet onJoin.
+	 */
+	public function onPlayerJoin(PlayerJoinEvent $event) : void{
+		$player = $event->getPlayer();
+		$world = $player->getWorld();
+		foreach ($player->getUsedChunks() as $chunkHash => $chunkStatus) {
+			if ($chunkStatus !== UsedChunkStatus::SENT) {
+				continue;
+			}
+
+			World::getXZ($chunkHash, $chunkX, $chunkZ);
+			foreach ($world->getChunkEntities($chunkX, $chunkZ) as $entity) {
+				if (!$entity instanceof Boss) {
+					continue;
+				}
+
+				$entity->getBossBar()->showTo([$player]);
+			}
+		}
 	}
 }
