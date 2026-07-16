@@ -32,12 +32,14 @@ use IvanCraft623\MobPlugin\entity\ai\goal\PanicGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\CowMilkSound;
 use IvanCraft623\MobPlugin\utils\ItemSet;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Bucket;
+use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -102,5 +104,9 @@ class Cow extends Animal {
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::COW_SPAWN_EGG();
 	}
 }

@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\Shearable;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\ItemSet;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -44,6 +45,7 @@ use pocketmine\block\VanillaBlocks;
 use pocketmine\data\bedrock\DyeColorIdMap;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Dye;
+use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
@@ -225,6 +227,10 @@ class Sheep extends Animal implements Shearable{
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::SHEEP_SPAWN_EGG();
 	}
 
 	//TODO: natural spawning logic

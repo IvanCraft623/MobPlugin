@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ItemSteerable;
 use IvanCraft623\MobPlugin\entity\Saddleable;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\utils\ItemSet;
 
 use pocketmine\entity\EntitySizeInfo;
@@ -157,6 +158,10 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::PIG_SPAWN_EGG();
 	}
 
 	public function isFood(Item $item) : bool {

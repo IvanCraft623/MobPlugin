@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\nbt\tag\CompoundTag;
@@ -66,6 +67,10 @@ class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton 
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::STRAY_SPAWN_EGG();
 	}
 
 	/**

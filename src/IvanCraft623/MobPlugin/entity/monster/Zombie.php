@@ -277,6 +277,10 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		return $drops;
 	}
 
+	public function getPickedItem() : ?Item{
+		return VanillaItems::ZOMBIE_SPAWN_EGG();
+	}
+
 	public function getXpDropAmount() : int{
 		if ($this->hasBeenDamagedByPlayer()) {
 			return ($this->isBaby() ? 12 : 5) + (count($this->getArmorInventory()->getContents()) * mt_rand(1, 3));
