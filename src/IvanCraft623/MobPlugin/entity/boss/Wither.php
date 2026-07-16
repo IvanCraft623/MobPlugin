@@ -91,6 +91,7 @@ use pocketmine\world\World;
 
 use xenialdan\apibossbar\BossBar;
 
+use function atan2;
 use function ceil;
 use function cos;
 use function count;
@@ -778,12 +779,20 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 				for ($dy = -1; $dy <= $height; $dy++) {
 					$p = $pos->add($dx, $dy, $dz);
 					$b = $world->getBlock($p);
-					if ($b->getTypeId() === BlockTypeIds::AIR || !$b->getBreakInfo()->isBreakable()) {
+					if ($b->getTypeId() === BlockTypeIds::AIR) {
+						continue;
+					}
+
+					$breakInfo = $b->getBreakInfo();
+					if (!$breakInfo->isBreakable()) {
 						continue;
 					}
 
 					$world->setBlock($p, $airBlock);
-					foreach ($b->getDropsForCompatibleTool($airItem) as $drop) {
+					foreach (($breakInfo->isExplosionHarvestable() ?
+						$b->getDropsForCompatibleTool($airItem) :
+						$b->getDrops($airItem)
+					) as $drop) {
 						$world->dropItem($p, $drop);
 					}
 					$playBreakSound = true;
@@ -802,7 +811,12 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	}
 
 	private function performRangedAttackInDirection(Vector3 $position, Vector3 $direction, float $force) : void{
-		$location = Location::fromObject($position, $this->getWorld(), $this->location->yaw, $this->location->pitch);
+		$location = Location::fromObject(
+			$position,
+			$this->getWorld(),
+			atan2($direction->x, $direction->z) * 180 / M_PI,
+			0
+		);
 
 		if ($force >= 1) {
 			$projectile = new DangerousWitherSkull($location, $this);
