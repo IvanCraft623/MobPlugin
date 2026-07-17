@@ -342,9 +342,11 @@ abstract class Mob extends Living {
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
-		CustomTimings::$entityAiTick->startTiming();
-		$this->tickAi();
-		CustomTimings::$entityAiTick->stopTiming();
+		if(!$this->noClientPredictions){
+			CustomTimings::$entityAiTick->startTiming();
+			$this->tickAi();
+			CustomTimings::$entityAiTick->stopTiming();
+		}
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
