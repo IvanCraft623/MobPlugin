@@ -23,11 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
+use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\world\World;
 
@@ -71,5 +73,9 @@ class CaveSpider extends Spider {
 		}
 
 		return false;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::CAVE_SPIDER_SPAWN_EGG();
 	}
 }

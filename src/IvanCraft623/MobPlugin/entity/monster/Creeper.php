@@ -33,6 +33,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\AbstractSkeleton;
 use IvanCraft623\MobPlugin\entity\Powerable;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\EntitySizeInfo;
@@ -41,6 +42,7 @@ use pocketmine\entity\Location;
 use pocketmine\entity\object\AreaEffectCloud;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityPreExplodeEvent;
+use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
@@ -330,6 +332,10 @@ class Creeper extends Monster implements Explosive, Powerable{
 		}
 
 		return $items;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::CREEPER_SPAWN_EGG();
 	}
 
 	public function getXpDropAmount() : int{

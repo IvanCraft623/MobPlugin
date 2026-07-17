@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
 use IvanCraft623\Pathfinder\BlockPathType;
@@ -53,6 +54,7 @@ use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\event\entity\EntityDamageByBlockEvent;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Facing;
@@ -264,6 +266,10 @@ class Enderman extends Monster implements NeutralMob{
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::ENDERMAN_SPAWN_EGG();
 	}
 
 	public function startAngerTimer() : void{

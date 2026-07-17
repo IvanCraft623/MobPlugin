@@ -23,11 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ambient;
 
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -187,5 +189,9 @@ class Bat extends Ambient {
 		if (!$source->isCancelled()) {
 			$this->setResting(false);
 		}
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::BAT_SPAWN_EGG();
 	}
 }

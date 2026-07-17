@@ -27,12 +27,14 @@ use IvanCraft623\MobPlugin\data\bedrock\MooshroomCowTypeIdMap;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animal\utils\SuspiciousStewTypeFlowerMap;
 use IvanCraft623\MobPlugin\entity\Shearable;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\MilkSuspiciouslySound;
 use IvanCraft623\MobPlugin\sound\MooshroomCowConvertSound;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\data\bedrock\SuspiciousStewTypeIdMap;
 use pocketmine\entity\animation\ConsumingItemAnimation;
+use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\SuspiciousStewType;
 use pocketmine\item\VanillaItems;
@@ -203,6 +205,10 @@ class MooshroomCow extends Cow implements Shearable{
 
 	public function isReadyForShearing() : bool{
 		return $this->isAlive() && !$this->isBaby();
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::MOOSHROOM_SPAWN_EGG();
 	}
 
 	public function getBreedOffspring(AgeableMob $partner) : MooshroomCow{

@@ -27,6 +27,7 @@ use Closure;
 
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
@@ -109,6 +110,10 @@ class WitherSkeleton extends AbstractSkeleton {
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::WITHER_SKELETON_SPAWN_EGG();
 	}
 
 	public function attackEntity(Entity $entity) : bool{

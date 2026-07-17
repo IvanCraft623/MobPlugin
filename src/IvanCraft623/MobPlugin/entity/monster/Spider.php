@@ -34,7 +34,9 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\WallClimberNavigation;
 use IvanCraft623\MobPlugin\entity\MobType;
 
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
@@ -129,6 +131,10 @@ class Spider extends Monster {
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::SPIDER_SPAWN_EGG();
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{

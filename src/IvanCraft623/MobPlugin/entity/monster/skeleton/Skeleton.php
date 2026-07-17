@@ -27,6 +27,7 @@ use Closure;
 
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
 use pocketmine\block\utils\MobHeadType;
@@ -83,6 +84,10 @@ class Skeleton extends AbstractSkeleton {
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::SKELETON_SPAWN_EGG();
 	}
 
 	/**

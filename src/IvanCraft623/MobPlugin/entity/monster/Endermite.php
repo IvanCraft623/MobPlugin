@@ -32,8 +32,10 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\MobType;
 
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living as PMLiving;
+use pocketmine\item\Item;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
@@ -97,6 +99,10 @@ class Endermite extends Monster {
 
 	public function getMaxLifeTime() : int{
 		return self::MAX_LIFE;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::ENDERMITE_SPAWN_EGG();
 	}
 
 	public function getXpDropAmount() : int{

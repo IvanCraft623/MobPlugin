@@ -48,6 +48,7 @@ use IvanCraft623\MobPlugin\entity\Powerable;
 use IvanCraft623\MobPlugin\entity\projectile\DangerousWitherSkull;
 use IvanCraft623\MobPlugin\entity\projectile\WitherSkull;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\pattern\BlockPattern;
 use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
 use IvanCraft623\MobPlugin\sound\DeathSound;
@@ -75,6 +76,7 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\event\entity\EntityPreExplodeEvent;
 use pocketmine\event\entity\EntityRegainHealthEvent;
+use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -363,6 +365,10 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		$items[] = VanillaItems::NETHER_STAR();
 
 		return $items;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::WITHER_SPAWN_EGG();
 	}
 
 	public function getXpDropAmount() : int{

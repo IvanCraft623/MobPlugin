@@ -35,8 +35,10 @@ use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeMoveControl;
 
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
+use pocketmine\item\Item;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
@@ -221,6 +223,10 @@ class Slime extends Mob implements Enemy {
 		}
 
 		return [];
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::SLIME_SPAWN_EGG();
 	}
 
 	public function getXpDropAmount() : int{ //TODO!

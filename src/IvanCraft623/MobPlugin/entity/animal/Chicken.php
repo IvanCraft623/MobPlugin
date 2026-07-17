@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\PanicGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\EntityPlopSound;
 use IvanCraft623\MobPlugin\utils\ItemSet;
 
@@ -190,6 +191,10 @@ class Chicken extends Animal {
 		}
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::CHICKEN_SPAWN_EGG();
 	}
 
 	public function isFood(Item $item) : bool {

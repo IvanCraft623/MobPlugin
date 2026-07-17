@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\monster\Enemy;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\entity\Shearable;
+use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\pattern\BlockPattern;
 use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
 use IvanCraft623\MobPlugin\sound\EntityShootSound;
@@ -48,6 +49,7 @@ use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Snowball;
 use pocketmine\event\entity\EntityDamageByBlockEvent;
 use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Facing;
@@ -148,6 +150,10 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 		$drops[] = VanillaItems::SNOWBALL()->setCount(mt_rand(0, 15));
 
 		return $drops;
+	}
+
+	public function getPickedItem() : ?Item{
+		return ExtraVanillaItems::SNOW_GOLEM_SPAWN_EGG();
 	}
 
 	public function getXpDropAmount() : int{
