@@ -55,12 +55,17 @@ use pocketmine\Server;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;
 use pocketmine\world\World;
+use function abs;
 use function count;
 use function floor;
+use function max;
 use function min;
+use function sqrt;
 
 abstract class Living extends PMLiving {
 	//TODO!
+
+	public const ENTITY_PUSH_FORCE = 0.25;
 
 	private const TAG_COMPONENT_GROUPS = "definitions"; //TAG_List
 
@@ -235,6 +240,14 @@ abstract class Living extends PMLiving {
 		return false;
 	}
 
+	protected function entityBaseTick(int $tickDiff = 1) : bool{
+		$hasUpdate = parent::entityBaseTick($tickDiff);
+
+		$hasUpdate = $hasUpdate || $this->pushOutOfEntities();
+
+		return $hasUpdate;
+	}
+
 	protected function tryChangeMovement() : void{
 		$xzFriction = 1 - $this->drag;
 		$gravity = $this->gravityEnabled ? $this->gravity : 0;
@@ -254,6 +267,53 @@ abstract class Living extends PMLiving {
 				(($this->motion->y - $gravity) * (1 - $this->verticalDrag)),
 			$this->motion->z * $xzFriction
 		);
+	}
+
+	protected function pushOutOfEntities() : bool {
+		if(!$this->canBePushed()){
+			return false;
+		}
+
+		$motionX = $this->motion->x;
+		$motionZ = $this->motion->z;
+
+		foreach($this->getWorld()->getCollidingEntities($this->boundingBox, $this) as $other){
+			if(!$this->canBePushedBy($other)){
+				continue;
+			}
+
+			$otherPos = $other->getPosition();
+			$dx = $this->location->x - $otherPos->x;
+			$dz = $this->location->z - $otherPos->z;
+
+			$dist = max(abs($dx), abs($dz));
+			if($dist < 0.01){
+				continue;
+			}
+
+			$f = sqrt($dist);
+			$dx /= $f;
+			$dz /= $f;
+
+			$factor = min(1.0 / $dist, 1.0) * self::ENTITY_PUSH_FORCE;
+			$motionX += $dx * $factor;
+			$motionZ += $dz * $factor;
+		}
+
+		if($motionX !== $this->motion->x || $motionZ !== $this->motion->z){
+			$this->setMotion(new Vector3($motionX, $this->motion->y, $motionZ));
+			return true;
+		}
+
+		return false;
+	}
+
+	protected function canBePushed() : bool {
+		return true; //TODO: not in or a being a vehicle
+	}
+
+	protected function canBePushedBy(Entity $other) : bool {
+		return true; //TODO: other not be a vehicle
 	}
 
 	public function canSee(Entity $entity) : bool{
