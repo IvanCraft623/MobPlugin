@@ -69,6 +69,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\EntityEventBroadcaster;
 use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Utils as PMUtils;
@@ -122,6 +123,8 @@ abstract class Mob extends Living {
 	protected bool $aggressive = false;
 
 	protected bool $isPersistent = false;
+
+	protected bool $hasAi = true;
 
 	protected Attribute $attackDamageAttr;
 
@@ -244,6 +247,15 @@ abstract class Mob extends Living {
 		$this->setForwardSpeed($motionSpeed);
 	}
 
+	public function hasAi() : bool{
+		return $this->hasAi;
+	}
+
+	public function setHasAi(bool $value = true) : void{
+		$this->hasAi = $value;
+		$this->networkPropertiesDirty = true;
+	}
+
 	public function getMaxPitchRot() : int {
 		return 40;
 	}
@@ -342,7 +354,7 @@ abstract class Mob extends Living {
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
-		if(!$this->noClientPredictions){
+		if($this->hasAi){
 			CustomTimings::$entityAiTick->startTiming();
 			$this->tickAi();
 			CustomTimings::$entityAiTick->stopTiming();
@@ -908,6 +920,8 @@ abstract class Mob extends Living {
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_MIN, $this->getAmbientSoundInterval());
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_RANGE, $this->getAmbientSoundIntervalRange());
 		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
+
+		$properties->setGenericFlag(EntityMetadataFlags::NO_AI, $this->noClientPredictions || !$this->hasAi);
 	}
 
 	protected function destroyCycles() : void{
