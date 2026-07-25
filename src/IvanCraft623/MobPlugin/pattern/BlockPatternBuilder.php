@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\pattern;
 
 use Closure;
 use pocketmine\block\Block;
+use pocketmine\entity\Living;
 use function count;
 use function implode;
 use function str_split;
@@ -47,6 +48,12 @@ class BlockPatternBuilder {
 
 	private int $height;
 	private int $width;
+
+	/** @var ?Closure(Block) : bool */
+	private ?Closure $triggerCondition = null;
+
+	/** @var ?Closure(BlockPatternMatch, Block, ?Living) : void */
+	private ?Closure $onMatch = null;
 
 	/**
 	 * Initializes the lookup table with a default predicate for an empty space.
@@ -116,8 +123,32 @@ class BlockPatternBuilder {
 	 *
 	 * @return $this
 	 */
-	public function where(string $char, Closure $predicate) : BlockPatternBuilder {
+	public function where(string $char, Closure $predicate) : self {
 		$this->lookup[$char] = $predicate;
+
+		return $this;
+	}
+
+	/**
+	 * Defines the condition that determines if a placed block should trigger this pattern search.
+	 *
+	 * @param Closure(Block) : bool $condition
+	 * @return $this
+	 */
+	public function trigger(Closure $condition) : self {
+		$this->triggerCondition = $condition;
+
+		return $this;
+	}
+
+	/**
+	 * Defines the action to execute when the pattern successfully matches in the world.
+	 *
+	 * @param Closure(BlockPatternMatch, Block, ?Living) : void $action
+	 * @return $this
+	 */
+	public function onMatch(Closure $action) : self {
+		$this->onMatch = $action;
 
 		return $this;
 	}
@@ -128,7 +159,21 @@ class BlockPatternBuilder {
 	 * @return BlockPattern Returns the built block pattern.
 	 */
 	public function build() : BlockPattern {
-		return new BlockPattern($this->createPattern());
+		$this->ensureAllCharactersMatched();
+
+		if ($this->triggerCondition === null) {
+			throw new \RuntimeException("Trigger condition is missing from BlockPatternBuilder");
+		}
+
+		if ($this->onMatch === null) {
+			throw new \RuntimeException("onMatch callback is missing from BlockPatternBuilder");
+		}
+
+		return new BlockPattern(
+			$this->createPattern(),
+			$this->triggerCondition,
+			$this->onMatch
+		);
 	}
 
 	/**
@@ -137,7 +182,6 @@ class BlockPatternBuilder {
 	 * @return array Returns the block pattern array.
 	 */
 	private function createPattern() : array {
-		$this->ensureAllCharactersMatched();
 		$blockPattern = [];
 
 		foreach ($this->pattern as $depthIndex => $blocks) {

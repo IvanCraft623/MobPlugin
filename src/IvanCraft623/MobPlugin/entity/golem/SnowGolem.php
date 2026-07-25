@@ -32,8 +32,6 @@ use IvanCraft623\MobPlugin\entity\monster\Enemy;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\entity\Shearable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
-use IvanCraft623\MobPlugin\pattern\BlockPattern;
-use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
 use IvanCraft623\MobPlugin\sound\EntityShootSound;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -65,27 +63,6 @@ use function mt_rand;
 use function sqrt;
 
 class SnowGolem extends Golem implements RangedAttackMob, Shearable{
-
-	private static BlockPattern $spawnPattern;
-
-	public static function getSpawnPattern() : BlockPattern{
-		if (!isset(self::$spawnPattern)) {
-			self::$spawnPattern = BlockPatternBuilder::start()
-				->aisle([
-					"O",
-					"#",
-					"#"
-				])
-				->where('O', fn(Block $block) =>
-					($id = $block->getTypeId()) === BlockTypeIds::CARVED_PUMPKIN ||
-					$id === BlockTypeIds::LIT_PUMPKIN ||
-					$id === BlockTypeIds::PUMPKIN
-				)
-				->where('#', fn(Block $block) => $block->getTypeId() === BlockTypeIds::SNOW)
-				->build();
-		}
-		return self::$spawnPattern;
-	}
 
 	private const TAG_SHEARED = "Sheared"; //TAG_Byte
 

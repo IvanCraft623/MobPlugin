@@ -36,15 +36,11 @@ use IvanCraft623\MobPlugin\entity\monster\Enemy;
 use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
-use IvanCraft623\MobPlugin\pattern\BlockPattern;
-use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
 use IvanCraft623\MobPlugin\sound\IronGolemCrackSound;
 use IvanCraft623\MobPlugin\sound\IronGolemRepairSound;
 use IvanCraft623\MobPlugin\sound\ThrowSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\Block;
-use pocketmine\block\BlockTypeIds;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living as PMLiving;
@@ -66,28 +62,6 @@ use function mt_rand;
 
 class IronGolem extends Golem implements NeutralMob{
 	use NeutralMobTrait;
-
-	private static BlockPattern $spawnPattern;
-
-	public static function getSpawnPattern() : BlockPattern{
-		if (!isset(self::$spawnPattern)) {
-			self::$spawnPattern = BlockPatternBuilder::start()
-				->aisle([
-					"*O*",
-					"###",
-					"*#*"
-				])
-				->where('O', fn(Block $block) =>
-					($id = $block->getTypeId()) === BlockTypeIds::CARVED_PUMPKIN ||
-					$id === BlockTypeIds::LIT_PUMPKIN ||
-					$id === BlockTypeIds::PUMPKIN
-				)
-				->where('*', fn(Block $block) => $block->getTypeId() === BlockTypeIds::AIR)
-				->where('#', fn(Block $block) => $block->getTypeId() === BlockTypeIds::IRON)
-				->build();
-		}
-		return self::$spawnPattern;
-	}
 
 	private const COMPONENT_GROUP_PLAYER_CREATED = "minecraft:player_created";
 	private const COMPONENT_GROUP_VILLAGE_CREATED = "minecraft:village_created";

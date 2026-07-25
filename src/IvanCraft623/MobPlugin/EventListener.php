@@ -25,17 +25,11 @@ namespace IvanCraft623\MobPlugin;
 
 use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
-use IvanCraft623\MobPlugin\entity\golem\IronGolem;
-use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
-use IvanCraft623\MobPlugin\pattern\BlockPattern;
+use IvanCraft623\MobPlugin\pattern\BlockPatternFactory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\BlockTypeIds;
-use pocketmine\block\MobHead;
-use pocketmine\block\utils\MobHeadType;
 use pocketmine\block\VanillaBlocks;
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\Projectile;
@@ -49,9 +43,7 @@ use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\UsedChunkStatus;
-use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Utils as PMUtils;
-use pocketmine\world\Position;
 use pocketmine\world\World;
 
 class EventListener implements Listener {
@@ -83,66 +75,23 @@ class EventListener implements Listener {
 	 * @ignoreCancelled
 	 */
 	public function onBlockPlace(BlockPlaceEvent $event) : void {
-		foreach($event->getTransaction()->getBlocks() as [$x, $y, $z, $block]){
-			if (($id = $block->getTypeId()) === BlockTypeIds::CARVED_PUMPKIN ||
-				$id === BlockTypeIds::LIT_PUMPKIN ||
-				$id === BlockTypeIds::PUMPKIN
-			) {
-				$player = $event->getPlayer();
-				MobPlugin::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use ($block, $player) : void{
-					$pos = $block->getPosition();
-
-					($this->tryToSpawnFromPattern(
-						$pos, IronGolem::getSpawnPattern(), fn(Location $l) => new IronGolem($l), new Vector3(1, 2, 0)
-					) ?? $this->tryToSpawnFromPattern(
-						$pos, SnowGolem::getSpawnPattern(), fn(Location $l) => new SnowGolem($l), new Vector3(0, 2, 0)
-					))?->setOwningEntity($player->isClosed() ? null : $player); //Player may have been disconnected
-				}), 1);
-			} elseif ($block instanceof MobHead && $block->getMobHeadType() === MobHeadType::WITHER_SKELETON) {
-				$player = $event->getPlayer();
-				MobPlugin::getInstance()->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use ($block, $player) : void{
-					$pos = $block->getPosition();
-
-					$this->tryToSpawnFromPattern(
-						$pos, Wither::getSpawnPattern(), fn(Location $l) => new Wither($l), new Vector3(1, 2, 0)
-					)?->setOwningEntity($player->isClosed() ? null : $player); //Player may have been disconnected
-				}), 1);
-			}
-		}
-	}
-
-	private function tryToSpawnFromPattern(Position $pos, BlockPattern $pattern, \Closure $entityConstructor, Vector3 $spawnOffset) : ?Entity{
-		$patternMatch = $pattern->find($pos);
-		if ($patternMatch === null) {
-			return null;
-		}
-
-		$world = $pos->getWorld();
-
-		//clear pattern
-		$totalWidth = $patternMatch->getWidth();
-		for ($currentWidth = 0; $currentWidth < $totalWidth; $currentWidth++) {
-			$totalHeight = $patternMatch->getHeight();
-			for ($currentHeight = 0; $currentHeight < $totalHeight; $currentHeight++) {
-				$b = $patternMatch->getBlock($currentWidth, $currentHeight, 0, $world);
-				if ($b->getTypeId() === BlockTypeIds::AIR) {
+		$patternFactory = BlockPatternFactory::getInstance();
+		foreach ($event->getTransaction()->getBlocks() as [, , , $block]) {
+			foreach ($patternFactory->getCandidates($block) as $pattern) {
+				$match = $pattern->find($block->getPosition(), true);
+				if ($match === null) {
 					continue;
 				}
 
-				Utils::destroyBlock($world, $b->getPosition());
+				$player = $event->getPlayer();
+
+				$event->cancel();
+
+				Utils::popItemInHand($player);
+				$pattern->execute($match, $block, $player);
+				return; //Just one valid pattern
 			}
 		}
-
-		//spawn
-		$e = $entityConstructor(Location::fromObject(
-			$patternMatch->getBlock((int) $spawnOffset->x, (int) $spawnOffset->y, (int) $spawnOffset->z, $world)
-				->getPosition()
-				->add(0.5, 0, 0.5),
-			$world
-		));
-		$e->spawnToAll();
-
-		return $e;
 	}
 
 	public function onEntityDeath(EntityDeathEvent $event) : void{

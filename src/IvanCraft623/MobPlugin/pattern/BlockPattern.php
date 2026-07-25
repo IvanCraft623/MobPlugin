@@ -25,9 +25,10 @@ namespace IvanCraft623\MobPlugin\pattern;
 
 use Closure;
 use pocketmine\block\Block;
+use pocketmine\entity\Living;
 use pocketmine\math\Facing;
-use pocketmine\math\Vector3;
 
+use pocketmine\math\Vector3;
 use pocketmine\world\Position;
 use function count;
 use function max;
@@ -50,9 +51,15 @@ class BlockPattern {
 	 * BlockPattern constructor.
 	 * Initializes the block pattern with the given pattern.
 	 *
-	 * @param Closure[][][] $pattern The block pattern.
+	 * @param Closure[][][]                                                               $pattern          The block pattern.
+	 * @param Closure(Block $placedBlock): bool                                           $triggerCondition
+	 * @param Closure(BlockPatternMatch $match, Block $placedBlock, ?Living $owner): void $onMatch
 	 */
-	public function __construct(array $pattern) {
+	public function __construct(
+		array $pattern,
+		private Closure $triggerCondition,
+		private Closure $onMatch
+	) {
 		$this->pattern = $pattern;
 		$this->depth = count($pattern);
 
@@ -109,18 +116,23 @@ class BlockPattern {
 	/**
 	 * Matches a block pattern at a specific position and orientation.
 	 *
-	 * @param Position $position The position to match the pattern.
-	 * @param int      $forwards The forwards direction of the match.
-	 * @param int      $up       The up direction of the match.
+	 * @param Position  $position         The position to match the pattern.
+	 * @param int       $forwards         The forwards direction of the match.
+	 * @param int       $up               The up direction of the match.
+	 * @param ?Position $ignoreTriggerPos If set, skips validation for the block at this position (the trigger block).
 	 *
 	 * @return ?BlockPatternMatch Returns the block pattern match if successful, otherwise null.
 	 */
-	private function matches(Position $position, int $forwards, int $up) : ?BlockPatternMatch {
+	private function matches(Position $position, int $forwards, int $up, ?Position $ignoreTriggerPos = null) : ?BlockPatternMatch {
 		$world = $position->getWorld();
 		for ($widthIndex = 0; $widthIndex < $this->width; ++$widthIndex) {
 			for ($heightIndex = 0; $heightIndex < $this->height; ++$heightIndex) {
 				for ($depthIndex = 0; $depthIndex < $this->depth; ++$depthIndex) {
-					if (!$this->pattern[$depthIndex][$heightIndex][$widthIndex]($world->getBlock($this->translateAndRotate($position, $forwards, $up, $widthIndex, $heightIndex, $depthIndex)))) {
+					$blockPos = $this->translateAndRotate($position, $forwards, $up, $widthIndex, $heightIndex, $depthIndex);
+					if ($ignoreTriggerPos !== null && $blockPos->equals($ignoreTriggerPos)) {
+						continue;
+					}
+					if (!$this->pattern[$depthIndex][$heightIndex][$widthIndex]($world->getBlock($blockPos))) {
 						return null;
 					}
 				}
@@ -133,11 +145,16 @@ class BlockPattern {
 	/**
 	 * Finds the block pattern match in the world.
 	 *
-	 * @param Position $position The position to start searching from.
+	 * @param Position $position      The position to start searching from.
+	 * @param bool     $ignoreTrigger If true, skips validation for the block at $position, assuming it
+	 *                                is the trigger block that has just been placed and already satisfies
+	 *                                the pattern condition.
+	 *
 	 * @return BlockPatternMatch|null The block pattern match, or null if no match is found.
 	 */
-	public function find(Position $position) : ?BlockPatternMatch {
+	public function find(Position $position, bool $ignoreTrigger = false) : ?BlockPatternMatch {
 		$maxDimension = max($this->width, $this->height, $this->depth);
+		$ignoreTriggerPos = $ignoreTrigger ? $position : null;
 
 		for ($x = $position->getX(); $x < $position->getX() + $maxDimension - 1; $x++) {
 			for ($y = $position->getY(); $y < $position->getY() + $maxDimension - 1; $y++) {
@@ -145,7 +162,7 @@ class BlockPattern {
 					foreach (Facing::ALL as $forwards) {
 						foreach (Facing::ALL as $up) {
 							if (Facing::axis($forwards) !== Facing::axis($up)) {
-								$match = $this->matches(new Position($x, $y, $z, $position->getWorld()), $forwards, $up);
+								$match = $this->matches(new Position($x, $y, $z, $position->getWorld()), $forwards, $up, $ignoreTriggerPos);
 								if ($match !== null) {
 									return $match;
 								}
@@ -157,6 +174,20 @@ class BlockPattern {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Evaluate whether the newly placed block triggers the verification of this pattern.
+	 */
+	public function isTrigger(Block $placedBlock) : bool {
+		return ($this->triggerCondition)($placedBlock);
+	}
+
+	/**
+	 * Execute the action when the pattern matches in the world.
+	 */
+	public function execute(BlockPatternMatch $match, Block $placedBlock, ?Living $owner = null) : void {
+		($this->onMatch)($match, $placedBlock, $owner);
 	}
 
 	/**
@@ -185,6 +216,5 @@ class BlockPattern {
 			->addVector($rightVector->multiply($x))
 			->addVector($forwardVector->multiply($z)
 		);
-
 	}
 }

@@ -23,7 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\pattern;
 
+use IvanCraft623\MobPlugin\utils\Utils;
+
 use pocketmine\block\Block;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
@@ -129,7 +132,27 @@ class BlockPatternMatch {
 	 * @return Block The block at the specified position within the match.
 	 */
 	public function getBlock(int $x, int $y, int $z, World $world) : Block {
-		return $world->getBlock(BlockPattern::translateAndRotate($this->frontTopLeft, $this->getForwards(), $this->getUp(), $x, $y, $z));
+		return $world->getBlock(BlockPattern::translateAndRotate($this->frontTopLeft, $this->forwards, $this->up, $x, $y, $z));
+	}
+
+	/**
+	 * Clears all non-air blocks that form this pattern match from the specified world.
+	 *
+	 * @param World $world The world instance where the blocks should be destroyed.
+	 */
+	public function clear(World $world) : void {
+		for ($currentWidth = 0; $currentWidth < $this->width; $currentWidth++) {
+			for ($currentHeight = 0; $currentHeight < $this->height; $currentHeight++) {
+				for ($currentDepth = 0; $currentDepth < $this->depth; $currentDepth++) {
+					$b = $this->getBlock($currentWidth, $currentHeight, $currentDepth, $world);
+					if ($b->getTypeId() === BlockTypeIds::AIR) {
+						continue;
+					}
+
+					Utils::destroyBlock($world, $b->getPosition());
+				}
+			}
+		}
 	}
 
 	/**

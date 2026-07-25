@@ -49,16 +49,11 @@ use IvanCraft623\MobPlugin\entity\projectile\DangerousWitherSkull;
 use IvanCraft623\MobPlugin\entity\projectile\WitherSkull;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
-use IvanCraft623\MobPlugin\pattern\BlockPattern;
-use IvanCraft623\MobPlugin\pattern\BlockPatternBuilder;
 use IvanCraft623\MobPlugin\sound\DeathSound;
 use IvanCraft623\MobPlugin\sound\EntityBreakBlockSound;
 use IvanCraft623\MobPlugin\sound\EntityShootSound;
 
-use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
-use pocketmine\block\MobHead;
-use pocketmine\block\utils\MobHeadType;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\InstantEffect;
@@ -115,30 +110,6 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	}
 	use DamageTrackerTrait {
 		attack as attackDamageTracker;
-	}
-
-	private static BlockPattern $spawnPattern;
-
-	public static function getSpawnPattern() : BlockPattern{
-		if (!isset(self::$spawnPattern)) {
-			self::$spawnPattern = BlockPatternBuilder::start()
-				->aisle([
-					"OOO",
-					"###",
-					"*#*"
-				])
-				->where('O', fn(Block $block) =>
-					$block instanceof MobHead &&
-					$block->getMobHeadType() === MobHeadType::WITHER_SKELETON
-				)
-				->where('#', fn(Block $block) =>
-					($typeId = $block->getTypeId()) === BlockTypeIds::SOUL_SAND ||
-					$typeId === BlockTypeIds::SOUL_SOIL
-				)
-				->where('*', fn(Block $block) => $block->getTypeId() === BlockTypeIds::AIR)
-				->build();
-		}
-		return self::$spawnPattern;
 	}
 
 	private const TAG_INVULNERABLE = "Invul"; //TAG_Int
