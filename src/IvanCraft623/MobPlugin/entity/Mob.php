@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
+use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -147,6 +148,8 @@ abstract class Mob extends Living {
 			$this->setNameTagVisible(true);
 			$this->setNameTagAlwaysVisible(true);
 		}
+
+		MobPlugin::getInstance()->trackEntity($this->getMobCategory(), $this->getName());
 
 		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
 
@@ -922,6 +925,12 @@ abstract class Mob extends Living {
 		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
 
 		$properties->setGenericFlag(EntityMetadataFlags::NO_AI, $this->noClientPredictions || !$this->hasAi);
+	}
+
+	protected function onDispose() : void{
+		MobPlugin::getInstance()->untrackEntity($this->getMobCategory(), $this->getName());
+
+		parent::onDispose();
 	}
 
 	protected function destroyCycles() : void{

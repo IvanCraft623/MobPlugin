@@ -23,6 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
+use bStats\PocketmineMp\charts\DrilldownPie;
+use bStats\PocketmineMp\charts\SingleLineChart;
+use bStats\PocketmineMp\Metrics;
+
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
@@ -33,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
+use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -58,10 +63,14 @@ use pocketmine\world\World;
 
 use xenialdan\apibossbar\API as BossBarAPI;
 
+use function count;
 use function mt_rand;
+use function strtolower;
 
 class MobPlugin extends PluginBase {
 	use SingletonTrait;
+
+	private const BSTATS_PLUGIN_ID = 32915;
 
 	public const ALL_ENTITIES = [
 		Bat::class,
@@ -87,6 +96,11 @@ class MobPlugin extends PluginBase {
 
 	private ?Random $random = null;
 
+	private int $totalEntitiesCount = 0;
+
+	/** @var array<string, array<string, int>> */
+	private array $entitiesStats = [];
+
 	public function onLoad() : void {
 		self::setInstance($this);
 	}
@@ -97,6 +111,7 @@ class MobPlugin extends PluginBase {
 
 		$this->registerAttributes();
 		$this->registerEntities();
+		$this->registerMetrics();
 
 		ExtraItemRegisterHelper::init();
 
@@ -137,5 +152,41 @@ class MobPlugin extends PluginBase {
 		$factory->register($entityClass, function(World $world, CompoundTag $nbt) use ($entityClass) : Entity{
 			return new $entityClass(Helper::parseLocation($nbt, $world), $nbt);
 		}, [$entityId, Utils::getEntityNameFromId($entityId)]);
+	}
+
+	public function trackEntity(MobCategory $category, string $name) : void {
+		$this->totalEntitiesCount++;
+		$categoryName = strtolower($category->name());
+		$mobName = strtolower($name);
+		$this->entitiesStats[$categoryName][$mobName] =
+			($this->entitiesStats[$categoryName][$mobName] ?? 0) + 1
+		;
+	}
+
+	public function untrackEntity(MobCategory $category, string $name) : void {
+		$categoryName = strtolower($category->name());
+		$mobName = strtolower($name);
+		if (isset($this->entitiesStats[$categoryName][$mobName])) {
+			$this->totalEntitiesCount--;
+			if (--$this->entitiesStats[$categoryName][$mobName] <= 0) {
+				unset($this->entitiesStats[$categoryName][$mobName]);
+			}
+
+			if (count($this->entitiesStats[$categoryName]) <= 0) {
+				unset($this->entitiesStats[$categoryName]);
+			}
+		}
+	}
+
+	private function registerMetrics() : void {
+		$metrics = new Metrics($this, self::BSTATS_PLUGIN_ID);
+
+		$metrics->addCustomChart(new SingleLineChart("mobs_alive", function() : int {
+			return $this->totalEntitiesCount;
+		}));
+
+		$metrics->addCustomChart(new DrilldownPie("mobs_alive_category", function() : array {
+			return $this->entitiesStats;
+		}));
 	}
 }

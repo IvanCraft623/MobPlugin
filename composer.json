@@ -5,7 +5,8 @@
     "license": "Apache-2.0",
     "require": {
         "ivancraft623/pathfinder": "dev-main",
-        "inxomnyaa/apibossbar": "dev-pm5"
+        "inxomnyaa/apibossbar": "dev-pm5",
+        "bstats/pocketmine-mp": "^1.0.0"
     },
     "require-dev": {
         "php": "^8.0",
