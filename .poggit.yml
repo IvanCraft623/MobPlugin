@@ -6,11 +6,4 @@ projects:
   MobPlugin:
     path: ""
     lint: false
-    libs:
-      - src: IvanCraft623/Pahtfinder/pathfinder
-        version: ^0.0.3
-        branch: main
-      - src: LatamPMDevs/apibossbar/apibossbar
-        version: ^0.2.0
-        branch: pm5
 ...

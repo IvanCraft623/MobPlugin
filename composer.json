@@ -11,21 +11,21 @@
     "require-dev": {
         "php": "^8.0",
         "pocketmine/pocketmine-mp": "^5.42.2",
-        "phpstan/phpstan": "1.10.21"
+        "phpstan/phpstan": "2.1.46",
+        "sof3/pharynx": "^0.3.8"
     },
     "repositories": [
         {
             "type": "vcs",
             "url": "https://github.com/IvanCraft623/Pahtfinder.git"
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/LatamPMDevs/apibossbar.git"
         }
     ],
     "autoload": {
         "psr-0": {
             "IvanCraft623\\MobPlugin\\": "src"
         }
+    },
+    "scripts": {
+        "build": "php -dphar.readonly=0 vendor/bin/pharynx -i=. -c -p=MobPlugin.phar"
     }
 }
