@@ -96,6 +96,7 @@ class WitherAttackGoal extends Goal {
 	/**
 	 * Flat list of shoot actions for the current burst, built once when the
 	 * SHOOTING phase starts.
+	 *
 	 * @var WitherBurstShot[]
 	 */
 	private array $shotQueue = [];
@@ -111,7 +112,11 @@ class WitherAttackGoal extends Goal {
 	/** Position the Wither dashes toward. */
 	private ?Vector3 $dashTargetPos = null;
 
-	/** Entities already hit during the current dash (prevents double-damage). */
+	/**
+	 * Entities already hit during the current dash (prevents double-damage).
+	 *
+	 * @var array<int, true>
+	 */
 	private array $damagedEntities = [];
 
 	public function __construct(

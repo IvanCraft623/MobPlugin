@@ -27,7 +27,6 @@ use Closure;
 use pocketmine\block\Block;
 use pocketmine\entity\Living;
 use function count;
-use function implode;
 use function str_split;
 use function strlen;
 
@@ -35,7 +34,12 @@ use function strlen;
  * Constructor for a BlockPattern object
  */
 class BlockPatternBuilder {
-	/** @var array The pattern of the block. */
+
+	/**
+	 * The pattern of the block.
+	 *
+	 * @var array<int, list<string>>
+	 */
 	private array $pattern = [];
 
 	/**
@@ -159,8 +163,6 @@ class BlockPatternBuilder {
 	 * @return BlockPattern Returns the built block pattern.
 	 */
 	public function build() : BlockPattern {
-		$this->ensureAllCharactersMatched();
-
 		if ($this->triggerCondition === null) {
 			throw new \RuntimeException("Trigger condition is missing from BlockPatternBuilder");
 		}
@@ -179,7 +181,7 @@ class BlockPatternBuilder {
 	/**
 	 * Creates the block pattern array using the lookup table.
 	 *
-	 * @return array Returns the block pattern array.
+	 * @return array<int, array<int, array<int, Closure(Block): bool>>>
 	 */
 	private function createPattern() : array {
 		$blockPattern = [];
@@ -187,30 +189,13 @@ class BlockPatternBuilder {
 		foreach ($this->pattern as $depthIndex => $blocks) {
 			foreach ($blocks as $heightIndex => $blockRow) {
 				foreach (str_split($blockRow) as $widthIndex => $char) {
-					$blockPattern[$depthIndex][$heightIndex][$widthIndex] = $this->lookup[$char];
+					$blockPattern[$depthIndex][$heightIndex][$widthIndex] = $this->lookup[$char] ??
+						throw new \RuntimeException("Predicate for character '$char' is missing")
+					;
 				}
 			}
 		}
 
 		return $blockPattern;
-	}
-
-	/**
-	 * Ensures all characters in the block pattern have associated predicates.
-	 *
-	 * @throws \RuntimeException If any character in the block pattern lacks a predicate.
-	 */
-	private function ensureAllCharactersMatched() : void {
-		$missingPredicates = [];
-
-		foreach ($this->lookup as $char => $predicate) {
-			if ($predicate === null) {
-				$missingPredicates[] = $char;
-			}
-		}
-
-		if (count($missingPredicates) !== 0) {
-			throw new \RuntimeException("Predicates for character(s) " . implode(", ", $missingPredicates) . " are missing");
-		}
 	}
 }

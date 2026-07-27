@@ -187,13 +187,11 @@ abstract class Animal extends AgeableMob {
 
 	public function spawnChildFromBreeding(Animal $partner) : void{
 		$offspring = $this->getBreedOffspring($partner);
-		if ($offspring !== null) {
-			$offspring->setBaby();
-			$offspring->setPersistent();
-			$offspring->spawnToAll();
+		$offspring->setBaby();
+		$offspring->setPersistent();
+		$offspring->spawnToAll();
 
-			$this->finalizeSpawnChildFromBreeding($partner, $offspring);
-		}
+		$this->finalizeSpawnChildFromBreeding($partner, $offspring);
 	}
 
 	public function finalizeSpawnChildFromBreeding(Animal $partner, AgeableMob $offspring) : void{

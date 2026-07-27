@@ -29,13 +29,14 @@ namespace IvanCraft623\MobPlugin\utils;
  */
 class Pair {
 
-	private mixed $key;
-
-	private mixed $value;
-
-	/** @phpstan-param TKey $key */
-	/** @phpstan-param TValue $value */
-	public function __construct(mixed $key, mixed $value) {
+	/**
+	 * @phpstan-param TKey $key
+	 * @phpstan-param TValue $value
+	 */
+	public function __construct(
+		private mixed $key,
+		private mixed $value
+	) {
 		$this->key = $key;
 		$this->value = $value;
 	}

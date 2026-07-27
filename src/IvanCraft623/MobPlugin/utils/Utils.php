@@ -84,6 +84,9 @@ class Utils {
 		return $targetDegrees - self::clamp(self::degreesDifference($currentDegrees, $targetDegrees), -$maxDifference, $maxDifference);
 	}
 
+	/**
+	 * @param object[] $array
+	 */
 	public static function arrayContains(object $needle, array $array) : bool{
 		$useEquals = method_exists($needle, "equals");
 		foreach ($array as $value) {

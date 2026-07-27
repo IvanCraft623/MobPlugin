@@ -195,6 +195,7 @@ abstract class PathNavigation {
 	 * @phpstan-return Promise<Path>
 	 */
 	public function createPath(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+		/** @phpstan-var PromiseResolver<Path> $pathResolver */
 		$pathResolver = new PromiseResolver();
 		if ($this->mob->getPosition()->getY() < World::Y_MIN) {
 			$pathResolver->reject();
@@ -227,11 +228,8 @@ abstract class PathNavigation {
 
 				$this->isPathComputationPending = false;
 
-				$target = $path->getTarget();
-				if ($target !== null) {
-					$this->targetPosition = $this->toBlockVector($target);
-					$this->reachRange = $reach;
-				}
+				$this->targetPosition = $this->toBlockVector($path->getTarget());
+				$this->reachRange = $reach;
 
 				//todo!
 				$pathResolver->resolve($path);

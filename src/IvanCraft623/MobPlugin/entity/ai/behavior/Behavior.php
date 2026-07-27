@@ -23,25 +23,25 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
+use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
+use IvanCraft623\MobPlugin\entity\ai\memory\MemoryStatus;
 use IvanCraft623\MobPlugin\entity\Living;
 
 class Behavior {
-
-	protected array $entryCondition;
 
 	private BehaviorStatus $status;
 
 	private int $endTimestamp;
 
-	private int $minDuration;
-
-	private int $maxDuration;
-
-	public function __construct(array $entryCondition, int $minDuration, int $maxDuration) {
+	/**
+	 * @param array<int, array{MemoryModuleType, MemoryStatus}> $entryCondition
+	 */
+	public function __construct(
+		private array $entryCondition,
+		private int $minDuration,
+		private int $maxDuration
+	) {
 		$this->status = BehaviorStatus::STOPPED();
-		$this->minDuration = $minDuration;
-		$this->maxDuration = $maxDuration;
-		$this->entryCondition = $entryCondition;
 	}
 
 	public function getStatus() : BehaviorStatus {
@@ -95,9 +95,6 @@ class Behavior {
 
 	protected function hasRequiredMemories(Living $entity) : bool {
 		foreach ($this->entryCondition as $key => $data) {
-			//Values:
-			//$data[0] = MemoryModuleType
-			//$data[1] = MemoryStatus
 			if (!$entity->getBrain()->checkMemory($data[0], $data[1])) {
 				return false;
 			}

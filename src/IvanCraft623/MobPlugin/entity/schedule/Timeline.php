@@ -23,50 +23,57 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\schedule;
 
-use function asort;
+use function array_values;
 use function count;
+use function ksort;
 
 class Timeline {
 
+	/**
+	 * @var Keyframe[]
+	 * @phpstan-var array<int, Keyframe>  timestamp => Keyframe
+	 */
 	private array $keyframes = [];
 
-	private int $previousIndex;
+	/** @var Keyframe[] ordered by timestamp */
+	private array $sortedKeyframes = [];
+
+	private int $previousIndex = 0;
 
 	public function addKeyframe(int $timeStamp, float $value) : void {
-		$this->keyframes[] = new Keyframe($timeStamp, $value);
+		$this->keyframes[$timeStamp] = new Keyframe($timeStamp, $value);
 		$this->sortAndDeduplicateKeyframes();
 	}
 
 	private function sortAndDeduplicateKeyframes() : void {
-		$keyframes = [];
-		foreach ($this->keyframes as $keyframe) {
-			$timeStamp = $keyframe->getTimeStamp();
-			if (!isset($keyframes[$timeStamp])) {
-				$keyframes[$timeStamp] = $keyframe;
-			}
-		}
-		asort($keyframes);
-		$this->keyframes = $keyframes;
+		ksort($this->keyframes);
+
+		$this->sortedKeyframes = array_values($this->keyframes);
 		$this->previousIndex = 0;
 	}
 
 	public function getValueAt(int $timeStamp) : float {
-		if (count($this->keyframes) <= 0) {
+		$count = count($this->sortedKeyframes);
+		if ($count === 0) {
 			return 0.0;
 		}
-		$keyframe1 = $this->keyframes[$this->previousIndex];
-		$keyframe2 = $this->keyframes[count($this->keyframes) - 1];
-		$bool = $timeStamp < $keyframe1->getTimeStamp();
-		$int = $bool ? 0 : $this->previousIndex;
-		$value = $bool ? $keyframe2->getValue() : $keyframe1->getValue();
-		for ($i = $int; $i < count($this->keyframes); ++$i) {
-			$keyframe = $this->keyframes[$i];
+
+		$keyframe1 = $this->sortedKeyframes[$this->previousIndex];
+		$lastKeyframe = $this->sortedKeyframes[$count - 1];
+
+		$searchFromStart = $timeStamp < $keyframe1->getTimeStamp();
+		$startIndex = $searchFromStart ? 0 : $this->previousIndex;
+		$value = $searchFromStart ? $lastKeyframe->getValue() : $keyframe1->getValue();
+
+		for ($i = $startIndex; $i < $count; ++$i) {
+			$keyframe = $this->sortedKeyframes[$i];
 			if ($keyframe->getTimeStamp() > $timeStamp) {
 				break;
 			}
 			$this->previousIndex = $i;
 			$value = $keyframe->getValue();
 		}
+
 		return $value;
 	}
 }

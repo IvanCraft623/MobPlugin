@@ -149,14 +149,14 @@ class MoveControl implements Control {
 	}
 
 	private function isWalkable(float $x, float $z) : bool {
-		$navigation = $this->mob->getNavigation();
-		if ($navigation !== null) {
-			$nodeEvaluator = $navigation->getNodeEvaluator();
-			$location = $this->mob->getLocation();
-			if ($nodeEvaluator !== null &&
-				!$nodeEvaluator->getBlockPathType(new SyncBlockGetter($this->mob->getWorld()), (int) floor($location->x + $x), (int) floor($location->y), (int) floor($location->z + $z))->equals(BlockPathType::WALKABLE)) {
-				return false;
-			}
+		$location = $this->mob->getLocation();
+		if (!$this->mob->getNavigation()->getNodeEvaluator()->getBlockPathType(
+			new SyncBlockGetter($this->mob->getWorld()),
+			(int) floor($location->x + $x),
+			(int) floor($location->y),
+			(int) floor($location->z + $z)
+		)->equals(BlockPathType::WALKABLE)) {
+			return false;
 		}
 		return true;
 	}

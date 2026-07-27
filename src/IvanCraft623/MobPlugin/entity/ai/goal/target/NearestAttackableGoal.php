@@ -45,6 +45,7 @@ class NearestAttackableGoal extends TargetGoal {
 
 	/**
 	 * @phpstan-param class-string<Living> $targetType
+	 * @phpstan-param null|Closure(Living) : bool $targetValidator
 	 */
 	public function __construct(
 		Mob $entity,
