@@ -214,7 +214,7 @@ class Utils {
 	 * @param int     $maxDistanceY     The maximum distance in the Y-axis from the starting position.
 	 * @param int     $maxDistanceZ     The maximum distance in the Z-axis from the starting position.
 	 *
-	 * @return Vector[]|\Generator The function returns a generator that yields Vector3 objects representing
+	 * @return Vector3[]|\Generator The function returns a generator that yields Vector3 objects representing
 	 *                             adjacent positions within the specified sphere shape around the starting position.
 	 *
 	 * @phpstan-return \Generator<int, Vector3, void, void>
