@@ -28,7 +28,7 @@ use Closure;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
-use IvanCraft623\MobPlugin\libs\_ba92c6b54a778ae9\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_a12890e6cf39f4a4\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;

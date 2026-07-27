@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_ba92c6b54a778ae9\IvanCraft623\Pathfinder\evaluator\FlightNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_ba92c6b54a778ae9\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_a12890e6cf39f4a4\IvanCraft623\Pathfinder\evaluator\FlightNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_a12890e6cf39f4a4\IvanCraft623\Pathfinder\Path;
 
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
