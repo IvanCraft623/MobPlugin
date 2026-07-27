@@ -19,14 +19,6 @@ jobs:
           php-version: 8.2
           install-path: ./bin
 
-      - name: Install Composer dependencies
-        run: composer install --no-dev --prefer-dist --no-interaction --classmap-authoritative --ignore-platform-reqs
-
-      - uses: SOF3/pharynx@v0.2
-        id: pharynx
-        with:
-          stage-poggit: true # TODO: Set to false on poggit shutdown :(
-
       - name: Get plugin info
         id: plugin-info
         run: |
@@ -39,6 +31,22 @@ jobs:
           echo "PM_VERSION=$PM_VERSION" >> $GITHUB_OUTPUT
           echo "PLUGIN_VERSION=$PLUGIN_VERSION" >> $GITHUB_OUTPUT
           echo "PLUGIN_NAME=$PLUGIN_NAME" >> $GITHUB_OUTPUT
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --no-interaction --classmap-authoritative --ignore-platform-reqs
+
+      - uses: SOF3/pharynx@v0.2
+        id: pharynx
+        with:
+          stage-poggit: true # TODO: set to false on poggit shutdown :(
+
+      # TODO: open a pharynx issue requesting a compression flag
+      - name: Compress phar
+        run: |
+          php -dphar.readonly=0 -r "
+            \$phar = new Phar('${{ steps.pharynx.outputs.output-phar }}');
+            \$phar->compressFiles(Phar::GZ);
+          "
 
       - name: Rename phar
         id: rename-phar
