@@ -47,6 +47,12 @@ jobs:
           mv ${{ steps.pharynx.outputs.output-phar }} $PHAR_PATH
           echo "PHAR_PATH=$PHAR_PATH" >> $GITHUB_OUTPUT
 
+      - name: Update the nightly tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag --force nightly && git push --force origin tag nightly
+
       - name: Publish Nightly Release
         uses: softprops/action-gh-release@v3
         with:
