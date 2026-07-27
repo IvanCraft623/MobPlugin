@@ -27,14 +27,12 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 
-use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
 use pocketmine\block\utils\MobHeadType;
 use pocketmine\entity\Living;
 use pocketmine\entity\Location;
-use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\utils\SingletonTrait;
 
 final class BlockPatternFactory {
