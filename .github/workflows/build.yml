@@ -20,14 +20,33 @@ jobs:
           install-path: ./bin
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --classmap-authoritative --ignore-platform-reqs
+        run: composer install --no-dev --prefer-dist --no-interaction --classmap-authoritative --ignore-platform-reqs
 
       - uses: SOF3/pharynx@v0.2
         id: pharynx
         with:
           stage-poggit: true # TODO: Set to false on poggit shutdown :(
 
-      - uses: actions/upload-artifact@v4
+      - name: Get plugin info
+        id: plugin-info
+        run: |
+          PM_VERSION=$(php -r "
+            \$api = yaml_parse_file('plugin.yml')['api'];
+            echo is_array(\$api) ? implode(', ', \$api) : \$api;
+          ")
+          PLUGIN_VERSION=$(php -r "echo yaml_parse_file('plugin.yml')['version'];")
+          echo "PM_VERSION=$PM_VERSION" >> $GITHUB_OUTPUT
+          echo "PLUGIN_VERSION=${PLUGIN_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Publish Nightly Release
+        uses: softprops/action-gh-release@v3
         with:
-          name: MobPlugin.phar
-          path: ${{ steps.pharynx.outputs.output-phar }}
+          tag_name: nightly
+          name: Nightly Build ${{ steps.plugin-info.outputs.PLUGIN_VERSION }}+dev
+          prerelease: true
+          body: |
+            For PocketMine-MP ${{ steps.plugin-info.outputs.PM_VERSION }}
+            From commit: ${{ github.sha }}
+            Generated on: ${{ github.event.head_commit.timestamp }}
+            ⚠️ This is a development build. Not recommended for production use.
+          files: ${{ steps.pharynx.outputs.output-phar }}
