@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_cfb343694bb4760c\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_cfb343694bb4760c\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_cfb343694bb4760c\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_2503723d253ddb6c\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_2503723d253ddb6c\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_2503723d253ddb6c\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
@@ -61,7 +61,7 @@ use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 
-use IvanCraft623\MobPlugin\libs\_cfb343694bb4760c\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_2503723d253ddb6c\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
