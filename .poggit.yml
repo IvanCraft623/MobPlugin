@@ -1,7 +1,7 @@
 --- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/IvanCraft623/MobPlugin
 build-by-default: true
 branches:
-- main
+- poggit/main
 projects:
   MobPlugin:
     path: ""
