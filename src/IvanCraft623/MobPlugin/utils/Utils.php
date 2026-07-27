@@ -306,10 +306,6 @@ class Utils {
 		return ucwords(strtolower(str_replace(["_", "minecraft:"], [" ", ""], trim($id))));
 	}
 
-	public static function clearMinecraftPrefix(string $input) : string{
-		return strtolower(str_replace([" ", "minecraft:"], ["_", ""], trim($input)));
-	}
-
 	public static function isHalloween(?DateTime $date = null) : bool{
 		return ($date ?? new DateTime())->format('m-d') === '10-31';
 	}

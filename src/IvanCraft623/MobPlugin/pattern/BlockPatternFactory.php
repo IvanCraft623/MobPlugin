@@ -52,7 +52,7 @@ final class BlockPatternFactory {
 			$id === BlockTypeIds::PUMPKIN
 		;
 
-		$this->register(EntityIds::IRON_GOLEM, BlockPatternBuilder::start()
+		$this->register(BlockPatternIds::IRON_GOLEM, BlockPatternBuilder::start()
 			->aisle([
 				"*O*",
 				"###",
@@ -79,7 +79,7 @@ final class BlockPatternFactory {
 			->build()
 		);
 
-		$this->register(EntityIds::SNOW_GOLEM, BlockPatternBuilder::start()
+		$this->register(BlockPatternIds::SNOW_GOLEM, BlockPatternBuilder::start()
 			->aisle([
 				"O",
 				"#",
@@ -109,7 +109,7 @@ final class BlockPatternFactory {
 			$block instanceof MobHead &&
 			$block->getMobHeadType() === MobHeadType::WITHER_SKELETON
 		;
-		$this->register(EntityIds::WITHER, BlockPatternBuilder::start()
+		$this->register(BlockPatternIds::WITHER, BlockPatternBuilder::start()
 			->aisle([
 				"OOO",
 				"###",
@@ -141,11 +141,11 @@ final class BlockPatternFactory {
 	}
 
 	public function register(string $id, BlockPattern $pattern) : void {
-		$this->patterns[Utils::clearMinecraftPrefix($id)] = $pattern;
+		$this->patterns[$id] = $pattern;
 	}
 
 	public function unregister(string $id) : void {
-		unset($this->patterns[Utils::clearMinecraftPrefix($id)]);
+		unset($this->patterns[$id]);
 	}
 
 	/**
