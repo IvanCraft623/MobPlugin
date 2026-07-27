@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    name: Phar build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: pmmp/setup-php-action@3.2.0
+        with:
+          php-version: 8.2
+          install-path: ./bin
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --classmap-authoritative --ignore-platform-reqs
+
+      - uses: SOF3/pharynx@v0.3
+        id: pharynx
+        with:
+          stage-poggit: true # TODO: Set to false on poggit shutdown :(
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MobPlugin.phar
+          path: ${{ steps.pharynx.outputs.output-phar }}
