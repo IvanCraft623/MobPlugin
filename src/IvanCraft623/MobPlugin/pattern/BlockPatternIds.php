@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\pattern;
 
-class BlockPatternIds{
+final class BlockPatternIds{
 	private function __construct(){
 		//NOOP
 	}
