@@ -35,8 +35,17 @@ jobs:
             echo is_array(\$api) ? implode(', ', \$api) : \$api;
           ")
           PLUGIN_VERSION=$(php -r "echo yaml_parse_file('plugin.yml')['version'];")
+          PLUGIN_NAME=$(php -r "echo yaml_parse_file('plugin.yml')['name'];")
           echo "PM_VERSION=$PM_VERSION" >> $GITHUB_OUTPUT
-          echo "PLUGIN_VERSION=${PLUGIN_VERSION}" >> $GITHUB_OUTPUT
+          echo "PLUGIN_VERSION=$PLUGIN_VERSION" >> $GITHUB_OUTPUT
+          echo "PLUGIN_NAME=$PLUGIN_NAME" >> $GITHUB_OUTPUT
+
+      - name: Rename phar
+        id: rename-phar
+        run: |
+          PHAR_PATH="$RUNNER_TEMP/${{ steps.plugin-info.outputs.PLUGIN_NAME }}.phar"
+          mv ${{ steps.pharynx.outputs.output-phar }} $PHAR_PATH
+          echo "PHAR_PATH=$PHAR_PATH" >> $GITHUB_OUTPUT
 
       - name: Publish Nightly Release
         uses: softprops/action-gh-release@v3
@@ -49,4 +58,4 @@ jobs:
             From commit: ${{ github.sha }}
             Generated on: ${{ github.event.head_commit.timestamp }}
             ⚠️ This is a development build. Not recommended for production use.
-          files: ${{ steps.pharynx.outputs.output-phar }}
+          files: ${{ steps.rename-phar.outputs.PHAR_PATH }}
