@@ -27,12 +27,14 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 
+use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
 use pocketmine\block\utils\MobHeadType;
 use pocketmine\entity\Living;
 use pocketmine\entity\Location;
+use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\utils\SingletonTrait;
 
 final class BlockPatternFactory {
@@ -50,7 +52,7 @@ final class BlockPatternFactory {
 			$id === BlockTypeIds::PUMPKIN
 		;
 
-		$this->register("iron_golem", BlockPatternBuilder::start()
+		$this->register(EntityIds::IRON_GOLEM, BlockPatternBuilder::start()
 			->aisle([
 				"*O*",
 				"###",
@@ -77,7 +79,7 @@ final class BlockPatternFactory {
 			->build()
 		);
 
-		$this->register("snow_golem", BlockPatternBuilder::start()
+		$this->register(EntityIds::SNOW_GOLEM, BlockPatternBuilder::start()
 			->aisle([
 				"O",
 				"#",
@@ -107,7 +109,7 @@ final class BlockPatternFactory {
 			$block instanceof MobHead &&
 			$block->getMobHeadType() === MobHeadType::WITHER_SKELETON
 		;
-		$this->register("wither", BlockPatternBuilder::start()
+		$this->register(EntityIds::WITHER, BlockPatternBuilder::start()
 			->aisle([
 				"OOO",
 				"###",
@@ -139,11 +141,11 @@ final class BlockPatternFactory {
 	}
 
 	public function register(string $id, BlockPattern $pattern) : void {
-		$this->patterns[$id] = $pattern;
+		$this->patterns[Utils::clearMinecraftPrefix($id)] = $pattern;
 	}
 
 	public function unregister(string $id) : void {
-		unset($this->patterns[$id]);
+		unset($this->patterns[Utils::clearMinecraftPrefix($id)]);
 	}
 
 	/**
