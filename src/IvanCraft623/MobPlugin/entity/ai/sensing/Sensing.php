@@ -31,8 +31,10 @@ class Sensing {
 
 	private Mob $mob;
 
+	/** @var array<int, true> */
 	private array $seen = [];
 
+	/** @var array<int, true> */
 	private array $unseen = [];
 
 	public function __construct(Mob $mob) {
@@ -51,12 +53,14 @@ class Sensing {
 		if (isset($this->unseen[$entity->getId()])) {
 			return false;
 		}
+
 		$canSee = $this->mob->canSee($entity);
 		if ($canSee) {
-			$this->seen[$entity->getId()] = $entity;
+			$this->seen[$entity->getId()] = true;
 		} else {
-			$this->unseen[$entity->getId()] = $entity;
+			$this->unseen[$entity->getId()] = true;
 		}
+
 		return $canSee;
 	}
 }

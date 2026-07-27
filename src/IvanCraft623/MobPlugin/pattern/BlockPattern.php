@@ -30,13 +30,11 @@ use pocketmine\math\Facing;
 
 use pocketmine\math\Vector3;
 use pocketmine\world\Position;
+
 use function count;
 use function max;
 
 class BlockPattern {
-
-	/** @var Closure[][][] The pattern of the block. */
-	private array $pattern;
 
 	/** @var int The depth of the block pattern. */
 	private int $depth;
@@ -51,16 +49,15 @@ class BlockPattern {
 	 * BlockPattern constructor.
 	 * Initializes the block pattern with the given pattern.
 	 *
-	 * @param Closure[][][]                                                               $pattern          The block pattern.
+	 * @param array<int, array<int, array<int, Closure(Block): bool>>>                    $pattern          The block pattern.
 	 * @param Closure(Block $placedBlock): bool                                           $triggerCondition
 	 * @param Closure(BlockPatternMatch $match, Block $placedBlock, ?Living $owner): void $onMatch
 	 */
 	public function __construct(
-		array $pattern,
+		private array $pattern,
 		private Closure $triggerCondition,
 		private Closure $onMatch
 	) {
-		$this->pattern = $pattern;
 		$this->depth = count($pattern);
 
 		if ($this->depth > 0) {
@@ -107,7 +104,7 @@ class BlockPattern {
 	 * Gets the block pattern.
 	 * Visible for testing purposes.
 	 *
-	 * @return Closure[][][] The block pattern.
+	 * @return array<int, array<int, array<int, Closure(Block): bool>>> The block pattern.
 	 */
 	public function getPattern() : array {
 		return $this->pattern;

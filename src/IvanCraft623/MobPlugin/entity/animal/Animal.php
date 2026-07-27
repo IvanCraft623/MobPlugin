@@ -27,7 +27,7 @@ use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\item\Item;
@@ -187,13 +187,11 @@ abstract class Animal extends AgeableMob {
 
 	public function spawnChildFromBreeding(Animal $partner) : void{
 		$offspring = $this->getBreedOffspring($partner);
-		if ($offspring !== null) {
-			$offspring->setBaby();
-			$offspring->setPersistent();
-			$offspring->spawnToAll();
+		$offspring->setBaby();
+		$offspring->setPersistent();
+		$offspring->spawnToAll();
 
-			$this->finalizeSpawnChildFromBreeding($partner, $offspring);
-		}
+		$this->finalizeSpawnChildFromBreeding($partner, $offspring);
 	}
 
 	public function finalizeSpawnChildFromBreeding(Animal $partner, AgeableMob $offspring) : void{

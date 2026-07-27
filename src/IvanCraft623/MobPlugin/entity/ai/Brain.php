@@ -133,13 +133,7 @@ class Brain {
 
 	public function setMemoryInternal(MemoryModuleType $memory, ?ExpirableValue $value) : void {
 		if (isset($this->memories[$memory->name()])) {
-			$isEmptyArray = false;
-
-			if ($value !== null && is_array($value->getValue())) {
-				$isEmptyArray = count($value->getValue()) === 0;
-			}
-
-			if ($isEmptyArray) {
+			if ($value !== null && is_array($valueData = $value->getValue()) && count($valueData) === 0) {
 				$this->eraseMemory($memory);
 			} else {
 				$memory->setValue($value);

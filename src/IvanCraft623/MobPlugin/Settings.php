@@ -57,6 +57,7 @@ final class Settings{
 			throw new \InvalidArgumentException("Settings file $path doesn't exist or is invalid");
 		}
 
+		/** @var array<string, mixed> $contents */
 		return new Settings($contents);
 	}
 

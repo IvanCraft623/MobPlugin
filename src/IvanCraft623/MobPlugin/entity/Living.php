@@ -415,21 +415,20 @@ abstract class Living extends PMLiving {
 
 		$inventoryTag = new ListTag([], NBT::TAG_Compound);
 		$nbt->setTag("Inventory", $inventoryTag);
-		if($this->inventory !== null){
-			//Normal inventory
-			for($slot = 0; $slot < $this->inventory->getSize(); ++$slot){
-				$item = $this->inventory->getItem($slot);
-				if(!$item->isNull()){
-					$inventoryTag->push($item->nbtSerialize($slot));
-				}
-			}
 
-			//Armor
-			for($slot = 100; $slot < 104; ++$slot){
-				$item = $this->armorInventory->getItem($slot - 100);
-				if(!$item->isNull()){
-					$inventoryTag->push($item->nbtSerialize($slot));
-				}
+		//Normal inventory
+		for($slot = 0; $slot < $this->inventory->getSize(); ++$slot){
+			$item = $this->inventory->getItem($slot);
+			if(!$item->isNull()){
+				$inventoryTag->push($item->nbtSerialize($slot));
+			}
+		}
+
+		//Armor
+		for($slot = 100; $slot < 104; ++$slot){
+			$item = $this->armorInventory->getItem($slot - 100);
+			if(!$item->isNull()){
+				$inventoryTag->push($item->nbtSerialize($slot));
 			}
 		}
 

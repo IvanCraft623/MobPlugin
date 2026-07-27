@@ -24,13 +24,13 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\Node;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\libs\_8ff42d6adae86ed6\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\Node;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\MobPlugin\libs\_7e4498faaea3d000\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
@@ -195,6 +195,7 @@ abstract class PathNavigation {
 	 * @phpstan-return Promise<Path>
 	 */
 	public function createPath(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+		/** @phpstan-var PromiseResolver<Path> $pathResolver */
 		$pathResolver = new PromiseResolver();
 		if ($this->mob->getPosition()->getY() < World::Y_MIN) {
 			$pathResolver->reject();
@@ -227,11 +228,8 @@ abstract class PathNavigation {
 
 				$this->isPathComputationPending = false;
 
-				$target = $path->getTarget();
-				if ($target !== null) {
-					$this->targetPosition = $this->toBlockVector($target);
-					$this->reachRange = $reach;
-				}
+				$this->targetPosition = $this->toBlockVector($path->getTarget());
+				$this->reachRange = $reach;
 
 				//todo!
 				$pathResolver->resolve($path);
