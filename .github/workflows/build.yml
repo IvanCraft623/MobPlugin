@@ -22,7 +22,7 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --classmap-authoritative --ignore-platform-reqs
 
-      - uses: SOF3/pharynx@v0.3
+      - uses: SOF3/pharynx@v0.3.8
         id: pharynx
         with:
           stage-poggit: true # TODO: Set to false on poggit shutdown :(
