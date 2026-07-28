@@ -42,7 +42,7 @@ Each mob has a set of **goals** with priorities — things like attacking, fleei
 
 <br/>
 
-<sub>Also available on <a href="https://poggit.pmmp.io/p/MobPlugin">Poggit CI</a> while the service is still running.</sub>
+<sub>Also available on <a href="https://poggit.pmmp.io/ci/IvanCraft623/MobPlugin/MobPlugin">Poggit CI</a> while the service is still running.</sub>
 
 </div>
 
