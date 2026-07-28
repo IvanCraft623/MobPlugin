@@ -24,11 +24,12 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\pattern;
 
 final class BlockPatternIds{
+
 	private function __construct(){
 		//NOOP
 	}
 
-	public const IRON_GOLEM = "iron_golem";
-	public const SNOW_GOLEM = "snow_golem";
-	public const WITHER = "wither";
+	public const SPAWN_IRON_GOLEM = "spawn_iron_golem";
+	public const SPAWN_SNOW_GOLEM = "spawn_snow_golem";
+	public const SPAWN_WITHER = "spawn_wither";
 }
