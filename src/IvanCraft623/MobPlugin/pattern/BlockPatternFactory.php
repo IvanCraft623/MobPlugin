@@ -50,7 +50,7 @@ final class BlockPatternFactory {
 			$id === BlockTypeIds::PUMPKIN
 		;
 
-		$this->register("iron_golem", BlockPatternBuilder::start()
+		$this->register(BlockPatternIds::SPAWN_IRON_GOLEM, BlockPatternBuilder::start()
 			->aisle([
 				"*O*",
 				"###",
@@ -77,7 +77,7 @@ final class BlockPatternFactory {
 			->build()
 		);
 
-		$this->register("snow_golem", BlockPatternBuilder::start()
+		$this->register(BlockPatternIds::SPAWN_SNOW_GOLEM, BlockPatternBuilder::start()
 			->aisle([
 				"O",
 				"#",
@@ -107,7 +107,7 @@ final class BlockPatternFactory {
 			$block instanceof MobHead &&
 			$block->getMobHeadType() === MobHeadType::WITHER_SKELETON
 		;
-		$this->register("wither", BlockPatternBuilder::start()
+		$this->register(BlockPatternIds::SPAWN_WITHER, BlockPatternBuilder::start()
 			->aisle([
 				"OOO",
 				"###",
