@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
+use IvanCraft623\MobPlugin\entity\ItemLuring;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\utils\ItemSet;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\Human;
@@ -57,9 +57,8 @@ class TemptGoal extends Goal {
 	private bool $isRunning = false;
 
 	public function __construct(
-		protected PathfinderMob $entity,
+		protected PathfinderMob&ItemLuring $entity,
 		protected float $speedModifier,
-		protected ItemSet $items,
 		protected bool $canScare
 	) {
 		$this->targetingConditions = static::TEMP_TARGETING()->setValidator(\Closure::fromCallable([$this, 'shouldFollow']));
@@ -109,8 +108,8 @@ class TemptGoal extends Goal {
 
 	private function shouldFollow(Living $entity) : bool{
 		return $entity instanceof Human && (
-			$this->items->contains($entity->getInventory()->getItemInHand()) ||
-			$this->items->contains($entity->getOffHandInventory()->getItem(0))
+			$this->entity->isLuring($entity, $entity->getInventory()->getItemInHand()) ||
+			$this->entity->isLuring($entity, $entity->getOffHandInventory()->getItem(0))
 		);
 	}
 

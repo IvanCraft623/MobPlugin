@@ -36,7 +36,6 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\Shearable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\ShearSound;
-use IvanCraft623\MobPlugin\utils\ItemSet;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\utils\ColoredTrait;
@@ -106,7 +105,7 @@ class Sheep extends Animal implements Shearable{
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
 		$this->goalSelector->addGoal(1, new PanicGoal($this, 1.25));
 		$this->goalSelector->addGoal(2, new BreedGoal($this, 1));
-		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.25, (new ItemSet())->add(VanillaItems::WHEAT()), false));
+		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.25, false));
 		$this->goalSelector->addGoal(4, new FollowParentGoal($this, 1.1));
 		$this->goalSelector->addGoal(5, new EatBlockGoal($this));
 		$this->goalSelector->addGoal(6, new WaterAvoidingRandomStrollGoal($this, 0.8));
@@ -231,6 +230,10 @@ class Sheep extends Animal implements Shearable{
 
 	public function getPickedItem() : ?Item{
 		return ExtraVanillaItems::SHEEP_SPAWN_EGG();
+	}
+
+	public function isFood(Item $item) : bool{
+		return $item->getTypeId() === ItemTypeIds::WHEAT;
 	}
 
 	//TODO: natural spawning logic
