@@ -21,11 +21,13 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity\boss;
+namespace IvanCraft623\MobPlugin\entity;
 
-use IvanCraft623\MobPlugin\libs\_de6534a211109726\xenialdan\apibossbar\BossBar;
+use pocketmine\item\Item;
 
-interface Boss {
 
-	public function getBossBar() : BossBar;
+
+interface Feedable{
+
+	public function isFood(Item $item) : bool;
 }

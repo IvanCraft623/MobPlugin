@@ -34,10 +34,10 @@ use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\EntityPlopSound;
-use IvanCraft623\MobPlugin\utils\ItemSet;
 
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Item;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NBT;
@@ -53,16 +53,6 @@ class Chicken extends Animal {
 	public const TAG_ENTRIES = "entries"; //TAG_List
 	public const TAG_EGG_LAYING_DELAY = "SpawnTimer"; //TAG_Int
 	public const TAG_STOP_LAYING_EGGS = "StopSpawning"; //TAG_Byte
-
-	public static function FOOD_ITEMS() : ItemSet{
-		return (new ItemSet())->add(
-			VanillaItems::WHEAT_SEEDS(),
-			VanillaItems::BEETROOT_SEEDS(),
-			VanillaItems::MELON_SEEDS(),
-			VanillaItems::PUMPKIN_SEEDS()
-			//TODO: pitcher pod & torchflower seeds
-		);
-	}
 
 	public static function getNetworkTypeId() : string{ return EntityIds::CHICKEN; }
 
@@ -86,7 +76,7 @@ class Chicken extends Animal {
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
 		$this->goalSelector->addGoal(1, new PanicGoal($this, 1.5));
 		$this->goalSelector->addGoal(2, new BreedGoal($this, 1));
-		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.25, self::FOOD_ITEMS(), false));
+		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.25, false));
 		$this->goalSelector->addGoal(4, new FollowParentGoal($this, 1.1));
 		$this->goalSelector->addGoal(5, new WaterAvoidingRandomStrollGoal($this, 0.8));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 6));
@@ -198,6 +188,12 @@ class Chicken extends Animal {
 	}
 
 	public function isFood(Item $item) : bool {
-		return self::FOOD_ITEMS()->contains($item);
+		$typeId = $item->getTypeId();
+		return $typeId === ItemTypeIds::WHEAT_SEEDS ||
+			$typeId === ItemTypeIds::BEETROOT_SEEDS ||
+			$typeId === ItemTypeIds::MELON_SEEDS ||
+			$typeId === ItemTypeIds::PUMPKIN_SEEDS ||
+			$typeId === ItemTypeIds::PITCHER_POD ||
+			$typeId === ItemTypeIds::TORCHFLOWER_SEEDS;
 	}
 }

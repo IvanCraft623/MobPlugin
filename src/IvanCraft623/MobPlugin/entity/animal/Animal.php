@@ -26,12 +26,14 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
+use IvanCraft623\MobPlugin\entity\Feedable;
+use IvanCraft623\MobPlugin\entity\Lureable;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_23a9e5304691dfd5\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_de6534a211109726\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
+use pocketmine\entity\Living;
 use pocketmine\item\Item;
-use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
@@ -40,7 +42,7 @@ use pocketmine\player\Player;
 use pocketmine\utils\Binary;
 use function mt_rand;
 
-abstract class Animal extends AgeableMob {
+abstract class Animal extends AgeableMob implements Feedable, Lureable{
 
 	private const TAG_IN_LOVE_TICKS = "InLove"; //TAG_Int
 
@@ -110,8 +112,9 @@ abstract class Animal extends AgeableMob {
 		return 0;
 	}
 
-	public function isFood(Item $item) : bool {
-		return $item->getTypeId() === ItemTypeIds::WHEAT;
+	public function isLuring(Living $entity, Item $item) : bool{
+		//That’s usually how it works, so to avoid duplicating this logic every time, I think we should leave it as is :people_hugging:
+		return $this->isFood($item);
 	}
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
