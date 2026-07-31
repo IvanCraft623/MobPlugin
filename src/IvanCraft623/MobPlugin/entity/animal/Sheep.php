@@ -39,6 +39,7 @@ use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\ItemSet;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\utils\Colored;
 use pocketmine\block\utils\ColoredTrait;
 use pocketmine\block\utils\DyeColor;
 use pocketmine\block\VanillaBlocks;
@@ -57,7 +58,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
 use function mt_rand;
 
-class Sheep extends Animal implements Shearable{
+class Sheep extends Animal implements Shearable, Colored{
 	use ColoredTrait {
 		setColor as traitSetColor;
 	}
