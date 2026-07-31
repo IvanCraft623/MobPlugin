@@ -26,7 +26,7 @@ namespace IvanCraft623\MobPlugin\entity;
 use pocketmine\entity\Living;
 use pocketmine\item\Item;
 
-interface ItemLuring{
+interface Lureable{
 
 	public function isLuring(Living $entity, Item $item) : bool;
 }

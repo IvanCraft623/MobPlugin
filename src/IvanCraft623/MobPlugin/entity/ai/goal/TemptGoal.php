@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
-use IvanCraft623\MobPlugin\entity\ItemLuring;
+use IvanCraft623\MobPlugin\entity\Lureable;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -57,7 +57,7 @@ class TemptGoal extends Goal {
 	private bool $isRunning = false;
 
 	public function __construct(
-		protected PathfinderMob&ItemLuring $entity,
+		protected PathfinderMob&Lureable $entity,
 		protected float $speedModifier,
 		protected bool $canScare
 	) {
