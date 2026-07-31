@@ -25,8 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use Closure;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_c608b6d40e97314b\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_c608b6d40e97314b\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_9df03e949b91fb52\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_9df03e949b91fb52\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;

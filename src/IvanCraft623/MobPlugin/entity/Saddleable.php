@@ -27,7 +27,7 @@ interface Saddleable {
 
 	public function saddle() : void;
 
-	public function setSaddled(bool $sheared = true) : void;
+	public function setSaddled(bool $saddled = true) : void;
 
 	public function isSaddled() : bool;
 
