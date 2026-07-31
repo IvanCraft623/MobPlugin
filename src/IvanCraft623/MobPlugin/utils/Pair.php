@@ -36,10 +36,7 @@ class Pair {
 	public function __construct(
 		private mixed $key,
 		private mixed $value
-	) {
-		$this->key = $key;
-		$this->value = $value;
-	}
+	){}
 
 	/** @phpstan-return TKey */
 	public function getKey() : mixed {
