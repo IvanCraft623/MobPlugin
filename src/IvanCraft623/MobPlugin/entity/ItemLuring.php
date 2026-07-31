@@ -27,5 +27,6 @@ use pocketmine\entity\Living;
 use pocketmine\item\Item;
 
 interface ItemLuring{
+
 	public function isLuring(Living $entity, Item $item) : bool;
 }
