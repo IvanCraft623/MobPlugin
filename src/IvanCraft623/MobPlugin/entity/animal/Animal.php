@@ -26,7 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
-use IvanCraft623\MobPlugin\entity\Feedingable;
+use IvanCraft623\MobPlugin\entity\Feedable;
 use IvanCraft623\MobPlugin\entity\Lureable;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
@@ -42,7 +42,7 @@ use pocketmine\player\Player;
 use pocketmine\utils\Binary;
 use function mt_rand;
 
-abstract class Animal extends AgeableMob implements Feedingable, Lureable{
+abstract class Animal extends AgeableMob implements Feedable, Lureable{
 
 	private const TAG_IN_LOVE_TICKS = "InLove"; //TAG_Int
 
