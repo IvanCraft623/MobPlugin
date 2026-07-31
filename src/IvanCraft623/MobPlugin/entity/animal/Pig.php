@@ -35,10 +35,11 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ItemSteerable;
 use IvanCraft623\MobPlugin\entity\Saddleable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
-use IvanCraft623\MobPlugin\utils\ItemSet;
 
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\entity\Living;
 use pocketmine\item\Item;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -51,14 +52,6 @@ use function mt_rand;
 class Pig extends Animal implements ItemSteerable, Saddleable {
 
 	private const TAG_SADDLED = "Saddled"; //TAG_Byte
-
-	public static function FOOD_ITEMS() : ItemSet{
-		return (new ItemSet())->add(
-			VanillaItems::CARROT(),
-			VanillaItems::BEETROOT(),
-			VanillaItems::POTATO()
-		);
-	}
 
 	public static function getNetworkTypeId() : string{ return EntityIds::PIG; }
 
@@ -76,8 +69,7 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
 		$this->goalSelector->addGoal(1, new PanicGoal($this, 1.25));
 		$this->goalSelector->addGoal(2, new BreedGoal($this, 1));
-		//TOOD: carrot on a stick tempt
-		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.2, self::FOOD_ITEMS(), false));
+		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.2, false));
 		$this->goalSelector->addGoal(4, new FollowParentGoal($this, 1.1));
 		$this->goalSelector->addGoal(5, new WaterAvoidingRandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 6));
@@ -165,7 +157,15 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 	}
 
 	public function isFood(Item $item) : bool {
-		return self::FOOD_ITEMS()->contains($item);
+		$typeId = $item->getTypeId();
+		return $typeId === ItemTypeIds::CARROT ||
+			$typeId === ItemTypeIds::BEETROOT ||
+			$typeId === ItemTypeIds::POTATO;
+	}
+
+	public function isLuring(Living $entity, Item $item) : bool{
+		//TODO: implement Carrot on a Stick??
+		return parent::isLuring($entity, $item);
 	}
 
 	public function onLightningBoltHit() : bool{
