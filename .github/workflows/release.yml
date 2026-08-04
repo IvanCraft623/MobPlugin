@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'    # v1.0.0
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'  # v1.0.0-beta.1, v1.0.0-rc.1
+      - '[0-9]+.[0-9]+.[0-9]+'     # 1.0.0
+      - '[0-9]+.[0-9]+.[0-9]+-*'   # 1.0.0-beta.1, 1.0.0-rc.1
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: axolotl-pm/pmmp-plugin-actions/validate-release@main
+
+  build:
+    needs: validate
+    uses: axolotl-pm/pmmp-plugin-actions/.github/workflows/build-phar.yml@main
+    with:
+      php-version: '8.2'
+      attest: true
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: axolotl-pm/pmmp-plugin-actions/publish-release@main
+        with:
+          artifact-id: ${{ needs.build.outputs.artifact-id }}
+          plugin-name: ${{ needs.build.outputs.plugin-name }}
+          pm-version:  ${{ needs.build.outputs.pm-version }}
