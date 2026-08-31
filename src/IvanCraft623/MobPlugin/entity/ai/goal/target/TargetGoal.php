@@ -106,6 +106,7 @@ abstract class TargetGoal extends Goal {
 	}
 
 	public function destroyCycles() : void{
+		$this->target = null;
 		unset($this->entity);
 		parent::destroyCycles();
 	}

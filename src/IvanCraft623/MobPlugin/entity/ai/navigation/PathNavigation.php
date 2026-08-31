@@ -24,13 +24,13 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\Node;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\Node;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
@@ -76,7 +76,7 @@ abstract class PathNavigation {
 
 	protected bool $hasDelayedRecomputation = false;
 
-	protected int $timeLastRecompute;
+	protected int $timeLastRecompute = 0;
 
 	protected EntityNodeEvaluator $nodeEvaluator;
 
@@ -95,6 +95,15 @@ abstract class PathNavigation {
 	protected int $pathComputationId = 0;
 
 	protected bool $isPathComputationPending = false;
+
+	/**
+	 * Promise of the currently in-flight path computation. Shared between all callers that request a path
+	 * while a computation is already running, so we never stack multiple async tasks (each submission would
+	 * synchronously re-serialize the whole chunk corridor on the main thread).
+	 *
+	 * @phpstan-var Promise<Path>|null
+	 */
+	protected ?Promise $pendingPromise = null;
 
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
@@ -143,28 +152,17 @@ abstract class PathNavigation {
 		$this->timeLastRecompute = $time;
 		$this->hasDelayedRecomputation = false;
 
-		$requestId = ++$this->pathComputationId;
-		$this->isPathComputationPending = true;
-
 		$targetPosition = clone $this->targetPosition;
 		$reachRange = $this->reachRange;
 
-		$this->createPathToPosition($targetPosition, $reachRange)->onCompletion(
-			function(Path $path) use ($requestId) : void{
-				if ($requestId !== $this->pathComputationId) {
-					return;
-				}
-
-				$this->isPathComputationPending = false;
+		//createPath() owns the path computation id and the pending state; if a computation is already
+		//running it will attach to it instead of starting a duplicate one.
+		$this->createPath($targetPosition, $reachRange)->onCompletion(
+			function(Path $path) : void{
 				$this->path = $path;
 				$this->resetStuckTimeout();
 			},
-			function() use ($requestId) : void{
-				if ($requestId !== $this->pathComputationId) {
-					return;
-				}
-
-				$this->isPathComputationPending = false;
+			function() : void{
 				$this->path = null;
 			}
 		);
@@ -215,18 +213,46 @@ abstract class PathNavigation {
 			return $pathResolver->getPromise();
 		}
 
+		if ($this->isPathComputationPending) {
+			//A computation is already running; don't stack another one (each submission synchronously
+			//re-serializes the whole start->target chunk corridor on the main thread). Attach to the
+			//in-flight promise instead: everyone gets the same result and, if it's stale for a caller,
+			//that caller will simply re-request on the next tick.
+			if ($this->pendingPromise !== null) {
+				$this->pendingPromise->onCompletion(
+					static function(Path $path) use ($pathResolver) : void{
+						$pathResolver->resolve($path);
+					},
+					static function() use ($pathResolver) : void{
+						$pathResolver->reject();
+					}
+				);
+				return $pathResolver->getPromise();
+			}
+
+			$pathResolver->reject();
+			return $pathResolver->getPromise();
+		}
+
 		$this->resetStuckTimeout();
 		$this->updateNodeEvaluatorAttributes();
 
 		$requestId = ++$this->pathComputationId;
 		$this->isPathComputationPending = true;
 
+		/** @phpstan-var Promise<Path> $promise */
+		$promise = $pathResolver->getPromise();
+		$this->pendingPromise = $promise;
+
 		PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach, $requestId) : void{
 				if ($requestId !== $this->pathComputationId) {
+					//Stale result (a newer computation superseded this one); the newer computation owns
+					//the pending state.
 					return;
 				}
 
 				$this->isPathComputationPending = false;
+				$this->pendingPromise = null;
 
 				$this->targetPosition = $this->toBlockVector($path->getTarget());
 				$this->reachRange = $reach;
@@ -243,7 +269,7 @@ abstract class PathNavigation {
 			$reach
 		);
 
-		return $pathResolver->getPromise();
+		return $promise;
 	}
 
 	protected function toBlockVector(Vector3 $position) : Vector3{
@@ -463,6 +489,12 @@ abstract class PathNavigation {
 
 	public function stop() : void{
 		$this->path = null;
+
+		//Invalidate any in-flight computation so its late result can't resurrect a path after we've
+		//stopped, and so a subsequent move can't be hijacked into an obsolete computation's promise.
+		$this->pathComputationId++;
+		$this->isPathComputationPending = false;
+		$this->pendingPromise = null;
 	}
 
 	protected abstract function getTempMobPosition() : Vector3;

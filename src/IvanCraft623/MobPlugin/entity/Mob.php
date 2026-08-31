@@ -36,8 +36,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -93,6 +93,12 @@ abstract class Mob extends Living {
 
 	private const TAG_PERSISTENT = "Persistent"; //TAG_Byte
 
+	/**
+	 * The O(players) nearest-player scan in checkDespawn() is only worth doing periodically; the
+	 * per-mob*per-player cost is the dominant despawn overhead at scale.
+	 */
+	private const DESPAWN_PLAYER_SCAN_INTERVAL = 20;
+
 	protected PathNavigation $navigation;
 
 	protected LookControl $lookControl;
@@ -135,8 +141,22 @@ abstract class Mob extends Living {
 
 	private bool $invertingHealAndDamageEffect = false;
 
+	protected ?string $settingsWorld = null;
+
+	protected ?Settings $settings = null;
+
 	public function getSettings() : Settings{
-		return Settings::getSettings($this->getWorld()->getFolderName());
+		//Cache per world: Settings::getSettings() does a static lookup plus path construction every call,
+		//and Mob::entityBaseTick() hits it multiple times per tick.
+		$world = $this->getWorld()->getFolderName();
+		if ($this->settingsWorld !== $world) {
+			$this->settingsWorld = $world;
+			$this->settings = Settings::getSettings($world);
+		}
+		if ($this->settings === null) {
+			throw new AssumptionFailedError("Settings should have been initialized");
+		}
+		return $this->settings;
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
@@ -420,6 +440,12 @@ abstract class Mob extends Living {
 			$maxLifetime = $this->getMaxLifeTime();
 			if ($maxLifetime !== -1 && $this->ticksLived >= $maxLifetime) {
 				$this->flagForDespawn();
+				return;
+			}
+
+			//Amortize the O(players) nearest-player scan across multiple ticks instead of running it
+			//for every mob every tick.
+			if ($this->ticksLived % self::DESPAWN_PLAYER_SCAN_INTERVAL === 0) {
 				return;
 			}
 

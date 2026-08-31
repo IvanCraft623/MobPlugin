@@ -86,7 +86,7 @@ use pocketmine\world\Explosion;
 use pocketmine\world\sound\BowShootSound;
 use pocketmine\world\World;
 
-use IvanCraft623\MobPlugin\libs\_ce37f5bb2f229a22\xenialdan\apibossbar\BossBar;
+use IvanCraft623\MobPlugin\libs\_417952b21c6552df\xenialdan\apibossbar\BossBar;
 
 use function atan2;
 use function ceil;
@@ -846,7 +846,8 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		unset(
 			$this->bossBar,
 			$this->targetingConditions,
-			$this->explodeOnHalfLifeWrapped
+			$this->explodeOnHalfLifeWrapped,
+			$this->attackGoal
 		);
 
 		parent::destroyCycles();
