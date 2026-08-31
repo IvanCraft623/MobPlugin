@@ -35,8 +35,9 @@ class ExpirableValue {
 	}
 
 	public function tick() : void {
-		if ($this->canExpire()) {
-			--$this->timeToLive;
+		$timeToLive = $this->timeToLive;
+		if ($timeToLive !== null) {
+			$this->timeToLive = $timeToLive - 1;
 		}
 	}
 

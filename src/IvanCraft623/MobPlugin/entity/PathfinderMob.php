@@ -52,7 +52,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	}
 
 	protected function orderChunks() : void{
-		if(!$this->isFlaggedForDespawn()){
+		if($this->isFlaggedForDespawn()){
 			return;
 		}
 
@@ -79,6 +79,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 			$X = $Z = 0;
 			World::getXZ($index, $X, $Z);
 			$this->getWorld()->unregisterChunkListener($this, $X, $Z);
+			unset($this->usedChunks[$index]);
 		}
 
 		$this->viewAreaCenterPoint = World::chunkHash($chunkX, $chunkZ);

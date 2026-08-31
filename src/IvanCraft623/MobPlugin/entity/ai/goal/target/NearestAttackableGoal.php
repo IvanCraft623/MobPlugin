@@ -65,6 +65,11 @@ class NearestAttackableGoal extends TargetGoal {
 		$this->targetingConditions = (new TargetingConditions())
 			->setRange($this->getFollowDistance())
 			->setValidator($targetValidator);
+		if (!$mustSee) {
+			//Don't LOS-ray-trace every candidate during the scan; visibility is already enforced (when
+			//required) by TargetGoal::canContinueToUse() on the running goal.
+			$this->targetingConditions->allowUnseeable();
+		}
 
 		$this->setFlags(Goal::FLAG_TARGET);
 	}

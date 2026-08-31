@@ -245,6 +245,15 @@ abstract class Living extends PMLiving {
 
 		$hasUpdate = $hasUpdate || $this->pushOutOfEntities();
 
+		if ($this->lastDamageByEntity !== null &&
+			$this->lastDamageByEntityTick !== -1 &&
+			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
+		) {
+			//Free the retained EntityDamageByEntityEvent (which pins the attacker's whole object graph)
+			//once it's past the expirable window.
+			$this->setLastDamageByEntity(null);
+		}
+
 		return $hasUpdate;
 	}
 
@@ -534,7 +543,7 @@ abstract class Living extends PMLiving {
 	protected function destroyCycles() : void{
 		$this->lastDamageByEntity = null;
 
-		unset($this->inventory);
+		unset($this->inventory, $this->brain);
 		parent::destroyCycles();
 	}
 }

@@ -35,7 +35,11 @@ use function array_reduce;
 
 class LookForStaringPlayerGoal extends TargetGoal {
 
+	public const DEFAULT_RANDOM_INTERVAL = 10;
+
 	protected int $aggroCooldownTicks = 0;
+
+	protected int $randomInterval;
 
 	protected TargetingConditions $startAggroTargetConditions;
 
@@ -49,11 +53,16 @@ class LookForStaringPlayerGoal extends TargetGoal {
 			->allowUnseeable()
 			->testInvisible(false)
 			->setRange($this->getFollowDistance());
+		$this->randomInterval = $this->reducedTickDelay(self::DEFAULT_RANDOM_INTERVAL);
 	}
 
 	public function canUse() : bool{
 		if ($this->aggroCooldownTicks > 0) {
 			$this->aggroCooldownTicks--;
+			return false;
+		}
+
+		if ($this->randomInterval > 0 && $this->enderman->getRandom()->nextBoundedInt($this->randomInterval) !== 0) {
 			return false;
 		}
 

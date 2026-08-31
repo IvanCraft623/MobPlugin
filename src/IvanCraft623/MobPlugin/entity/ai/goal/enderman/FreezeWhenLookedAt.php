@@ -63,4 +63,8 @@ class FreezeWhenLookedAt extends Goal {
 	public function tick() : void{
 		$this->entity->getLookControl()->setLookAt($this->target);
 	}
+
+	public function stop() : void{
+		unset($this->target);
+	}
 }

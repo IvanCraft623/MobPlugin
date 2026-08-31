@@ -87,6 +87,10 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		if ($this->inLoveTicks > 0) {
 			$this->inLoveTicks--;
 
+			if ($this->inLoveTicks <= 0) {
+				$this->loveCauser = null;
+			}
+
 			if ($this->inLoveTicks % 16 === 0) {
 				$this->broadcastAnimation(new BreedingAnimation($this));
 			}
@@ -167,6 +171,12 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		}
 
 		$this->inLoveTicks = $ticks;
+
+		if ($ticks <= 0) {
+			//Don't keep a reference to the feeding player (and their whole network session) alive
+			//after love has worn off.
+			$this->loveCauser = null;
+		}
 	}
 
 	public function getInLoveTicks() : int {
@@ -204,5 +214,10 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		}
 
 		$this->getWorld()->dropExperience($this->location, $this->random->nextBoundedInt(7) + 1);
+	}
+
+	protected function destroyCycles() : void{
+		$this->loveCauser = null;
+		parent::destroyCycles();
 	}
 }

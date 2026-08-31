@@ -227,18 +227,18 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/IvanCraft623/Pahtfinder.git",
-                "reference": "e1219722088ea2598d8ffcb555a91d99329c44b5"
+                "reference": "c84ca34ba315cc3d28dca6a8094c324c371f345c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/e1219722088ea2598d8ffcb555a91d99329c44b5",
-                "reference": "e1219722088ea2598d8ffcb555a91d99329c44b5",
+                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/c84ca34ba315cc3d28dca6a8094c324c371f345c",
+                "reference": "c84ca34ba315cc3d28dca6a8094c324c371f345c",
                 "shasum": ""
             },
             "require-dev": {
-                "php": "^8.0",
+                "php": "^8.1",
                 "phpstan/phpstan": "1.10.21",
-                "pocketmine/pocketmine-mp": "^5.0.0"
+                "pocketmine/pocketmine-mp": "^5.30.0"
             },
             "default-branch": true,
             "type": "project",
@@ -258,10 +258,10 @@
             ],
             "description": "Pathfinder library for PocketMine-MP.",
             "support": {
-                "source": "https://github.com/IvanCraft623/Pahtfinder/tree/0.0.3",
+                "source": "https://github.com/IvanCraft623/Pahtfinder/tree/main",
                 "issues": "https://github.com/IvanCraft623/Pahtfinder/issues"
             },
-            "time": "2026-07-27T00:02:25+00:00"
+            "time": "2026-08-20T08:09:54+00:00"
         },
         {
             "name": "netresearch/jsonmapper",

@@ -32,19 +32,29 @@ use pocketmine\math\AxisAlignedBB;
 
 class TargetHighestDamagerGoal extends TargetGoal {
 
+	public const DEFAULT_RANDOM_INTERVAL = 10;
+
+	protected int $randomInterval;
+
 	protected TargetingConditions $targetingConditions;
 
 	public function __construct(
 		protected Mob&DamageTracker $mob,
-		?TargetingConditions $conditions = null
+		?TargetingConditions $conditions = null,
+		int $interval = self::DEFAULT_RANDOM_INTERVAL
 	) {
 		parent::__construct($mob, false, false);
 
 		$this->targetingConditions = $conditions ?? (new TargetingConditions())
 			->setRange($this->getFollowDistance());
+		$this->randomInterval = $this->reducedTickDelay($interval);
 	}
 
 	public function canUse() : bool{
+		if ($this->randomInterval > 0 && $this->mob->getRandom()->nextBoundedInt($this->randomInterval) !== 0) {
+			return false;
+		}
+
 		$this->findTarget();
 		return $this->target !== null;
 	}
