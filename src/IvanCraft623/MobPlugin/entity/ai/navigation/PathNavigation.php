@@ -24,13 +24,13 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\Node;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\libs\_417952b21c6552df\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\Node;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
@@ -345,26 +345,33 @@ abstract class PathNavigation {
 			$this->recomputePath();
 		}
 
-		if (!$this->isDone()) {
-			if ($this->canUpdatePath()) {
-				$this->followThePath();
-			} elseif ($this->path !== null && !$this->path->isDone()) {
-				$tempPos = $this->getTempMobPosition();
-				$nextPos = $this->path->getNextEntityPosition($this->mob);
-				if ($tempPos->y > $nextPos->y &&
-					!$this->mob->isOnGround() &&
-					floor($tempPos->x) === floor($nextPos->x) &&
-					floor($tempPos->z) === floor($nextPos->z)
-				) {
-					$this->path->advance();
-				}
-			}
+		//Either the current path has been fully walked, or an async computation is still in flight
+		//(path === null). There is nothing followable yet; wait for the path to arrive.
+		$path = $this->path;
+		if ($path === null || $path->isDone()) {
+			return;
+		}
 
-			if ($this->path !== null && !$this->isDone()) {
-				$nextPos = $this->path->getNextEntityPosition($this->mob);
-				$adjustedY = $this->getGroundY($nextPos);
-				$this->mob->getMoveControl()->setWantedPosition(new Vector3($nextPos->x, $adjustedY, $nextPos->z), $this->speedModifier);
+		if ($this->canUpdatePath()) {
+			$this->followThePath();
+		} else {
+			$tempPos = $this->getTempMobPosition();
+			$nextPos = $path->getNextEntityPosition($this->mob);
+			if ($tempPos->y > $nextPos->y &&
+				!$this->mob->isOnGround() &&
+				floor($tempPos->x) === floor($nextPos->x) &&
+				floor($tempPos->z) === floor($nextPos->z)
+			) {
+				$path->advance();
 			}
+		}
+
+		//followThePath() (or the async computation) may have stopped/invalidated the path.
+		$path = $this->path;
+		if ($path !== null && !$path->isDone()) {
+			$nextPos = $path->getNextEntityPosition($this->mob);
+			$adjustedY = $this->getGroundY($nextPos);
+			$this->mob->getMoveControl()->setWantedPosition(new Vector3($nextPos->x, $adjustedY, $nextPos->z), $this->speedModifier);
 		}
 	}
 
@@ -373,7 +380,7 @@ abstract class PathNavigation {
 	}
 
 	protected function followThePath() : void{
-		if ($this->path === null) {
+		if ($this->path === null || $this->path->isDone()) {
 			return;
 		}
 
@@ -480,7 +487,9 @@ abstract class PathNavigation {
 	}
 
 	public function isDone() : bool{
-		return $this->path === null || $this->path->isDone();
+		//While a path computation is in-flight the path is still null, but we must not report "done",
+		//or the running goal will stop and cancel its own path before it arrives.
+		return ($this->path === null || $this->path->isDone()) && !$this->isPathComputationPending;
 	}
 
 	public function isInProgress() : bool{
@@ -500,17 +509,6 @@ abstract class PathNavigation {
 	protected abstract function getTempMobPosition() : Vector3;
 
 	protected abstract function canUpdatePath() : bool;
-
-	protected function isInLiquid() : bool{
-		foreach ($this->getWorld()->getCollisionBlocks($this->mob->getBoundingBox()) as $block) {
-			if ($block instanceof Liquid) {
-				//TODO: waterlogging check and do not trigger with powder snow
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	protected function trimPath() : void{
 		if ($this->path !== null) {
@@ -537,6 +535,11 @@ abstract class PathNavigation {
 		return $pathType !== BlockPathType::DANGER_FIRE &&
 			$pathType !== BlockPathType::DANGER_OTHER &&
 			$pathType !== BlockPathType::WALKABLE_DOOR;
+	}
+
+	public function isInLiquid() : bool{
+		//Water and lava don't have collision boxes, so they never show up in getCollisionBlocks().
+		return $this->mob->isInWater() || $this->mob->isInLava();
 	}
 
 	protected static function isClearForMovementBetween(Mob $mob, Vector3 $from, Vector3 $to, bool $detectLiquids) : bool{
