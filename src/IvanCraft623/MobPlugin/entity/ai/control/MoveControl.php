@@ -140,7 +140,7 @@ class MoveControl implements Control {
 			}
 		} elseif ($this->operation === self::OPERATION_JUMPING) {
 			$this->mob->setMotionSpeed($this->speedModifier * $movementSpeed);
-			if ($this->mob->onGround) {
+			if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
 				$this->operation = self::OPERATION_WAIT;
 			}
 		} else {

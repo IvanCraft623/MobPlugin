@@ -56,22 +56,29 @@ class FlyingPathNavigation extends PathNavigation{
 			$this->recomputePath();
 		}
 
-		if (!$this->isDone()) {
-			if ($this->canUpdatePath()) {
-				$this->followThePath();
-			} elseif ($this->path !== null && !$this->path->isDone()) {
-				$nextPos = $this->path->getNextEntityPosition($this->mob);
-				if ($this->getTempMobPosition()->floor()->equals($nextPos->floor())) {
-					$this->path->advance();
-				}
-			}
+		//Either the current path has been fully walked, or an async computation is still in flight
+		//(path === null). There is nothing followable yet; wait for the path to arrive.
+		$path = $this->path;
+		if ($path === null || $path->isDone()) {
+			return;
+		}
 
-			if ($this->path !== null && !$this->isDone()) {
-				$this->mob->getMoveControl()->setWantedPosition(
-					$this->path->getNextEntityPosition($this->mob),
-					$this->speedModifier
-				);
+		if ($this->canUpdatePath()) {
+			$this->followThePath();
+		} else {
+			$nextPos = $path->getNextEntityPosition($this->mob);
+			if ($this->getTempMobPosition()->floor()->equals($nextPos->floor())) {
+				$path->advance();
 			}
+		}
+
+		//followThePath() (or the async computation) may have stopped/invalidated the path.
+		$path = $this->path;
+		if ($path !== null && !$path->isDone()) {
+			$this->mob->getMoveControl()->setWantedPosition(
+				$path->getNextEntityPosition($this->mob),
+				$this->speedModifier
+			);
 		}
 	}
 
