@@ -27,5 +27,5 @@ final class CustomAttributes {
 	public const MP_PREFIX = "mobplugin:";
 
 	public const ATTACK_KNOCKBACK = self::MP_PREFIX . "attack_knockback";
-	public const FLYING_MOVEMENT = self::MP_PREFIX . "flying_movement";
+	public const AIR_MOVEMENT = self::MP_PREFIX . "air_movement";
 }

@@ -108,7 +108,6 @@ class MoveControl implements Control {
 			if (!$this->isWalkable($x, $z)) {
 				$this->forwardMovement = 1;
 				$this->sidewaysMovement = 0;
-				$speed = $movementSpeed;
 			}
 
 			$this->mob->setMotionSpeed($speed);

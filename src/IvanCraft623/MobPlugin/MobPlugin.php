@@ -131,7 +131,7 @@ class MobPlugin extends PluginBase {
 		$factory = AttributeFactory::getInstance();
 
 		$factory->register(CustomAttributes::ATTACK_KNOCKBACK, 0.00, 340282346638528859811704183484516925440.00, 0.4, false);
-		$factory->register(CustomAttributes::FLYING_MOVEMENT, 0.00, 340282346638528859811704183484516925440.00, 0.0, false);
+		$factory->register(CustomAttributes::AIR_MOVEMENT, 0.00, 340282346638528859811704183484516925440.00, 0.02, false);
 	}
 
 	private function registerEntities() : void{

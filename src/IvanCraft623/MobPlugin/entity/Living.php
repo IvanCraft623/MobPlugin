@@ -52,12 +52,15 @@ use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\player\Player;
 use pocketmine\Server;
+use pocketmine\timings\Timings;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 use function abs;
 use function count;
+use function floatval;
 use function floor;
+use function get_class;
 use function max;
 use function min;
 use function sqrt;
@@ -67,6 +70,12 @@ abstract class Living extends PMLiving {
 
 	public const ENTITY_PUSH_FORCE = 0.25;
 
+	public const WATER_DRAG = 0.8;
+	public const WATER_GRAVITY_MULTIPLIER = 0.5;
+
+	public const LEVITATION_MOTION_PER_LEVEL = 0.05;
+	public const LEVITATION_LERP_FACTOR = 0.2;
+
 	private const TAG_COMPONENT_GROUPS = "definitions"; //TAG_List
 
 	protected Random $random;
@@ -74,8 +83,6 @@ abstract class Living extends PMLiving {
 	protected ComponentGroups $componentGroups;
 
 	protected float $stepHeight = 0.6;
-
-	protected float $jumpVelocity = 0.475;
 
 	protected float $verticalDrag;
 
@@ -257,10 +264,94 @@ abstract class Living extends PMLiving {
 		return $hasUpdate;
 	}
 
-	protected function tryChangeMovement() : void{
-		$xzFriction = 1 - $this->drag;
-		$gravity = $this->gravityEnabled ? $this->gravity : 0;
+	/**
+	 * Entity::onUpdate() with the motion reductions (tryChangeMovement()) moved after the move.
+	 */
+	public function onUpdate(int $currentTick) : bool{
+		if($this->closed){
+			return false;
+		}
 
+		$tickDiff = $currentTick - $this->lastUpdate;
+		if($tickDiff <= 0){
+			if(!$this->justCreated){
+				$this->server->getLogger()->debug("Expected tick difference of at least 1, got $tickDiff for " . get_class($this));
+			}
+
+			return true;
+		}
+
+		$this->lastUpdate = $currentTick;
+
+		if($this->justCreated){
+			$this->onFirstUpdate($currentTick);
+		}
+
+		if(!$this->isAlive()){
+			if($this->onDeathUpdate($tickDiff)){
+				$this->flagForDespawn();
+			}
+
+			return true;
+		}
+
+		$this->timings->startTiming();
+
+		if($this->hasMovementUpdate()){
+			$this->motion = $this->motion->withComponents(
+				abs($this->motion->x) <= self::MOTION_THRESHOLD ? 0 : null,
+				abs($this->motion->y) <= self::MOTION_THRESHOLD ? 0 : null,
+				abs($this->motion->z) <= self::MOTION_THRESHOLD ? 0 : null
+			);
+
+			if(floatval($this->motion->x) !== 0.0 || floatval($this->motion->y) !== 0.0 || floatval($this->motion->z) !== 0.0){
+				$this->move($this->motion->x, $this->motion->y, $this->motion->z);
+			}
+
+			$this->tryChangeMovement();
+
+			$this->forceMovementUpdate = false;
+		}
+
+		$this->updateMovement();
+
+		Timings::$entityBaseTick->startTiming();
+		$hasUpdate = $this->entityBaseTick($tickDiff);
+		Timings::$entityBaseTick->stopTiming();
+
+		$this->timings->stopTiming();
+
+		return ($hasUpdate || $this->hasMovementUpdate());
+	}
+
+	protected function tryChangeMovement() : void{
+		$inWater = $this->isInWater();
+		$motionX = $this->motion->x;
+		$motionY = $this->motion->y;
+		$motionZ = $this->motion->z;
+
+		if($inWater){
+			$motionX *= self::WATER_DRAG;
+			$motionY *= self::WATER_DRAG;
+			$motionZ *= self::WATER_DRAG;
+		}
+
+		$levitation = $this->effectManager->get(VanillaEffects::LEVITATION());
+		if($levitation !== null){
+			$motionY += (self::LEVITATION_MOTION_PER_LEVEL * $levitation->getEffectLevel() - $motionY) * self::LEVITATION_LERP_FACTOR;
+		}else{
+			//TODO: slow falling (-0.01 while falling) once PM implements the effect.
+			$gravity = $this->gravityEnabled ? ($inWater ? $this->gravity * self::WATER_GRAVITY_MULTIPLIER : $this->gravity) : 0;
+
+			$verticalDrag = $inWater || ($this->onClimbable() && $this->isCollidedHorizontally) ?
+				1 : 1 - $this->verticalDrag;
+
+			$motionY = $this->applyDragBeforeGravity() ?
+				$motionY * $verticalDrag - $gravity :
+				($motionY - $gravity) * $verticalDrag;
+		}
+
+		$xzFriction = 1 - $this->drag;
 		if($this->onGround){
 			$xzFriction *= $this->getWorld()->getBlockAt(
 				(int) floor($this->location->x),
@@ -269,13 +360,15 @@ abstract class Living extends PMLiving {
 			)->getFrictionFactor();
 		}
 
-		$this->motion = new Vector3(
-			$this->motion->x * $xzFriction,
-			$this->applyDragBeforeGravity() ?
-				(($this->motion->y * (1 - $this->verticalDrag)) - $gravity) :
-				(($this->motion->y - $gravity) * (1 - $this->verticalDrag)),
-			$this->motion->z * $xzFriction
-		);
+		$this->motion = new Vector3($motionX * $xzFriction, $motionY, $motionZ * $xzFriction);
+	}
+
+	/**
+	 * Whether the mob is climbing: only climb-capable mobs (Entity::canClimbWalls(),
+	 * e.g. spiders) inside a climbable block (ladder, vine) count.
+	 */
+	protected function onClimbable() : bool{
+		return $this->canClimbWalls() && $this->getWorld()->getBlock($this->location)->canClimb();
 	}
 
 	protected function pushOutOfEntities() : bool {

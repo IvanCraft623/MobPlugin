@@ -105,9 +105,7 @@ use const M_PI;
 use const M_PI_2;
 
 class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, RangedAttackMob, DamageTracker{
-	use FlyableTrait {
-		addAttributes as addAttributesFlyableTrait;
-	}
+	use FlyableTrait;
 	use DamageTrackerTrait {
 		attack as attackDamageTracker;
 	}
@@ -174,8 +172,8 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 				return $this->wither->getInvulnerableTicks() > 0;
 			}
 		});
-		$this->explodeOnHalfLifeWrapped = $this->goalSelector->addGoal(1, new WitherExplodeOnHalfLifeGoal($this, 1.25));
-		$this->goalSelector->addGoal(2, $this->attackGoal = new WitherAttackGoal($this, 1, 1.25));
+		$this->explodeOnHalfLifeWrapped = $this->goalSelector->addGoal(1, new WitherExplodeOnHalfLifeGoal($this, 3));
+		$this->goalSelector->addGoal(2, $this->attackGoal = new WitherAttackGoal($this, 2.4, 3));
 		$this->goalSelector->addGoal(5, new WaterAvoidingRandomFlyingGoal($this, 1));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(7, new RandomLookAroundGoal($this));
@@ -254,12 +252,6 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		// TODO: Find out what makes wither display dash position!!!
 	}
 
-	protected function addAttributes() : void{
-		parent::addAttributes();
-
-		$this->addAttributesFlyableTrait();
-	}
-
 	protected function initProperties() : void{
 		parent::initProperties();
 
@@ -269,7 +261,7 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 			World::DIFFICULTY_NORMAL => 450,
 			default => 300, // java always is 300
 		});
-		$this->flyingSpeed->setValue(0.6);
+		$this->setAirMovementSpeed(0.25);
 
 	}
 
