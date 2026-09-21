@@ -36,8 +36,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -137,6 +137,8 @@ abstract class Mob extends Living {
 
 	protected Attribute $attackKnockbackAttr;
 
+	protected Attribute $airSpeedAttr;
+
 	protected Attribute $followRangeAttr;
 
 	private bool $invertingHealAndDamageEffect = false;
@@ -205,6 +207,7 @@ abstract class Mob extends Living {
 
 		$this->attributeMap->add($this->attackDamageAttr = AttributeFactory::getInstance()->mustGet(Attribute::ATTACK_DAMAGE));
 		$this->attributeMap->add($this->attackKnockbackAttr = AttributeFactory::getInstance()->mustGet(CustomAttributes::ATTACK_KNOCKBACK));
+		$this->attributeMap->add($this->airSpeedAttr = AttributeFactory::getInstance()->mustGet(CustomAttributes::AIR_MOVEMENT));
 
 		$this->followRangeAttr = $this->attributeMap->get(Attribute::FOLLOW_RANGE) ?? throw new AssumptionFailedError("Follow range attribute is null");
 		;
@@ -268,6 +271,20 @@ abstract class Mob extends Living {
 	public function setMotionSpeed(float $motionSpeed) : void {
 		$this->motionSpeed = $motionSpeed;
 		$this->setForwardSpeed($motionSpeed);
+	}
+
+	/**
+	 * Returns acceleration while airborne.
+	 */
+	public function getAirMovementSpeed() : float{
+		return $this->airSpeedAttr->getValue();
+	}
+
+	/**
+	 * Sets acceleration while airborne.
+	 */
+	public function setAirMovementSpeed(float $airSpeed) : void{
+		$this->airSpeedAttr->setValue($airSpeed);
 	}
 
 	public function hasAi() : bool{
@@ -518,7 +535,11 @@ abstract class Mob extends Living {
 
 	public function travel(Vector3 $movementInput) : void{
 		// TODO: More complex movement suff :P
-		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $this->getMovementSpeed());
+
+		$accel = $this->onGround || $this->isInWater() || $this->isInLava() ?
+			$this->getMovementSpeed() : $this->getAirMovementSpeed();
+
+		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $accel);
 
 		//Climb stuff
 		if ($this->isCollidedHorizontally && $this->onClimbable()) {
@@ -526,10 +547,6 @@ abstract class Mob extends Living {
 		}
 
 		$this->addMotion($motion->x, $motion->y, $motion->z);
-	}
-
-	protected function onClimbable() : bool{
-		return false;
 	}
 
 	protected function updateControlFlags() : void{

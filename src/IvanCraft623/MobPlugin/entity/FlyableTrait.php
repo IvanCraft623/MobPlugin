@@ -23,23 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
-use pocketmine\entity\Attribute;
-use pocketmine\entity\AttributeFactory;
-use pocketmine\entity\AttributeMap;
-
 trait FlyableTrait {
 
-	protected AttributeMap $attributeMap;
-
-	protected Attribute $flyingSpeed;
-
-	protected function addAttributes() : void{
-		$this->attributeMap->add($this->flyingSpeed =
-			AttributeFactory::getInstance()->mustGet(CustomAttributes::FLYING_MOVEMENT)
-		);
-	}
-
+	/**
+	 * Flying mobs keep the flying speed name, but it is backed by the same
+	 * mobplugin:air_movement attribute every mob carries (Mob::getAirMovementSpeed()).
+	 */
 	public function getFlyingSpeed() : float{
-		return $this->flyingSpeed->getValue();
+		return $this->getAirMovementSpeed();
 	}
 }

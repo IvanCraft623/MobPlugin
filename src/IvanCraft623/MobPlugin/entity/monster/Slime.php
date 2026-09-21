@@ -57,8 +57,6 @@ class Slime extends Mob implements Enemy {
 
 	public static function getNetworkTypeId() : string{ return EntityIds::SLIME; }
 
-	protected float $jumpVelocity = 0.52;
-
 	protected SlimeType $type;
 
 	protected bool $jumping = false;

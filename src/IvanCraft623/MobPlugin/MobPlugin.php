@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
@@ -61,7 +61,7 @@ use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 
-use IvanCraft623\MobPlugin\libs\_5804f6f0ca2c74b1\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
@@ -131,7 +131,7 @@ class MobPlugin extends PluginBase {
 		$factory = AttributeFactory::getInstance();
 
 		$factory->register(CustomAttributes::ATTACK_KNOCKBACK, 0.00, 340282346638528859811704183484516925440.00, 0.4, false);
-		$factory->register(CustomAttributes::FLYING_MOVEMENT, 0.00, 340282346638528859811704183484516925440.00, 0.0, false);
+		$factory->register(CustomAttributes::AIR_MOVEMENT, 0.00, 340282346638528859811704183484516925440.00, 0.02, false);
 	}
 
 	private function registerEntities() : void{
