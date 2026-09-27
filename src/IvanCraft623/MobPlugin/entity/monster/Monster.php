@@ -31,7 +31,7 @@ abstract class Monster extends PathfinderMob implements Enemy {
 	//TODO!
 
 	public function getMobCategory() : MobCategory{
-		return MobCategory::MONSTER();
+		return MobCategory::MONSTER;
 	}
 
 	public function shouldDespawnInPeaceful() : bool{

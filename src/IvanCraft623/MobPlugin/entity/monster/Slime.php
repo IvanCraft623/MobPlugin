@@ -79,7 +79,7 @@ class Slime extends Mob implements Enemy {
 	}
 
 	public function getMobCategory() : MobCategory{
-		return MobCategory::MONSTER();
+		return MobCategory::MONSTER;
 	}
 
 	protected function registerGoals() : void{

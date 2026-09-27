@@ -29,6 +29,6 @@ use IvanCraft623\MobPlugin\entity\MobCategory;
 abstract class Ambient extends Mob {
 
 	public function getMobCategory() : MobCategory{
-		return MobCategory::AMBIENT();
+		return MobCategory::AMBIENT;
 	}
 }

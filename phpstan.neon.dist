@@ -5,6 +5,11 @@ parameters:
     treatPhpDocTypesAsCertain: false
     paths:
         - src
+        - tests
+    scanFiles:
+        - tools/spawn-rules/SpawnRuleSchemaValidator.php
+        - tools/spawn-rules/compile.php
+        - tools/spawn-rules/generate-schema.php
     typeAliases:
         #variadics don't work for this - mixed probably shouldn't work either, but for now it does
         #what we actually need is something that accepts an infinite number of parameters, but in the absence of that,

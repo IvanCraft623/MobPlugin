@@ -241,8 +241,15 @@ abstract class Mob extends Living {
 		return MobType::UNDEFINED();
 	}
 
+	/**
+	 * The Bedrock population-control category this mob counts against. Defaults to the
+	 * CREATURE sentinel (zero caps) — mob families classify themselves: Animal → ANIMAL,
+	 * Monster → MONSTER, Ambient → AMBIENT. This keeps unclassified mobs (golems, bosses,
+	 * modded mobs) from being counted against — or blocked by — a real category's
+	 * population cap.
+	 */
 	public function getMobCategory() : MobCategory{
-		return MobCategory::CREATURE();
+		return MobCategory::CREATURE;
 	}
 
 	public function setForwardSpeed(float $forwardSpeed) : void {

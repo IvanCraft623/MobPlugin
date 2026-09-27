@@ -26,7 +26,11 @@ namespace IvanCraft623\MobPlugin;
 use function array_key_exists;
 use function file_exists;
 use function is_array;
+use function is_bool;
 use function is_dir;
+use function is_int;
+use function max;
+use function min;
 use function mkdir;
 use function yaml_parse_file;
 use const DIRECTORY_SEPARATOR;
@@ -85,6 +89,10 @@ final class Settings{
 
 	private bool $mobGriefing;
 
+	private bool $mobNaturalSpawning;
+
+	private int $mobNaturalSpawningAttemptsPerTick;
+
 	/**
 	 * @param mixed[] $data
 	 * @phpstan-param array<string, mixed> $data
@@ -93,6 +101,37 @@ final class Settings{
 		$this->debugMode = $this->getPropertyBool($data, "debug-mode", false);
 		$this->mobNaturalDespawning = $this->getPropertyBool($data, "mob-natural-despawning", true);
 		$this->mobGriefing = $this->getPropertyBool($data, "mob-griefing", true);
+		$this->mobNaturalSpawning = $this->getSpawningSubProperty($data, "enabled", true) !== false;
+		$this->mobNaturalSpawningAttemptsPerTick = self::clampAttemptsPerTick($this->getSpawningSubProperty($data, "attempts-per-tick", 3));
+	}
+
+	private const MIN_ATTEMPTS_PER_TICK = 1;
+
+	private const MAX_ATTEMPTS_PER_TICK = 20;
+
+	/**
+	 * Clamps attempts-per-tick to a sane range: too low disables spawning entirely, too
+	 * high multiplies the per-tick collection cost (the main-thread stage) linearly.
+	 */
+	private static function clampAttemptsPerTick(bool|int $value) : int{
+		return max(self::MIN_ATTEMPTS_PER_TICK, min(self::MAX_ATTEMPTS_PER_TICK, (int) $value));
+	}
+
+	/**
+	 * Reads a sub-key of the mob-natural-spawning settings block.
+	 *
+	 * @param mixed[] $data
+	 * @phpstan-param array<string, mixed> $data
+	 */
+	private function getSpawningSubProperty(array $data, string $variable, bool|int $defaultValue) : bool|int{
+		$block = $data["mob-natural-spawning"] ?? null;
+		if (is_array($block) && array_key_exists($variable, $block)) {
+			$value = $block[$variable];
+			if (is_bool($value) || is_int($value)) {
+				return $value;
+			}
+		}
+		return $defaultValue;
 	}
 
 	/**
@@ -116,5 +155,18 @@ final class Settings{
 
 	public function isMobGriefingEnabled() : bool{
 		return $this->mobGriefing;
+	}
+
+	public function isMobNaturalSpawningEnabled() : bool{
+		return $this->mobNaturalSpawning;
+	}
+
+	/**
+	 * Chunk evaluations per world per tick for the natural spawner. Clamped into
+	 * [MIN_ATTEMPTS_PER_TICK, MAX_ATTEMPTS_PER_TICK]; lower is cheaper on the main
+	 * thread, higher spawns mobs faster at linear collection cost.
+	 */
+	public function getMobNaturalSpawningAttemptsPerTick() : int{
+		return $this->mobNaturalSpawningAttemptsPerTick;
 	}
 }

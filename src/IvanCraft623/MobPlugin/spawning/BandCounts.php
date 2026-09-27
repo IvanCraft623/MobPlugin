@@ -1,0 +1,45 @@
+<?php
+
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
+declare(strict_types=1);
+
+namespace IvanCraft623\MobPlugin\spawning;
+
+/** Immutable per-band entity count pair. */
+final class BandCounts{
+	public function __construct(
+		public readonly int $surface = 0,
+		public readonly int $cave = 0
+	){}
+
+	public function get(SpawnBand $band) : int{
+		return $band === SpawnBand::SURFACE ? $this->surface : $this->cave;
+	}
+
+	/**
+	 * Returns a copy with the given band's count increased; the receiver is untouched.
+	 */
+	public function incremented(SpawnBand $band) : self{
+		return $band === SpawnBand::SURFACE
+			? new self($this->surface + 1, $this->cave)
+			: new self($this->surface, $this->cave + 1);
+	}
+}

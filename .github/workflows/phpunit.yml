@@ -1,0 +1,26 @@
+name: PHPUnit CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  phpunit:
+    name: PHPUnit Tests
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: pmmp/setup-php-action@3.2.0
+        with:
+          php-version: 8.2
+          install-path: ./bin
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction
+
+      - name: Run PHPUnit
+        run: php vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit
