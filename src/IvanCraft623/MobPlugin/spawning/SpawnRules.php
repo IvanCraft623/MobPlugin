@@ -23,14 +23,14 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 
 /**
  * A mob's compiled spawn rule set: an ordered list of condition groups (first matching
- * group wins) bound to the mob's category. Immutable plain data, shared across ticks
- * and worlds.
+ * group wins) bound to the mob's population-control category id. Immutable plain data,
+ * shared across ticks and worlds. The category object is resolved from
+ * MobCategoryRegistry by id at use time.
  */
 final class SpawnRules{
 	/** Weight used to pick this rule set; the widest group weight (computed once). */
@@ -41,7 +41,7 @@ final class SpawnRules{
 	 */
 	public function __construct(
 		private readonly string $identifier,
-		private readonly MobCategory $category,
+		private readonly string $categoryId,
 		private readonly array $groups
 	){
 		$this->pickWeight = self::computePickWeight($groups);
@@ -51,8 +51,11 @@ final class SpawnRules{
 		return $this->identifier;
 	}
 
-	public function getCategory() : MobCategory{
-		return $this->category;
+	/**
+	 * The population_control id this rule set counts against (the Bedrock string).
+	 */
+	public function getCategoryId() : string{
+		return $this->categoryId;
 	}
 
 	/**

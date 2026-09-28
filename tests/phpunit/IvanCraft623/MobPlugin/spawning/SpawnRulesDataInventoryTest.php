@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnComponent;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use PHPUnit\Framework\TestCase;
 use function array_is_list;
 use function array_keys;
@@ -43,17 +43,9 @@ use const JSON_THROW_ON_ERROR;
 require_once dirname(__DIR__, 5) . "/tools/spawn-rules/SpawnRuleSchemaValidator.php";
 
 /**
- * Validates the bundled spawn-rules resource directly and offline against the committed
- * Mojang spawn schemas (resources/spawning/schemas). No bedrock-samples checkout, no
- * schema regeneration, no network.
- *
- * Two orthogonal checks:
- *  - every condition component key in the data must be a declared SpawnComponent enum
- *    case (draft-07 schemas allow unknown keys, so this catches typo'd components);
- *  - every entry's "minecraft:spawn_rules" body must validate against the official
- *    spawn-rules schema (catches malformed shapes, bad types, wrong unions).
- *
- * Run locally with: composer test
+ * Validates the bundled spawn-rules resource offline against the committed Mojang schemas:
+ * every component key is a declared VanillaSpawnConditions constant, and every entry's
+ * body validates against the official spawn-rules schema.
  */
 final class SpawnRulesDataInventoryTest extends TestCase{
 	private const DATA_PATH = "/resources/spawning/spawn_rules.json";
@@ -65,12 +57,12 @@ final class SpawnRulesDataInventoryTest extends TestCase{
 		self::assertNotSame([], $this->decodeDataAsMap(), "spawn_rules.json must not be empty");
 	}
 
-	public function testEveryConditionComponentIsAKnownSpawnComponent() : void{
+	public function testEveryConditionComponentIsKnown() : void{
 		$decoded = $this->decodeDataAsMap();
 
 		$known = [];
-		foreach(SpawnComponent::cases() as $component){
-			$known[$component->value] = true;
+		foreach(VanillaSpawnConditions::getAll() as $component){
+			$known[$component] = true;
 		}
 
 		$unknown = [];

@@ -23,17 +23,18 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\world\World;
 use function acos;
-use function array_values;
 use function cos;
 use function count;
 use function max;
 use function mt_getrandmax;
 use function mt_rand;
 use function sin;
+
 use const M_PI;
 
 /**
@@ -51,19 +52,19 @@ final class SpawnCollector{
 	public const CAVE_ATTEMPTS_PER_COLUMN = 2;
 
 	public function __construct(
-		private int $attemptsPerTick,
 		private SpawnCensus $census
 	){}
 
 	/**
 	 * One per-world collection pass; the caller gates on players online + non-peaceful.
 	 *
+	 * @phpstan-param list<Player> $players
+	 *
 	 * @phpstan-return list<SpawnCandidateSnapshot>
 	 */
-	public function collect(World $world) : array{
-		$players = array_values($world->getPlayers());
+	public function collect(World $world, array $players, int $attempts) : array{
 		$snapshots = [];
-		for($attempt = 0; $attempt < $this->attemptsPerTick; $attempt++){
+		for($attempt = 0; $attempt < $attempts; $attempt++){
 			foreach($this->collectChunkCandidates($world, $players) as $snapshot){
 				$snapshots[] = $snapshot;
 			}
@@ -76,7 +77,12 @@ final class SpawnCollector{
 		foreach($snapshots as $snapshot){
 			$centers[] = new Vector3($snapshot->x, $snapshot->y, $snapshot->z);
 		}
-		$this->census->countForBatch($world, $centers, $density, $population);
+		CustomTimings::$naturalSpawningCensus->startTiming();
+		try{
+			$this->census->countForBatch($world, $centers, $density, $population);
+		}finally{
+			CustomTimings::$naturalSpawningCensus->stopTiming();
+		}
 		foreach($snapshots as $i => $snapshot){
 			$snapshot->densityCounts = $density[$i];
 			$snapshot->populationCounts = $population[$i];
@@ -105,43 +111,56 @@ final class SpawnCollector{
 		$centerZ = $playerPos->getZ() + sin($phi) * sin($theta) * $distance;
 		$chunkX = ((int) $centerX) >> 4;
 		$chunkZ = ((int) $centerZ) >> 4;
-		if(!$world->isChunkLoaded($chunkX, $chunkZ)){
-			return [];
+
+		$chunk = $world->isChunkLoaded($chunkX, $chunkZ) ? $world->getChunk($chunkX, $chunkZ) : null;
+		if($chunk === null || $chunk->isLightPopulated() !== true){
+			return []; // light not calculated yet — getFullLightAt() would wrongly read dark
 		}
 		$x = ($chunkX << 4) + mt_rand(0, 15);
 		$z = ($chunkZ << 4) + mt_rand(0, 15);
+		$minY = $world->getMinY();
 
 		$snapshots = [];
-		// Surface attempt: walk down from the column top to the first solid block —
-		// a spawnable solid top hosts the herd, any other solid block cancels it.
-		$topY = $world->getHighestBlockAt($x, $z) ?? $world->getMinY();
-		$spawnableY = null;
-		for($y = $topY; $y >= $world->getMinY(); $y--){
-			$block = $world->getBlock(new Vector3($x, $y, $z));
-			if($block->isSolid()){
-				if($block->isFullCube() && !$block->isTransparent()){
-					$spawnableY = $y;
-				}
+		// Surface attempt: the column's ground is the highest *passable* platform — a
+		// solid, full-cube, opaque block — scanning down from the top. Air and unpassable
+		// solids (leaf/stair/glass) are skipped, so the herd sits on the true ground even
+		// under a forest canopy. The mob stands in the air cell above it (y = platform + 1).
+		$topY = $world->getHighestBlockAt($x, $z) ?? $minY;
+		$surfaceY = null;
+		for($y = $topY; $y >= $minY; $y--){
+			$block = $world->getBlockAt($x, $y, $z);
+			if(!$block->isSolid()){
+				continue;
+			}
+			if($block->isFullCube() && !$block->isTransparent()){
+				$surfaceY = $y;
 				break;
 			}
 		}
-		if($spawnableY !== null && $spawnableY + 1 <= $world->getMaxY()){
-			$surface = $this->snapshotCandidate($world, $players, $x, $spawnableY + 1, $z, $spawnableY);
+		// The true ground the bands and the cave range reference (column top when no
+		// passable platform was found).
+		$surfaceRef = $surfaceY ?? $topY;
+		if($surfaceY !== null && $surfaceY + 1 <= $world->getMaxY()){
+			$surface = $this->snapshotCandidate($world, $players, $x, $surfaceY + 1, $z, $surfaceRef);
 			if($surface !== null){
 				$snapshots[] = $surface;
 			}
 		}
-		for($caveAttempt = 0; $caveAttempt < self::CAVE_ATTEMPTS_PER_COLUMN; $caveAttempt++){
-			$y = mt_rand($world->getMinY(), max($world->getMinY(), $topY - 1));
-			if($y <= $world->getMinY()){
-				continue; // a ground block below is required; the world floor has none
-			}
-			$feet = $world->getBlock(new Vector3($x, $y, $z));
-			$ground = $world->getBlock(new Vector3($x, $y - 1, $z));
-			if(!$feet->isSolid() && $ground->isFullCube() && !$ground->isTransparent()){
-				$snapshot = $this->snapshotCandidate($world, $players, $x, $y, $z, $topY);
-				if($snapshot !== null){
-					$snapshots[] = $snapshot;
+
+		// Cave attempts: strictly below the ground, so they are genuinely underground —
+		// never thin surface pockets right under a leafy canopy. `surfaceRef` also labels
+		// them CAVE for the population caps.
+		$caveMax = max($minY, $surfaceRef - 1);
+		if($caveMax > $minY){
+			for($caveAttempt = 0; $caveAttempt < self::CAVE_ATTEMPTS_PER_COLUMN; $caveAttempt++){
+				$y = mt_rand($minY + 1, $caveMax);
+				$feet = $world->getBlockAt($x, $y, $z);
+				$ground = $world->getBlockAt($x, $y - 1, $z);
+				if(!$feet->isSolid() && $ground->isFullCube() && !$ground->isTransparent()){
+					$snapshot = $this->snapshotCandidate($world, $players, $x, $y, $z, $surfaceRef);
+					if($snapshot !== null){
+						$snapshots[] = $snapshot;
+					}
 				}
 			}
 		}
@@ -174,10 +193,11 @@ final class SpawnCollector{
 			y: $y,
 			z: $z,
 			surfaceY: $surfaceY,
+			band: SpawnBand::fromPosition($y, $surfaceY),
 			biomeId: $world->getBiomeId($x, $y, $z),
 			light: $world->getFullLightAt($x, $y, $z),
-			blockTypeId: $world->getBlock($pos)->getTypeId(),
-			blockUnderTypeId: $world->getBlock(new Vector3($x, $y - 1, $z))->getTypeId(),
+			blockTypeId: $world->getBlockAt($x, $y, $z)->getTypeId(),
+			blockUnderTypeId: $world->getBlockAt($x, $y - 1, $z)->getTypeId(),
 			densityCounts: [],
 			populationCounts: [],
 			difficulty: $world->getDifficulty(),

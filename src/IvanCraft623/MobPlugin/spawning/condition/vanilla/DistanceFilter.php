@@ -39,6 +39,10 @@ final class DistanceFilter implements SpawnCondition{
 		}
 	}
 
+	public function getEvaluationCost() : int{
+		return 1; // pure context-field compare
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		$distance = $ctx->nearestPlayerDistance;
 		if($distance === null){

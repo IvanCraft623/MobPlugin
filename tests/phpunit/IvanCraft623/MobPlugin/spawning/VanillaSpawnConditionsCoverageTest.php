@@ -23,33 +23,29 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnComponent;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesFactory;
 use PHPUnit\Framework\TestCase;
 use function implode;
 
 /**
- * Guards the schema-derived artifact inventory against the parser registry.
- *
- * The SpawnComponent enum is generated from the official Mojang spawn schemas. If Mojang
- * later adds, renames or removes a spawn component, the enum changes — and this test
- * surfaces it: every declared component must have a parser registered by the default
- * registry (or be explicitly classified as unsupported / pass-through), otherwise a
- * newly-added component would silently never spawn and a removed one would linger.
+ * Every declared VanillaSpawnConditions constant must have a parser registered (or be
+ * explicitly unsupported / pass-through), so a schema change surfaces here, not as a
+ * silently-never-spawned condition.
  */
-final class SpawnComponentCoverageTest extends TestCase{
+final class VanillaSpawnConditionsCoverageTest extends TestCase{
 
-	public function testEverySchemaComponentIsRegistered() : void{
+	public function testEverySchemaConditionIsRegistered() : void{
 		$registry = SpawnRulesFactory::createDefault()->getConditionRegistry();
 
 		$missing = [];
-		foreach(SpawnComponent::cases() as $component){
-			if($registry->get($component) === null){
-				$missing[] = $component->value;
+		foreach(VanillaSpawnConditions::getAll() as $condition){
+			if($registry->get($condition) === null){
+				$missing[] = $condition;
 			}
 		}
-		self::assertSame([], $missing, "Spawn components not classified by SpawnConditionRegistry::getInstance()'s default registrations: " . implode(", ", $missing));
+		self::assertSame([], $missing, "Spawn conditions not classified by SpawnConditionRegistry::getInstance()'s default registrations: " . implode(", ", $missing));
 	}
 
 	public function testSchemaVersionIsPinned() : void{

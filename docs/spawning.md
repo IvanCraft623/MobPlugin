@@ -31,12 +31,14 @@ being silently mangled by the build.
 
 The merge doubles as a **schema-compatibility gate**: every `minecraft:spawn_rules`
 body is validated against the official Mojang spawn schemas pinned by
-`--schema-version` (default `1.21.50`), and every condition component and structural
-key must be declared by the pinned schema inventory. A failure means the vanilla data
-drifted beyond what the plugin was built against — update the loader / component
-registry (and, if intended, the pinned schema version) before recompiling. The merger
-writes output only if every source file merged and validated cleanly. The schemas are
-permissive (see the validation section below), so this is a structural gate; semantic
+`--schema-version` — a required argument, single-sourced from
+`resources/spawning/schemas/SCHEMA_VERSION` — and every condition component and
+structural key must be declared by the pinned schema inventory. A failure means the
+vanilla data drifted beyond what the plugin was built against — update the loader /
+component registry (and, if intended, the pinned schema version) before recompiling. The
+merger writes output only if every source file merged and validated cleanly. The schemas
+are permissive (see the validation section below), so this is a structural gate;
+semantic
 correctness is enforced by the strict runtime loader.
 
 ### How schema validation is run
@@ -49,7 +51,7 @@ composer test                      # or: vendor/bin/phpunit --no-progress
 
 `tests/phpunit/.../SpawnRulesDataInventoryTest.php`:
 - checks `spawn_rules.json` decodes as valid JSON;
-- checks every condition component key is a declared `SpawnComponent` enum case
+- checks every condition component key is a declared `VanillaSpawnConditions` constant
   (catches typo'd / unknown components);
 - validates every entry's `minecraft:spawn_rules` body against the **official Mojang
   spawn schemas** via `SpawnRuleSchemaValidator`.
@@ -81,8 +83,8 @@ git -C .cache/bedrock-samples checkout <new-sha>
 # 2. regenerate the merged data + NOTICE (validated against the current, possibly newer, schema)
 composer compile-spawn-rules
 
-# 3. regenerate the generated artifacts from the schemas
-php tools/spawn-rules/generate-schema.php --samples-dir=.cache/bedrock-samples
+# 3. regenerate the generated artifacts from the schemas (version is required)
+php tools/spawn-rules/generate-schema.php --samples-dir=.cache/bedrock-samples --schema-version=$(cat resources/spawning/schemas/SCHEMA_VERSION)
 
 # 4. refresh the committed schema copy the offline test validates against
 #    (copy metadata/json_schemas/** from the checkout — see resources/spawning/schemas/README.md)
@@ -90,26 +92,38 @@ php tools/spawn-rules/generate-schema.php --samples-dir=.cache/bedrock-samples
 # 5. review & commit the diff, then bump the pinned ref everywhere it appears:
 #    - resources/spawning/NOTICE.md   (Source commit / Game version / Schema validation)
 #    - resources/spawning/schemas/README.md (Source commit / version)
-#    - the pinned `ref` in any CI workflow and the tools' `DEFAULT_SCHEMA_VERSION`
+#    - resources/spawning/schemas/SCHEMA_VERSION  (single source of truth; read by
+#      composer compile-spawn-rules and the spawn-schemas CI gate)
 ```
 
 After a bump, the checks that used to drift now pass: `composer test` validates the new
 data against the new committed schemas, and `generate-schema.php --check` confirms the
-regenerated artifacts match. If a component was added/renamed/removed, `SpawnComponent`
-and `SpawnConditionRegistry` must be updated first so the loader still accepts every
+regenerated artifacts match. If a component was added/renamed/removed, `VanillaSpawnConditions`
+ *and `SpawnConditionRegistry` must be updated first so the loader still accepts every
 declared component (see [#Conditions](#conditions)).
 
 Two other checks complete the picture:
 
-- `SpawnComponent` / `SpawnSchema` (`src/.../spawning/parse/schema/`) are **generated**
-  from the same schemas by `php tools/spawn-rules/generate-schema.php`. `SpawnComponent`
-  is one enum case per condition component; `SpawnSchema` also carries schema facts
+- `VanillaSpawnConditions` / `SpawnSchema` (`src/.../spawning/parse/schema/`) are **generated**
+  from the same schemas by `php tools/spawn-rules/generate-schema.php`. `VanillaSpawnConditions`
+ *  is one constant per condition; `SpawnSchema` also carries schema facts
   including the **envelope keys** the loader navigates with (`KEY_CONDITIONS`,
   `KEY_DESCRIPTION`, `KEY_POPULATION_CONTROL`), so those structural strings are
   schema-derived too rather than hand-written literals. Run
   `generate-schema.php --check --samples-dir=.cache/bedrock-samples` to confirm the
   committed artifacts still match regeneration (a stale artifact means Mojang renamed,
   added or removed a spawn component or an envelope key).
+- The generated **payload models** (`spawning/parse/schema/model/`, one `XxxData` class)
+  are emitted by the same generator, **derived from the payload-bearing schemas in the
+  whole `server/spawn/<version>/` directory** (every component schema that declares
+  properties — empty markers and structural/envelope schemas excluded). So when
+  implementing a new spawn condition, its typed model already exists to consume. Each
+  model is plainly typed public data (nullable optional fields, `@required` required,
+  `@var`-annotated arrays) that `SpawnConditionData` populates with **JsonMapper** (the
+  same library PocketMine-MP uses for its data models). This is what removes the
+  hand-written string-literal payload reads from the parser: a payload field Mojang
+  renames desyncs the generated model and the `--check` gate fails, instead of spawning
+  with a silently wrong value.
 - `SpawnRulesParseableTest` strict-loads the committed resource through the real
   loader, so a regression in data ⇔ parser surfaces too. `SpawnRuleIndexTest` asserts
   the planner index is an over-approximation of brute-force evaluation.
@@ -150,7 +164,12 @@ matching group wins** (vanilla semantics).
 
 Parsing (`spawning/parse/`) maps each vanilla component name to a parser closure in the
 open `SpawnConditionRegistry`. Vanilla JSON is read through `SpawnData`, a typed reader
-that reports every problem with its JSON path. The loader is **strict**: any value it
+that reports every problem with its JSON path. Payload-bearing components (every spawn
+component schema that declares properties) have their payload populated from the generated
+`XxxData` model classes by `SpawnConditionData` → JsonMapper — the parser no longer reads
+those fields by hand, so their schema types/defaults are enforced by the model and
+verified against drift by `generate-schema.php --check`. The loader is **strict**: any
+value it
 cannot compile aborts the whole load with `SpawnModelParseException` (malformed JSON,
 unknown component, unresolvable block name, unknown `population_control` or schema
 version). Exactly two degradations exist, both first-class documented policy in
@@ -211,6 +230,31 @@ Vanilla rules are bootstrapped when the `SpawnRuleRegistry` singleton is first b
 `SpawnRuleRegistry::getInstance()` (a `pocketmine\utils\SingletonTrait` singleton) calls
 its private `__construct()`, which walks `MobPlugin::ALL_ENTITIES` and registers every
 implemented mob with an entry in the compiled resource.
+
+### Custom condition components
+
+Registering a parser for a brand-new spawn-rule component keys off the generated
+`VanillaSpawnConditions` constants via `SpawnConditionRegistry::getInstance()->register(...)`. A
+parser is a function of one component occurrence —
+`fn(SpawnConditionContext $ctx, SpawnGroupBuilder $builder)` — where `$ctx` is scoped to
+*this* component. It reads its typed payload through `$ctx->map()` / `$ctx->mapList()`
+(JsonMapper-populated `XxxData` models, like the vanilla conditions) and never touches a
+raw `SpawnData`: the context binds the component name, so `map()` needs no component
+key, and block filters resolve through `$ctx->resolveBlockSet()`:
+
+```php
+SpawnConditionRegistry::getInstance()->register(
+    VanillaSpawnConditions::MY_CUSTOM,        // must be a declared VanillaSpawnConditions constant
+    static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+        $m = $ctx->map(MyCustomData::class);
+        $builder->addCondition(new MyCustomCondition($m->field));
+    }
+);
+```
+
+`SpawnData` stays an internal structural detail the factory uses to build JSON paths —
+it never reaches a parser signature. For payload shapes with no generated model, read
+the scoped raw value with `$ctx->value()` and the JSON path with `$ctx->path()`.
 
 An already-registered rule set can be replaced by calling `register()` again with
 `override: true` — the old rule set (and its factory) is swapped out and the planner

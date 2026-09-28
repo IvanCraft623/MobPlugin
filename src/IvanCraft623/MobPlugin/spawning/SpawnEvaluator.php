@@ -34,9 +34,7 @@ use function mt_rand;
 
 /**
  * Stage 2 — Evaluate. Weighted-picks one rule per candidate via the planner index and
- * runs its conditions against the snapshot. Pure: reads only snapshot data, never a
- * live World. (Main-thread by design: the expensive stages need World access anyway,
- * and the offloadable remainder is microseconds — see docs/spawning.md.)
+ * runs its conditions against the snapshot. Pure: never reads a live World.
  */
 final class SpawnEvaluator{
 
@@ -51,7 +49,7 @@ final class SpawnEvaluator{
 	public function evaluate(array $candidates, SpawnRuleIndex $index) : array{
 		$requests = [];
 		foreach($candidates as $candidate){
-			$band = SpawnBand::fromPosition($candidate->y, $candidate->surfaceY);
+			$band = $candidate->band;
 			$viable = $index->candidatesFor($candidate->biomeId, $band, $candidate->difficulty, $candidate->blockTypeId);
 			if(count($viable) === 0){
 				continue;
@@ -59,16 +57,19 @@ final class SpawnEvaluator{
 
 			$env = new SnapshotSpawnEnvironment($candidate);
 			$chosen = self::weightedPick($viable);
-			$match = $this->attemptSpawn($chosen, $candidate, $env, $band);
-			if($match === null){
+			$result = $this->attemptSpawn($chosen, $candidate, $env, $band);
+			if($result === null){
 				continue;
 			}
+			[$match, $categoryCount] = $result;
 			$requests[] = new SpawnRequest(
 				$candidate->worldId,
 				$candidate->x,
 				$candidate->y,
 				$candidate->z,
-				$match
+				$match,
+				categoryCount: $categoryCount,
+				band: $band
 			);
 		}
 
@@ -78,15 +79,23 @@ final class SpawnEvaluator{
 	/**
 	 * The picked rule's conditions, then the category population cap with the vanilla
 	 * probability formula. Per-mob caps live in the data as density_limit conditions.
+	 *
+	 * @phpstan-return array{SpawnConditionMatch, int}|null — the match and the category
+	 *     population count that passed the cap gate (threaded to the applier so it can
+	 *     re-check without rescanning the world).
 	 */
-	private function attemptSpawn(SpawnRules $rule, SpawnCandidateSnapshot $candidate, SnapshotSpawnEnvironment $env, SpawnBand $band) : ?SpawnConditionMatch{
-		$category = $rule->getCategory();
+	private function attemptSpawn(SpawnRules $rule, SpawnCandidateSnapshot $candidate, SnapshotSpawnEnvironment $env, SpawnBand $band) : ?array{
+		$category = MobCategoryRegistry::getInstance()->get($rule->getCategoryId());
+		if($category === null){
+			return null;
+		}
 
 		$ctx = new SpawnConditionContext(
 			env: $env,
 			x: $candidate->x,
 			y: $candidate->y,
 			z: $candidate->z,
+			band: $band,
 			difficulty: $candidate->difficulty,
 			weatherLightPenalty: $candidate->weatherLightPenalty,
 			nearestPlayerDistance: $candidate->nearestPlayerDistance
@@ -105,7 +114,7 @@ final class SpawnEvaluator{
 			return null;
 		}
 
-		return new SpawnConditionMatch($rule->getIdentifier(), $group);
+		return [new SpawnConditionMatch($rule->getIdentifier(), $group), $count];
 	}
 
 	/**

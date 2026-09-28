@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\payload;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use function count;
 
 /**
  * One alternative of a spawn rule set: the AND list of its conditions plus the payload
@@ -75,6 +76,27 @@ final class SpawnConditionGroup{
 
 	public function getHabitatBand() : ?SpawnBand{
 		return $this->habitatBand;
+	}
+
+	/**
+	 * Returns a copy of this group with one extra condition ANDed onto its list, carrying
+	 * the full payload (weight, herd, permute types, event, habitat band) through.
+	 *
+	 * @phpstan-param list<SpawnCondition> $extra conditions to append
+	 */
+	public function withConditions(array $extra) : self{
+		if(count($extra) === 0){
+			return $this;
+		}
+
+		return new self(
+			[...$this->conditions, ...$extra],
+			$this->weight,
+			$this->herd,
+			$this->permuteTypes,
+			$this->event,
+			$this->habitatBand
+		);
 	}
 
 	public function matches(SpawnConditionContext $ctx) : bool{

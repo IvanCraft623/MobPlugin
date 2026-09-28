@@ -24,11 +24,10 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 
 /**
- * GENERATED from the official Mojang spawn-rule JSON schemas — do not edit by hand.
+ * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Schema facts the runtime consumes as defaults (SpawnConditionRegistry,
- * DifficultyFilter) and the PHPUnit suite uses to pin the artifact version. Same source,
- * license and regeneration path as SpawnComponent.php — see its docblock.
+ * Schema facts the runtime consumes as defaults and the PHPUnit suite uses to pin the
+ * artifact version. Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class SpawnSchema{
 	/** Official spawn-schema version this artifact was generated from. */

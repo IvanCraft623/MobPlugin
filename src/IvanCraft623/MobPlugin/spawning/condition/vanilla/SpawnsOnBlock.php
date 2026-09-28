@@ -45,6 +45,10 @@ final class SpawnsOnBlock implements SpawnCondition{
 		}
 	}
 
+	public function getEvaluationCost() : int{
+		return 2; // one cached below-block lookup + set contains
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		$blockUnder = $ctx->env->getBelowBlockTypeId();
 		$contained = isset($this->typeIds[$blockUnder]);

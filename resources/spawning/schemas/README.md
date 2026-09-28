@@ -24,6 +24,6 @@ with, endorsed by, or sponsored by Mojang AB or Microsoft.
 
 To bump the schema version, replace this tree from a fresh checkout at a new pinned
 commit, regenerate `spawn_rules.json` and the generated schema artifacts
-(`src/IvanCraft623/MobPlugin/spawning/parse/schema/`), and update
-`tools/spawn-rules/{compile.php,generate-schema.php}` defaults plus this README's
+(`src/IvanCraft623/MobPlugin/spawning/parse/schema/`). The version is single-sourced in
+the adjacent `SCHEMA_VERSION` file — bump it there, and update this README's
 version/commit.

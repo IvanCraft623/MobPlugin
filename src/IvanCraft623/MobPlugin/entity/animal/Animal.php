@@ -28,7 +28,6 @@ use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\entity\Feedable;
 use IvanCraft623\MobPlugin\entity\Lureable;
-use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
@@ -51,11 +50,6 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 
 	private int $inLoveTicks = 0;
 	private ?Player $loveCauser = null;
-
-	/** Animals count against the animal population cap (Bedrock population_control). */
-	public function getMobCategory() : MobCategory{
-		return MobCategory::ANIMAL;
-	}
 
 	protected function initProperties() : void{
 		parent::initProperties();

@@ -32,7 +32,6 @@ use IvanCraft623\MobPlugin\spawning\condition\vanilla\HeightFilter;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\IsSlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesFactory;
-use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
 use pocketmine\entity\Squid;
@@ -42,7 +41,6 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
-
 use function array_keys;
 
 /**
@@ -56,6 +54,16 @@ final class SpawnRuleRegistry{
 
 	/** @var array<string, SpawnRuleBinding> @phpstan-var array<string, SpawnRuleBinding> */
 	private array $entries = [];
+
+	/**
+	 * Spawn-rule (network type) identifier → population-control category. The census
+	 * resolves any world entity to its category through this map, so bound raw-PMMP mobs
+	 * (e.g. Squid) — which carry no category on the entity instance — still count toward
+	 * their population cap.
+	 *
+	 * @var array<string, MobCategory>
+	 */
+	private array $identifierCategories = [];
 
 	private int $revision = 0;
 
@@ -77,17 +85,15 @@ final class SpawnRuleRegistry{
 			}
 
 			if($identifier === Slime::getNetworkTypeId()){
-				$entityRules = self::applySlimeChunkRule($entityRules, $factory->getConditionRegistry()->getBiomeTags());
+				$entityRules = self::applySlimeChunkRule($entityRules, $factory->getBiomeTags());
 			}
 
-			$this->register($entityRules, self::createFactory($entityClass));
+			$this->register($entityRules, self::createFactory($entityClass), $entityRules->getCategoryId());
 		}
 
 		//Squids are implemented on raw PMMP...
-		$this->register(
-			$rules[Squid::getNetworkTypeId()] ?? throw new \RuntimeException("Squid spawn rules not found"),
-			self::createFactory(Squid::class)
-		);
+		$squidRules = $rules[Squid::getNetworkTypeId()] ?? throw new \RuntimeException("Squid spawn rules not found");
+		$this->register($squidRules, self::createFactory(Squid::class), $squidRules->getCategoryId());
 	}
 
 	/**
@@ -97,19 +103,16 @@ final class SpawnRuleRegistry{
 	private static function applySlimeChunkRule(SpawnRules $rules, BiomeTagResolver $tags) : SpawnRules{
 		$groups = [];
 		foreach($rules->getGroups() as $group){
-			$groups[] = new SpawnConditionGroup([
-				...$group->getConditions(),
-				new AnyOf([
-					new AllOf([
-						new HeightFilter(null, 40),
-						new IsSlimeChunkCondition(),
-					]),
-					new BiomeTagCondition($tags, ["spawns_slimes_on_surface"], []),
+			$groups[] = $group->withConditions([new AnyOf([
+				new AllOf([
+					new HeightFilter(null, 40),
+					new IsSlimeChunkCondition(),
 				]),
-			], $group->getWeight(), $group->getHerd(), $group->getPermuteTypes(), $group->getEvent(), $group->getHabitatBand());
+				new BiomeTagCondition($tags, ["spawns_slimes_on_surface"], []),
+			])]);
 		}
 
-		return new SpawnRules($rules->getIdentifier(), $rules->getCategory(), $groups);
+		return new SpawnRules($rules->getIdentifier(), $rules->getCategoryId(), $groups);
 	}
 
 	/**
@@ -127,28 +130,55 @@ final class SpawnRuleRegistry{
 	}
 
 	/**
+	 * Registers a rule set bound to a factory, together with the population-control
+	 * category id it counts against. The category is resolved from MobCategoryRegistry,
+	 * so plugin consumers may register custom categories and reference them here.
+	 *
 	 * @phpstan-param SpawnFactory $factory
 	 *
 	 * @phpstan-throws PluginException
 	 */
-	public function register(SpawnRules $rules, \Closure $factory, bool $override = false) : void{
+	public function register(SpawnRules $rules, \Closure $factory, string $mobCategoryId, bool $override = false) : void{
 		$identifier = $rules->getIdentifier();
 		if(!$override && isset($this->entries[$identifier])){
 			throw new PluginException("Spawn rules for \"$identifier\" are already registered.");
 		}
-		$this->entries[$identifier] = new SpawnRuleBinding($rules, $factory);
+		$category = MobCategoryRegistry::getInstance()->get($mobCategoryId);
+		if($category === null){
+			throw new PluginException("Spawn rules for \"$identifier\": unknown mob category \"$mobCategoryId\".");
+		}
+		$this->entries[$identifier] = new SpawnRuleBinding($rules, $factory, $category);
+		$this->identifierCategories[$identifier] = $category;
 		$this->revision++;
 	}
 
 	public function unregister(string $identifier) : void{
 		if(isset($this->entries[$identifier])){
-			unset($this->entries[$identifier]);
+			unset($this->entries[$identifier], $this->identifierCategories[$identifier]);
 			$this->revision++;
 		}
 	}
 
 	public function get(string $identifier) : ?SpawnRuleBinding{
 		return $this->entries[$identifier] ?? null;
+	}
+
+	/**
+	 * The population-control category for the entity's network type identifier, or null
+	 * when it is outside any registered natural-spawn population control (players, items,
+	 * projectiles, unbound mobs). Used by the census so bound raw-PMMP mobs (e.g. Squid)
+	 * count toward their cap.
+	 */
+	public function categoryForIdentifier(string $identifier) : ?MobCategory{
+		return $this->identifierCategories[$identifier] ?? null;
+	}
+
+	/**
+	 * Convenience for the census hot path: resolve an entity to its category by network
+	 * type identifier.
+	 */
+	public function categoryForEntity(Entity $entity) : ?MobCategory{
+		return $this->identifierCategories[$entity::getNetworkTypeId()] ?? null;
 	}
 
 	/**

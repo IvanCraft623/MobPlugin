@@ -40,6 +40,10 @@ final class HeightFilter implements SpawnCondition{
 		}
 	}
 
+	public function getEvaluationCost() : int{
+		return 1; // pure context-field compare
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		if($this->min !== null && $ctx->y < $this->min){
 			return false;

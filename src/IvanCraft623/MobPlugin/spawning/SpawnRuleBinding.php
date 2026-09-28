@@ -28,9 +28,10 @@ use pocketmine\math\Vector3;
 use pocketmine\world\World;
 
 /**
- * A rule set bound to the factory that materializes its matches. Factories construct
- * but must not spawn (the applier calls spawnToAll() after herd positioning), and run
- * on the main thread only.
+ * A rule set bound to the factory that materializes its matches and to the
+ * population-control category it counts against. Factories construct but must not spawn
+ * (the applier calls spawnToAll() after herd positioning), and run on the main thread
+ * only.
  *
  * @phpstan-type SpawnFactory \Closure(World $world, Vector3 $pos, SpawnConditionMatch $match): Entity
  */
@@ -38,11 +39,16 @@ final class SpawnRuleBinding{
 	/** @phpstan-param SpawnFactory $factory */
 	public function __construct(
 		private SpawnRules $rules,
-		private \Closure $factory
+		private \Closure $factory,
+		private MobCategory $category
 	){}
 
 	public function getRules() : SpawnRules{
 		return $this->rules;
+	}
+
+	public function getCategory() : MobCategory{
+		return $this->category;
 	}
 
 	/** @phpstan-return SpawnFactory */

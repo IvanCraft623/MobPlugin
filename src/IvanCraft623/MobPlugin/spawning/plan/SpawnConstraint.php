@@ -33,10 +33,8 @@ use function max;
 use function min;
 
 /**
- * Conservative summary of what a rule set can accept: habitat bands, difficulty range,
- * biome tags, required liquid. Planning metadata only — never decides a spawn. Every
- * rejection is provable (AND paths only; AnyOf/Not contribute nothing), every acceptance
- * still goes through the real conditions.
+ * Conservative summary of what a rule set can accept (habitat, difficulty, biomes,
+ * liquid). Planning metadata only — real conditions still decide each spawn.
  */
 final class SpawnConstraint{
 	/**
@@ -102,7 +100,7 @@ final class SpawnConstraint{
 		$bands = $this->bands === null
 			? $other->bands
 			: ($other->bands === null ? $this->bands : self::intersectBands($this->bands, $other->bands));
-		if($bands !== null && count($bands) === 0){ // contradictory band requirements
+		if($bands !== null && count($bands) === 0){
 			return self::impossible();
 		}
 		$minDifficulty = $this->minDifficulty === null
@@ -124,7 +122,7 @@ final class SpawnConstraint{
 			? $other->requiredLiquid
 			: ($other->requiredLiquid === null ? $this->requiredLiquid : ($this->requiredLiquid === $other->requiredLiquid ? $this->requiredLiquid : null));
 		if($requiredLiquid === null && $this->requiredLiquid !== null && $other->requiredLiquid !== null){
-			return self::impossible(); // contradictory liquid requirements
+			return self::impossible();
 		}
 
 		return new self($bands, $minDifficulty, $maxDifficulty, $requiredTags, $forbiddenTags, $requiredLiquid, false);

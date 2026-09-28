@@ -49,7 +49,9 @@ declare(strict_types=1);
  *   php tools/spawn-rules/generate-schema.php
  *
  * Usage:
- *   php tools/spawn-rules/compile.php [--samples-dir=<path>] [--out=<path>] [--source-commit=<sha>] [--schema-version=<v>]
+ *   php tools/spawn-rules/compile.php --schema-version=<version> [--samples-dir=<path>] [--out=<path>] [--source-commit=<sha>]
+ *
+ * --schema-version is required (single-sourced from resources/spawning/schemas/SCHEMA_VERSION).
  *
  * Exit codes: 0 = success, 1 = failure (no partial output is ever written).
  */
@@ -64,8 +66,7 @@ const TOOL_VERSION = "1.2.0";
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
 const SOURCE_PATH = "behavior_pack/spawn_rules";
 const SCHEMA_PATH = "metadata/json_schemas/server/spawn";
-const DEFAULT_SCHEMA_VERSION = "1.21.50";
-const COMPONENT_PREFIX = "minecraft:";
+const CONDITION_PREFIX = "minecraft:";
 
 /**
  * @param list<string> $argv
@@ -75,10 +76,13 @@ function main(array $argv) : int{
 	if(!is_array($opts)){
 		return fail("Unable to parse command line options.");
 	}
+	$schemaVersion = readStringOption($opts, "schema-version");
+	if($schemaVersion === null){
+		return fail("Missing required --schema-version=<version> (see resources/spawning/schemas/SCHEMA_VERSION).");
+	}
 	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/.cache/bedrock-samples";
 	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/resources/spawning";
 	$commitOverride = readStringOption($opts, "source-commit");
-	$schemaVersion = readStringOption($opts, "schema-version") ?? DEFAULT_SCHEMA_VERSION;
 
 	if(!is_dir($samplesDir)){
 		return fail("Samples directory does not exist: $samplesDir");
@@ -94,7 +98,7 @@ function main(array $argv) : int{
 
 	try{
 		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($samplesDir . "/metadata/json_schemas", $schemaVersion);
-		$inventory = readSchemaComponentInventory($schemaDir);
+		$inventory = readSchemaConditionsInventory($schemaDir);
 	}catch(SchemaSetupException $e){
 		return fail($e->getMessage());
 	}
@@ -306,7 +310,7 @@ function resolveGitValue(string $repoDir, string $args) : ?string{
  * @phpstan-return array<string, true>
  * @phpstan-throws SchemaSetupException
  */
-function readSchemaComponentInventory(string $schemaDir) : array{
+function readSchemaConditionsInventory(string $schemaDir) : array{
 	$file = $schemaDir . "/Spawn BiomeConditions.json";
 	$decoded = json_decode((string) file_get_contents($file));
 	$properties = $decoded instanceof stdClass ? ($decoded->properties ?? null) : null;
@@ -315,7 +319,7 @@ function readSchemaComponentInventory(string $schemaDir) : array{
 	}
 	$inventory = [];
 	foreach(array_keys(get_object_vars($properties)) as $rawName){
-		$inventory[str_starts_with($rawName, COMPONENT_PREFIX) ? substr($rawName, strlen(COMPONENT_PREFIX)) : $rawName] = true;
+		$inventory[str_starts_with($rawName, CONDITION_PREFIX) ? substr($rawName, strlen(CONDITION_PREFIX)) : $rawName] = true;
 	}
 	if(count($inventory) === 0){
 		throw new SchemaSetupException("Spawn BiomeConditions.json declares no components: $file");
@@ -359,7 +363,7 @@ function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $sche
 			continue; // already reported by the shape validation
 		}
 		foreach(array_keys(get_object_vars($condition)) as $rawKey){
-			$component = str_starts_with($rawKey, COMPONENT_PREFIX) ? substr($rawKey, strlen(COMPONENT_PREFIX)) : $rawKey;
+			$component = str_starts_with($rawKey, CONDITION_PREFIX) ? substr($rawKey, strlen(CONDITION_PREFIX)) : $rawKey;
 			if(isset($seen[$component])){
 				continue;
 			}

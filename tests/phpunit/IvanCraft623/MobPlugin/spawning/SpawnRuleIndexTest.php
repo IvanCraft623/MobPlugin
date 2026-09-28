@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\BiomeTagCondition;
@@ -42,11 +41,8 @@ use function array_values;
 use function count;
 
 /**
- * The planner index is an over-approximation: it must never reject a rule set that the
- * real conditions could match at a given position. This property test asserts exactly
- * that — for a grid of position profiles, every rule set whose conditions evaluate to a
- * match must be offered by SpawnRuleIndex::candidatesFor() (so the index is a superset
- * of brute-force evaluation). Anything the index rejects must therefore provably fail.
+ * The planner index is an over-approximation: it must offer every rule set whose real
+ * conditions could match a position (a superset of brute-force evaluation).
  */
 final class SpawnRuleIndexTest extends TestCase{
 
@@ -125,10 +121,10 @@ final class SpawnRuleIndexTest extends TestCase{
 		$rules = [
 			// Two folded difficulty constraints that meet in a contradiction: the group
 			// needs difficulty >=3 AND <=2 at the same position — impossible.
-			"impossible" => new SpawnRules("minecraft:impossible", MobCategory::MONSTER, [
+			"impossible" => new SpawnRules("minecraft:impossible", "monster", [
 				self::group([new DifficultyFilter(3, 3), new DifficultyFilter(1, 2)]),
 			]),
-			"possible" => new SpawnRules("minecraft:possible", MobCategory::MONSTER, [
+			"possible" => new SpawnRules("minecraft:possible", "monster", [
 				self::group([new DifficultyFilter(1, 3)]),
 			]),
 		];
@@ -157,6 +153,7 @@ final class SpawnRuleIndexTest extends TestCase{
 					x: 0,
 					y: $y,
 					z: 0,
+					band: $band,
 					difficulty: $difficulty,
 					weatherLightPenalty: 0,
 					nearestPlayerDistance: 40.0
@@ -219,49 +216,49 @@ final class SpawnRuleIndexTest extends TestCase{
 	}
 
 	private static function ruleSurface() : SpawnRules{
-		return new SpawnRules("minecraft:surface_animal", MobCategory::ANIMAL, [
+		return new SpawnRules("minecraft:surface_animal", "animal", [
 			self::group([new HabitatBandCondition([SpawnBand::SURFACE])]),
 		]);
 	}
 
 	private static function ruleCave() : SpawnRules{
-		return new SpawnRules("minecraft:cave_monster", MobCategory::MONSTER, [
+		return new SpawnRules("minecraft:cave_monster", "monster", [
 			self::group([new HabitatBandCondition([SpawnBand::CAVE])]),
 		]);
 	}
 
 	private static function ruleUnderwater() : SpawnRules{
-		return new SpawnRules("minecraft:wet_monster", MobCategory::MONSTER, [
+		return new SpawnRules("minecraft:wet_monster", "monster", [
 			self::group([new SpawnsInLiquid(BlockTypeIds::WATER)]),
 		]);
 	}
 
 	private static function ruleBright() : SpawnRules{
-		return new SpawnRules("minecraft:diurnal", MobCategory::ANIMAL, [
+		return new SpawnRules("minecraft:diurnal", "animal", [
 			self::group([new BrightnessFilter(7, 15, false)]),
 		]);
 	}
 
 	private static function ruleFrozen(BiomeTagResolver $tags) : SpawnRules{
-		return new SpawnRules("minecraft:frozen", MobCategory::ANIMAL, [
+		return new SpawnRules("minecraft:frozen", "animal", [
 			self::group([new BiomeTagCondition($tags, ["frozen"], [])]),
 		]);
 	}
 
 	private static function ruleBelow40() : SpawnRules{
-		return new SpawnRules("minecraft:below_y40", MobCategory::MONSTER, [
+		return new SpawnRules("minecraft:below_y40", "monster", [
 			self::group([new HeightFilter(null, 40)]),
 		]);
 	}
 
 	private static function ruleHardOnly() : SpawnRules{
-		return new SpawnRules("minecraft:hard_only", MobCategory::MONSTER, [
+		return new SpawnRules("minecraft:hard_only", "monster", [
 			self::group([new DifficultyFilter(3, 3)]),
 		]);
 	}
 
 	private static function ruleDarkCaveOnStone() : SpawnRules{
-		return new SpawnRules("minecraft:dark_cave_stone", MobCategory::MONSTER, [
+		return new SpawnRules("minecraft:dark_cave_stone", "monster", [
 			self::group([
 				new HabitatBandCondition([SpawnBand::CAVE]),
 				new BrightnessFilter(0, 7, false),
@@ -271,7 +268,7 @@ final class SpawnRuleIndexTest extends TestCase{
 	}
 
 	private static function ruleNoConditions() : SpawnRules{
-		return new SpawnRules("minecraft:empty", MobCategory::MONSTER, []);
+		return new SpawnRules("minecraft:empty", "monster", []);
 	}
 }
 

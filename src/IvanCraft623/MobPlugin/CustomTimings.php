@@ -34,7 +34,11 @@ final class CustomTimings {
 
 	public static TimingsHandler $naturalSpawningCollect;
 
+	public static TimingsHandler $naturalSpawningCensus;
+
 	public static TimingsHandler $naturalSpawningEvaluate;
+
+	public static TimingsHandler $naturalSpawningApply;
 
 	public static TimingsHandler $pathfinding;
 
@@ -54,7 +58,9 @@ final class CustomTimings {
 		self::$entityAiTick = new TimingsHandler("Entity AI Tick", group: Timings::GROUP_BREAKDOWN);
 
 		self::$naturalSpawningCollect = new TimingsHandler("Natural Spawning - Collect", group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningCensus = new TimingsHandler("Natural Spawning - Census", group: Timings::GROUP_BREAKDOWN);
 		self::$naturalSpawningEvaluate = new TimingsHandler("Natural Spawning - Evaluate", group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningApply = new TimingsHandler("Natural Spawning - Apply", group: Timings::GROUP_BREAKDOWN);
 
 		self::$pathfinding = new TimingsHandler("Entity Pathfinding", group: Timings::GROUP_BREAKDOWN);
 

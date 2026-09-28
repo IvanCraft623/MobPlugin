@@ -32,6 +32,10 @@ use IvanCraft623\MobPlugin\spawning\condition\vanilla\slime\SlimeChunkChecker;
  * 1-in-10 chunk property, no world seed involved — unlike Java). See SlimeChunkChecker.
  */
 final class IsSlimeChunkCondition implements SpawnCondition{
+	public function getEvaluationCost() : int{
+		return 5; // runs the Mersenne-Twister walk — the priciest single check
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		return SlimeChunkChecker::isSlimeChunk($ctx->x >> 4, $ctx->z >> 4);
 	}

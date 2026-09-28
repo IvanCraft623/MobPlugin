@@ -40,6 +40,10 @@ final class WorldAgeFilter implements SpawnCondition{
 		}
 	}
 
+	public function getEvaluationCost() : int{
+		return 1; // pure environment time compare
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		$age = $ctx->env->getTime();
 		if($this->min !== null && $age < $this->min){

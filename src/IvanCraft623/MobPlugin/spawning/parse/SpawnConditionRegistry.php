@@ -33,9 +33,17 @@ use IvanCraft623\MobPlugin\spawning\condition\vanilla\HeightFilter;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsInLiquid;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsOnBlock;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\WorldAgeFilter;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\VanillaBiomeTagResolver;
-use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnComponent;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\BrightnessFilterData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\DensityLimitData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\DifficultyFilterData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\DistanceFilterData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\HeightFilterData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\HerdData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\MobEventFilterData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\PermuteTypeData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\WeightData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\model\WorldAgeFilterData;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\payload\Herd;
 use IvanCraft623\MobPlugin\spawning\payload\PermuteType;
 use IvanCraft623\MobPlugin\spawning\payload\SpawnEvent;
@@ -48,20 +56,9 @@ use function strlen;
 use function substr;
 
 /**
- * Registry mapping spawn-rule component names to parser closures. A process-wide
- * singleton (pocketmine\utils\SingletonTrait) preloaded with every vanilla component,
- * open for plugins: register/unregister/replace components freely.
+ * Maps spawn-rule condition names to parser closures.
  *
- * Vanilla components are referenced by their SpawnComponent enum cases — the cases are
- * generated from the official Mojang spawn schemas, so a component Mojang renames or
- * removes fails PHPStan here instead of silently disappearing from the registry. New
- * components fail the registry-coverage PHPUnit test until classified below.
- *
- * Parser contract: throw SpawnParseException (with the JSON path) to reject the whole
- * condition — the strict loader has no warning channel, so any unusable value aborts
- * the load.
- *
- * @phpstan-type ComponentParser \Closure(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void
+ * @phpstan-type ConditionParser \Closure(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void
  */
 final class SpawnConditionRegistry{
 	use SingletonTrait;
@@ -69,137 +66,128 @@ final class SpawnConditionRegistry{
 	/**
 	 * Vanilla components with no implementation, registered to fail closed. Replaceable.
 	 *
-	 * @var list<SpawnComponent>
+	 * @var list<string>
 	 */
 	public const UNSUPPORTED_VANILLA = [
-		SpawnComponent::MOB_EVENT_FILTER,
-		SpawnComponent::DELAY_FILTER,
-		SpawnComponent::PLAYER_IN_VILLAGE_FILTER,
-		SpawnComponent::SPAWNS_ABOVE_BLOCK_FILTER,
+		VanillaSpawnConditions::MOB_EVENT_FILTER,
+		VanillaSpawnConditions::DELAY_FILTER,
+		VanillaSpawnConditions::PLAYER_IN_VILLAGE_FILTER,
+		VanillaSpawnConditions::SPAWNS_ABOVE_BLOCK_FILTER,
 	];
 
 	/**
 	 * Recognized components with no runtime effect, registered as pass-through. Replaceable.
 	 *
-	 * @var list<SpawnComponent>
+	 * @var list<string>
 	 */
 	public const PASS_THROUGH_VANILLA = [
-		SpawnComponent::DISALLOW_SPAWNS_IN_BUBBLE, // PocketMine has no bubble-column blocks
-		SpawnComponent::IS_PERSISTENT,
-		SpawnComponent::IS_EXPERIMENTAL,
+		VanillaSpawnConditions::DISALLOW_SPAWNS_IN_BUBBLE, // PocketMine has no bubble-column blocks
+		VanillaSpawnConditions::IS_PERSISTENT,
+		VanillaSpawnConditions::IS_EXPERIMENTAL,
 	];
 
-	/** @phpstan-var array<string, ComponentParser> */
+	/** @phpstan-var array<string, ConditionParser> */
 	private array $parsers = [];
 
-	private readonly BiomeTagResolver $biomeTags;
-
 	private function __construct(){
-		$this->biomeTags = new VanillaBiomeTagResolver();
 		$this->registerDefaultVanilla();
 	}
 
-	public function getBiomeTags() : BiomeTagResolver{
-		return $this->biomeTags;
-	}
-
-	/** Registers the parser for every vanilla spawn-rule component, exactly once. */
+	/** Registers the parser for every vanilla spawn-rule component. */
 	private function registerDefaultVanilla() : void{
 		// Marker parsers each accept their own band; the builder unions them.
-		$this->register(SpawnComponent::SPAWNS_ON_SURFACE, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
+		$this->register(VanillaSpawnConditions::SPAWNS_ON_SURFACE, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
 			$builder->allowHabitatBand(SpawnBand::SURFACE);
 		});
-		$this->register(SpawnComponent::SPAWNS_UNDERGROUND, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
+		$this->register(VanillaSpawnConditions::SPAWNS_UNDERGROUND, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
 			$builder->allowHabitatBand(SpawnBand::CAVE);
 		});
-		$this->register(SpawnComponent::SPAWNS_UNDERWATER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
+		$this->register(VanillaSpawnConditions::SPAWNS_UNDERWATER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
 			$builder->addCondition(new SpawnsInLiquid(BlockTypeIds::WATER));
 		});
-		$this->register(SpawnComponent::SPAWNS_LAVA, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
+		$this->register(VanillaSpawnConditions::SPAWNS_LAVA, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
 			$builder->addCondition(new SpawnsInLiquid(BlockTypeIds::LAVA));
 		});
-		$this->register(SpawnComponent::BRIGHTNESS_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
+		$this->register(VanillaSpawnConditions::BRIGHTNESS_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(BrightnessFilterData::class);
 
-			$builder->addCondition(new BrightnessFilter(
-				$data->intOr("min", 0),
-				$data->intOr("max", 15),
-				$data->boolOr("adjust_for_weather", false)
+			$builder->addCondition(new BrightnessFilter($m->min ?? 0, $m->max ?? 15, $m->adjust_for_weather ?? false));
+		});
+		$this->register(VanillaSpawnConditions::DIFFICULTY_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(DifficultyFilterData::class);
+
+			$builder->addCondition(DifficultyFilter::fromNames($m->min, $m->max));
+		});
+		$this->register(VanillaSpawnConditions::HEIGHT_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(HeightFilterData::class);
+
+			$builder->addCondition(new HeightFilter($m->min, $m->max));
+		});
+		$this->register(VanillaSpawnConditions::DISTANCE_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(DistanceFilterData::class);
+
+			// Schema types distance min/max as integers; the condition model is float.
+			$builder->addCondition(new DistanceFilter(
+				$m->min === null ? null : (float) $m->min,
+				$m->max === null ? null : (float) $m->max
 			));
 		});
-		$this->register(SpawnComponent::DIFFICULTY_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
+		$this->register(VanillaSpawnConditions::WORLD_AGE_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(WorldAgeFilterData::class);
 
-			$builder->addCondition(DifficultyFilter::fromNames($data->stringNullable("min"), $data->stringNullable("max")));
+			$builder->addCondition(new WorldAgeFilter($m->min, $m->max));
 		});
-		$this->register(SpawnComponent::HEIGHT_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
+		$this->register(VanillaSpawnConditions::SPAWNS_ON_BLOCK_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlockSet(), false));
+		});
+		$this->register(VanillaSpawnConditions::SPAWNS_ON_BLOCK_PREVENTED_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlockSet(), true));
+		});
+		$this->register(VanillaSpawnConditions::DENSITY_LIMIT, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(DensityLimitData::class);
 
-			$builder->addCondition(new HeightFilter($data->intNullable("min"), $data->intNullable("max")));
+			$builder->addCondition(new DensityLimitCondition($builder->getIdentifier(), $m->surface, $m->underground));
 		});
-		$this->register(SpawnComponent::DISTANCE_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
-
-			$builder->addCondition(new DistanceFilter($data->floatNullable("min"), $data->floatNullable("max")));
-		});
-		$this->register(SpawnComponent::WORLD_AGE_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
-
-			$builder->addCondition(new WorldAgeFilter($data->intNullable("min"), $data->intNullable("max")));
-		});
-		$this->register(SpawnComponent::SPAWNS_ON_BLOCK_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$builder->addCondition(new SpawnsOnBlock($factory->resolveBlockSet($condition, $component), false));
-		});
-		$this->register(SpawnComponent::SPAWNS_ON_BLOCK_PREVENTED_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$builder->addCondition(new SpawnsOnBlock($factory->resolveBlockSet($condition, $component), true));
-		});
-		$this->register(SpawnComponent::DENSITY_LIMIT, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
-
-			$builder->addCondition(new DensityLimitCondition(
-				$builder->getIdentifier(),
-				$data->intNullable("surface"),
-				$data->intNullable("underground")
-			));
-		});
-		$this->register(SpawnComponent::WEIGHT, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
+		$this->register(VanillaSpawnConditions::WEIGHT, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(WeightData::class);
 
 			// The vanilla "rarity" field is not consumed (documented approximation).
-			$builder->setWeight($data->intOr("default", 1));
+			$builder->setWeight($m->default);
 		});
-		$this->register(SpawnComponent::HERD, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->objectOrList($component)[0];
+		$this->register(VanillaSpawnConditions::HERD, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$herds = $ctx->mapList(HerdData::class);
+			$data = $herds[0];
 
-			$min = max(1, $data->intOr("min_size", 1));
-			$max = max($min, $data->intOr("max_size", $min));
+			$min = max(1, $data->min_size ?? 1);
+			$max = max($min, $data->max_size ?? $min);
 			$builder->setHerd(new Herd($min, $max));
 		});
-		$this->register(SpawnComponent::PERMUTE_TYPE, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$entries = $condition->objectOrList($component);
+		$this->register(VanillaSpawnConditions::PERMUTE_TYPE, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$entries = $ctx->mapList(PermuteTypeData::class);
 
 			$permuteTypes = [];
 			foreach($entries as $data){
-				$permuteTypes[] = new PermuteType($data->intOr("weight", 1), $data->stringNullable("entity_type"));
+				$permuteTypes[] = new PermuteType($data->weight, $data->entity_type);
 			}
 			$builder->setPermuteTypes($permuteTypes);
 		});
-		$this->register(SpawnComponent::SPAWN_EVENT, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$data = $condition->object($component);
+		$this->register(VanillaSpawnConditions::SPAWN_EVENT, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$m = $ctx->map(MobEventFilterData::class);
 
-			$builder->setEvent(new SpawnEvent($data->stringNullable("event")));
+			$builder->setEvent(new SpawnEvent($m->event));
 		});
-		$this->register(SpawnComponent::BIOME_FILTER, static function(SpawnData $condition, string $component, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
-			$builder->addCondition((new BiomeFilterParser(SpawnConditionRegistry::getInstance()->getBiomeTags()))->fromCondition($condition, $component));
+		$this->register(VanillaSpawnConditions::BIOME_FILTER, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
+			$builder->addCondition((new BiomeFilterParser($ctx->biomeTags()))->parse($ctx));
 		});
+
 		foreach(self::UNSUPPORTED_VANILLA as $component){
-			$this->register($component, static function(SpawnData $condition, string $componentKey, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
+			$this->register($component, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
 
 				$builder->addCondition(NeverSpawnCondition::instance());
 			});
 		}
 		foreach(self::PASS_THROUGH_VANILLA as $component){
-			$this->register($component, static function(SpawnData $condition, string $componentKey, SpawnGroupBuilder $builder, SpawnRulesFactory $factory) : void{
+			$this->register($component, static function(SpawnConditionContext $ctx, SpawnGroupBuilder $builder) : void{
 
 				$builder->addCondition(PassThroughSpawnCondition::instance());
 			});
@@ -207,11 +195,11 @@ final class SpawnConditionRegistry{
 	}
 
 	/**
-	 * @phpstan-param SpawnComponent|string $component
-	 * @phpstan-param ComponentParser $parser
+	 * @phpstan-param string $component
+	 * @phpstan-param ConditionParser $parser
 	 * @phpstan-throws \InvalidArgumentException when the component is already registered
 	 */
-	public function register(SpawnComponent|string $component, \Closure $parser) : void{
+	public function register(string $component, \Closure $parser) : void{
 		$component = self::normalize($component);
 		if(isset($this->parsers[$component])){
 			throw new \InvalidArgumentException("Spawn condition component \"$component\" is already registered");
@@ -220,12 +208,12 @@ final class SpawnConditionRegistry{
 	}
 
 	/**
-	 * @phpstan-param SpawnComponent|string $component
+	 * @phpstan-param string $component
 	 *
-	 * @phpstan-return ComponentParser
+	 * @phpstan-return ConditionParser
 	 * @phpstan-throws \InvalidArgumentException when the component is not registered
 	 */
-	public function unregister(SpawnComponent|string $component) : \Closure{
+	public function unregister(string $component) : \Closure{
 		$component = self::normalize($component);
 		$parser = $this->parsers[$component] ?? throw new \InvalidArgumentException("Spawn condition component \"$component\" is not registered");
 		unset($this->parsers[$component]);
@@ -234,24 +222,20 @@ final class SpawnConditionRegistry{
 	}
 
 	/**
-	 * @phpstan-param SpawnComponent|string $component
+	 * @phpstan-param string $component
 	 *
-	 * @phpstan-return ComponentParser|null
+	 * @phpstan-return ConditionParser|null
 	 */
-	public function get(SpawnComponent|string $component) : ?\Closure{
+	public function get(string $component) : ?\Closure{
 		return $this->parsers[self::normalize($component)] ?? null;
 	}
 
 	/**
-	 * Strips the "minecraft:" prefix; enum cases are already unprefixed.
+	 * Strips the "minecraft:" prefix; constants are already unprefixed.
 	 *
-	 * @phpstan-param SpawnComponent|string $component
+	 * @phpstan-param string $component
 	 */
-	public static function normalize(SpawnComponent|string $component) : string{
-		if($component instanceof SpawnComponent){
-			return $component->value;
-		}
-
+	public static function normalize(string $component) : string{
 		return str_starts_with($component, "minecraft:") ? substr($component, strlen("minecraft:")) : $component;
 	}
 }

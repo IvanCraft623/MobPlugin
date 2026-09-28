@@ -23,8 +23,9 @@ jobs:
         run: composer install --prefer-dist --no-interaction
 
       # The committed spawn schemas under resources/spawning/schemas/ drive the
-      # generated SpawnComponent/SpawnSchema artifacts. If Mojang added/renamed/removed
-      # a component or envelope key, regeneration from the committed schemas diverges and
-      # --check fails — see docs/spawning.md. Runs offline (no bedrock-samples clone).
+      # generated VanillaSpawnConditions/SpawnSchema artifacts. If Mojang
+      # added/renamed/removed a condition or envelope key, regeneration from the
+      # committed schemas diverges and --check fails — see docs/spawning.md. Runs
+      # offline (no bedrock-samples clone).
       - name: Verify generated schema artifacts match committed schemas
-        run: php tools/spawn-rules/generate-schema.php --samples-dir=resources/spawning/schemas --schema-version=1.21.50 --check
+        run: php tools/spawn-rules/generate-schema.php --samples-dir=resources/spawning/schemas --schema-version=$(cat resources/spawning/schemas/SCHEMA_VERSION) --check

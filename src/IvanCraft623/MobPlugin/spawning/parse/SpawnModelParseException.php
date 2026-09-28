@@ -24,11 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
 /**
- * Thrown when a spawn-rule model cannot be compiled as-is: malformed JSON, an unknown
- * component, an unresolvable block name, an unknown population_control or schema
- * version — the strict loader aborts the whole load rather than degrading silently.
- * Only the documented by-design degradations (non-natural population controls, known
- * missing blocks) bypass this exception.
+ * Thrown when a spawn-rule model cannot be compiled as-is; the strict loader aborts the
+ * whole load rather than degrading silently.
  */
 final class SpawnModelParseException extends \InvalidArgumentException{
 }

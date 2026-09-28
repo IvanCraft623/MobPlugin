@@ -31,7 +31,6 @@ use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeKeepOnJumpingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeRandomDirectionGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeMoveControl;
 
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
@@ -76,10 +75,6 @@ class Slime extends Mob implements Enemy {
 
 	public function getName() : string{
 		return "Slime";
-	}
-
-	public function getMobCategory() : MobCategory{
-		return MobCategory::MONSTER;
 	}
 
 	protected function registerGoals() : void{

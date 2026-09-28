@@ -34,16 +34,14 @@ use function array_is_list;
 use function array_keys;
 use function array_map;
 use function count;
+use function get_debug_type;
 use function implode;
 use function is_array;
 use function is_string;
 
 /**
- * Compiles a biome_filter value into a SpawnCondition tree: leaves become
- * BiomeTagCondition,
- * all_of/any_of/none_of (and the bare array form, which is all_of) become the AllOf /
- * AnyOf / Not combinators, nested to arbitrary depth. Unknown tests, operators or value
- * types throw SpawnParseException with the JSON path.
+ * Compiles a biome_filter value into a SpawnCondition tree; unknown tests, operators or
+ * value types throw SpawnParseException with the JSON path.
  */
 final class BiomeFilterParser{
 	/** @phpstan-var array<string, true> */
@@ -54,22 +52,30 @@ final class BiomeFilterParser{
 	){}
 
 	/**
-	 * Parses a "biome_filter" value: a single node or a bare list (AND shorthand).
+	 * Parses the biome_filter component scoped to one component occurrence: a single node
+	 * or a bare list (AND shorthand). Reconstructs the structural tree from the raw value,
+	 * so no raw SpawnData ever reaches the parser closure.
 	 *
 	 * @phpstan-throws SpawnParseException
 	 */
-	public function fromCondition(SpawnData $condition, string $key) : SpawnCondition{
-		$value = $condition->raw($key);
+	public function parse(SpawnConditionContext $ctx) : SpawnCondition{
+		$value = $ctx->value();
 		if(!is_array($value)){
-			throw new SpawnParseException("'{$condition->at($key)}' must be an object or a list of objects");
+			throw new SpawnParseException("'{$ctx->path()}' must be an object or a list of objects");
 		}
 		if(!$this->isAssoc($value)){
-			$nodes = $condition->objectOrList($key);
+			$nodes = [];
+			foreach($value as $index => $entry){
+				if(!is_array($entry) || array_is_list($entry)){
+					throw new SpawnParseException("'{$ctx->path()}[{$index}]' must be an object, got " . get_debug_type($entry));
+				}
+				$nodes[] = new SpawnData($entry, "{$ctx->path()}[{$index}]");
+			}
 
 			return new AllOf(array_map($this->fromNode(...), $nodes));
 		}
 
-		return $this->fromNode($condition->object($key));
+		return $this->fromNode(new SpawnData($value, $ctx->path()));
 	}
 
 	/**

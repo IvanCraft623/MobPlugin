@@ -33,13 +33,4 @@ final class BandCounts{
 	public function get(SpawnBand $band) : int{
 		return $band === SpawnBand::SURFACE ? $this->surface : $this->cave;
 	}
-
-	/**
-	 * Returns a copy with the given band's count increased; the receiver is untouched.
-	 */
-	public function incremented(SpawnBand $band) : self{
-		return $band === SpawnBand::SURFACE
-			? new self($this->surface + 1, $this->cave)
-			: new self($this->surface, $this->cave + 1);
-	}
 }

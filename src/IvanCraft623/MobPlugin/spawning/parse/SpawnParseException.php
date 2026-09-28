@@ -24,10 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
 /**
- * Thrown by SpawnData readers, component parsers and condition constructors when raw
- * JSON cannot be compiled. Carries the full JSON path of the offending value, mirroring
- * the error style of PocketMine data parsing. The loader is strict: the exception aborts
- * the whole load (SpawnModelParseException, which wraps it with the entry identifier).
+ * Thrown when raw spawn-rule JSON cannot be compiled. Carries the JSON path of the
+ * offending value; the strict loader aborts, wrapping it in SpawnModelParseException.
  */
 final class SpawnParseException extends \InvalidArgumentException{
 }

@@ -31,10 +31,7 @@ use function is_string;
 
 /**
  * The loader is strict: the bundled resource must compile with zero unhandled
- * degradations. The only by-design skips are the two documented ones (event-driven
- * pillager rule sets; the powder_snow block name PocketMine cannot resolve) — any other
- * problem throws and fails loudly here. This guards the data ⇔ parser contract: new
- * vanilla data, a parser regression, or a PM block removal all surface as a failure.
+ * degradations — a parser regression or PM block removal fails loudly here.
  */
 final class SpawnRulesParseableTest extends TestCase{
 	/**

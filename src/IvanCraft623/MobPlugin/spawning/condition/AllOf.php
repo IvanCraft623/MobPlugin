@@ -37,6 +37,18 @@ final class AllOf implements SpawnCondition{
 		return $this->conditions;
 	}
 
+	public function getEvaluationCost() : int{
+		// An AND runs every child on the passing path, so its cost is the sum of the
+		// children. (A failure short-circuits cheaper, but sum is the right upper bound
+		// for scheduling order.)
+		$cost = 0;
+		foreach($this->conditions as $condition){
+			$cost += $condition->getEvaluationCost();
+		}
+
+		return $cost;
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		foreach($this->conditions as $condition){
 			if(!$condition->test($ctx)){

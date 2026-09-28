@@ -1,0 +1,39 @@
+<?php
+
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
+declare(strict_types=1);
+
+namespace IvanCraft623\MobPlugin\spawning\parse\schema\model;
+
+/**
+ * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
+ *
+ * Payload data model for a spawn-rule condition (JsonMapper / SpawnConditionData).
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
+ */
+final class HerdData{
+	public ?string $event = null;
+	public ?int $event_skip_count = null;
+	public ?string $initial_event = null;
+	public ?int $initial_event_count = null;
+	public ?int $max_size = null;
+	public ?int $min_size = null;
+}

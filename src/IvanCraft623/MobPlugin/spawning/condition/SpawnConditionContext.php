@@ -23,13 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnEnvironment;
 
 /**
- * Everything one spawn attempt can ask about, as a frozen value object. Extension axes
- * keep it frozen: plugin-owned inputs are captured in the condition at parse time;
- * attempt-varying world state beyond the core fields goes through capability
- * sub-interfaces of SpawnEnvironment (conditions degrade with instanceof).
+ * Everything one spawn attempt can ask about, as a frozen value object; capability
+ * sub-interfaces of SpawnEnvironment extend it (conditions degrade with instanceof).
  */
 final class SpawnConditionContext{
 	public function __construct(
@@ -37,6 +36,8 @@ final class SpawnConditionContext{
 		readonly public int $x,
 		readonly public int $y,
 		readonly public int $z,
+		/** Habitat band of the position, precomputed once per attempt. */
+		readonly public SpawnBand $band,
 		/** PocketMine difficulty constant (World::DIFFICULTY_PEACEFUL .. DIFFICULTY_HARD). */
 		readonly public int $difficulty,
 		/** Light levels subtracted by the current weather (0, rain, thunder). */

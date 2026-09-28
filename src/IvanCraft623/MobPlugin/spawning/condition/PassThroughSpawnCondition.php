@@ -37,6 +37,10 @@ final class PassThroughSpawnCondition implements SpawnCondition{
 	private function __construct(){
 	}
 
+	public function getEvaluationCost() : int{
+		return 1; // constant — cheapest possible, scheduled first
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		return true;
 	}

@@ -23,72 +23,46 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
-use IvanCraft623\MobPlugin\entity\MobCategory;
+use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\BlockNameResolver;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\ChainBlockNameResolver;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\StringToItemBlockNameResolver;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\VanillaAliasBlockNameResolver;
+use IvanCraft623\MobPlugin\spawning\parse\resolver\VanillaBiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
 use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use pocketmine\utils\Filesystem;
-use function array_is_list;
 use function count;
-use function is_array;
 use function is_string;
 use function str_starts_with;
 use function strlen;
 use function substr;
 
 /**
- * Parses the compiled spawn-rules resource into SpawnRules through the
- * SpawnConditionRegistry.
- *
- * The component inventory and the document envelope keys (conditions, description,
- * population_control) are generated from the official Mojang spawn schemas
- * (SpawnComponent, SpawnSchema) — see tools/spawn-rules/generate-schema.php. Only the
- * outer resource wrapper ("minecraft:spawn_rules" and "format_version") is part of the
- * spawn-rule *file* shape rather than the enumerated schema, so it stays a named
- * constant here.
- *
- * The loader is strict — it has no warning channel: any value it cannot compile aborts
- * the whole load with SpawnModelParseException (SpawnParseException details carry the
- * offending JSON path). Exactly two degradations exist, both first-class documented
- * policy rather than fallback behavior: NON_NATURAL_POPULATION_CONTROL entries are
- * skipped (vanilla spawns them through events, not natural spawning) and
- * KNOWN_MISSING_BLOCKS names are dropped from block filters (PocketMine-MP has no
- * equivalent block).
+ * Parses the compiled spawn-rules resource into SpawnRules. Strict: any value it cannot
+ * compile aborts (SpawnModelParseException); only the two documented degradations skip.
  */
 final class SpawnRulesFactory{
-	private const COMPONENT_PREFIX = "minecraft:";
+	private const CONDITION_PREFIX = "minecraft:";
 
 	/** Outer key of the whole spawn-rule document. Not enumerated by the schema. */
 	private const SPAWN_RULES_KEY = "minecraft:spawn_rules";
 
-	/** Top-level version marker of a spawn-rule document. Not enumerated by the schema. */
-	private const FORMAT_VERSION = "format_version";
-
 	/**
-	 * Vanilla population_control values with no MobCategory case: Bedrock spawns them
-	 * through events (patrols/raids), not natural spawning, so their rule sets are
-	 * skipped by design. Any other unknown value aborts the load.
+	 * Vanilla population_control values with no registered natural-spawn category:
+	 * Bedrock spawns them through events (patrols/raids), not natural spawning, so their
+	 * rule sets are skipped by design. Resolution to a registered MobCategory happens
+	 * later at SpawnRuleRegistry::register, so plugin consumers may add custom categories.
 	 *
 	 * @var array<string, true>
 	 */
 	private const NON_NATURAL_POPULATION_CONTROL = ["pillager" => true, "pillager_patrol" => true];
 
-	/**
-	 * Vanilla block names the block resolver can never resolve (PocketMine-MP has no
-	 * equivalent block); dropped from block filters by design — the filter keeps its
-	 * resolvable names. Any other unresolvable name aborts the load.
-	 *
-	 * @var array<string, true>
-	 */
-	private const KNOWN_MISSING_BLOCKS = ["minecraft:powder_snow" => true];
-
 	public function __construct(
 		private SpawnConditionRegistry $components,
-		private BlockNameResolver $blockResolver
+		private BlockNameResolver $blockResolver,
+		private BiomeTagResolver $biomeTags
 	){}
 
 	public static function createDefault() : self{
@@ -97,12 +71,17 @@ final class SpawnRulesFactory{
 			new ChainBlockNameResolver([
 				new StringToItemBlockNameResolver(),
 				new VanillaAliasBlockNameResolver(),
-			])
+			]),
+			new VanillaBiomeTagResolver()
 		);
 	}
 
 	public function getConditionRegistry() : SpawnConditionRegistry{
 		return $this->components;
+	}
+
+	public function getBiomeTags() : BiomeTagResolver{
+		return $this->biomeTags;
 	}
 
 	/**
@@ -147,9 +126,12 @@ final class SpawnRulesFactory{
 		return $entries;
 	}
 
-	/** Parses one entry: population_control → MobCategory, then its condition objects.
+	/** Parses one entry: population_control id, then its condition objects.
 	 *
 	 * Returns null only for by-design skipped entries (NON_NATURAL_POPULATION_CONTROL).
+	 * The category id is stored verbatim; it is validated against MobCategoryRegistry only
+	 * when the rules are registered (SpawnRuleRegistry::register), allowing consumers to
+	 * register custom categories.
 	 *
 	 * @phpstan-throws \InvalidArgumentException when the entry cannot be compiled
 	 */
@@ -167,16 +149,8 @@ final class SpawnRulesFactory{
 			throw new SpawnModelParseException("Spawn rules for \"$identifier\": missing \"" . SpawnSchema::KEY_DESCRIPTION . "." . SpawnSchema::KEY_POPULATION_CONTROL . "\".");
 		}
 
-		if($body->has(self::FORMAT_VERSION)){
-			SpawnSchemaVersion::assertSupported($body->string(self::FORMAT_VERSION), $identifier);
-		}
-
-		$category = MobCategory::tryFrom($populationControl);
-		if($category === null){
-			if(isset(self::NON_NATURAL_POPULATION_CONTROL[$populationControl])){
-				return null; // event-driven in vanilla (patrols/raids); rule set skipped by design
-			}
-			throw new SpawnModelParseException("Spawn rules for \"$identifier\": unknown population_control \"$populationControl\".");
+		if(isset(self::NON_NATURAL_POPULATION_CONTROL[$populationControl])){
+			return null; // event-driven in vanilla (patrols/raids); rule set skipped by design
 		}
 
 		$groups = [];
@@ -184,7 +158,7 @@ final class SpawnRulesFactory{
 			$groups = $this->parseConditions($spawnRules, $identifier);
 		} // else: legitimate vanilla data — mobs without natural spawns (e.g. blaze) load with no conditions.
 
-		return new SpawnRules($identifier, $category, $groups);
+		return new SpawnRules($identifier, $populationControl, $groups);
 	}
 
 	/**
@@ -209,7 +183,7 @@ final class SpawnRulesFactory{
 		// Normalize "minecraft:"-prefixed keys once; the registry is keyed without prefix.
 		$normalized = [];
 		foreach($condition->keys() as $rawKey){
-			$normalized[self::normalizeComponent($rawKey)] = $condition->raw($rawKey);
+			$normalized[self::normalizeCondition($rawKey)] = $condition->raw($rawKey);
 		}
 		$condition = new SpawnData($normalized, $condition->path);
 
@@ -223,63 +197,13 @@ final class SpawnRulesFactory{
 			if($parser === null){
 				throw new SpawnParseException("'{$condition->at($key)}' is not a recognized spawn-rule component");
 			}
-			$parser($condition, $key, $builder, $this);
+			$parser(new SpawnConditionContext($condition, $key, $this->blockResolver, $this->biomeTags), $builder);
 		}
 
 		return $builder->build();
 	}
 
-	private static function normalizeComponent(string $key) : string{
-		return str_starts_with($key, self::COMPONENT_PREFIX) ? substr($key, strlen(self::COMPONENT_PREFIX)) : $key;
-	}
-
-	/**
-	 * Resolves a block-name filter to a set of block type ids. KNOWN_MISSING_BLOCKS names
-	 * are dropped by design; any other unresolvable name aborts the load.
-	 *
-	 * @phpstan-return array<int, true>
-	 * @phpstan-throws SpawnParseException when a block name cannot be resolved
-	 */
-	public function resolveBlockSet(SpawnData $condition, string $component) : array{
-		$set = [];
-		foreach($this->readBlockNames($condition, $component) as $name){
-			if(isset(self::KNOWN_MISSING_BLOCKS[$name])){
-				continue;
-			}
-			$typeId = $this->blockResolver->resolve($name);
-			if($typeId === null){
-				throw new SpawnParseException("'{$condition->at($component)}' block name \"$name\" cannot be resolved");
-			}
-			$set[$typeId] = true;
-		}
-
-		return $set;
-	}
-
-	/**
-	 * @phpstan-return list<string>
-	 */
-	private function readBlockNames(SpawnData $condition, string $component) : array{
-		$value = $condition->raw($component);
-		if(is_string($value)){
-			return [$value];
-		}
-		if(!is_array($value) || !array_is_list($value)){
-			throw new SpawnParseException("'{$condition->at($component)}' must be a string or a list of block names");
-		}
-		$names = [];
-		foreach($value as $index => $item){
-			if(is_string($item)){
-				$names[] = $item;
-				continue;
-			}
-			if(is_array($item) && isset($item["name"]) && is_string($item["name"])){
-				$names[] = $item["name"];
-				continue;
-			}
-			throw new SpawnParseException("'{$condition->at($component)}' entries must be strings or {name: string} objects");
-		}
-
-		return $names;
+	private static function normalizeCondition(string $key) : string{
+		return str_starts_with($key, self::CONDITION_PREFIX) ? substr($key, strlen(self::CONDITION_PREFIX)) : $key;
 	}
 }

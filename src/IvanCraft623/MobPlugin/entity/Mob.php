@@ -171,7 +171,7 @@ abstract class Mob extends Living {
 			$this->setNameTagAlwaysVisible(true);
 		}
 
-		MobPlugin::getInstance()->trackEntity($this->getMobCategory(), $this->getName());
+		MobPlugin::getInstance()->trackEntity($this->getPopulationCategory(), $this->getName());
 
 		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
 
@@ -242,14 +242,20 @@ abstract class Mob extends Living {
 	}
 
 	/**
-	 * The Bedrock population-control category this mob counts against. Defaults to the
-	 * CREATURE sentinel (zero caps) — mob families classify themselves: Animal → ANIMAL,
-	 * Monster → MONSTER, Ambient → AMBIENT. This keeps unclassified mobs (golems, bosses,
-	 * modded mobs) from being counted against — or blocked by — a real category's
-	 * population cap.
+	 * The population-control category this mob counts against, resolved from its spawn
+	 * rule's category id. Falls back to the CREATURE sentinel (zero caps) when the mob is
+	 * not under any registered natural-spawn population control (golems, bosses, modded
+	 * mobs), so it is never counted against — or blocked by — a real category's cap.
 	 */
-	public function getMobCategory() : MobCategory{
-		return MobCategory::CREATURE;
+	public function getPopulationCategory() : \IvanCraft623\MobPlugin\spawning\MobCategory{
+		$category = \IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry::getInstance()
+			->categoryForIdentifier($this::getNetworkTypeId());
+		if($category !== null){
+			return $category;
+		}
+
+		return \IvanCraft623\MobPlugin\spawning\MobCategoryRegistry::getInstance()
+			->getRequired(\IvanCraft623\MobPlugin\spawning\MobCategoryRegistry::CREATURE);
 	}
 
 	public function setForwardSpeed(float $forwardSpeed) : void {
@@ -475,7 +481,7 @@ abstract class Mob extends Living {
 
 			$nearestPlayer = Utils::getNearestPlayer($this);
 			if ($nearestPlayer !== null) {
-				$mobCategory = $this->getMobCategory();
+				$mobCategory = $this->getPopulationCategory();
 				$distanceSquared = $this->location->distanceSquared($nearestPlayer->getPosition());
 				if ($this->shouldDespawnWhenFarAway($distanceSquared) &&
 					$distanceSquared > $mobCategory->getDespawnDistance() ** 2
@@ -978,7 +984,7 @@ abstract class Mob extends Living {
 	}
 
 	protected function onDispose() : void{
-		MobPlugin::getInstance()->untrackEntity($this->getMobCategory(), $this->getName());
+		MobPlugin::getInstance()->untrackEntity($this->getPopulationCategory(), $this->getName());
 
 		parent::onDispose();
 	}

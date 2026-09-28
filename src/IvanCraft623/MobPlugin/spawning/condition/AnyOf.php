@@ -32,6 +32,20 @@ final class AnyOf implements SpawnCondition{
 		private readonly array $conditions
 	){}
 
+	public function getEvaluationCost() : int{
+		// An OR succeeds as soon as any child passes, so the expected cost is bounded by
+		// the cheapest child; that governs where the group schedules this branch.
+		$cost = null;
+		foreach($this->conditions as $condition){
+			$child = $condition->getEvaluationCost();
+			if($cost === null || $child < $cost){
+				$cost = $child;
+			}
+		}
+
+		return $cost ?? 1;
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		foreach($this->conditions as $condition){
 			if($condition->test($ctx)){

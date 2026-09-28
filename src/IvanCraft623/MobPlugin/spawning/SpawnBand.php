@@ -33,7 +33,8 @@ enum SpawnBand{
 
 	/**
 	 * Resolves the band of a position from the Y of the highest non-air block of its
-	 * column (the world minimum when the column is empty).
+	 * column (the world minimum when the column is empty). A position at exactly the
+	 * surface Y is inside the top block (cave); a spawn sits one above it.
 	 */
 	public static function fromPosition(float $y, int $surfaceY) : self{
 		return $y > $surfaceY ? self::SURFACE : self::CAVE;

@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\spawning\payload\SpawnEvent;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use function array_values;
 use function count;
+use function uasort;
 
 /**
  * Accumulator a component parser fills while compiling one condition object; produces
@@ -68,11 +69,7 @@ final class SpawnGroupBuilder{
 	}
 
 	/**
-	 * Accepts one habitat band for this condition. The spawns_on_surface and
-	 * spawns_underground registrations are independent parsers — each calls this for
-	 * its own band, and build() unions them: both markers = both bands allowed (one
-	 * HabitatBandCondition over the union, no cross-parser peeking), one marker = that band
-	 * pinned. Exactly one accepted band also pins the group's herd band.
+	 * Accepts one habitat band; build() unions marker bands (both = any band, one = pinned).
 	 */
 	public function allowHabitatBand(SpawnBand $band) : void{
 		if($this->habitatBands === null){
@@ -110,8 +107,13 @@ final class SpawnGroupBuilder{
 			$habitatBand = $bands[0];
 		}
 
+		// Cheapest conditions first so a group fails fast; the stable sort keeps parse order
+		// for equal costs, so the AND result is unchanged.
+		$ordered = $this->conditions;
+		uasort($ordered, static fn(SpawnCondition $a, SpawnCondition $b) : int => $a->getEvaluationCost() <=> $b->getEvaluationCost());
+
 		return new SpawnConditionGroup(
-			$this->conditions,
+			array_values($ordered),
 			$this->weight,
 			$this->herd,
 			$this->permuteTypes,

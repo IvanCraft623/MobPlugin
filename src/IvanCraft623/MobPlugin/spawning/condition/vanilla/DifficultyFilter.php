@@ -73,6 +73,10 @@ final class DifficultyFilter implements SpawnCondition, DifficultyConstrained{
 		return $this->max;
 	}
 
+	public function getEvaluationCost() : int{
+		return 1; // pure context-field compare
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		return $ctx->difficulty >= $this->min && $ctx->difficulty <= $this->max;
 	}

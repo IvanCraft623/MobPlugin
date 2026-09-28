@@ -33,15 +33,30 @@ use function array_values;
 use function count;
 
 /**
- * Set-level planning over compiled rule sets: folds each rule set's conditions into a
- * conservative SpawnConstraint and answers "which rule sets could possibly match this
- * position" in cheap set comparisons. There is deliberately no environment → category
- * switch — the conditions are the source of truth. See candidatesFor() for the one
- * invariant the conditions cannot express (liquid opt-in).
+ * Set-level planning over compiled rule sets: folds conditions into a conservative
+ * SpawnConstraint and cheaply answers which rule sets could match a position.
  */
 final class SpawnRuleIndex{
+	/**
+	 * Upper bound on candidateCache entries. The key space (biomeId × band × difficulty ×
+	 * feet block) is naturally small and bounded per world, but a hard cap keeps the memo
+	 * from growing without bound across many data-driven feet block types; when exceeded
+	 * the whole memo is rebuilt lazily.
+	 */
+	private const CANDIDATE_CACHE_CAP = 4096;
+
 	/** @phpstan-var list<array{SpawnRules, SpawnConstraint}> */
 	private array $entries = [];
+
+	/**
+	 * Memo of candidatesFor results keyed by the position profile. The constraint scan is
+	 * the same for every candidate sharing a (biome, band, difficulty, feet block), and a
+	 * tick evaluates many candidates, so this turns the per-candidate O(entries) walk into
+	 * an associative-array lookup.
+	 *
+	 * @phpstan-var array<string, list<SpawnRules>>
+	 */
+	private array $candidateCache = [];
 
 	/**
 	 * @phpstan-param array<string, SpawnRules> $rules
@@ -64,14 +79,18 @@ final class SpawnRuleIndex{
 
 	/**
 	 * Rule sets that could possibly match the given position profile. Conservative:
-	 * a returned rule set may still fail its conditions; a rejected one provably never
-	 * matches. At a liquid position only rule sets that explicitly declare that liquid
-	 * are viable (the liquid opt-in invariant); at land, liquid-declaring rules are
-	 * skipped.
+	 * a rejected one provably never matches; a returned one may still fail its
+	 * conditions. Liquid positions only consider rules that declare that liquid.
 	 *
 	 * @phpstan-return list<SpawnRules>
 	 */
 	public function candidatesFor(int $biomeId, SpawnBand $band, int $difficulty, int $feetBlockTypeId) : array{
+		$key = $biomeId . "|" . $band->name . "|" . $difficulty . "|" . $feetBlockTypeId;
+		$cached = $this->candidateCache[$key] ?? null;
+		if($cached !== null){
+			return $cached;
+		}
+
 		$isLiquid = $feetBlockTypeId === BlockTypeIds::WATER || $feetBlockTypeId === BlockTypeIds::LAVA;
 		$biomeTags = null;
 		$result = [];
@@ -98,7 +117,13 @@ final class SpawnRuleIndex{
 			$result[$rule->getIdentifier()] ??= $rule;
 		}
 
-		return array_values($result);
+		$viable = array_values($result);
+		if(count($this->candidateCache) >= self::CANDIDATE_CACHE_CAP){
+			$this->candidateCache = []; // bounded memo — rebuild lazily if it outgrows its budget
+		}
+		$this->candidateCache[$key] = $viable;
+
+		return $viable;
 	}
 
 	/**

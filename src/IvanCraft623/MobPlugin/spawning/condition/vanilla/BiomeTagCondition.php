@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\plan\BiomeConstrained;
+use function array_keys;
 
 /**
  * One biome tag condition compiled from a biome_filter leaf (is_snow_covered ≈
@@ -34,6 +35,12 @@ use IvanCraft623\MobPlugin\spawning\plan\BiomeConstrained;
  * BiomeTagResolver; BiomeFilterParser composes trees of these leaves at parse time.
  */
 final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
+	/** @phpstan-var array<string, true> */
+	private readonly array $requiredSet;
+
+	/** @phpstan-var array<string, true> */
+	private readonly array $forbiddenSet;
+
 	/**
 	 * @phpstan-param list<string> $required
 	 * @phpstan-param list<string> $forbidden
@@ -42,7 +49,10 @@ final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
 		private readonly BiomeTagResolver $tags,
 		private readonly array $required,
 		private readonly array $forbidden
-	){}
+	){
+		$this->requiredSet = self::toSet($required);
+		$this->forbiddenSet = self::toSet($forbidden);
+	}
 
 	/**
 	 * @phpstan-return list<string>
@@ -58,22 +68,40 @@ final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
 		return $this->forbidden;
 	}
 
+	public function getEvaluationCost() : int{
+		return 3; // enumerates the biome's tags through the resolver
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		$tagMap = [];
 		foreach($this->tags->getTags($ctx->env->getBiomeId()) as $tag){
 			$tagMap[$tag] = true;
 		}
-		foreach($this->required as $tag){
+		foreach(array_keys($this->requiredSet) as $tag){
 			if(!isset($tagMap[$tag])){
 				return false;
 			}
 		}
-		foreach($this->forbidden as $tag){
+		foreach(array_keys($this->forbiddenSet) as $tag){
 			if(isset($tagMap[$tag])){
 				return false;
 			}
 		}
 
 		return true;
+	}
+
+	/**
+	 * @phpstan-param list<string> $tags
+	 *
+	 * @phpstan-return array<string, true>
+	 */
+	private static function toSet(array $tags) : array{
+		$set = [];
+		foreach($tags as $tag){
+			$set[$tag] = true;
+		}
+
+		return $set;
 	}
 }

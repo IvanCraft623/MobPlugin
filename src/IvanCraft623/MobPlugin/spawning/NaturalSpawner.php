@@ -27,15 +27,17 @@ use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\parse\resolver\VanillaBiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\plan\SpawnRuleIndex;
+use pocketmine\entity\Entity;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
+use function array_values;
 use function count;
+use function intdiv;
+use function usort;
 
 /**
- * Three-stage natural spawner, all on the main thread: Collect (SpawnCollector
- * snapshots candidates) → Evaluate (SpawnEvaluator picks + tests via the planner
- * index) → Apply (SpawnApplier re-validates and spawns herds). This class only
- * orchestrates; the index is rebuilt only when the registry revision changes.
+ * Three-stage natural spawner, all on the main thread: Collect → Evaluate → Apply (see
+ * SpawnCollector/SpawnEvaluator/SpawnApplier). Orchestrates only.
  */
 final class NaturalSpawner{
 	private SpawnCensus $census;
@@ -56,10 +58,12 @@ final class NaturalSpawner{
 		private WorldManager $worldManager,
 		private readonly BiomeTagResolver $biomeTags = new VanillaBiomeTagResolver()
 	){
-		$this->census = new SpawnCensus();
-		$this->collector = new SpawnCollector($attemptsPerTick, $this->census);
+		$this->census = new SpawnCensus(
+			static fn(Entity $entity) : ?MobCategory => $registry->categoryForEntity($entity)
+		);
+		$this->collector = new SpawnCollector($this->census);
 		$this->evaluator = new SpawnEvaluator();
-		$this->applier = new SpawnApplier($registry, $worldManager, $this->census);
+		$this->applier = new SpawnApplier($registry, $worldManager);
 	}
 
 	public function getRegistry() : SpawnRuleRegistry{
@@ -110,17 +114,41 @@ final class NaturalSpawner{
 	/**
 	 * Stage 1 — Collect.
 	 *
+	 * The configured attempts-per-tick is a global per-tick budget split across
+	 * spawn-eligible worlds (those with players and a non-peaceful difficulty), so adding
+	 * worlds doesn't multiply the per-tick workload linearly. The total across all worlds
+	 * equals the configured budget; the remainder after the equal share goes to the
+	 * earliest worlds.
+	 *
 	 * @phpstan-return list<SpawnCandidateSnapshot>
 	 */
 	private function collect() : array{
 		CustomTimings::$naturalSpawningCollect->startTiming();
 		try{
 			$snapshots = [];
+			$eligible = [];
 			foreach($this->worldManager->getWorlds() as $world){
 				if(count($world->getPlayers()) === 0 || $world->getDifficulty() === World::DIFFICULTY_PEACEFUL){
 					continue;
 				}
-				foreach($this->collector->collect($world) as $snapshot){
+				$eligible[] = [$world, array_values($world->getPlayers())];
+			}
+
+			if(count($eligible) === 0){
+				return $snapshots;
+			}
+			// Deterministic split: the shared floor plus one remainder attempt per world in
+			// stable world-id order (getWorlds() order is not guaranteed), so a fair share is
+			// reproducible across ticks.
+			usort($eligible, static fn(array $a, array $b) : int => $a[0]->getId() <=> $b[0]->getId());
+			$shared = intdiv($this->attemptsPerTick, count($eligible));
+			$remainder = $this->attemptsPerTick % count($eligible);
+			foreach($eligible as $i => [$world, $players]){
+				$attempts = $shared + ($i < $remainder ? 1 : 0);
+				if($attempts < 1){
+					continue;
+				}
+				foreach($this->collector->collect($world, $players, $attempts) as $snapshot){
 					$snapshots[] = $snapshot;
 				}
 			}

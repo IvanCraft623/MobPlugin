@@ -34,7 +34,7 @@
     },
     "scripts": {
         "build": "php -dphar.readonly=0 vendor/bin/pharynx -i=. -c -p=MobPlugin.phar",
-        "compile-spawn-rules": "php tools/spawn-rules/compile.php",
+        "compile-spawn-rules": "php tools/spawn-rules/compile.php --schema-version=$(cat resources/spawning/schemas/SCHEMA_VERSION)",
         "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit"
     }
 }

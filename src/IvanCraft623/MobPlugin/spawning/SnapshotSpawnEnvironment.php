@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\entity\MobCategory;
 use pocketmine\world\World;
 
 /**
@@ -59,10 +58,10 @@ final class SnapshotSpawnEnvironment implements SpawnEnvironment{
 	/**
 	 * Same-identifier entity count in the candidate's own band (surface/cave): Bedrock
 	 * density-limit counts are band-scoped, and the candidate's band is fixed by its
-	 * position relative to the column surface.
+	 * position relative to the column surface (computed once by the collector).
 	 */
 	public function countNearby(string $identifier) : int{
-		return ($this->snapshot->densityCounts[$identifier] ?? null)?->get($this->getBand()) ?? 0;
+		return ($this->snapshot->densityCounts[$identifier] ?? null)?->get($this->snapshot->band) ?? 0;
 	}
 
 	public function getTime() : int{
@@ -78,10 +77,6 @@ final class SnapshotSpawnEnvironment implements SpawnEnvironment{
 	 * control caps (not part of SpawnEnvironment).
 	 */
 	public function countNearbyCategory(MobCategory $category) : int{
-		return ($this->snapshot->populationCounts[$category->value] ?? null)?->get($this->getBand()) ?? 0;
-	}
-
-	private function getBand() : SpawnBand{
-		return SpawnBand::fromPosition($this->snapshot->y, $this->snapshot->surfaceY);
+		return ($this->snapshot->populationCounts[$category->id] ?? null)?->get($this->snapshot->band) ?? 0;
 	}
 }

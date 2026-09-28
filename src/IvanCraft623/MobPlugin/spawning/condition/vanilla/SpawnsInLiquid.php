@@ -45,6 +45,10 @@ final class SpawnsInLiquid implements SpawnCondition, LiquidConstrained{
 		return $this->liquidTypeId;
 	}
 
+	public function getEvaluationCost() : int{
+		return 2; // one cached block-type lookup
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		return $ctx->env->getBlockTypeId() === $this->liquidTypeId;
 	}

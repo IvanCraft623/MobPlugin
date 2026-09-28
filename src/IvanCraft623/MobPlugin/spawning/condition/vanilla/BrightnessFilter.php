@@ -42,6 +42,10 @@ final class BrightnessFilter implements SpawnCondition{
 		}
 	}
 
+	public function getEvaluationCost() : int{
+		return 2; // one cached light lookup, optional weather adjustment
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		$light = $ctx->env->getLight();
 		if($this->adjustForWeather){

@@ -28,11 +28,11 @@ declare(strict_types=1);
  * Mojang/bedrock-samples and generates the typed PHP artifacts the plugin's drift
  * detection consumes:
  *
- *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/SpawnComponent.php
- *     One enum case per "minecraft:*" condition component the schema declares.
- *     SpawnConditionRegistry registers a parser for every case (enforced by the
- *     PHPUnit suite), so a renamed or removed component breaks PHPStan instead of
- *     silently mis-parsing.
+ *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/VanillaSpawnConditions.php
+ *     One constant per "minecraft:*" spawn condition the schema declares (a pure
+ *     collection of the vanilla component names). SpawnConditionRegistry registers a
+ *     parser for every name (enforced by the PHPUnit suite), so a renamed or removed
+ *     component breaks PHPStan instead of silently mis-parsing.
  *
  *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/SpawnSchema.php
  *     Schema facts as typed constants: the schema version, the difficulty names
@@ -43,7 +43,9 @@ declare(strict_types=1);
  * means Mojang changed something and the plugin needs a conscious update.
  *
  * Usage:
- *   php tools/spawn-rules/generate-schema.php [--samples-dir=<path>] [--schema-version=<v>] [--out=<dir>] [--check]
+ *   php tools/spawn-rules/generate-schema.php --schema-version=<version> [--samples-dir=<path>] [--out=<dir>] [--check]
+ *
+ * --schema-version is required (single-sourced from resources/spawning/schemas/SCHEMA_VERSION).
  *
  * Exit codes: 0 = success / in sync, 1 = failure or drift detected.
  */
@@ -51,8 +53,23 @@ declare(strict_types=1);
 const TOOL_VERSION = "1.0.0";
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
 const SCHEMA_REPO_PATH = "metadata/json_schemas/server/spawn";
-const DEFAULT_SCHEMA_VERSION = "1.21.50";
-const COMPONENT_PREFIX = "minecraft:";
+const CONDITION_PREFIX = "minecraft:";
+
+/**
+ * Schema files that are NOT per-condition payloads and so never get a XxxData model: the
+ * component *envelope* (BiomeConditions lists every component), the document envelope
+ * (Rules / Description), and the difficulty enum (SpawnDifficulty Legacy). Everything
+ * else in the spawn schema dir that declares properties is generated a model — see
+ * readConditionsModels().
+ *
+ * @var array<string, true>
+ */
+const NON_MODEL_SCHEMAS = [
+	"Spawn BiomeConditions.json" => true,
+	"Spawn Rules.json" => true,
+	"Spawn Description.json" => true,
+	"SpawnDifficulty Legacy.json" => true,
+];
 
 /**
  * @param list<string> $argv
@@ -62,8 +79,11 @@ function main(array $argv) : int{
 	if(!is_array($opts)){
 		return fail("Unable to parse command line options.");
 	}
+	$schemaVersion = readStringOption($opts, "schema-version");
+	if($schemaVersion === null){
+		return fail("Missing required --schema-version=<version> (see resources/spawning/schemas/SCHEMA_VERSION).");
+	}
 	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/.cache/bedrock-samples";
-	$schemaVersion = readStringOption($opts, "schema-version") ?? DEFAULT_SCHEMA_VERSION;
 	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/src/IvanCraft623/MobPlugin/spawning/parse/schema";
 	$check = isset($opts["check"]);
 
@@ -77,10 +97,11 @@ function main(array $argv) : int{
 	}
 
 	try{
-		[$declaredVersion, $components] = readComponentInventory($schemaDir);
+		[$declaredVersion, $conditions] = readConditionsInventory($schemaDir);
 		$difficulties = readDifficultyCases($schemaDir);
 		[$brightnessMin, $brightnessMax] = readBrightnessBounds($schemaDir);
 		$envelopeKeys = readEnvelopeKeys($schemaDir);
+		$models = readConditionsModels($schemaDir);
 	}catch(SchemaParseException $e){
 		return fail($e->getMessage());
 	}
@@ -93,27 +114,39 @@ function main(array $argv) : int{
 		));
 	}
 
-	$componentPhp = buildComponentArtifact($schemaVersion, $components);
+	$conditionsPhp = buildConditionsArtifact($schemaVersion, $conditions);
 	$schemaPhp = buildSchemaArtifact($schemaVersion, $difficulties, $brightnessMin, $brightnessMax, $envelopeKeys);
+	$modelPhp = buildConditionsModelsArtifact($schemaVersion, $models);
 
 	if($check){
-		return checkArtifacts($outDir, [
-			"SpawnComponent.php" => $componentPhp,
+		return checkArtifacts($outDir, array_merge([
+			"VanillaSpawnConditions.php" => $conditionsPhp,
 			"SpawnSchema.php" => $schemaPhp,
-		]);
+		], $modelPhp));
 	}
 
 	if(!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)){
 		return fail("Unable to create output directory: $outDir");
 	}
-	foreach(["SpawnComponent.php" => $componentPhp, "SpawnSchema.php" => $schemaPhp] as $name => $contents){
+	foreach(["VanillaSpawnConditions.php" => $conditionsPhp, "SpawnSchema.php" => $schemaPhp] as $name => $contents){
 		$path = $outDir . "/" . $name;
 		if(file_put_contents($path, $contents) === false){
 			return fail("Failed to write: $path");
 		}
 		printf("Wrote %s (%d bytes)\n", $path, strlen($contents));
 	}
-	printf("Generated %d component case(s), %d difficulty case(s) from schema version %s\n", count($components), count($difficulties), $schemaVersion);
+	$modelDir = $outDir . "/model";
+	if(!is_dir($modelDir) && !mkdir($modelDir, 0777, true) && !is_dir($modelDir)){
+		return fail("Unable to create model output directory: $modelDir");
+	}
+	foreach($modelPhp as $name => $contents){
+		$path = $modelDir . "/" . $name;
+		if(file_put_contents($path, $contents) === false){
+			return fail("Failed to write: $path");
+		}
+		printf("Wrote %s (%d bytes)\n", $path, strlen($contents));
+	}
+	printf("Generated %d component case(s), %d difficulty case(s), %d model class(es) from schema version %s\n", count($conditions), count($difficulties), count($modelPhp), $schemaVersion);
 
 	return 0;
 }
@@ -167,7 +200,7 @@ function loadSchemaFile(string $path) : stdClass{
  * @return array{0: string, 1: array<string, string>} schema version and inventory
  * @phpstan-throws SchemaParseException
  */
-function readComponentInventory(string $schemaDir) : array{
+function readConditionsInventory(string $schemaDir) : array{
 	$doc = loadSchemaFile($schemaDir . "/Spawn BiomeConditions.json");
 	$version = $doc->{"x-format-version"} ?? null;
 	if(!is_string($version) || $version === ""){
@@ -265,6 +298,119 @@ function readBrightnessBounds(string $schemaDir) : array{
 }
 
 /**
+ * Derives the XxxData models for every payload-bearing component schema in the spawn
+ * schema dir. A schema becomes a model iff its filename is not a NON_MODEL_SCHEMAS
+ * envelope/enum file AND it declares at least one property (empty marker schemas carry no
+ * payload). Each model's class name is the schema filename (without "Spawn " / ".json")
+ * plus "Data" — e.g. "Spawn DelayFilter.json" → DelayFilterData.
+ *
+ * The set is derived from the directory (not a hand-maintained list), so a component
+ * added by Mojang automatically gets a model; `--check` then enforces the committed
+ * artifact matches.
+ *
+ * @return array<string, list<array{string, string, string}>> model class -> field
+ *     descriptors, each [fieldName, phpType, "required"/"nullable"]
+ * @phpstan-throws SchemaParseException
+ */
+function readConditionsModels(string $schemaDir) : array{
+	$models = [];
+	foreach(scandir($schemaDir) as $entry){
+		if(!is_string($entry) || !str_ends_with($entry, ".json")){
+			continue;
+		}
+		$schemaFile = $entry;
+		if(isset(NON_MODEL_SCHEMAS[$schemaFile])){
+			continue;
+		}
+
+		$doc = loadSchemaFile($schemaDir . "/" . $schemaFile);
+		$properties = $doc->properties ?? null;
+		if(!$properties instanceof stdClass || count(get_object_vars($properties)) === 0){
+			continue; // empty marker / structural schema: no payload to model
+		}
+		$required = [];
+		$req = $doc->required ?? null;
+		if(is_array($req)){
+			foreach($req as $name){
+				if(is_string($name)){
+					$required[$name] = true;
+				}
+			}
+		}
+
+		$fields = [];
+		foreach(get_object_vars($properties) as $rawName => $prop){
+			if(!$prop instanceof stdClass){
+				throw new SchemaParseException("$schemaFile property \"$rawName\" is not an object.");
+			}
+			$fields[] = describeField($rawName, $prop, isset($required[$rawName]));
+		}
+		ksort($fields, SORT_STRING);
+		$className = modelClassName($schemaFile);
+		$models[$className] = $fields;
+	}
+	ksort($models, SORT_STRING);
+
+	return $models;
+}
+
+/**
+ * "Spawn X.json" -> "X", "SpawnAboveBlockFilter" etc. (the marker-free basename).
+ */
+function modelClassName(string $schemaFile) : string{
+	$base = substr($schemaFile, 0, strpos($schemaFile, ".json"));
+	$base = str_starts_with($base, "Spawn ") ? substr($base, strlen("Spawn ")) : $base;
+
+	return $base . "Data";
+}
+
+/**
+ * Maps one schema property to a POJO field descriptor: the PHP type and (for optional
+ * fields) whether it is null-defaulting. Required fields are non-null; the schema's
+ * declared `default` is NOT turned into an active field initializer — MobPlugin treats an
+ * absent optional field as null (no restriction), so generated fields are nullable and
+ * the condition mapping applies the real default exactly as the hand-written parser did.
+ *
+ * @return array{0: string, 1: string, 2: string, 3: bool}
+ * @phpstan-throws SchemaParseException
+ */
+function describeField(string $rawName, stdClass $prop, bool $isRequired) : array{
+	// A $ref (e.g. to the difficulty enum, or a legacy Reference string id) names a
+	// string-valued payload; the schema may still expose an ordinal x-underlying-type,
+	// so a present $ref wins over the numeric hint. Otherwise map concrete types. An
+	// array-typed property (default [] — e.g. spawns_above_block_filter.blocks) is a
+	// nullable list of strings.
+	$ref = stdClassPropOrNull($prop, "\$ref");
+	$default = stdClassPropOrNull($prop, "default");
+	$propType = stdClassPropOrNull($prop, "x-underlying-type") ?? stdClassPropOrNull($prop, "type") ?? null;
+	$phpType = null;
+	if($ref !== null){
+		$phpType = "string";
+	}elseif($propType === "int32" || $propType === "uint32" || $propType === "uint64" || $propType === "integer"){
+		$phpType = "int";
+	}elseif($propType === "boolean"){
+		$phpType = "bool";
+	}elseif($propType === "string"){
+		$phpType = "string";
+	}elseif($propType === "array" || is_array($default)){
+		$phpType = "array";
+	}
+	if($phpType === null){
+		throw new SchemaParseException("Unsupported schema property type \"{$propType}\" for \"$rawName\"");
+	}
+
+	return [$rawName, $phpType, $isRequired ? "required" : "nullable"];
+}
+
+/**
+ * Reads an optional stdClass property without tripping the SPL "Undefined property"
+ * warning when it is absent. Returns null when the property is not set.
+ */
+function stdClassPropOrNull(stdClass $o, string $key) : mixed{
+	return isset($o->{$key}) ? $o->{$key} : null;
+}
+
+/**
  * Envelope keys the schema declares on each document level, as property names. These are
  * the structural JSON keys the loader navigates with (as opposed to the per-condition
  * components of Spawn BiomeConditions.json).
@@ -292,15 +438,15 @@ function readEnvelopeKeys(string $schemaDir) : array{
 }
 
 /**
- * @param array<string, string> $components raw component name -> shape $ref, sorted
+ * @param array<string, string> $conditions raw condition name -> shape $ref, sorted
  */
-function buildComponentArtifact(string $schemaVersion, array $components) : string{
-	$cases = [];
-	foreach($components as $rawName => $ref){
-		$cases[] = sprintf(
-			"\tcase %s = \"%s\"; // \$ref: %s",
+function buildConditionsArtifact(string $schemaVersion, array $conditions) : string{
+	$members = [];
+	foreach($conditions as $rawName => $ref){
+		$members[] = sprintf(
+			"\tpublic const %s = \"%s\"; // \$ref: %s",
 			toConstant($rawName),
-			normalizeComponentName($rawName),
+			normalizeConditionName($rawName),
 			$ref
 		);
 	}
@@ -332,27 +478,29 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 
 /**
- * GENERATED from the official Mojang spawn-rule JSON schemas — do not edit by hand.
+ * Auto-generated from the Mojang spawn-rule schemas (%s) — do not edit by hand.
  *
- * Source  : metadata/json_schemas/server/spawn/%s (Mojang/bedrock-samples)
- * Contents: every "minecraft:*" condition component the schema declares for spawn-rule
- *           condition objects. Each case value is the component's unprefixed name; each
- *           comment names the schema file that defines the component's shape ($ref).
- *
- * Drift detection: SpawnConditionRegistry registers a parser for every case (enforced by
- * the PHPUnit suite) and the suite regenerates this artifact, so a component Mojang
- * renames, removes or adds forces a conscious update. Regenerate with:
- *
- *     php tools/spawn-rules/generate-schema.php
- *
- * The inventory is factual data (component names and schema references) derived from
- * material © Mojang AB, subject to the Minecraft EULA; it is redistributed solely for
- * interoperability with MobPlugin — see resources/spawning/NOTICE.md.
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
-enum SpawnComponent : string{
+final class VanillaSpawnConditions{
+
 %s
+
+	private function __construct(){}
+
+	/**
+	 * Every spawn condition name this schema declares, reflected from the constants.
+	 *
+	 * @phpstan-return list<string>
+	 */
+	public static function getAll() : array{
+		/** @var list<string> $names */
+		$names = (new \ReflectionClass(self::class))->getConstants();
+
+		return $names;
+	}
 }
-PHP, $schemaVersion, implode("\n", $cases)) . "\n";
+PHP, $schemaVersion, implode("\n", $members)) . "\n";
 }
 
 /**
@@ -406,11 +554,10 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 
 /**
- * GENERATED from the official Mojang spawn-rule JSON schemas — do not edit by hand.
+ * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Schema facts the runtime consumes as defaults (SpawnConditionRegistry,
- * DifficultyFilter) and the PHPUnit suite uses to pin the artifact version. Same source,
- * license and regeneration path as SpawnComponent.php — see its docblock.
+ * Schema facts the runtime consumes as defaults and the PHPUnit suite uses to pin the
+ * artifact version. Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class SpawnSchema{
 	/** Official spawn-schema version this artifact was generated from. */
@@ -441,11 +588,83 @@ PHP, $schemaVersion, $difficultyCases, count($difficulties) - 1, var_export($bri
 }
 
 function toConstant(string $rawName) : string{
-	return strtoupper((string) preg_replace("/(?<!^)[A-Z]/", "_\$0", normalizeComponentName($rawName)));
+	return strtoupper((string) preg_replace("/(?<!^)[A-Z]/", "_\$0", normalizeConditionName($rawName)));
 }
 
-function normalizeComponentName(string $rawName) : string{
-	return str_starts_with($rawName, COMPONENT_PREFIX) ? substr($rawName, strlen(COMPONENT_PREFIX)) : $rawName;
+/**
+ * Builds the generated XxxData POJO classes (one per model-backed component) as a map of
+ * filename -> file content. Each class is plain public data (nullable optional fields,
+ * @required non-null required fields) that JsonMapper populates at runtime.
+ *
+ * @param array<string, list<array{string, string, string, bool}>> $models
+ *     model class -> field descriptors [name, phpType, "required"/"nullable", isRequired]
+ *
+ * @phpstan-return array<string, string>
+ */
+function buildConditionsModelsArtifact(string $schemaVersion, array $models) : array{
+	$files = [];
+	foreach($models as $className => $fields){
+		$fieldLines = [];
+		foreach($fields as $field){
+			$name = $field[0];
+			$phpType = $field[1];
+			$mode = $field[2];
+			$declType = $mode === "required" ? $phpType : "?" . $phpType;
+			$default = $mode === "required" ? "" : " = null";
+			// Array-valued fields need a @var element hint for JsonMapper; scalar/required
+			// fields use their native type (with @required when mandatory).
+			$doc = null;
+			if($phpType === "array"){
+				$doc = "\t/** @var string[] */";
+			}elseif($mode === "required"){
+				$doc = "\t/** @required */";
+			}
+			$fieldLines[] = $doc === null
+				? sprintf("\tpublic %s \$%s%s;", $declType, $name, $default)
+				: sprintf("%s\n\tpublic %s \$%s%s;", $doc, $declType, $name, $default);
+		}
+		$files[$className . ".php"] = sprintf(<<<'PHP'
+<?php
+
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
+declare(strict_types=1);
+
+namespace IvanCraft623\MobPlugin\spawning\parse\schema\model;
+
+/**
+ * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
+ *
+ * Payload data model for a spawn-rule condition (JsonMapper / SpawnConditionData).
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
+ */
+final class %s{
+%s}
+PHP, $className, rtrim(implode("\n", $fieldLines)) . "\n") . "\n";
+	}
+
+	return $files;
+}
+
+function normalizeConditionName(string $rawName) : string{
+	return str_starts_with($rawName, CONDITION_PREFIX) ? substr($rawName, strlen(CONDITION_PREFIX)) : $rawName;
 }
 
 /**
@@ -454,7 +673,10 @@ function normalizeComponentName(string $rawName) : string{
 function checkArtifacts(string $outDir, array $artifacts) : int{
 	$drifted = false;
 	foreach($artifacts as $name => $expected){
-		$path = $outDir . "/" . $name;
+		// Model classes live in a "model" subdirectory; the two root artifacts do not.
+		$path = ($name === "VanillaSpawnConditions.php" || $name === "SpawnSchema.php")
+			? $outDir . "/" . $name
+			: $outDir . "/model/" . $name;
 		$actual = is_file($path) ? (string) file_get_contents($path) : null;
 		if($actual === $expected){
 			printf("In sync: %s\n", $path);

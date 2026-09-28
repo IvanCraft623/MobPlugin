@@ -23,13 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-/** One successful evaluation, handed from the evaluator to the applier. */
+/**
+ * One successful evaluation, handed from the evaluator to the applier.
+ */
 final class SpawnRequest{
 	public function __construct(
 		public readonly int $worldId,
 		public readonly int $x,
 		public readonly int $y,
 		public readonly int $z,
-		public readonly SpawnConditionMatch $match
+		public readonly SpawnConditionMatch $match,
+		public readonly int $categoryCount,
+		public readonly SpawnBand $band
 	){}
 }

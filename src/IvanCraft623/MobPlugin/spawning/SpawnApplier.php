@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\entity\MobCategory;
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
@@ -45,14 +45,30 @@ final class SpawnApplier{
 
 	public function __construct(
 		private SpawnRuleRegistry $registry,
-		private WorldManager $worldManager,
-		private SpawnCensus $census
+		private WorldManager $worldManager
 	){}
 
 	/**
 	 * @phpstan-param list<SpawnRequest> $requests
 	 */
 	public function applyRequests(array $requests) : void{
+		CustomTimings::$naturalSpawningApply->startTiming();
+		try{
+			$this->apply($requests);
+		}finally{
+			CustomTimings::$naturalSpawningApply->stopTiming();
+		}
+	}
+
+	/**
+	 * @phpstan-param list<SpawnRequest> $requests
+	 */
+	private function apply(array $requests) : void{
+		// Running count of mobs this apply pass already spawned, per (category, band), so
+		// repeated herds of the same category accumulate against the population cap without
+		// rescanning the world. Initialized from each request's snapshot count.
+		/** @phpstan-var array<string, int> $spawned */
+		$spawned = [];
 		foreach($requests as $request){
 			$world = $this->worldManager->getWorld($request->worldId);
 			if($world === null){
@@ -83,20 +99,28 @@ final class SpawnApplier{
 				}
 			}
 
-			$this->spawnHerd($world, $spawnEntry, $entry->getRules()->getCategory(), $group, $pos);
+			$category = $entry->getCategory();
+			$capKey = $category->id . "|" . $request->band->name;
+			$effectiveCount = $request->categoryCount + ($spawned[$capKey] ?? 0);
+			$spawnedCount = $this->spawnHerd($world, $spawnEntry, $category, $group, $pos, $request->band, $effectiveCount);
+			if($spawnedCount > 0){
+				$spawned[$capKey] = $effectiveCount + $spawnedCount;
+			}
 		}
 	}
 
-	private function spawnHerd(World $world, SpawnRuleBinding $entry, MobCategory $category, SpawnConditionGroup $group, Vector3 $pos) : void{
-		// Live population cap re-check — other mobs may have spawned since collection.
-		// The cap is checked once for the whole herd; spawning the full herd size can
-		// overshoot the cap slightly (vanilla pack-spawn behavior) rather than splitting
-		// progress, which is the documented approximation.
-		$band = SpawnCensus::getSurfaceBand($world, $pos);
-		$categoryCount = $this->census->countCategoryNearby($world, $category, $pos, $band);
+	/**
+	 * Spawns one herd, checking the population cap against precomputed counts. Returns how
+	 * many mobs were actually spawned (for the apply pass's running total). The full herd
+	 * size spawns even if it overshoots the cap slightly — the documented vanilla
+	 * pack-spawn approximation.
+	 *
+	 * @phpstan-return int number of mobs actually spawned
+	 */
+	private function spawnHerd(World $world, SpawnRuleBinding $entry, MobCategory $category, SpawnConditionGroup $group, Vector3 $pos, SpawnBand $band, int $effectiveCount) : int{
 		$cap = $category->getPopulationCaps()->get($band);
-		if($categoryCount >= $cap){
-			return;
+		if($effectiveCount >= $cap){
+			return 0;
 		}
 
 		$herd = $group->getHerd();
@@ -106,6 +130,7 @@ final class SpawnApplier{
 		$factory = $entry->getFactory();
 		$habitatBand = $group->getHabitatBand(); // null = both bands allowed
 
+		$spawned = 0;
 		for($i = 0; $i < $herdSize; $i++){
 			$memberPos = $i === 0 ? $pos : $this->jitterHerdPosition($world, $pos, $habitatBand);
 			if($memberPos === null || !$this->isFarEnoughFromPlayers($world, $memberPos)){
@@ -113,7 +138,10 @@ final class SpawnApplier{
 			}
 			$entity = $factory($world, $memberPos, new SpawnConditionMatch($entry->getRules()->getIdentifier(), $group));
 			$entity->spawnToAll();
+			$spawned++;
 		}
+
+		return $spawned;
 	}
 
 	/**
@@ -176,14 +204,21 @@ final class SpawnApplier{
 			return null; // no positive-weight permutation to pick — fall back to the base form
 		}
 		$roll = mt_rand(1, $total);
+		$last = $permutations[count($permutations) - 1];
 		foreach($permutations as $permutation){
 			$roll -= $permutation->weight;
 			if($roll <= 0){
-				return $permutation->entityType === null ? null : self::stripEventSuffix($permutation->entityType);
+				return self::resolvePermutation($permutation->entityType);
 			}
 		}
 
-		return $permutations[count($permutations) - 1]->entityType === null ? null : self::stripEventSuffix($permutations[count($permutations) - 1]->entityType);
+		// Unreachable with a positive total (the roll is at most the summed weight); kept
+		// so the type checker sees all paths return.
+		return self::resolvePermutation($last->entityType);
+	}
+
+	private static function resolvePermutation(?string $entityType) : ?string{
+		return $entityType === null ? null : self::stripEventSuffix($entityType);
 	}
 
 	/** "minecraft:pillager<minecraft:...>" → "minecraft:pillager". */

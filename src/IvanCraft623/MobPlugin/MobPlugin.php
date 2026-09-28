@@ -37,7 +37,6 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
-use IvanCraft623\MobPlugin\entity\MobCategory;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -49,6 +48,7 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
+use IvanCraft623\MobPlugin\spawning\MobCategory;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -201,7 +201,7 @@ class MobPlugin extends PluginBase {
 
 	public function trackEntity(MobCategory $category, string $name) : void {
 		$this->totalEntitiesCount++;
-		$categoryName = strtolower($category->value);
+		$categoryName = strtolower($category->id);
 		$mobName = strtolower($name);
 		$this->entitiesStats[$categoryName][$mobName] =
 			($this->entitiesStats[$categoryName][$mobName] ?? 0) + 1
@@ -209,7 +209,7 @@ class MobPlugin extends PluginBase {
 	}
 
 	public function untrackEntity(MobCategory $category, string $name) : void {
-		$categoryName = strtolower($category->value);
+		$categoryName = strtolower($category->id);
 		$mobName = strtolower($name);
 		if (isset($this->entitiesStats[$categoryName][$mobName])) {
 			$this->totalEntitiesCount--;

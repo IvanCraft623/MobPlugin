@@ -50,8 +50,12 @@ final class HabitatBandCondition implements SpawnCondition, HabitatConstrained{
 		return $this->bands;
 	}
 
+	public function getEvaluationCost() : int{
+		return 1; // pure context-field compare
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
-		$positionBand = SpawnBand::fromPosition($ctx->y, $ctx->env->getSurfaceY());
+		$positionBand = $ctx->band;
 		foreach($this->bands as $band){
 			if($band === $positionBand){
 				return true;

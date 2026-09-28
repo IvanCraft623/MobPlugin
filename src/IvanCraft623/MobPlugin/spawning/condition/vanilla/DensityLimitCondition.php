@@ -38,8 +38,14 @@ final class DensityLimitCondition implements SpawnCondition{
 		private readonly ?int $undergroundLimit
 	){}
 
+	public function getEvaluationCost() : int{
+		// Census nearby-count; only pays when a limit is actually set, but scheduler
+		// ranks by the worst case so it never runs before cheaper filters.
+		return 4;
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
-		$band = SpawnBand::fromPosition($ctx->y, $ctx->env->getSurfaceY());
+		$band = $ctx->band;
 		$limit = $band === SpawnBand::SURFACE ? $this->surfaceLimit : $this->undergroundLimit;
 		if($limit === null || $limit < 0){
 			return true;

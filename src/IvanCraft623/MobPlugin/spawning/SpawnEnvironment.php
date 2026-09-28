@@ -24,14 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 /**
- * World state queries the spawn conditions evaluate against — never a live World
- * directly, so condition classes stay decoupled and unit-testable.
- *
- * Every query is position-relative: the position is supplied by the surrounding
- * SpawnConditionContext, never as coordinate arguments here. An implementation answers
- * for "the evaluated position" (the snapshot environment reads its own frozen point;
- * a hypothetical live-world environment would read `$ctx->x/y/z`). Block queries are
- * split into getBlockTypeId() (the feet) and getBelowBlockTypeId() (the block under).
+ * World state queries spawn conditions evaluate against, position-relative, never a live
+ * World — keeps condition classes decoupled and unit-testable.
  */
 interface SpawnEnvironment{
 

@@ -31,6 +31,10 @@ final class Not implements SpawnCondition{
 		private readonly SpawnCondition $condition
 	){}
 
+	public function getEvaluationCost() : int{
+		return $this->condition->getEvaluationCost();
+	}
+
 	public function test(SpawnConditionContext $ctx) : bool{
 		return !$this->condition->test($ctx);
 	}

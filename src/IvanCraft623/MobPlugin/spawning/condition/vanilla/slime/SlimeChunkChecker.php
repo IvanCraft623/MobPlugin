@@ -31,7 +31,35 @@ namespace IvanCraft623\MobPlugin\spawning\condition\vanilla\slime;
 final class SlimeChunkChecker{
 	private const DENOMINATOR = 10;
 
+	/**
+	 * Memoized per-chunk results. The slime property of a chunk is fixed for the life of
+	 * the world, but it is queried on every cave spawn attempt below Y 40 — rebuilding the
+	 * Mersenne twister per call was the dominant Evaluate cost. Computing it once per chunk
+	 * (the entity simulation area is bounded) turns the hot path into an associative-array
+	 * lookup.
+	 *
+	 * @phpstan-var array<int, array<int, bool>>
+	 */
+	private static array $cache = [];
+
 	public static function isSlimeChunk(int $chunkX, int $chunkZ) : bool{
+		if(isset(self::$cache[$chunkX])){
+			$byZ = self::$cache[$chunkX];
+			if(isset($byZ[$chunkZ])){
+				return $byZ[$chunkZ];
+			}
+		}
+		$result = self::compute($chunkX, $chunkZ);
+		if(isset(self::$cache[$chunkX])){
+			self::$cache[$chunkX][$chunkZ] = $result;
+		}else{
+			self::$cache[$chunkX] = [$chunkZ => $result];
+		}
+
+		return $result;
+	}
+
+	private static function compute(int $chunkX, int $chunkZ) : bool{
 		$seed = self::mul32($chunkX & 0xFFFFFFFF, 0x1f1f1f1f) ^ ($chunkZ & 0xFFFFFFFF);
 		$twister = new MersenneTwister($seed & 0xFFFFFFFF);
 

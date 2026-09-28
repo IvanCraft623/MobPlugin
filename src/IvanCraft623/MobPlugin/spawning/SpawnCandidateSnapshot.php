@@ -32,7 +32,7 @@ final class SpawnCandidateSnapshot{
 	 * @phpstan-param array<string, BandCounts> $densityCounts Bedrock identifier =>
 	 *     entity count per band (surface/cave) within the population region radius of the
 	 *     candidate position; identifiers with no nearby mob may be absent.
-	 * @phpstan-param array<string, BandCounts> $populationCounts MobCategory enum name =>
+	 * @phpstan-param array<string, BandCounts> $populationCounts MobCategory id =>
 	 *     entity count per band, same region; categories with no nearby mob may be absent.
 	 */
 	public function __construct(
@@ -42,6 +42,8 @@ final class SpawnCandidateSnapshot{
 		public int $y,
 		public int $z,
 		public int $surfaceY,
+		/** Habitat band of the candidate position, computed once by the collector. */
+		public SpawnBand $band,
 		public int $biomeId,
 		/** Combined light at the position, adjusted for time of day (World::getFullLightAt). */
 		public int $light,
