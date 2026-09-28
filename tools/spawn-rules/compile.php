@@ -51,7 +51,7 @@ declare(strict_types=1);
  * Usage:
  *   php tools/spawn-rules/compile.php --schema-version=<version> [--samples-dir=<path>] [--out=<path>] [--source-commit=<sha>]
  *
- * --schema-version is required (single-sourced from resources/spawning/schemas/SCHEMA_VERSION).
+ * --schema-version is required (single-sourced from tools/spawn-rules/SCHEMA_VERSION).
  *
  * Exit codes: 0 = success, 1 = failure (no partial output is ever written).
  */
@@ -78,7 +78,7 @@ function main(array $argv) : int{
 	}
 	$schemaVersion = readStringOption($opts, "schema-version");
 	if($schemaVersion === null){
-		return fail("Missing required --schema-version=<version> (see resources/spawning/schemas/SCHEMA_VERSION).");
+		return fail("Missing required --schema-version=<version> (see tools/spawn-rules/SCHEMA_VERSION).");
 	}
 	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/.cache/bedrock-samples";
 	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/resources/spawning";
@@ -97,7 +97,7 @@ function main(array $argv) : int{
 	}
 
 	try{
-		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($samplesDir . "/metadata/json_schemas", $schemaVersion);
+		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($schemaDir . "/Spawn Rules.json", $schemaVersion);
 		$inventory = readSchemaConditionsInventory($schemaDir);
 	}catch(SchemaSetupException $e){
 		return fail($e->getMessage());

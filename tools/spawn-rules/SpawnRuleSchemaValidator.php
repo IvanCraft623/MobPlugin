@@ -23,29 +23,25 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use FilesystemIterator;
 use JsonSchema\Constraints\Factory;
 use JsonSchema\SchemaStorage;
 use JsonSchema\Uri\Retrievers\FileGetContents;
 use JsonSchema\Uri\UriRetriever;
 use JsonSchema\Validator;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
 use function array_map;
 use function array_slice;
-use function basename;
 use function dirname;
 use function file_get_contents;
 use function get_object_vars;
 use function is_array;
+use function is_file;
 use function is_string;
 use function json_decode;
 use function rawurldecode;
 use function realpath;
 use function sprintf;
 use function str_replace;
-use function strtolower;
+use function str_starts_with;
 use const DIRECTORY_SEPARATOR;
 
 /**
@@ -70,16 +66,17 @@ final class SpawnRuleSchemaValidator{
 	}
 
 	/**
-	 * Builds a validator from a schema directory tree. The directory must keep the
-	 * relative layout the schema files reference (e.g. resources/spawning/schemas or a
-	 * bedrock-samples checkout's metadata/json_schemas).
+	 * Builds a validator from the root spawn-rule schema file. The full $ref closure
+	 * reachable from it (the spawn schemas in the same version directory plus the shared
+	 * client_server/common schemas they reference) is loaded and patched eagerly, so
+	 * no raw (unpatched) schema file is ever fetched lazily by SchemaStorage.
 	 *
 	 * When $expectedSchemaVersion is given, the root schema's x-format-version is checked
-	 * and a SchemaSetupException is thrown on mismatch.
+	 * against it and a SchemaSetupException is thrown on mismatch.
 	 *
 	 * @phpstan-throws SchemaSetupException
 	 */
-	public static function fromSchemaTree(string $schemaTree, ?string $expectedSchemaVersion = null) : self{
+	public static function fromSchemaTree(string $rootSchemaFile, ?string $expectedSchemaVersion = null) : self{
 		$retriever = new UriRetriever();
 		$retriever->setUriRetriever(new class extends FileGetContents{
 			public function retrieve($uri){
@@ -88,30 +85,37 @@ final class SpawnRuleSchemaValidator{
 		});
 		$storage = new SchemaStorage($retriever);
 
-		$rootReal = null;
-		$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($schemaTree, FilesystemIterator::SKIP_DOTS));
-		foreach($iterator as $fileInfo){
-			/** @var SplFileInfo $fileInfo */
-			if(!$fileInfo->isFile() || strtolower($fileInfo->getExtension()) !== "json"){
+		// Resolve the full $ref closure from the root schema and pre-register every file
+		// through patchNode, instead of lazily letting SchemaStorage fetch shared refs raw.
+		$rootReal = (string) realpath($rootSchemaFile);
+		if($rootReal === "" || !is_file($rootReal)){
+			throw new SchemaSetupException("Spawn Rules.json root schema not found: $rootSchemaFile");
+		}
+
+		$loaded = [];
+		$pending = [$rootReal];
+		while($pending !== []){
+			$path = (string) array_pop($pending);
+			$real = (string) realpath($path);
+			if($real === "" || isset($loaded[$real])){
 				continue;
 			}
-			$schema = json_decode((string) file_get_contents($fileInfo->getPathname()));
+			$loaded[$real] = true;
+			$schema = json_decode((string) file_get_contents($real));
 			if(!$schema instanceof \stdClass){
 				continue;
 			}
-			$real = (string) $fileInfo->getRealPath();
-			$storage->addSchema("file://" . $real, self::patchNode($schema, dirname($real)));
-			if(basename($real) === "Spawn Rules.json"){
-				$rootReal = $real;
+			$patched = self::patchNode($schema, dirname($real));
+			if(!$patched instanceof \stdClass){
+				continue;
 			}
-		}
-		if($rootReal === null){
-			throw new SchemaSetupException("Spawn Rules.json root schema not found under: $schemaTree");
+			$storage->addSchema("file://" . $real, $patched);
+			self::collectRefTargets($schema, $real, $pending);
 		}
 
 		if($expectedSchemaVersion !== null){
 			$rootRaw = json_decode((string) file_get_contents($rootReal));
-			$declared = $rootRaw->{"x-format-version"} ?? null;
+			$declared = $rootRaw instanceof \stdClass ? ($rootRaw->{"x-format-version"} ?? null) : null;
 			if(!is_string($declared) || $declared !== $expectedSchemaVersion){
 				throw new SchemaSetupException(sprintf(
 					"Spawn Rules.json declares x-format-version \"%s\" but version \"%s\" was requested.",
@@ -127,6 +131,38 @@ final class SpawnRuleSchemaValidator{
 		}
 
 		return new self(new Factory($storage), $rootSchema);
+	}
+
+	/**
+	 * Enqueues the real file target of every $ref, including ones already rewritten to
+	 * absolute file:// URIs, so the closure (spawn schemas plus shared refs) is all
+	 * registered through patchNode before validation.
+	 *
+	 * @param list<string> $pending
+	 */
+	private static function collectRefTargets(mixed $node, string $path, array &$pending) : void{
+		$base = dirname($path);
+		$visit = function(mixed $n) use (&$visit, $base, &$pending) : void{
+			if($n instanceof \stdClass){
+				$ref = $n->{"\$ref"} ?? null;
+				if(is_string($ref)){
+					$target = str_starts_with($ref, "file://")
+						? (string) str_replace("file://", "", rawurldecode($ref))
+						: $base . "/" . rawurldecode(str_replace("\\", "/", $ref));
+					if(is_file($target)){
+						$pending[] = $target;
+					}
+				}
+				foreach(get_object_vars($n) as $value){
+					$visit($value);
+				}
+			}elseif(is_array($n)){
+				foreach($n as $value){
+					$visit($value);
+				}
+			}
+		};
+		$visit($node);
 	}
 
 	/**

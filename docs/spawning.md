@@ -32,7 +32,7 @@ being silently mangled by the build.
 The merge doubles as a **schema-compatibility gate**: every `minecraft:spawn_rules`
 body is validated against the official Mojang spawn schemas pinned by
 `--schema-version` — a required argument, single-sourced from
-`resources/spawning/schemas/SCHEMA_VERSION` — and every condition component and
+`tools/spawn-rules/SCHEMA_VERSION` — and every condition component and
 structural key must be declared by the pinned schema inventory. A failure means the
 vanilla data drifted beyond what the plugin was built against — update the loader /
 component registry (and, if intended, the pinned schema version) before recompiling. The
@@ -64,11 +64,13 @@ committed resource through `SpawnRulesFactory`, which throws on any value it can
 compile. Keep both: the schema check catches structural landmines before they reach the
 parser, and the parse test is the source of truth for semantics.
 
-The schemas used by the test are **committed** under
-`resources/spawning/schemas/metadata/json_schemas` (the `server/spawn/1.21.50` tree
-plus the `Filter Group`, `Block Descriptor` and legacy `Reference` files they `$ref`),
-so no network or clone is needed. See `resources/spawning/schemas/README.md` for the
-source commit and license.
+The schemas are **not committed** in the repo — they are pulled as a composer `--dev`
+dependency (`mojang/bedrock-samples`, a pinned `Mojang/bedrock-samples` checkout) and land
+in `vendor/mojang/bedrock-samples/metadata/json_schemas`. The test validates against the
+`server/spawn/1.21.50` spawn schemas plus the `Filter Group`, `Block Descriptor` and legacy
+`Reference` files they `$ref`. Because it is `--dev`, it never ships in the plugin phar; only
+`resources/spawning/spawn_rules.json` and `resources/global-settings.yml` are runtime
+resources. Filename provenance (source commit / license) is in `dev deps`.
 
 ### Updating to a newer Mojang version
 
@@ -84,15 +86,15 @@ git -C .cache/bedrock-samples checkout <new-sha>
 composer compile-spawn-rules
 
 # 3. regenerate the generated artifacts from the schemas (version is required)
-php tools/spawn-rules/generate-schema.php --samples-dir=.cache/bedrock-samples --schema-version=$(cat resources/spawning/schemas/SCHEMA_VERSION)
+php tools/spawn-rules/generate-schema.php --schema-version=$(cat tools/spawn-rules/SCHEMA_VERSION)
 
-# 4. refresh the committed schema copy the offline test validates against
-#    (copy metadata/json_schemas/** from the checkout — see resources/spawning/schemas/README.md)
+# 4. bump the pinned bedrock-samples commit in composer.json (the mojang/bedrock-samples
+#    source reference) so the --dev schemas match the new merge
 
 # 5. review & commit the diff, then bump the pinned ref everywhere it appears:
 #    - resources/spawning/NOTICE.md   (Source commit / Game version / Schema validation)
-#    - resources/spawning/schemas/README.md (Source commit / version)
-#    - resources/spawning/schemas/SCHEMA_VERSION  (single source of truth; read by
+#    - composer.json                  (mojang/bedrock-samples source reference)
+#    - tools/spawn-rules/SCHEMA_VERSION  (single source of truth; read by
 #      composer compile-spawn-rules and the spawn-schemas CI gate)
 ```
 
@@ -128,15 +130,16 @@ Two other checks complete the picture:
   loader, so a regression in data ⇔ parser surfaces too. `SpawnRuleIndexTest` asserts
   the planner index is an over-approximation of brute-force evaluation.
 
-CI runs `phpunit` (these tests) and `phpstan` on every push/PR; keeping the committed
+CI runs `phpunit` (these tests) and `phpstan` on every push/PR; keeping the vendored
 schemas, the merge output, and the generated enum artifacts in sync is an explicit,
 conscious step. The artifact-drift check is now **wired into CI** too: the
-`spawn-schemas` workflow runs `generate-schema.php --check` against the **committed**
-schema subtree (`resources/spawning/schemas/`) offline — no `bedrock-samples` clone
-needed — so a Mojang component/envelope change that desyncs the generated artifacts
-fails the build. The full merge/schema-validation gate still requires the pinned clone
-(`composer compile-spawn-rules`). `compile.php`, `generate-schema.php`, and the schemas
-subtree all carry their source-commit provenance in headers / NOTICE / README.
+`spawn-schemas` workflow runs `generate-schema.php --check` against the `--dev`
+`mojang/bedrock-samples` checkout (installed into `vendor/` by `composer install`) —
+no separate clone needed — so a Mojang component/envelope change that desyncs the
+generated artifacts fails the build. The full merge/schema-validation gate still requires
+the pinned clone (`composer compile-spawn-rules`). `compile.php`, `generate-schema.php`,
+and the vendored schemas all carry their source-commit provenance in headers / NOTICE /
+composer.json.
 
 ## Pipeline
 

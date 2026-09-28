@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
 use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use PHPUnit\Framework\TestCase;
 use function array_is_list;
@@ -49,9 +50,13 @@ require_once dirname(__DIR__, 5) . "/tools/spawn-rules/SpawnRuleSchemaValidator.
  */
 final class SpawnRulesDataInventoryTest extends TestCase{
 	private const DATA_PATH = "/resources/spawning/spawn_rules.json";
-	private const SCHEMA_TREE = "/resources/spawning/schemas/metadata/json_schemas";
+	private const SCHEMA_ROOT = "/vendor/mojang/bedrock-samples/metadata/json_schemas/server/spawn/" . SpawnSchema::SCHEMA_VERSION . "/Spawn Rules.json";
 
 	private ?SpawnRuleSchemaValidator $validator = null;
+
+	private static function repoRoot() : string{
+		return dirname(__DIR__, 5);
+	}
 
 	public function testBundledResourceIsValidJson() : void{
 		self::assertNotSame([], $this->decodeDataAsMap(), "spawn_rules.json must not be empty");
@@ -78,8 +83,7 @@ final class SpawnRulesDataInventoryTest extends TestCase{
 			if(!is_array($conditions)){
 				continue;
 			}
-			$conditions = array_is_list($conditions) ? $conditions : [$conditions];
-			foreach($conditions as $condition){
+			foreach(array_is_list($conditions) ? $conditions : [$conditions] as $condition){
 				if(!is_array($condition)){
 					continue;
 				}
@@ -140,7 +144,7 @@ final class SpawnRulesDataInventoryTest extends TestCase{
 	}
 
 	private function readData() : string{
-		$raw = file_get_contents(dirname(__DIR__, 5) . self::DATA_PATH);
+		$raw = file_get_contents(self::repoRoot() . self::DATA_PATH);
 		self::assertIsString($raw, "could not read resources/spawning/spawn_rules.json");
 
 		return $raw;
@@ -161,6 +165,9 @@ final class SpawnRulesDataInventoryTest extends TestCase{
 	}
 
 	private function getValidator() : SpawnRuleSchemaValidator{
-		return $this->validator ??= SpawnRuleSchemaValidator::fromSchemaTree(dirname(__DIR__, 5) . self::SCHEMA_TREE);
+		return $this->validator ??= SpawnRuleSchemaValidator::fromSchemaTree(
+			self::repoRoot() . self::SCHEMA_ROOT,
+			SpawnSchema::SCHEMA_VERSION
+		);
 	}
 }

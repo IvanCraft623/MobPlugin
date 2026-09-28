@@ -14,12 +14,27 @@
         "phpstan/phpstan": "2.1.46",
         "phpunit/phpunit": "^10.5",
         "sof3/pharynx": "^0.3.8",
-        "justinrainbow/json-schema": "^6.10.0"
+        "justinrainbow/json-schema": "^6.10.0",
+        "mojang/bedrock-samples": "1.21.50"
     },
     "repositories": [
         {
             "type": "vcs",
             "url": "https://github.com/IvanCraft623/Pahtfinder.git"
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "mojang/bedrock-samples",
+                "version": "1.21.50",
+                "type": "metadata",
+                "description": "Mojang bedrock-samples spawn-rule JSON schemas (dev-only).",
+                "source": {
+                    "url": "https://github.com/Mojang/bedrock-samples.git",
+                    "type": "git",
+                    "reference": "46ba6ea985fb5a92d79a9419198f10dda14c199d"
+                }
+            }
         }
     ],
     "autoload": {
@@ -34,7 +49,7 @@
     },
     "scripts": {
         "build": "php -dphar.readonly=0 vendor/bin/pharynx -i=. -c -p=MobPlugin.phar",
-        "compile-spawn-rules": "php tools/spawn-rules/compile.php --schema-version=$(cat resources/spawning/schemas/SCHEMA_VERSION)",
+        "compile-spawn-rules": "php tools/spawn-rules/compile.php --schema-version=$(cat tools/spawn-rules/SCHEMA_VERSION)",
         "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit"
     }
 }

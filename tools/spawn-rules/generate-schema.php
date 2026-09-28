@@ -45,7 +45,7 @@ declare(strict_types=1);
  * Usage:
  *   php tools/spawn-rules/generate-schema.php --schema-version=<version> [--samples-dir=<path>] [--out=<dir>] [--check]
  *
- * --schema-version is required (single-sourced from resources/spawning/schemas/SCHEMA_VERSION).
+ * --schema-version is required (single-sourced from tools/spawn-rules/SCHEMA_VERSION).
  *
  * Exit codes: 0 = success / in sync, 1 = failure or drift detected.
  */
@@ -81,9 +81,9 @@ function main(array $argv) : int{
 	}
 	$schemaVersion = readStringOption($opts, "schema-version");
 	if($schemaVersion === null){
-		return fail("Missing required --schema-version=<version> (see resources/spawning/schemas/SCHEMA_VERSION).");
+		return fail("Missing required --schema-version=<version> (see tools/spawn-rules/SCHEMA_VERSION).");
 	}
-	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/.cache/bedrock-samples";
+	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/vendor/mojang/bedrock-samples";
 	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/src/IvanCraft623/MobPlugin/spawning/parse/schema";
 	$check = isset($opts["check"]);
 

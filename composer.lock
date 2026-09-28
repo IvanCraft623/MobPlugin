@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ef17de6c435c5d72cd1f830f380a6be5",
+    "content-hash": "68b79dac5f24a153b7e3ab9c608c0fb1",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -1942,6 +1942,17 @@
                 "source": "https://github.com/marc-mabe/php-enum/tree/v4.7.2"
             },
             "time": "2025-09-14T11:18:39+00:00"
+        },
+        {
+            "name": "mojang/bedrock-samples",
+            "version": "1.21.50",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Mojang/bedrock-samples.git",
+                "reference": "46ba6ea985fb5a92d79a9419198f10dda14c199d"
+            },
+            "type": "metadata",
+            "description": "Mojang bedrock-samples spawn-rule JSON schemas (dev-only)."
         },
         {
             "name": "myclabs/deep-copy",
