@@ -143,18 +143,37 @@ composer.json.
 
 ## Pipeline
 
-One synchronous main-thread pass per tick, three stages
-(`NaturalSpawner::tick()`; PM entities/worlds are not thread-safe and every expensive
-stage needs `World` access):
+One synchronous main-thread pass per tick (`NaturalSpawner::tick()`; PM entities and
+worlds are not thread-safe and every expensive stage needs `World` access). The stages
+exchange immutable value objects:
 
-1. **Collect** — `SpawnCollector` picks budgeted random candidate positions per world
-   (spawn shell around players, surface + cave attempts per column) and snapshots every
-   piece of world state the conditions need (`SpawnCandidateSnapshot`).
-2. **Evaluate** — `SpawnEvaluator` shortlists rule sets through the planner index
-   (`SpawnRuleIndex::candidatesFor()`), weighted-picks one rule, runs its compiled
-   conditions against the snapshots, and gates by `MobCategory` population caps.
-3. **Apply** — `SpawnApplier` re-validates live state, spawns herds, and dispatches
-   `permute_type` through the registry.
+1. **Collect** — `SpawnCollector` splits the global attempt budget across spawn-eligible
+   worlds and samples one column per attempt in the 24–44 block ring around a random
+   player (uniform over the ring's area): one surface position on the column's ground
+   plus a few cave positions below it. Positions within 24 blocks of any player or
+   without feet/head room are dropped immediately. Output: `SpawnPosition`.
+2. **Shortlist** — `SpawnRuleIndex::candidatesFor()` keeps only positions some rule set
+   could match, mapped to their `SpawnRuleBinding`s.
+3. **Census** — `SpawnCensus` counts nearby mobs per band (by identifier and by
+   category) for the surviving positions only, one entity pass per world. Output:
+   `SpawnCounts`, bundled with the position and bindings as a `SpawnCandidate`.
+4. **Evaluate** — `SpawnEvaluator` (pure; injected `Random`) runs the conditions of
+   every viable rule set whose category is under its population cap. Each rule set
+   contributes its first matching group, **weighted by that group's weight**; one match
+   is picked, then the cap's probability roll (`(cap - count) / cap`) decides. Output:
+   `SpawnRequest`.
+5. **Apply** — `SpawnApplier` re-validates the live world, re-checks the category cap and
+   the group's density limit against mobs spawned earlier in the same pass
+   (`SpawnTally`: same world, same band, within the region radius), picks a
+   `permute_type`, and spawns the herd.
+
+`SpawnPlacement` is the single definition of the column ground (highest solid, full,
+opaque block — air, liquids and canopies skipped) and of "a mob fits here" (land mobs:
+passable non-liquid feet and head over spawnable ground; aquatic mobs: the required
+liquid at the feet and a passable head). Sampling, band classification and herd
+placement all use it, so they agree. Herd members of a surface lead stand on their own
+column's ground; members of a cave lead keep its depth; aquatic members keep the lead's
+depth in the same liquid.
 
 ## Conditions
 
@@ -208,12 +227,13 @@ declare that liquid are attempted.
 
 ## Registration API
 
-Plugins register rules through
-`MobPlugin::getInstance()->getSpawnRuleRegistry()`:
+Plugins register rules through `SpawnRuleRegistry::getInstance()`. The rule set's
+category id is resolved to a `MobCategory` once, at registration, and that binding's
+category is what the census, evaluator and applier use:
 
 ```php
 $registry->register(
-    new SpawnRules("minecraft:myboss", MobCategory::MONSTER, [
+    new SpawnRules("minecraft:myboss", MobCategoryRegistry::MONSTER, [
         new SpawnConditionGroup([
             new BrightnessFilter(0, 7, false),
             new SpawnsOnBlock([BlockTypeIds::STONE => true], false),
@@ -265,7 +285,7 @@ index rebuilds. Example — slimes spawn only below Y 40:
 
 ```php
 $registry->register(
-    new SpawnRules("minecraft:slime", MobCategory::MONSTER, [
+    new SpawnRules("minecraft:slime", MobCategoryRegistry::MONSTER, [
         new SpawnConditionGroup([
             new HabitatBandCondition([SpawnBand::CAVE]),
             new HeightFilter(null, 40),
@@ -281,7 +301,7 @@ $registry->register(
 ```yaml
 mob-natural-spawning:
   enabled: true
-  attempts-per-tick: 3   # chunk evaluations per tick per world
+  attempts-per-tick: 3   # column samples per tick, split across all spawn-eligible worlds
 ```
 
 ## Approximations
@@ -291,7 +311,10 @@ Documented deviations from vanilla, all deliberate:
 - Cave herd depths are sampled (2 per column) instead of scanning every spawnable block;
   the 9×9 chunk population region is approximated by a 72-block radius circle.
 - A mob's band (surface/cave) is taken from its current position, not its spawn location.
-- `permute_type` spawn-event suffixes are stripped: permuted types spawn in base form.
+- `permute_type` spawn-event suffixes are stripped at parse time: permuted types spawn in
+  base form.
+- Herd members are placed by room only; their rule conditions (light, biome, block) are
+  not re-evaluated at the offset position.
 - No PM weather API → the weather light penalty is always 0 (context field is the hook).
 - `disallow_spawns_in_bubble` is a pass-through (no bubble-column block in PM).
 - Herd spawn events are parsed but not applied (no consumer yet).

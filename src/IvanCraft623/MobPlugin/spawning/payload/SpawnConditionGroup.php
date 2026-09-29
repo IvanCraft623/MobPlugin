@@ -25,8 +25,11 @@ namespace IvanCraft623\MobPlugin\spawning\payload;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
+use IvanCraft623\MobPlugin\spawning\condition\vanilla\DensityLimitCondition;
+use IvanCraft623\MobPlugin\spawning\plan\LiquidConstrained;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use function count;
+use function min;
 
 /**
  * One alternative of a spawn rule set: the AND list of its conditions plus the payload
@@ -76,6 +79,39 @@ final class SpawnConditionGroup{
 
 	public function getHabitatBand() : ?SpawnBand{
 		return $this->habitatBand;
+	}
+
+	/**
+	 * The tightest density_limit this group sets for the given band (the maximum nearby
+	 * same-identifier count a spawn may start from), or null when it sets none. The
+	 * applier re-checks it so repeated herds in one pass can't slip past the limit.
+	 */
+	public function densityLimitFor(SpawnBand $band) : ?int{
+		$limit = null;
+		foreach($this->conditions as $condition){
+			if($condition instanceof DensityLimitCondition){
+				$candidateLimit = $condition->limitFor($band);
+				if($candidateLimit !== null){
+					$limit = $limit === null ? $candidateLimit : min($limit, $candidateLimit);
+				}
+			}
+		}
+
+		return $limit;
+	}
+
+	/**
+	 * The liquid (BlockTypeIds::WATER/LAVA) this group requires at the feet, or null for
+	 * land spawns. Drives the applier's placement checks for the lead and herd members.
+	 */
+	public function getRequiredLiquid() : ?int{
+		foreach($this->conditions as $condition){
+			if($condition instanceof LiquidConstrained){
+				return $condition->getRequiredLiquidTypeId();
+			}
+		}
+
+		return null;
 	}
 
 	/**

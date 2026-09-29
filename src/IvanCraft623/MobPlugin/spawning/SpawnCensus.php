@@ -26,23 +26,21 @@ namespace IvanCraft623\MobPlugin\spawning;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
+use function count;
+use function floor;
 use function intdiv;
 
 /**
- * Entity census for the population-control caps: counts mobs per habitat band within the
- * population region around a position. Main-thread only.
+ * Entity census for population caps and density limits: counts mobs per habitat band
+ * within the population region around each position. Main-thread only.
  *
- * An entity counts when it resolves to a registered population-control category (via the
- * injected resolver backed by SpawnRuleRegistry), so both MobPlugin mobs and bound
- * raw-PMMP mobs (e.g. Squid) are counted — players/items/projectiles/unbound mobs are not.
+ * An entity counts when the injected resolver maps it to a population-control category,
+ * so both MobPlugin mobs and bound raw-PMMP mobs (e.g. Squid) count — players, items,
+ * projectiles and unbound mobs don't.
  */
 final class SpawnCensus{
 	/** Radius (blocks) approximating the Bedrock 9x9 chunk population region. */
 	public const SPAWN_REGION_RADIUS = 72;
-
-	/** Per-batch cache of each column's solid ground Y, keyed by column hash. */
-	/** @var array<int, int> */
-	private array $columnGroundCache = [];
 
 	/**
 	 * @phpstan-param \Closure(Entity): ?MobCategory $categoryResolver resolves an entity
@@ -53,152 +51,102 @@ final class SpawnCensus{
 	){}
 
 	/**
-	 * One entity pass for a tick's candidate positions: tallies per-identifier and
-	 * per-category band counts for every center at once. The entity's band (paid as a
-	 * block-array lookup) is computed lazily, only for entities in range of a center.
+	 * One entity pass for a batch of positions in one world.
 	 *
-	 * Hot path: counts accumulate into mutable int pairs and are materialized into
-	 * immutable BandCounts once per center, avoiding object allocation on every
-	 * matching (entity, center) pair.
-	 *
-	 * Entities are bucketed by chunk, and each center only visits the chunk neighborhood
-	 * its population region can overlap. This turns the natural O(entities × centers)
-	 * distance cross-product into O(entities) + O(centers × region-chunks), so spawning
-	 * scales with the mob population actually near a center rather than the whole world.
+	 * Entities are flattened once into [x, y, z, identifier, category, band] rows bucketed
+	 * by chunk, and each center only visits the chunks its region can overlap:
+	 * O(entities) + O(centers × region-chunks). An entity's band (a column ground scan) is
+	 * resolved lazily, once, and only if some center reaches it.
 	 *
 	 * @phpstan-param list<Vector3> $centers
-	 * @phpstan-param list<array<string, BandCounts>> $densityOut
-	 * @phpstan-param list<array<string, BandCounts>> $populationOut
+	 *
+	 * @phpstan-return list<SpawnCounts> aligned with $centers
 	 */
-	public function countForBatch(World $world, array $centers, array &$densityOut, array &$populationOut) : void{
-		// Mutable [surface, cave] int lists keyed by identifier/category per center.
-		$density = [];
-		$population = [];
-		foreach($centers as $_){
-			$density[] = [];
-			$population[] = [];
-		}
-		$this->columnGroundCache = [];
-
-		// Bucket tally-eligible entities by their chunk so each center only iterates the
-		// chunk neighborhood it can reach instead of every entity in the world. The
-		// population-control category is resolved once here, alongside each entity.
-		/** @phpstan-var array<int, list<array{Entity, MobCategory}>> $chunkBuckets */
+	public function count(World $world, array $centers) : array{
+		/** @phpstan-var array<int, list<array{float, float, float, string, string, int}>> $chunkBuckets */
 		$chunkBuckets = [];
 		foreach($world->getEntities() as $entity){
-			if($entity->isClosed() || $entity->getPosition()->getWorld() !== $world){
+			if($entity->isClosed()){
 				continue;
 			}
 			$category = ($this->categoryResolver)($entity);
 			if($category === null){
-				continue; // players/items/projectiles/unbound mobs count against nothing
+				continue;
 			}
 			$pos = $entity->getPosition();
-			$chunkKey = World::chunkHash($pos->getFloorX() >> 4, $pos->getFloorZ() >> 4);
-			$chunkBuckets[$chunkKey] ??= [];
-			$chunkBuckets[$chunkKey][] = [$entity, $category];
+			$chunkKey = World::chunkHash(((int) floor($pos->x)) >> 4, ((int) floor($pos->z)) >> 4);
+			$chunkBuckets[$chunkKey][] = [$pos->x, $pos->y, $pos->z, $entity::getNetworkTypeId(), $category->id, -1];
 		}
 
+		$results = [];
 		$radiusSquared = self::SPAWN_REGION_RADIUS ** 2;
-		$chunkSpread = intdiv(self::SPAWN_REGION_RADIUS, 16); // blocks→chunks; a full-chunk step past this is always out of range
-		foreach($centers as $i => $center){
-			$centerChunkX = ((int) $center->x) >> 4;
-			$centerChunkZ = ((int) $center->z) >> 4;
-			for($dx = -$chunkSpread; $dx <= $chunkSpread; $dx++){
-				for($dz = -$chunkSpread; $dz <= $chunkSpread; $dz++){
-					$bucket = $chunkBuckets[World::chunkHash($centerChunkX + $dx, $centerChunkZ + $dz)] ?? null;
-					if($bucket === null){
-						continue;
-					}
-					foreach($bucket as [$entity, $category]){
-						$this->tallyNear($world, $entity, $category, $center, $radiusSquared, $density[$i], $population[$i]);
+		$chunkSpread = intdiv(self::SPAWN_REGION_RADIUS, 16) + 1; // +1: the center may sit anywhere in its chunk
+		foreach($centers as $center){
+			/** @phpstan-var array<string, array{int, int}> $density */
+			$density = [];
+			/** @phpstan-var array<string, array{int, int}> $population */
+			$population = [];
+			if(count($chunkBuckets) !== 0){
+				$centerChunkX = ((int) floor($center->x)) >> 4;
+				$centerChunkZ = ((int) floor($center->z)) >> 4;
+				for($dx = -$chunkSpread; $dx <= $chunkSpread; $dx++){
+					for($dz = -$chunkSpread; $dz <= $chunkSpread; $dz++){
+						$key = World::chunkHash($centerChunkX + $dx, $centerChunkZ + $dz);
+						if(!isset($chunkBuckets[$key])){
+							continue;
+						}
+						foreach($chunkBuckets[$key] as &$row){
+							$ex = $row[0] - $center->x;
+							$ey = $row[1] - $center->y;
+							$ez = $row[2] - $center->z;
+							if($ex * $ex + $ey * $ey + $ez * $ez > $radiusSquared){
+								continue;
+							}
+							if($row[5] < 0){
+								// Water is skipped by the ground scan, so aquatic mobs above the sea
+								// floor count as surface (squids are an animal-surface population).
+								$groundY = SpawnPlacement::groundY($world, (int) floor($row[0]), (int) floor($row[2]));
+								$row[5] = SpawnBand::fromPosition($row[1], $groundY) === SpawnBand::SURFACE ? 0 : 1;
+							}
+							$density[$row[3]] = self::increment($density[$row[3]] ?? [0, 0], $row[5]);
+							$population[$row[4]] = self::increment($population[$row[4]] ?? [0, 0], $row[5]);
+						}
+						unset($row);
 					}
 				}
 			}
+			$results[] = new SpawnCounts(self::materialize($density), self::materialize($population));
 		}
 
-		foreach($centers as $i => $_){
-			$densityOut[$i] = self::materialize($density[$i]);
-			$populationOut[$i] = self::materialize($population[$i]);
-		}
+		return $results;
 	}
 
 	/**
-	 * Adds one entity to a center's tally when it lies within the population region
-	 * radius. The entity's band is resolved lazily, only for entities actually in range.
+	 * @phpstan-param array{int, int} $pair [surface, cave]
 	 *
-	 * @phpstan-param MobCategory $category the entity's pre-resolved population-control category
-	 * @phpstan-param array<string, array{0: int, 1: int}> $density mutable accum
-	 * @phpstan-param array<string, array{0: int, 1: int}> $population mutable accum
+	 * @phpstan-return array{int, int}
 	 */
-	private function tallyNear(World $world, Entity $entity, MobCategory $category, Vector3 $center, int $radiusSquared, array &$density, array &$population) : void{
-		$entityPos = $entity->getPosition();
-		if($entityPos->distanceSquared($center) > $radiusSquared){
-			return;
+	private static function increment(array $pair, int $bandKey) : array{
+		if($bandKey === 0){
+			$pair[0]++;
+		}else{
+			$pair[1]++;
 		}
-		$typeId = $entity::getNetworkTypeId();
-		$categoryId = $category->id;
-		$bandKey = $this->entityBandKey($world, $entityPos);
-		$density[$typeId] ??= [0, 0];
-		$density[$typeId][$bandKey]++;
-		$population[$categoryId] ??= [0, 0];
-		$population[$categoryId][$bandKey]++;
+
+		return $pair;
 	}
 
 	/**
-	 * Materializes the mutable [surface, cave] accumulators into immutable BandCounts.
-	 *
-	 * @phpstan-param array<string, array{0: int, 1: int}> $accum keyed by identifier/category
+	 * @phpstan-param array<string, array{int, int}> $accum
 	 *
 	 * @phpstan-return array<string, BandCounts>
 	 */
 	private static function materialize(array $accum) : array{
 		$result = [];
-		foreach($accum as $key => $counts){
-			$result[$key] = new BandCounts($counts[0], $counts[1]);
+		foreach($accum as $key => [$surface, $cave]){
+			$result[$key] = new BandCounts($surface, $cave);
 		}
 
 		return $result;
-	}
-
-	/**
-	 * The entity's band key (0 = surface, 1 = cave) for its current position. Water is
-	 * treated as transparent: the boundary is the column's solid ground (the highest
-	 * spawnable platform), so aquatic mobs swimming above the sea floor count as surface —
-	 * squids are an animal-surface population, not cave.
-	 *
-	 * @phpstan-return int<0, 1>
-	 */
-	private function entityBandKey(World $world, Vector3 $pos) : int{
-		$groundY = $this->columnGroundY($world, $pos->getFloorX(), $pos->getFloorZ());
-
-		return SpawnBand::fromPosition($pos->getY(), $groundY) === SpawnBand::SURFACE ? 0 : 1;
-	}
-
-	/**
-	 * The highest solid, full-cube, opaque block Y in a column (the spawnable ground),
-	 * scanning down from the column top. Air and liquids (water/lava) are skipped, so an
-	 * ocean's floor — not its water surface — is the reference. Falls back to the column
-	 * top (or world min when empty) when no spawnable platform is found. Cached per column
-	 * for the current batch.
-	 */
-	private function columnGroundY(World $world, int $x, int $z) : int{
-		$cacheKey = ($x & 0xFFFFFF) | (($z & 0xFFFFFF) << 24);
-		if(isset($this->columnGroundCache[$cacheKey])){
-			return $this->columnGroundCache[$cacheKey];
-		}
-
-		$minY = $world->getMinY();
-		$topY = $world->getHighestBlockAt($x, $z) ?? $minY;
-		$groundY = $topY;
-		for($y = $topY; $y >= $minY; $y--){
-			$block = $world->getBlockAt($x, $y, $z, false);
-			if($block->isSolid() && $block->isFullCube() && !$block->isTransparent()){
-				$groundY = $y;
-				break;
-			}
-		}
-
-		return $this->columnGroundCache[$cacheKey] = $groundY;
 	}
 }

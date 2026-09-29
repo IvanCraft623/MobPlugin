@@ -23,36 +23,41 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\CustomTimings;
-use pocketmine\math\Vector3;
+use pocketmine\block\Block;
 use pocketmine\player\Player;
+use pocketmine\utils\Random;
 use pocketmine\world\World;
-use function acos;
 use function cos;
 use function count;
-use function max;
-use function mt_getrandmax;
-use function mt_rand;
+use function floor;
+use function min;
 use function sin;
-
+use function sqrt;
 use const M_PI;
+use const PHP_FLOAT_MAX;
 
 /**
- * Stage 1 — Collect. Picks random candidate positions in the spawn shell around the
- * world's players and snapshots the world state the conditions need.
+ * Stage 1 — Collect. Samples random positions in the spawn ring around the world's
+ * players and reads the world facts the conditions need. Positions a mob provably can't
+ * use (too close to a player, no room) are dropped here, before any rule is weighed. The
+ * census is not run here: NaturalSpawner runs it only on positions the rule index keeps.
  */
 final class SpawnCollector{
 	/** Mobs never spawn closer than this to a player (vanilla despawns them immediately). */
 	public const MIN_PLAYER_DISTANCE = 24;
 
-	/** Outer spawn-shell radius, matching the wiki's simulation-distance-4 shell (24-44). */
+	/** Outer spawn-ring radius, matching the wiki's simulation-distance-4 shell (24-44). */
 	public const MAX_PLAYER_DISTANCE = 44;
 
-	/** Cave herd attempts per column (vanilla scans every spawnable block; we sample). */
+	/** Cave attempts per column (vanilla scans every spawnable block; we sample). */
 	public const CAVE_ATTEMPTS_PER_COLUMN = 2;
 
+	public const MIN_DISTANCE_SQUARED = self::MIN_PLAYER_DISTANCE ** 2;
+
+	private const MAX_DISTANCE_SQUARED = self::MAX_PLAYER_DISTANCE ** 2;
+
 	public function __construct(
-		private SpawnCensus $census
+		private readonly Random $random
 	){}
 
 	/**
@@ -60,150 +65,130 @@ final class SpawnCollector{
 	 *
 	 * @phpstan-param list<Player> $players
 	 *
-	 * @phpstan-return list<SpawnCandidateSnapshot>
+	 * @phpstan-return list<SpawnPosition>
 	 */
 	public function collect(World $world, array $players, int $attempts) : array{
-		$snapshots = [];
+		$playerPositions = [];
+		foreach($players as $player){
+			$pos = $player->getPosition();
+			$playerPositions[] = [$pos->x, $pos->y, $pos->z];
+		}
+		if(count($playerPositions) === 0){
+			return [];
+		}
+
+		$positions = [];
 		for($attempt = 0; $attempt < $attempts; $attempt++){
-			foreach($this->collectChunkCandidates($world, $players) as $snapshot){
-				$snapshots[] = $snapshot;
-			}
+			$this->sampleColumn($world, $playerPositions, $positions);
 		}
 
-		// One census pass for the whole batch, not one per candidate (hot path).
-		$density = [];
-		$population = [];
-		$centers = [];
-		foreach($snapshots as $snapshot){
-			$centers[] = new Vector3($snapshot->x, $snapshot->y, $snapshot->z);
-		}
-		CustomTimings::$naturalSpawningCensus->startTiming();
-		try{
-			$this->census->countForBatch($world, $centers, $density, $population);
-		}finally{
-			CustomTimings::$naturalSpawningCensus->stopTiming();
-		}
-		foreach($snapshots as $i => $snapshot){
-			$snapshot->densityCounts = $density[$i];
-			$snapshot->populationCounts = $population[$i];
-		}
-
-		return $snapshots;
+		return $positions;
 	}
 
 	/**
-	 * One chunk evaluation: random chunk + column within the shell, then a surface herd
-	 * attempt at the first spawnable block from the top and cave herd attempts at random
-	 * depths.
+	 * Horizontal offset from a player, uniformly distributed over the area of the
+	 * MIN..MAX ring (inverse-CDF radius, continuous angle), so samples neither crowd the
+	 * inner edge nor fall inside it.
 	 *
-	 * @phpstan-param list<Player> $players
-	 *
-	 * @phpstan-return list<SpawnCandidateSnapshot>
+	 * @phpstan-return array{float, float}
 	 */
-	private function collectChunkCandidates(World $world, array $players) : array{
-		$player = $players[mt_rand(0, count($players) - 1)];
-		$playerPos = $player->getPosition();
-		// Spherical shell 24-44 blocks from the player.
-		$distance = self::MIN_PLAYER_DISTANCE + (self::MAX_PLAYER_DISTANCE - self::MIN_PLAYER_DISTANCE) * mt_rand() / mt_getrandmax();
-		$theta = mt_rand(0, 359) * M_PI / 180.0;
-		$phi = acos(2.0 * mt_rand() / mt_getrandmax() - 1.0);
-		$centerX = $playerPos->getX() + sin($phi) * cos($theta) * $distance;
-		$centerZ = $playerPos->getZ() + sin($phi) * sin($theta) * $distance;
-		$chunkX = ((int) $centerX) >> 4;
-		$chunkZ = ((int) $centerZ) >> 4;
+	public static function ringOffset(Random $random) : array{
+		$radius = sqrt(self::MIN_DISTANCE_SQUARED + (self::MAX_DISTANCE_SQUARED - self::MIN_DISTANCE_SQUARED) * $random->nextFloat());
+		$theta = 2.0 * M_PI * $random->nextFloat();
 
-		$chunk = $world->isChunkLoaded($chunkX, $chunkZ) ? $world->getChunk($chunkX, $chunkZ) : null;
+		return [cos($theta) * $radius, sin($theta) * $radius];
+	}
+
+	/**
+	 * One column: a random chunk in the ring around a random player, a random column in
+	 * it, then one surface attempt on the column's ground and a few cave attempts at
+	 * random depths below it.
+	 *
+	 * @phpstan-param non-empty-list<array{float, float, float}> $players player x/y/z
+	 * @phpstan-param list<SpawnPosition>                        $out
+	 */
+	private function sampleColumn(World $world, array $players, array &$out) : void{
+		[$px, , $pz] = $players[$this->random->nextBoundedInt(count($players))];
+		[$dx, $dz] = self::ringOffset($this->random);
+		$chunkX = ((int) floor($px + $dx)) >> 4;
+		$chunkZ = ((int) floor($pz + $dz)) >> 4;
+
+		$chunk = $world->getChunk($chunkX, $chunkZ); // null when not loaded
 		if($chunk === null || $chunk->isLightPopulated() !== true){
-			return []; // light not calculated yet — getFullLightAt() would wrongly read dark
+			return; // light not calculated yet — getFullLightAt() would wrongly read dark
 		}
-		$x = ($chunkX << 4) + mt_rand(0, 15);
-		$z = ($chunkZ << 4) + mt_rand(0, 15);
+		$x = ($chunkX << 4) + $this->random->nextBoundedInt(16);
+		$z = ($chunkZ << 4) + $this->random->nextBoundedInt(16);
 		$minY = $world->getMinY();
 
-		$snapshots = [];
-		// Surface attempt: the column's ground is the highest *passable* platform — a
-		// solid, full-cube, opaque block — scanning down from the top. Air and unpassable
-		// solids (leaf/stair/glass) are skipped, so the herd sits on the true ground even
-		// under a forest canopy. The mob stands in the air cell above it (y = platform + 1).
-		$topY = $world->getHighestBlockAt($x, $z) ?? $minY;
-		$surfaceY = null;
-		for($y = $topY; $y >= $minY; $y--){
-			$block = $world->getBlockAt($x, $y, $z);
-			if(!$block->isSolid()){
+		// Surface: the mob stands in the cell above the column's ground.
+		$groundY = SpawnPlacement::groundY($world, $x, $z);
+		$ground = $world->getBlockAt($x, $groundY, $z);
+		if(SpawnPlacement::isSpawnableGround($ground) && $groundY + 2 < $world->getMaxY()){
+			$position = $this->position($world, $players, $x, $groundY + 1, $z, $groundY, $ground);
+			if($position !== null){
+				$out[] = $position;
+			}
+		}
+
+		// Caves: strictly below the ground, so genuinely underground (and banded CAVE).
+		if($groundY - 1 <= $minY){
+			return;
+		}
+		for($i = 0; $i < self::CAVE_ATTEMPTS_PER_COLUMN; $i++){
+			$y = $this->random->nextRange($minY + 1, $groundY - 1);
+			if($world->getBlockAt($x, $y, $z)->isSolid()){
+				continue; // most uniform-depth samples land in rock; bail before more reads
+			}
+			$below = $world->getBlockAt($x, $y - 1, $z);
+			if(!SpawnPlacement::isSpawnableGround($below)){
 				continue;
 			}
-			if($block->isFullCube() && !$block->isTransparent()){
-				$surfaceY = $y;
-				break;
+			$position = $this->position($world, $players, $x, $y, $z, $groundY, $below);
+			if($position !== null){
+				$out[] = $position;
 			}
 		}
-		// The true ground the bands and the cave range reference (column top when no
-		// passable platform was found).
-		$surfaceRef = $surfaceY ?? $topY;
-		if($surfaceY !== null && $surfaceY + 1 <= $world->getMaxY()){
-			$surface = $this->snapshotCandidate($world, $players, $x, $surfaceY + 1, $z, $surfaceRef);
-			if($surface !== null){
-				$snapshots[] = $surface;
-			}
-		}
-
-		// Cave attempts: strictly below the ground, so they are genuinely underground —
-		// never thin surface pockets right under a leafy canopy. `surfaceRef` also labels
-		// them CAVE for the population caps.
-		$caveMax = max($minY, $surfaceRef - 1);
-		if($caveMax > $minY){
-			for($caveAttempt = 0; $caveAttempt < self::CAVE_ATTEMPTS_PER_COLUMN; $caveAttempt++){
-				$y = mt_rand($minY + 1, $caveMax);
-				$feet = $world->getBlockAt($x, $y, $z);
-				$ground = $world->getBlockAt($x, $y - 1, $z);
-				if(!$feet->isSolid() && $ground->isFullCube() && !$ground->isTransparent()){
-					$snapshot = $this->snapshotCandidate($world, $players, $x, $y, $z, $surfaceRef);
-					if($snapshot !== null){
-						$snapshots[] = $snapshot;
-					}
-				}
-			}
-		}
-
-		return $snapshots;
 	}
 
 	/**
-	 * Snapshots the world state one candidate position needs, including the band-split
-	 * censuses for the caps.
+	 * Reads one position's facts, or null when it is provably unusable: within the
+	 * minimum distance of any player, or no feet/head room. Liquid feet are allowed (the
+	 * rule index only offers liquid-declaring rules there); the applier re-checks the
+	 * live world with the matched rule's needs.
 	 *
-	 * @phpstan-param list<Player> $players
+	 * @phpstan-param non-empty-list<array{float, float, float}> $players
 	 */
-	private function snapshotCandidate(World $world, array $players, int $x, int $y, int $z, int $surfaceY) : ?SpawnCandidateSnapshot{
-		$pos = new Vector3($x, $y, $z);
-		$nearest = null;
-		foreach($players as $p){
-			$d = $p->getPosition()->distance($pos);
-			if($nearest === null || $d < $nearest){
-				$nearest = $d;
+	private function position(World $world, array $players, int $x, int $y, int $z, int $groundY, Block $below) : ?SpawnPosition{
+		$cx = $x + 0.5;
+		$cz = $z + 0.5;
+		$nearestSquared = PHP_FLOAT_MAX;
+		foreach($players as [$px, $py, $pz]){
+			$d = ($px - $cx) ** 2 + ($py - $y) ** 2 + ($pz - $cz) ** 2;
+			if($d < self::MIN_DISTANCE_SQUARED){
+				return null;
 			}
+			$nearestSquared = min($nearestSquared, $d);
 		}
-		if($nearest === null){
+		$feet = $world->getBlockAt($x, $y, $z);
+		if($feet->isSolid() || $world->getBlockAt($x, $y + 1, $z)->isSolid()){
 			return null;
 		}
 
-		return new SpawnCandidateSnapshot(
+		return new SpawnPosition(
 			worldId: $world->getId(),
 			x: $x,
 			y: $y,
 			z: $z,
-			surfaceY: $surfaceY,
-			band: SpawnBand::fromPosition($y, $surfaceY),
+			groundY: $groundY,
+			band: SpawnBand::fromPosition($y, $groundY),
 			biomeId: $world->getBiomeId($x, $y, $z),
 			light: $world->getFullLightAt($x, $y, $z),
-			blockTypeId: $world->getBlockAt($x, $y, $z)->getTypeId(),
-			blockUnderTypeId: $world->getBlockAt($x, $y - 1, $z)->getTypeId(),
-			densityCounts: [],
-			populationCounts: [],
+			feetTypeId: $feet->getTypeId(),
+			belowTypeId: $below->getTypeId(),
 			difficulty: $world->getDifficulty(),
-			nearestPlayerDistance: $nearest,
-			time: $world->getTime() // world clock in ticks (World::getTime(); drives time-of-day and world-age filters)
+			nearestPlayerDistance: sqrt($nearestSquared),
+			time: $world->getTime()
 		);
 	}
-
 }

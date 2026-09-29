@@ -23,118 +23,117 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\plan\SpawnRuleIndex;
-
-use function array_values;
+use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
+use pocketmine\utils\Random;
 use function count;
-use function max;
-use function mt_getrandmax;
-use function mt_rand;
 
 /**
- * Stage 2 — Evaluate. Weighted-picks one rule per candidate via the planner index and
- * runs its conditions against the snapshot. Pure: never reads a live World.
+ * Stage 2 — Evaluate. Pure: reads only the candidate (position, census counts, viable
+ * bindings) and the injected Random, never a live World or a registry.
+ *
+ * Filter, then pick (Bedrock semantics — `weight` belongs to each condition group, so it
+ * can only be weighed once the group has matched): every viable rule set whose category
+ * is under its population cap runs its conditions; each rule set contributes its first
+ * matching group, weighted by that group's weight; one match is picked, then the
+ * category cap's probability roll decides the spawn.
  */
 final class SpawnEvaluator{
 
+	public function __construct(
+		private readonly Random $random
+	){}
+
 	/**
-	 * Shortlist via the index, pick one rule by weight, its conditions decide (fail =
-	 * no spawn, no fallback), then the category population cap gates the spawn.
-	 *
-	 * @phpstan-param list<SpawnCandidateSnapshot> $candidates
+	 * @phpstan-param list<SpawnCandidate> $candidates
 	 *
 	 * @phpstan-return list<SpawnRequest>
 	 */
-	public function evaluate(array $candidates, SpawnRuleIndex $index) : array{
-		$requests = [];
-		foreach($candidates as $candidate){
-			$band = $candidate->band;
-			$viable = $index->candidatesFor($candidate->biomeId, $band, $candidate->difficulty, $candidate->blockTypeId);
-			if(count($viable) === 0){
-				continue;
+	public function evaluate(array $candidates) : array{
+		CustomTimings::$naturalSpawningEvaluate->startTiming();
+		try{
+			$requests = [];
+			foreach($candidates as $candidate){
+				$request = $this->evaluateOne($candidate);
+				if($request !== null){
+					$requests[] = $request;
+				}
 			}
 
-			$env = new SnapshotSpawnEnvironment($candidate);
-			$chosen = self::weightedPick($viable);
-			$result = $this->attemptSpawn($chosen, $candidate, $env, $band);
-			if($result === null){
-				continue;
-			}
-			[$match, $categoryCount] = $result;
-			$requests[] = new SpawnRequest(
-				$candidate->worldId,
-				$candidate->x,
-				$candidate->y,
-				$candidate->z,
-				$match,
-				categoryCount: $categoryCount,
-				band: $band
-			);
+			return $requests;
+		}finally{
+			CustomTimings::$naturalSpawningEvaluate->stopTiming();
 		}
-
-		return $requests;
 	}
 
-	/**
-	 * The picked rule's conditions, then the category population cap with the vanilla
-	 * probability formula. Per-mob caps live in the data as density_limit conditions.
-	 *
-	 * @phpstan-return array{SpawnConditionMatch, int}|null — the match and the category
-	 *     population count that passed the cap gate (threaded to the applier so it can
-	 *     re-check without rescanning the world).
-	 */
-	private function attemptSpawn(SpawnRules $rule, SpawnCandidateSnapshot $candidate, SnapshotSpawnEnvironment $env, SpawnBand $band) : ?array{
-		$category = MobCategoryRegistry::getInstance()->get($rule->getCategoryId());
-		if($category === null){
-			return null;
-		}
-
+	public function evaluateOne(SpawnCandidate $candidate) : ?SpawnRequest{
+		$position = $candidate->position;
+		$counts = $candidate->counts;
+		$band = $position->band;
 		$ctx = new SpawnConditionContext(
-			env: $env,
-			x: $candidate->x,
-			y: $candidate->y,
-			z: $candidate->z,
+			env: new CandidateSpawnEnvironment($position, $counts),
+			x: $position->x,
+			y: $position->y,
+			z: $position->z,
 			band: $band,
-			difficulty: $candidate->difficulty,
-			weatherLightPenalty: $candidate->weatherLightPenalty,
-			nearestPlayerDistance: $candidate->nearestPlayerDistance
+			difficulty: $position->difficulty,
+			weatherLightPenalty: $position->weatherLightPenalty,
+			nearestPlayerDistance: $position->nearestPlayerDistance
 		);
-		$group = $rule->check($ctx);
-		if($group === null){
+
+		/** @phpstan-var list<array{SpawnRuleBinding, SpawnConditionGroup, int}> $matches binding, group, category count */
+		$matches = [];
+		$totalWeight = 0;
+		foreach($candidate->viable as $binding){
+			$category = $binding->getCategory();
+			$categoryCount = $counts->category($category->id, $band);
+			if($categoryCount >= $category->getPopulationCaps()->get($band)){
+				continue; // capped categories don't compete
+			}
+			$group = $binding->getRules()->check($ctx);
+			if($group === null || $group->getWeight() <= 0){
+				continue;
+			}
+			$matches[] = [$binding, $group, $categoryCount];
+			$totalWeight += $group->getWeight();
+		}
+		if(count($matches) === 0){
 			return null;
 		}
 
-		$cap = $category->getPopulationCaps()->get($band);
-		$count = $env->countNearbyCategory($category);
-		if($count >= $cap){
-			return null;
-		}
-		if(mt_rand() / mt_getrandmax() > ($cap - $count) / $cap){
+		[$binding, $group, $categoryCount] = $this->pick($matches, $totalWeight);
+
+		// Population cap roll: the fuller the category's region, the likelier the attempt
+		// is dropped.
+		$cap = $binding->getCategory()->getPopulationCaps()->get($band);
+		if($this->random->nextFloat() * $cap >= $cap - $categoryCount){
 			return null;
 		}
 
-		return [new SpawnConditionMatch($rule->getIdentifier(), $group), $count];
+		return new SpawnRequest(
+			$position,
+			$binding,
+			$group,
+			categoryCount: $categoryCount,
+			densityCount: $counts->identifier($binding->getRules()->getIdentifier(), $band)
+		);
 	}
 
 	/**
-	 * Weighted by the rule's pick weight; a failed pick is not retried.
+	 * @phpstan-param non-empty-list<array{SpawnRuleBinding, SpawnConditionGroup, int}> $matches
 	 *
-	 * @phpstan-param list<SpawnRules> $rules
+	 * @phpstan-return array{SpawnRuleBinding, SpawnConditionGroup, int}
 	 */
-	private static function weightedPick(array $rules) : SpawnRules{
-		$total = 0;
-		foreach($rules as $rule){
-			$total += $rule->getPickWeight();
-		}
-		$roll = mt_rand(1, max(1, $total));
-		foreach($rules as $rule){
-			$roll -= $rule->getPickWeight();
-			if($roll <= 0){
-				return $rule;
+	private function pick(array $matches, int $totalWeight) : array{
+		$roll = $this->random->nextBoundedInt($totalWeight);
+		foreach($matches as $match){
+			$roll -= $match[1]->getWeight();
+			if($roll < 0){
+				return $match;
 			}
 		}
 
-		return array_values($rules)[count($rules) - 1];
+		return $matches[count($matches) - 1];
 	}
 }

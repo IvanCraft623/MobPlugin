@@ -24,18 +24,25 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 /**
- * Habitat band: surface when the position lies above its column's spawnable ground
- * (SpawnPlacement::groundY(), which skips air, liquids and canopies), cave otherwise.
+ * Census result for one spawn position: per-band entity counts within the population
+ * region, by Bedrock identifier (density limits) and by MobCategory id (population caps).
+ * Absent keys count as zero.
  */
-enum SpawnBand{
-	case SURFACE;
-	case CAVE;
-
+final class SpawnCounts{
 	/**
-	 * Resolves the band of a position from its column's ground Y. A position at exactly
-	 * the ground Y is inside the ground block (cave); a surface spawn sits one above it.
+	 * @phpstan-param array<string, BandCounts> $byIdentifier
+	 * @phpstan-param array<string, BandCounts> $byCategory
 	 */
-	public static function fromPosition(float $y, int $groundY) : self{
-		return $y > $groundY ? self::SURFACE : self::CAVE;
+	public function __construct(
+		private readonly array $byIdentifier = [],
+		private readonly array $byCategory = []
+	){}
+
+	public function identifier(string $identifier, SpawnBand $band) : int{
+		return ($this->byIdentifier[$identifier] ?? null)?->get($band) ?? 0;
+	}
+
+	public function category(string $categoryId, SpawnBand $band) : int{
+		return ($this->byCategory[$categoryId] ?? null)?->get($band) ?? 0;
 	}
 }

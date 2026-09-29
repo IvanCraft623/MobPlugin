@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -48,7 +49,6 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
-use IvanCraft623\MobPlugin\spawning\MobCategory;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -107,10 +107,9 @@ class MobPlugin extends PluginBase {
 
 	private ?NaturalSpawner $naturalSpawner = null;
 
-	private SpawnRuleRegistry $spawnRuleRegistry;
-
 	/** @var TaskHandler<ClosureTask>|null */
 	private ?TaskHandler $spawningTaskHandler = null;
+
 	public function onLoad() : void {
 		self::setInstance($this);
 	}
@@ -138,31 +137,16 @@ class MobPlugin extends PluginBase {
 	private function registerNaturalSpawning() : void{
 		$settings = Settings::getGlobalSettings();
 
-		// The registry is the plugin's public spawning API: it is always built, whether
-		// or not the built-in natural spawner is enabled — third-party plugins may
-		// register their own rules or drive their own spawners against it.
-		$this->spawnRuleRegistry = SpawnRuleRegistry::getInstance();
-
 		if (!$settings->isMobNaturalSpawningEnabled()) {
 			return;
 		}
 
 		$this->naturalSpawner = new NaturalSpawner(
-			$this->spawnRuleRegistry,
+			SpawnRuleRegistry::getInstance(),
 			$settings->getMobNaturalSpawningAttemptsPerTick(),
 			$this->getServer()->getWorldManager()
 		);
-		$this->spawningTaskHandler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask(
-			fn() => $this->naturalSpawner->tick()
-		), 1);
-	}
-
-	/**
-	 * Registry of natural spawn rules bound to entity factories; third-party plugins can
-	 * register their own rules or replace vanilla ones (before or after enable).
-	 */
-	public function getSpawnRuleRegistry() : SpawnRuleRegistry{
-		return $this->spawnRuleRegistry;
+		$this->spawningTaskHandler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask($this->naturalSpawner->tick(...)), 1);
 	}
 
 	public function getRandom() : Random {
@@ -199,18 +183,18 @@ class MobPlugin extends PluginBase {
 		}, [$entityId, Utils::getEntityNameFromId($entityId)]);
 	}
 
-	public function trackEntity(MobCategory $category, string $name) : void {
+	public function trackEntity(Mob $mob) : void {
 		$this->totalEntitiesCount++;
-		$categoryName = strtolower($category->id);
-		$mobName = strtolower($name);
+		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategory()->id ?? "unknown";
+		$mobName = strtolower($mob->getName());
 		$this->entitiesStats[$categoryName][$mobName] =
 			($this->entitiesStats[$categoryName][$mobName] ?? 0) + 1
 		;
 	}
 
-	public function untrackEntity(MobCategory $category, string $name) : void {
-		$categoryName = strtolower($category->id);
-		$mobName = strtolower($name);
+	public function untrackEntity(Mob $mob) : void {
+		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategory()->id ?? "unknown";
+		$mobName = strtolower($mob->getName());
 		if (isset($this->entitiesStats[$categoryName][$mobName])) {
 			$this->totalEntitiesCount--;
 			if (--$this->entitiesStats[$categoryName][$mobName] <= 0) {

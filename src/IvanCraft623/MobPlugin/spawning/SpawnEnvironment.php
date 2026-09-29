@@ -35,8 +35,8 @@ interface SpawnEnvironment{
 	public function getBiomeId() : int;
 
 	/**
-	 * Y of the highest non-air block of the evaluated position's column (heightmap).
-	 * Columns without any block resolve to the world minimum.
+	 * Y of the evaluated position's column ground (SpawnPlacement::groundY(): the highest
+	 * solid, full, opaque block — air, liquids and canopies skipped).
 	 */
 	public function getSurfaceY() : int;
 

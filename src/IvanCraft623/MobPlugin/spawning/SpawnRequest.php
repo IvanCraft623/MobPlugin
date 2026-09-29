@@ -23,17 +23,21 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
+
 /**
- * One successful evaluation, handed from the evaluator to the applier.
+ * One successful evaluation, handed from the evaluator to the applier: where, which
+ * binding and matched group, and the census counts that passed the gates (so the applier
+ * can re-check them against same-pass spawns without rescanning the world).
  */
 final class SpawnRequest{
 	public function __construct(
-		public readonly int $worldId,
-		public readonly int $x,
-		public readonly int $y,
-		public readonly int $z,
-		public readonly SpawnConditionMatch $match,
+		public readonly SpawnPosition $position,
+		public readonly SpawnRuleBinding $binding,
+		public readonly SpawnConditionGroup $group,
+		/** Nearby count of the binding's category in the position's band. */
 		public readonly int $categoryCount,
-		public readonly SpawnBand $band
+		/** Nearby count of the binding's identifier in the position's band. */
+		public readonly int $densityCount
 	){}
 }

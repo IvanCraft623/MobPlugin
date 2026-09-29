@@ -24,18 +24,16 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 /**
- * Habitat band: surface when the position lies above its column's spawnable ground
- * (SpawnPlacement::groundY(), which skips air, liquids and canopies), cave otherwise.
+ * Evaluator input: a sampled position that survived the rule-index shortlist, its census
+ * counts, and the rule bindings that could possibly match there.
  */
-enum SpawnBand{
-	case SURFACE;
-	case CAVE;
-
+final class SpawnCandidate{
 	/**
-	 * Resolves the band of a position from its column's ground Y. A position at exactly
-	 * the ground Y is inside the ground block (cave); a surface spawn sits one above it.
+	 * @phpstan-param non-empty-list<SpawnRuleBinding> $viable
 	 */
-	public static function fromPosition(float $y, int $groundY) : self{
-		return $y > $groundY ? self::SURFACE : self::CAVE;
-	}
+	public function __construct(
+		public readonly SpawnPosition $position,
+		public readonly SpawnCounts $counts,
+		public readonly array $viable
+	){}
 }

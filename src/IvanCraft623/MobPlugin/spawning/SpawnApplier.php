@@ -26,151 +26,156 @@ namespace IvanCraft623\MobPlugin\spawning;
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use pocketmine\math\Vector3;
+use pocketmine\utils\Random;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
 use function count;
-use function mt_rand;
-use function strpos;
-use function substr;
 
 /**
- * Stage 3 — Apply. Materializes spawn requests on the main thread, re-validating live
- * state first (the world may have changed since the snapshot).
+ * Stage 3 — Apply. Materializes spawn requests on the main thread: re-validates the live
+ * world (it may have changed since sampling), re-checks caps and density limits against
+ * mobs spawned earlier in the same pass, then spawns the herd.
  */
 final class SpawnApplier{
-	/**
-	 * Maximum horizontal jitter (blocks) between herd members and their lead position.
-	 */
+	/** Maximum horizontal offset (blocks) of herd members from the lead position. */
 	private const HERD_SPREAD = 6;
 
+	/**
+	 * Player x/y/z per world, read once per apply pass.
+	 *
+	 * @phpstan-var array<int, list<array{float, float, float}>>
+	 */
+	private array $playerPositions = [];
+
+	/**
+	 * @param SpawnRuleRegistry $registry resolves permute_type targets
+	 */
 	public function __construct(
-		private SpawnRuleRegistry $registry,
-		private WorldManager $worldManager
+		private readonly SpawnRuleRegistry $registry,
+		private readonly WorldManager $worldManager,
+		private readonly Random $random
 	){}
 
 	/**
 	 * @phpstan-param list<SpawnRequest> $requests
 	 */
-	public function applyRequests(array $requests) : void{
+	public function apply(array $requests) : void{
 		CustomTimings::$naturalSpawningApply->startTiming();
 		try{
-			$this->apply($requests);
+			$tally = new SpawnTally();
+			foreach($requests as $request){
+				$this->applyOne($request, $tally);
+			}
 		}finally{
+			$this->playerPositions = [];
 			CustomTimings::$naturalSpawningApply->stopTiming();
 		}
 	}
 
-	/**
-	 * @phpstan-param list<SpawnRequest> $requests
-	 */
-	private function apply(array $requests) : void{
-		// Running count of mobs this apply pass already spawned, per (category, band), so
-		// repeated herds of the same category accumulate against the population cap without
-		// rescanning the world. Initialized from each request's snapshot count.
-		/** @phpstan-var array<string, int> $spawned */
-		$spawned = [];
-		foreach($requests as $request){
-			$world = $this->worldManager->getWorld($request->worldId);
-			if($world === null){
-				continue;
-			}
-			$entry = $this->registry->get($request->match->getIdentifier());
-			if($entry === null){
-				continue;
-			}
-			$group = $request->match->getGroup();
-			$x = $request->x;
-			$z = $request->z;
-			if(!$world->isChunkLoaded($x >> 4, $z >> 4)){
-				continue;
-			}
-			$pos = new Vector3($x + 0.5, $request->y, $z + 0.5);
-			if(!$this->hasRoomForMob($world, $pos)){
-				continue; // blocks may have changed since the snapshot was taken
-			}
+	private function applyOne(SpawnRequest $request, SpawnTally $tally) : void{
+		$position = $request->position;
+		$world = $this->worldManager->getWorld($position->worldId);
+		if($world === null || !$world->isChunkLoaded($position->x >> 4, $position->z >> 4)){
+			return;
+		}
+		$group = $request->group;
+		if(!SpawnPlacement::hasRoom($world, $position->x, $position->y, $position->z, $group->getRequiredLiquid())){
+			return; // blocks changed since sampling
+		}
 
-			// permute_type: unimplemented targets fall back to the base entity.
-			$spawnEntry = $entry;
-			$permuteTarget = self::pickPermutation($group);
-			if($permuteTarget !== null){
-				$permuted = $this->registry->get($permuteTarget);
-				if($permuted !== null){
-					$spawnEntry = $permuted;
-				}
-			}
+		$binding = $request->binding;
+		$identifier = $binding->getRules()->getIdentifier();
+		$category = $binding->getCategory();
+		$band = $position->band;
+		$center = new Vector3($position->x + 0.5, $position->y, $position->z + 0.5);
 
-			$category = $entry->getCategory();
-			$capKey = $category->id . "|" . $request->band->name;
-			$effectiveCount = $request->categoryCount + ($spawned[$capKey] ?? 0);
-			$spawnedCount = $this->spawnHerd($world, $spawnEntry, $category, $group, $pos, $request->band, $effectiveCount);
-			if($spawnedCount > 0){
-				$spawned[$capKey] = $effectiveCount + $spawnedCount;
-			}
+		if($request->categoryCount + $tally->countCategory($position->worldId, $category->id, $band, $center) >= $category->getPopulationCaps()->get($band)){
+			return;
+		}
+		$densityLimit = $group->densityLimitFor($band);
+		if($densityLimit !== null && $request->densityCount + $tally->countIdentifier($position->worldId, $identifier, $band, $center) >= $densityLimit){
+			return;
+		}
+
+		// permute_type: unregistered targets fall back to the base binding. The herd
+		// still counts against the base rule's identifier and category, which is what the
+		// density limit and cap above refer to.
+		$spawnBinding = $binding;
+		$permuteTarget = $this->pickPermutation($group);
+		if($permuteTarget !== null){
+			$spawnBinding = $this->registry->get($permuteTarget) ?? $binding;
+		}
+
+		foreach($this->spawnHerd($world, $spawnBinding, $group, $position) as $spawned){
+			$tally->record($position->worldId, $identifier, $category->id, $band, $spawned);
 		}
 	}
 
 	/**
-	 * Spawns one herd, checking the population cap against precomputed counts. Returns how
-	 * many mobs were actually spawned (for the apply pass's running total). The full herd
-	 * size spawns even if it overshoots the cap slightly — the documented vanilla
-	 * pack-spawn approximation.
+	 * Spawns one herd around the lead position and returns where members were spawned.
+	 * The whole herd spawns even if it overshoots the cap slightly (vanilla pack
+	 * spawning). Herd spawn events are not applied — no consumer yet.
 	 *
-	 * @phpstan-return int number of mobs actually spawned
+	 * @phpstan-return list<Vector3>
 	 */
-	private function spawnHerd(World $world, SpawnRuleBinding $entry, MobCategory $category, SpawnConditionGroup $group, Vector3 $pos, SpawnBand $band, int $effectiveCount) : int{
-		$cap = $category->getPopulationCaps()->get($band);
-		if($effectiveCount >= $cap){
-			return 0;
-		}
-
+	private function spawnHerd(World $world, SpawnRuleBinding $binding, SpawnConditionGroup $group, SpawnPosition $lead) : array{
 		$herd = $group->getHerd();
-		$herdSize = $herd !== null ? mt_rand($herd->minSize, $herd->maxSize) : 1;
-		// Herd spawn events are not applied — no consumer yet (see docs/spawning.md).
+		$herdSize = $herd !== null ? $this->random->nextRange($herd->minSize, $herd->maxSize) : 1;
+		$factory = $binding->getFactory();
+		$match = new SpawnConditionMatch($binding->getRules()->getIdentifier(), $group);
 
-		$factory = $entry->getFactory();
-		$habitatBand = $group->getHabitatBand(); // null = both bands allowed
-
-		$spawned = 0;
+		$spawned = [];
 		for($i = 0; $i < $herdSize; $i++){
-			$memberPos = $i === 0 ? $pos : $this->jitterHerdPosition($world, $pos, $habitatBand);
+			$memberPos = $i === 0
+				? new Vector3($lead->x + 0.5, $lead->y, $lead->z + 0.5)
+				: $this->herdMemberPosition($world, $group, $lead);
 			if($memberPos === null || !$this->isFarEnoughFromPlayers($world, $memberPos)){
 				continue;
 			}
-			$entity = $factory($world, $memberPos, new SpawnConditionMatch($entry->getRules()->getIdentifier(), $group));
+			$entity = $factory($world, $memberPos, $match);
 			$entity->spawnToAll();
-			$spawned++;
+			$spawned[] = $memberPos;
 		}
 
 		return $spawned;
 	}
 
 	/**
-	 * Positions a herd member near the lead. Surface-band members sit on top of their
-	 * column; others keep the lead's depth. Null when there is no room.
+	 * A herd member's position near the lead, or null when there is no room there.
+	 * Aquatic members keep the lead's depth in the same liquid; land members of a surface
+	 * lead stand on their own column's ground (terrain is uneven); land members of a cave
+	 * lead keep its depth.
 	 */
-	private function jitterHerdPosition(World $world, Vector3 $leadPos, ?SpawnBand $habitatBand) : ?Vector3{
-		$x = (int) $leadPos->getX() + mt_rand(-self::HERD_SPREAD, self::HERD_SPREAD);
-		$z = (int) $leadPos->getZ() + mt_rand(-self::HERD_SPREAD, self::HERD_SPREAD);
+	private function herdMemberPosition(World $world, SpawnConditionGroup $group, SpawnPosition $lead) : ?Vector3{
+		$x = $lead->x + $this->random->nextRange(-self::HERD_SPREAD, self::HERD_SPREAD);
+		$z = $lead->z + $this->random->nextRange(-self::HERD_SPREAD, self::HERD_SPREAD);
 		if(!$world->isChunkLoaded($x >> 4, $z >> 4)){
 			return null;
 		}
-		if($habitatBand === SpawnBand::SURFACE){
-			$y = ($world->getHighestBlockAt($x, $z) ?? $world->getMinY()) + 1;
-		}else{
-			$y = (int) $leadPos->getY();
-		}
-		$pos = new Vector3($x + 0.5, $y, $z + 0.5);
-		if(!$this->hasRoomForMob($world, $pos)){
+		$liquid = $group->getRequiredLiquid();
+		$y = $liquid === null && $lead->band === SpawnBand::SURFACE
+			? SpawnPlacement::groundY($world, $x, $z) + 1
+			: $lead->y;
+		if(!SpawnPlacement::hasRoom($world, $x, $y, $z, $liquid)){
 			return null;
 		}
 
-		return $pos;
+		return new Vector3($x + 0.5, $y, $z + 0.5);
 	}
 
-	/** Checked against every player in the world (jitter can drift toward others). */
+	/** Checked against every player in the world: members can drift toward others. */
 	private function isFarEnoughFromPlayers(World $world, Vector3 $pos) : bool{
-		foreach($world->getPlayers() as $player){
-			if($player->getPosition()->distance($pos) < SpawnCollector::MIN_PLAYER_DISTANCE){
+		$worldId = $world->getId();
+		if(!isset($this->playerPositions[$worldId])){
+			$positions = [];
+			foreach($world->getPlayers() as $player){
+				$playerPos = $player->getPosition();
+				$positions[] = [$playerPos->x, $playerPos->y, $playerPos->z];
+			}
+			$this->playerPositions[$worldId] = $positions;
+		}
+		foreach($this->playerPositions[$worldId] as [$px, $py, $pz]){
+			if(($px - $pos->x) ** 2 + ($py - $pos->y) ** 2 + ($pz - $pos->z) ** 2 < SpawnCollector::MIN_DISTANCE_SQUARED){
 				return false;
 			}
 		}
@@ -178,56 +183,24 @@ final class SpawnApplier{
 		return true;
 	}
 
-	/** Feet/head passable, block under is a spawnable solid top (full cube, opaque). */
-	private function hasRoomForMob(World $world, Vector3 $pos) : bool{
-		$feet = $world->getBlock($pos);
-		$head = $world->getBlock($pos->add(0, 1, 0));
-		if($feet->isSolid() || $head->isSolid()){
-			return false;
-		}
-		$ground = $world->getBlock($pos->add(0, -1, 0));
-
-		return $ground->isFullCube() && !$ground->isTransparent();
-	}
-
-	/** Weighted pick from the group's permute_type payload; event suffixes are stripped. */
-	private static function pickPermutation(SpawnConditionGroup $group) : ?string{
+	/** Weighted pick from the group's permute_type payload; null keeps the base type. */
+	private function pickPermutation(SpawnConditionGroup $group) : ?string{
 		$permutations = $group->getPermuteTypes();
-		if(count($permutations) === 0){
-			return null;
-		}
 		$total = 0;
 		foreach($permutations as $permutation){
 			$total += $permutation->weight;
 		}
 		if($total <= 0){
-			return null; // no positive-weight permutation to pick — fall back to the base form
+			return null;
 		}
-		$roll = mt_rand(1, $total);
-		$last = $permutations[count($permutations) - 1];
+		$roll = $this->random->nextBoundedInt($total);
 		foreach($permutations as $permutation){
 			$roll -= $permutation->weight;
-			if($roll <= 0){
-				return self::resolvePermutation($permutation->entityType);
+			if($roll < 0){
+				return $permutation->entityType;
 			}
 		}
 
-		// Unreachable with a positive total (the roll is at most the summed weight); kept
-		// so the type checker sees all paths return.
-		return self::resolvePermutation($last->entityType);
-	}
-
-	private static function resolvePermutation(?string $entityType) : ?string{
-		return $entityType === null ? null : self::stripEventSuffix($entityType);
-	}
-
-	/** "minecraft:pillager<minecraft:...>" → "minecraft:pillager". */
-	private static function stripEventSuffix(?string $identifier) : ?string{
-		if($identifier === null){
-			return null;
-		}
-		$suffixStart = strpos($identifier, "<");
-
-		return $suffixStart === false ? $identifier : substr($identifier, 0, $suffixStart);
+		return $permutations[count($permutations) - 1]->entityType;
 	}
 }

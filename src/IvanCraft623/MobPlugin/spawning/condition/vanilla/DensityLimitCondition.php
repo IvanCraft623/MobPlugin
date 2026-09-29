@@ -45,12 +45,21 @@ final class DensityLimitCondition implements SpawnCondition{
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
-		$band = $ctx->band;
-		$limit = $band === SpawnBand::SURFACE ? $this->surfaceLimit : $this->undergroundLimit;
-		if($limit === null || $limit < 0){
+		$limit = $this->limitFor($ctx->band);
+		if($limit === null){
 			return true;
 		}
 
 		return $ctx->env->countNearby($this->identifier) < $limit;
+	}
+
+	/**
+	 * The limit for the given habitat band, or null when this condition imposes none.
+	 * Shared by the evaluator's condition test and the applier's same-tick re-check.
+	 */
+	public function limitFor(SpawnBand $band) : ?int{
+		$limit = $band === SpawnBand::SURFACE ? $this->surfaceLimit : $this->undergroundLimit;
+
+		return $limit !== null && $limit >= 0 ? $limit : null;
 	}
 }

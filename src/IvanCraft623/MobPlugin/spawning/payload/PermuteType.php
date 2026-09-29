@@ -23,13 +23,30 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\payload;
 
+use function strpos;
+use function substr;
+
 /**
- * One permute_type entry: a weighted alternative entity type (event suffix stripped by
- * the applier). A null identifier leaves the spawn type untouched (vanilla data quirk).
+ * One permute_type entry: a weighted alternative entity type. The event suffix
+ * ("minecraft:pillager<minecraft:...>") is stripped here at parse time, so consumers
+ * get a clean identifier. A null identifier leaves the spawn type untouched (vanilla
+ * data quirk).
  */
 final class PermuteType{
+	public readonly ?string $entityType;
+
 	public function __construct(
 		public readonly int $weight,
-		public readonly ?string $entityType
-	){}
+		?string $entityType
+	){
+		// Strip any event suffix ("<minecraft:...>") once here, at parse time, so
+		// consumers get a clean identifier.
+		if($entityType !== null){
+			$suffixStart = strpos($entityType, "<");
+			if($suffixStart !== false){
+				$entityType = substr($entityType, 0, $suffixStart);
+			}
+		}
+		$this->entityType = $entityType;
+	}
 }

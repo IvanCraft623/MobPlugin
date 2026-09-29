@@ -17,13 +17,14 @@ debug-mode: false
 
 ## Spawning Behavior
 # Enables natural spawning of mobs using vanilla Bedrock spawn rules.
-# Mobs spawn in herds 24-44 blocks away from players (spherical shell), at positions
+# Mobs spawn in herds 24-44 blocks away from players, at positions
 # where their vanilla spawn rule conditions are met (light, blocks, biome, difficulty...).
 mob-natural-spawning:
   # Master switch for the natural spawner
   enabled: true
-  # Random chunk evaluations performed per tick, per world (vanilla runs the algorithm
-  # per chunk with an 11/2000 chance per tick, roughly 1-3 evaluations per tick)
+  # Random column samples performed per tick, shared across all worlds that have players
+  # (vanilla runs the algorithm per chunk with an 11/2000 chance per tick, roughly 1-3
+  # evaluations per tick)
   attempts-per-tick: 3
 
 # Enables natural despawning of mobs
