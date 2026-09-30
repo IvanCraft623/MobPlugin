@@ -117,8 +117,7 @@ final class CandidateCache{
 		$groups = [];
 		$signature = (string) spl_object_id($rules);
 		foreach($rules->getGroups() as $group){
-			// Land rules carry no "not in liquid" condition, so liquid keys only admit groups that ask for it.
-			if($liquid !== SpawnLiquid::NONE && $group->getRequiredLiquid() !== $liquid){
+			if(!$group->admitsLiquid($liquid)){
 				continue;
 			}
 			$residuals = [];

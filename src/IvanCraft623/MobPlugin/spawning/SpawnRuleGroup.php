@@ -97,7 +97,18 @@ final class SpawnRuleGroup{
 		return new self([...$this->conditions, ...$extra], $this->weight, $this->herdMin, $this->herdMax, $this->permutations);
 	}
 
+	/**
+	 * Land rules carry no "not in liquid" condition, so a position in a liquid only admits
+	 * groups that require that liquid.
+	 */
+	public function admitsLiquid(SpawnLiquid $feetLiquid) : bool{
+		return $feetLiquid === SpawnLiquid::NONE || $feetLiquid === $this->requiredLiquid;
+	}
+
 	public function matches(SpawnConditionContext $ctx) : bool{
+		if(!$this->admitsLiquid($ctx->getFeetLiquid())){
+			return false;
+		}
 		foreach($this->conditions as $condition){
 			if(!$condition->test($ctx)){
 				return false;

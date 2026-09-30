@@ -62,11 +62,12 @@ require_once __DIR__ . "/BedrockSamples.php";
 use Exception;
 use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
 use stdClass;
+use function array_diff;
 use function array_fill;
 use function array_key_first;
 use function array_keys;
 use function array_map;
-use function array_merge;
+use function array_values;
 use function basename;
 use function count;
 use function dirname;
@@ -76,6 +77,7 @@ use function file_put_contents;
 use function fwrite;
 use function get_object_vars;
 use function getopt;
+use function glob;
 use function implode;
 use function is_array;
 use function is_dir;
@@ -98,6 +100,7 @@ use function str_starts_with;
 use function strlen;
 use function strtoupper;
 use function substr;
+use function unlink;
 use function var_export;
 use const SORT_STRING;
 use const STDERR;
@@ -166,39 +169,38 @@ function main(array $argv) : int{
 		));
 	}
 
-	$conditionsPhp = buildConditionsArtifact($schemaVersion, $conditions);
-	$schemaPhp = buildSchemaArtifact($schemaVersion, $difficulties, $envelopeKeys);
-	$modelPhp = buildConditionsModelsArtifact($schemaVersion, $models);
+	$modelDir = $outDir . "/model";
+	$artifacts = [
+		$outDir . "/VanillaSpawnConditions.php" => buildConditionsArtifact($schemaVersion, $conditions),
+		$outDir . "/SpawnSchema.php" => buildSchemaArtifact($schemaVersion, $difficulties, $envelopeKeys),
+	];
+	foreach(buildConditionsModelsArtifact($schemaVersion, $models) as $name => $contents){
+		$artifacts[$modelDir . "/" . $name] = $contents;
+	}
+	// model/ holds generated classes only: a model regeneration no longer produces (a
+	// component Mojang removed) is stale.
+	$stale = array_values(array_diff(glob($modelDir . "/*.php") ?: [], array_keys($artifacts)));
 
 	if($check){
-		return checkArtifacts($outDir, array_merge([
-			"VanillaSpawnConditions.php" => $conditionsPhp,
-			"SpawnSchema.php" => $schemaPhp,
-		], $modelPhp));
+		return checkArtifacts($artifacts, $stale);
 	}
 
-	if(!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)){
-		return fail("Unable to create output directory: $outDir");
-	}
-	foreach(["VanillaSpawnConditions.php" => $conditionsPhp, "SpawnSchema.php" => $schemaPhp] as $name => $contents){
-		$path = $outDir . "/" . $name;
-		if(file_put_contents($path, $contents) === false){
-			return fail("Failed to write: $path");
-		}
-		printf("Wrote %s (%d bytes)\n", $path, strlen($contents));
-	}
-	$modelDir = $outDir . "/model";
 	if(!is_dir($modelDir) && !mkdir($modelDir, 0777, true) && !is_dir($modelDir)){
-		return fail("Unable to create model output directory: $modelDir");
+		return fail("Unable to create output directory: $modelDir");
 	}
-	foreach($modelPhp as $name => $contents){
-		$path = $modelDir . "/" . $name;
+	foreach($stale as $path){
+		if(!unlink($path)){
+			return fail("Failed to delete: $path");
+		}
+		printf("Deleted %s\n", $path);
+	}
+	foreach($artifacts as $path => $contents){
 		if(file_put_contents($path, $contents) === false){
 			return fail("Failed to write: $path");
 		}
 		printf("Wrote %s (%d bytes)\n", $path, strlen($contents));
 	}
-	printf("Generated %d component case(s), %d difficulty case(s), %d model class(es) from schema version %s\n", count($conditions), count($difficulties), count($modelPhp), $schemaVersion);
+	printf("Generated %d component case(s), %d difficulty case(s), %d model class(es) from schema version %s\n", count($conditions), count($difficulties), count($models), $schemaVersion);
 
 	return 0;
 }
@@ -698,15 +700,16 @@ function normalizeConditionName(string $rawName) : string{
 }
 
 /**
- * @param array<string, string> $artifacts filename -> expected content
+ * @param array<string, string> $artifacts path -> expected content
+ * @param list<string>          $stale     generated models regeneration would delete
  */
-function checkArtifacts(string $outDir, array $artifacts) : int{
+function checkArtifacts(array $artifacts, array $stale) : int{
 	$drifted = false;
-	foreach($artifacts as $name => $expected){
-		// Model classes live in a "model" subdirectory; the two root artifacts do not.
-		$path = ($name === "VanillaSpawnConditions.php" || $name === "SpawnSchema.php")
-			? $outDir . "/" . $name
-			: $outDir . "/model/" . $name;
+	foreach($stale as $path){
+		$drifted = true;
+		fwrite(STDERR, "DRIFT: $path is no longer generated from the pinned schemas.\n");
+	}
+	foreach($artifacts as $path => $expected){
 		$actual = is_file($path) ? (string) file_get_contents($path) : null;
 		if($actual === $expected){
 			printf("In sync: %s\n", $path);

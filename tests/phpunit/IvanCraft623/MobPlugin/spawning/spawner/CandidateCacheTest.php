@@ -110,7 +110,7 @@ final class CandidateCacheTest extends TestCase{
 			}
 			$expected = [];
 			foreach($rules as $r){
-				$group = self::check($r, $ctx);
+				$group = $r->check($ctx);
 				if($group !== null){
 					$expected[$r->getIdentifier()] = $group;
 				}
@@ -160,6 +160,11 @@ final class CandidateCacheTest extends TestCase{
 		self::assertSame(["minecraft:fish"], self::identifiers($cache->getCandidates(new StubContext(feetLiquid: SpawnLiquid::WATER))));
 		self::assertSame([], self::identifiers($cache->getCandidates(new StubContext(feetLiquid: SpawnLiquid::LAVA))));
 		self::assertSame(["minecraft:land"], self::identifiers($cache->getCandidates(new StubContext())));
+
+		// The uncached reference applies the same gate.
+		self::assertNull($land->check(new StubContext(feetLiquid: SpawnLiquid::WATER)));
+		self::assertNotNull($fish->check(new StubContext(feetLiquid: SpawnLiquid::WATER)));
+		self::assertNull($fish->check(new StubContext()));
 	}
 
 	public function testSizeStaysWithinMaxKeys() : void{
@@ -264,20 +269,6 @@ final class CandidateCacheTest extends TestCase{
 				self::assertSame(0, $cache->getSize());
 			}
 		}
-	}
-
-	/**
-	 * Reference: SpawnRules::check() plus the cache's liquid gate.
-	 */
-	private static function check(SpawnRules $rules, SpawnConditionContext $ctx) : ?SpawnRuleGroup{
-		$liquid = $ctx->getFeetLiquid();
-		foreach($rules->getGroups() as $group){
-			if(($liquid === SpawnLiquid::NONE || $group->getRequiredLiquid() === $liquid) && $group->matches($ctx)){
-				return $group;
-			}
-		}
-
-		return null;
 	}
 
 	/**

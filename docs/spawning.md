@@ -38,13 +38,14 @@ writing.
   constant per component), `SpawnSchema` (schema version, difficulty names and the
   envelope keys the loader navigates with) and one JsonMapper payload model
   (`model/*Data`) per payload-bearing component schema, so a renamed payload field breaks
-  the build instead of silently spawning with a wrong value.
+  the build instead of silently spawning with a wrong value. `model/` holds generated
+  classes only: regenerating deletes any model the pinned schemas no longer produce.
 
 ### Checks
 
 | Check | Where | Catches |
 |---|---|---|
-| `generate-schema.php --check` | CI (`ci.yml`) | generated artifacts out of date with the pinned schemas |
+| `generate-schema.php --check` | CI (`ci.yml`) | generated artifacts out of date with the pinned schemas, or stale models they no longer produce |
 | `compile.php --check` | CI (`ci.yml`) | `spawn_rules.json` or `NOTICE.md` edited by hand, or not regenerated after a pin change |
 | `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile; entries or groups skipped or dropped beyond the by-design cases |
 | `MobCategoryRegistryTest` | `composer test` | a rule whose `population_control` has no registered category |
@@ -149,7 +150,8 @@ attempt reads its key fresh from the world, so no world edit (`setChunk()`,
   that isn't cacheable, stays as a residual and runs on every attempt.
 
 At a liquid key only groups that require that liquid survive, since vanilla land rules
-carry no "not in water" condition. Surviving groups keep their order, so "first match
+carry no "not in water" condition (`SpawnRuleGroup::admitsLiquid()`, which
+`SpawnRuleGroup::matches()` applies too). Surviving groups keep their order, so "first match
 wins" is unchanged. Within a group, residuals that read the population (such as
 `density_limit`) run last.
 
@@ -242,7 +244,8 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
   it, so re-registering a category (for example to raise a cap) applies to rules
   registered before it.
 - Factories construct the entity but never spawn it: `HerdSpawner` calls `spawnToAll()`.
-- `SpawnRules::check($ctx)` is the uncached reference evaluation.
+- `SpawnRules::check($ctx)` is the uncached reference evaluation: the cache returns the
+  same group for every context (`CandidateCacheTest`).
 
 ### Custom components
 
