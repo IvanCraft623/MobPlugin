@@ -23,37 +23,27 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use function count;
 
 final class SpawnRuleGroup{
-	private readonly SpawnLiquid $requiredLiquid;
-
 	/**
 	 * @phpstan-param list<SpawnCondition> $conditions
-	 * @phpstan-param array<string, int>    $permutations entity identifier => weight
+	 * @phpstan-param array<string, int>   $permutations   entity identifier => weight
+	 * @phpstan-param SpawnLiquid          $requiredLiquid the liquid the feet must be in; NONE for land mobs
 	 */
 	public function __construct(
 		private readonly array $conditions,
 		private readonly int $weight = 1,
 		private readonly int $herdMin = 1,
 		private readonly int $herdMax = 1,
-		private readonly array $permutations = []
+		private readonly array $permutations = [],
+		private readonly SpawnLiquid $requiredLiquid = SpawnLiquid::NONE
 	){
 		if($herdMin < 1 || $herdMax < $herdMin){
 			throw new \InvalidArgumentException("Invalid herd size range [$herdMin, $herdMax]");
 		}
-
-		$requiredLiquid = SpawnLiquid::NONE;
-		foreach($conditions as $condition){
-			if($condition instanceof RangeCondition && $condition->getKind() === RangeCondition::KIND_LIQUID && $condition->getMin() !== null){
-				$requiredLiquid = SpawnLiquid::from((int) $condition->getMin());
-				break;
-			}
-		}
-		$this->requiredLiquid = $requiredLiquid;
 	}
 
 	/**
@@ -94,15 +84,15 @@ final class SpawnRuleGroup{
 			return $this;
 		}
 
-		return new self([...$this->conditions, ...$extra], $this->weight, $this->herdMin, $this->herdMax, $this->permutations);
+		return new self([...$this->conditions, ...$extra], $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->requiredLiquid);
 	}
 
 	/**
-	 * Land rules carry no "not in liquid" condition, so a position in a liquid only admits
-	 * groups that require that liquid.
+	 * Aquatic groups spawn only in their liquid, and land groups (which carry no "not in
+	 * liquid" condition) only out of any liquid.
 	 */
 	public function admitsLiquid(SpawnLiquid $feetLiquid) : bool{
-		return $feetLiquid === SpawnLiquid::NONE || $feetLiquid === $this->requiredLiquid;
+		return $feetLiquid === $this->requiredLiquid;
 	}
 
 	public function matches(SpawnConditionContext $ctx) : bool{

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
 use function array_diff_key;
@@ -126,23 +127,49 @@ final class SpawnRulesParseableTest extends TestCase{
 	}
 
 	public function testGroupWithUnsupportedComponentIsDropped() : void{
-		$json = <<<'JSON'
+		self::assertCount(1, self::parseConditions(<<<'JSON'
+			{"minecraft:spawns_on_surface": {}, "minecraft:delay_filter": {"min": 1, "max": 2, "identifier": "x", "spawn_chance": 50}},
+			{"minecraft:spawns_on_surface": {}}
+			JSON));
+	}
+
+	public function testLiquidMarkersSetTheGroupLiquid() : void{
+		$groups = self::parseConditions(<<<'JSON'
+			{"minecraft:spawns_underwater": {}},
+			{"minecraft:spawns_lava": {}},
+			{"minecraft:spawns_on_surface": {}}
+			JSON);
+
+		self::assertSame(
+			[SpawnLiquid::WATER, SpawnLiquid::LAVA, SpawnLiquid::NONE],
+			array_map(static fn(SpawnRuleGroup $group) : SpawnLiquid => $group->getRequiredLiquid(), $groups)
+		);
+	}
+
+	public function testGroupRequiringTwoLiquidsIsRejected() : void{
+		$this->expectException(SpawnRulesParseException::class);
+		self::parseConditions('{"minecraft:spawns_underwater": {}, "minecraft:spawns_lava": {}}');
+	}
+
+	/**
+	 * Parses one entry whose "conditions" list holds the given comma-separated groups.
+	 *
+	 * @phpstan-return list<SpawnRuleGroup>
+	 */
+	private static function parseConditions(string $groups) : array{
+		$json = <<<JSON
 		{
 			"minecraft:test": {
 				"format_version": "1.8.0",
 				"minecraft:spawn_rules": {
 					"description": {"identifier": "minecraft:test", "population_control": "monster"},
-					"conditions": [
-						{"minecraft:spawns_on_surface": {}, "minecraft:delay_filter": {"min": 1, "max": 2, "identifier": "x", "spawn_chance": 50}},
-						{"minecraft:spawns_on_surface": {}}
-					]
+					"conditions": [$groups]
 				}
 			}
 		}
 		JSON;
-		$parsed = SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parse($json);
 
-		self::assertCount(1, $parsed["minecraft:test"][1]);
+		return SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parse($json)["minecraft:test"][1];
 	}
 
 	/**

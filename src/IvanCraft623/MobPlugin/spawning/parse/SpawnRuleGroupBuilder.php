@@ -26,13 +26,14 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use function array_values;
 use function count;
 
 /**
  * Filled by the component parsers of one condition object, in any order: payloads are
- * last-write, conditions accumulate.
+ * last-write, conditions accumulate, liquids must agree.
  */
 final class SpawnRuleGroupBuilder{
 	/** @phpstan-var list<SpawnCondition> */
@@ -50,6 +51,8 @@ final class SpawnRuleGroupBuilder{
 	/** @phpstan-var array<int, SpawnBand> */
 	private array $habitatBands = [];
 
+	private SpawnLiquid $liquid = SpawnLiquid::NONE;
+
 	private bool $neverSpawns = false;
 
 	public function __construct(
@@ -66,6 +69,16 @@ final class SpawnRuleGroupBuilder{
 
 	public function allowHabitatBand(SpawnBand $band) : void{
 		$this->habitatBands[$band->value] = $band;
+	}
+
+	/**
+	 * @phpstan-throws SpawnRulesParseException when another liquid is already required
+	 */
+	public function setLiquid(SpawnLiquid $liquid) : void{
+		if($this->liquid !== SpawnLiquid::NONE && $this->liquid !== $liquid){
+			throw new SpawnRulesParseException("a group can't require both {$this->liquid->name} and {$liquid->name}");
+		}
+		$this->liquid = $liquid;
 	}
 
 	/**
@@ -101,6 +114,6 @@ final class SpawnRuleGroupBuilder{
 			$conditions[] = RangeCondition::band(array_values($this->habitatBands)[0]);
 		}
 
-		return new SpawnRuleGroup($conditions, $this->weight, $this->herdMin, $this->herdMax, $this->permutations);
+		return new SpawnRuleGroup($conditions, $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->liquid);
 	}
 }

@@ -24,18 +24,16 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use function max;
 
 final class RangeCondition implements SpawnCondition{
-	public const KIND_BRIGHTNESS = 0;
-	public const KIND_BRIGHTNESS_WEATHER = 1;
-	public const KIND_DIFFICULTY = 2;
-	public const KIND_HEIGHT = 3;
-	public const KIND_DISTANCE = 4;
-	public const KIND_WORLD_AGE = 5;
-	public const KIND_BAND = 6;
-	public const KIND_LIQUID = 7;
+	private const KIND_BRIGHTNESS = 0;
+	private const KIND_BRIGHTNESS_WEATHER = 1;
+	private const KIND_DIFFICULTY = 2;
+	private const KIND_HEIGHT = 3;
+	private const KIND_DISTANCE = 4;
+	private const KIND_WORLD_AGE = 5;
+	private const KIND_BAND = 6;
 
 	private function __construct(
 		private readonly int $kind,
@@ -71,22 +69,6 @@ final class RangeCondition implements SpawnCondition{
 		return new self(self::KIND_BAND, $band->value, $band->value);
 	}
 
-	public static function liquid(SpawnLiquid $liquid) : self{
-		return new self(self::KIND_LIQUID, $liquid->value, $liquid->value);
-	}
-
-	public function getKind() : int{
-		return $this->kind;
-	}
-
-	public function getMin() : ?float{
-		return $this->min;
-	}
-
-	public function getMax() : ?float{
-		return $this->max;
-	}
-
 	public function isCacheable() : bool{
 		return true;
 	}
@@ -100,7 +82,6 @@ final class RangeCondition implements SpawnCondition{
 			self::KIND_DISTANCE => $ctx->getNearestPlayerDistance(),
 			self::KIND_WORLD_AGE => $ctx->getTime(),
 			self::KIND_BAND => $ctx->getBand()->value,
-			self::KIND_LIQUID => $ctx->getFeetLiquid()->value,
 			default => throw new \LogicException("Unknown range kind $this->kind"),
 		};
 

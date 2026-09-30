@@ -154,7 +154,7 @@ final class CandidateCacheTest extends TestCase{
 
 	public function testLiquidKeyOnlyAdmitsGroupsRequiringThatLiquid() : void{
 		$land = self::rules("minecraft:land", [new SpawnRuleGroup([])]);
-		$fish = self::rules("minecraft:fish", [new SpawnRuleGroup([RangeCondition::liquid(SpawnLiquid::WATER)])]);
+		$fish = self::rules("minecraft:fish", [new SpawnRuleGroup([], requiredLiquid: SpawnLiquid::WATER)]);
 		$cache = new CandidateCache([$land, $fish]);
 
 		self::assertSame(["minecraft:fish"], self::identifiers($cache->getCandidates(new StubContext(feetLiquid: SpawnLiquid::WATER))));

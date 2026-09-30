@@ -232,10 +232,10 @@ final class SpawnRulesParser{
 			$builder->allowHabitatBand(SpawnBand::CAVE);
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_UNDERWATER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(RangeCondition::liquid(SpawnLiquid::WATER));
+			$builder->setLiquid(SpawnLiquid::WATER);
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_LAVA, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(RangeCondition::liquid(SpawnLiquid::LAVA));
+			$builder->setLiquid(SpawnLiquid::LAVA);
 		});
 		$this->registerComponent(VanillaSpawnConditions::BRIGHTNESS_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(BrightnessFilterData::class);

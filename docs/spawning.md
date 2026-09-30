@@ -149,10 +149,10 @@ attempt reads its key fresh from the world, so no world edit (`setChunk()`,
 - one that reads a per-attempt value (so `KeyContext` throws `PointInputRequired`), or
   that isn't cacheable, stays as a residual and runs on every attempt.
 
-At a liquid key only groups that require that liquid survive, since vanilla land rules
-carry no "not in water" condition (`SpawnRuleGroup::admitsLiquid()`, which
-`SpawnRuleGroup::matches()` applies too). Surviving groups keep their order, so "first match
-wins" is unchanged. Within a group, residuals that read the population (such as
+A key only admits groups whose required liquid is its feet liquid: aquatic groups spawn
+only in their liquid, and land groups, which carry no "not in water" condition, only out
+of any liquid (`SpawnRuleGroup::admitsLiquid()`, which `SpawnRuleGroup::matches()` applies
+too). Surviving groups keep their order, so "first match wins" is unchanged. Within a group, residuals that read the population (such as
 `density_limit`) run last.
 
 The key packs into one int; out-of-range values throw instead of colliding. Results are
@@ -162,8 +162,9 @@ keys, is cleared when full, and is rebuilt when the registry revision changes.
 ## Conditions
 
 A rule set (`SpawnRules`) is an ordered list of `SpawnRuleGroup`s; the **first matching
-group wins**. A group carries its conditions plus its weight, herd size and
-`permute_type` weights. Conditions implement:
+group wins**. A group carries its conditions plus its weight, herd size, `permute_type`
+weights and required liquid (`spawns_underwater`, `spawns_lava`; a group can't require
+both). Conditions implement:
 
 ```php
 interface SpawnCondition{
@@ -173,7 +174,7 @@ interface SpawnCondition{
 ```
 
 Built-ins live in `spawning/condition/`: `RangeCondition` (brightness, difficulty,
-height, distance, world age, band, liquid), `BiomeTagCondition`, `SpawnsOnBlock`,
+height, distance, world age, band), `BiomeTagCondition`, `SpawnsOnBlock`,
 `DensityLimitCondition`, `SlimeChunkCondition`, and the `AllOf`, `AnyOf`, `Not`
 combinators.
 
@@ -244,6 +245,8 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
   it, so re-registering a category (for example to raise a cap) applies to rules
   registered before it.
 - Factories construct the entity but never spawn it: `HerdSpawner` calls `spawnToAll()`.
+- An aquatic group passes its liquid to the group, not as a condition:
+  `new SpawnRuleGroup([...], weight: 10, requiredLiquid: SpawnLiquid::WATER)`.
 - `SpawnRules::check($ctx)` is the uncached reference evaluation: the cache returns the
   same group for every context (`CandidateCacheTest`).
 
