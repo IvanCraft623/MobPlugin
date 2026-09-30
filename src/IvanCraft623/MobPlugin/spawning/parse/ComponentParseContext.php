@@ -23,10 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
-use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use function array_is_list;
-use function count;
-use function get_debug_type;
+use function array_map;
 use function is_array;
 use function is_string;
 
@@ -43,8 +41,7 @@ final class ComponentParseContext{
 	public function __construct(
 		private readonly SpawnData $condition,
 		private readonly string $component,
-		private readonly BlockNameResolver $blocks,
-		private readonly BiomeTagMap $biomeTags
+		private readonly BlockNameResolver $blocks
 	){}
 
 	public function getComponent() : string{
@@ -64,8 +61,14 @@ final class ComponentParseContext{
 		return $this->condition->raw($this->component);
 	}
 
-	public function getBiomeTags() : BiomeTagMap{
-		return $this->biomeTags;
+	/**
+	 * A single object or a list of objects, for shapes with no generated model.
+	 *
+	 * @phpstan-return list<SpawnData>
+	 * @phpstan-throws SpawnRulesParseException
+	 */
+	public function objectOrList() : array{
+		return $this->condition->objectOrList($this->component);
 	}
 
 	/**
@@ -75,12 +78,7 @@ final class ComponentParseContext{
 	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function map(string $model) : object{
-		$value = $this->getValue();
-		if(!is_array($value) || (array_is_list($value) && count($value) !== 0)){
-			throw new SpawnRulesParseException("'{$this->getPath()}' must be an object, got " . get_debug_type($value));
-		}
-
-		return $this->mapObject($this->getPath(), $value, $model);
+		return self::mapObject($this->condition->object($this->component), $model);
 	}
 
 	/**
@@ -92,24 +90,7 @@ final class ComponentParseContext{
 	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function mapList(string $model) : array{
-		$value = $this->getValue();
-		$path = $this->getPath();
-		if(is_array($value) && (!array_is_list($value) || count($value) === 0)){
-			return [$this->mapObject($path, $value, $model)];
-		}
-		if(!is_array($value)){
-			throw new SpawnRulesParseException("'$path' must be an object or a list of objects, got " . get_debug_type($value));
-		}
-
-		$result = [];
-		foreach($value as $index => $entry){
-			if(!is_array($entry) || array_is_list($entry)){
-				throw new SpawnRulesParseException("'{$path}[{$index}]' must be an object, got " . get_debug_type($entry));
-			}
-			$result[] = $this->mapObject("{$path}[{$index}]", $entry, $model);
-		}
-
-		return $result;
+		return array_map(static fn(SpawnData $node) : object => self::mapObject($node, $model), $this->objectOrList());
 	}
 
 	/**
@@ -159,21 +140,20 @@ final class ComponentParseContext{
 
 	/**
 	 * @template T of object
-	 * @phpstan-param class-string<T>         $model
-	 * @phpstan-param array<array-key, mixed> $json
+	 * @phpstan-param class-string<T> $model
 	 * @phpstan-return T
 	 * @phpstan-throws SpawnRulesParseException
 	 */
-	private function mapObject(string $path, array $json, string $model) : object{
+	private static function mapObject(SpawnData $node, string $model) : object{
 		$mapper = new \JsonMapper();
 		$mapper->bEnforceMapType = false;
 		$mapper->bExceptionOnMissingData = true;
 		$mapper->bStrictObjectTypeChecking = true;
 
 		try{
-			return $mapper->map($json, new $model());
+			return $mapper->map($node->data, new $model());
 		}catch(\JsonMapper_Exception $e){
-			throw new SpawnRulesParseException("'$path' " . $e->getMessage(), 0, $e);
+			throw new SpawnRulesParseException("'{$node->path}' " . $e->getMessage(), 0, $e);
 		}
 	}
 }

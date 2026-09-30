@@ -176,15 +176,11 @@ final class SpawnRulesParser{
 	 * @phpstan-return array{string, list<SpawnRuleGroup>}|null
 	 */
 	private function parseEntry(SpawnData $body, string $identifier) : ?array{
-		$spawnRules = $body->objectNullable(self::SPAWN_RULES_KEY);
-		if($spawnRules === null){
-			throw new SpawnRulesParseException("missing \"" . self::SPAWN_RULES_KEY . "\" object");
-		}
-
-		$description = $spawnRules->objectNullable(SpawnSchema::KEY_DESCRIPTION);
-		$categoryId = $description?->stringNullable(SpawnSchema::KEY_POPULATION_CONTROL);
-		if($categoryId === null || $categoryId === ""){
-			throw new SpawnRulesParseException("missing \"" . SpawnSchema::KEY_DESCRIPTION . "." . SpawnSchema::KEY_POPULATION_CONTROL . "\"");
+		$spawnRules = $body->object(self::SPAWN_RULES_KEY);
+		$description = $spawnRules->object(SpawnSchema::KEY_DESCRIPTION);
+		$categoryId = $description->string(SpawnSchema::KEY_POPULATION_CONTROL);
+		if($categoryId === ""){
+			throw new SpawnRulesParseException("'{$description->at(SpawnSchema::KEY_POPULATION_CONTROL)}' must not be empty");
 		}
 		if(isset(self::NON_NATURAL_POPULATION_CONTROL[$categoryId])){
 			return null;
@@ -217,7 +213,7 @@ final class SpawnRulesParser{
 		$builder = new SpawnRuleGroupBuilder($identifier);
 		foreach($condition->keys() as $component){
 			$parser = $this->components[$component] ?? throw new SpawnRulesParseException("'{$condition->at($component)}' is not a recognized spawn rule component");
-			$parser(new ComponentParseContext($condition, $component, $this->blocks, $this->biomeTags), $builder);
+			$parser(new ComponentParseContext($condition, $component, $this->blocks), $builder);
 		}
 
 		return $builder->build();
@@ -296,8 +292,9 @@ final class SpawnRulesParser{
 		$this->registerComponent(VanillaSpawnConditions::SPAWN_EVENT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$ctx->map(MobEventFilterData::class); // validated only: nothing consumes spawn events
 		});
-		$this->registerComponent(VanillaSpawnConditions::BIOME_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition((new BiomeFilterParser($ctx->getBiomeTags()))->parse($ctx));
+		$biomeFilter = new BiomeFilterParser($this->biomeTags);
+		$this->registerComponent(VanillaSpawnConditions::BIOME_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) use ($biomeFilter) : void{
+			$builder->addCondition($biomeFilter->parse($ctx));
 		});
 
 		foreach(self::UNSUPPORTED_VANILLA as $component){

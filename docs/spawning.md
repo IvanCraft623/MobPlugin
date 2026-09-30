@@ -269,8 +269,10 @@ foreach($parser->parseFile($path) as $identifier => [$categoryId, $groups]){
 ```
 
 `$ctx->mapList()` reads a component that is an object or a list of objects,
-`$ctx->resolveBlockSet()` resolves block-name values, and `$ctx->getValue()` /
-`$ctx->getPath()` expose the raw value and its JSON path for shapes with no model.
+`$ctx->resolveBlockSet()` resolves block-name values, and for shapes with no model
+`$ctx->objectOrList()` returns path-tracking `SpawnData` readers while `$ctx->getValue()` /
+`$ctx->getPath()` expose the raw value and its JSON path. A parser that needs biome tags
+captures `$parser->getBiomeTags()`.
 
 ## Settings
 

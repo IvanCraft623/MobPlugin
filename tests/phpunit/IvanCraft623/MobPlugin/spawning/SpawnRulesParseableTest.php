@@ -151,6 +151,11 @@ final class SpawnRulesParseableTest extends TestCase{
 		self::parseConditions('{"minecraft:spawns_underwater": {}, "minecraft:spawns_lava": {}}');
 	}
 
+	public function testEmptyBiomeFilterNodeIsRejected() : void{
+		$this->expectException(SpawnRulesParseException::class);
+		self::parseConditions('{"minecraft:biome_filter": {"any_of": [{"test": "has_biome_tag", "value": "ocean"}, {}]}}');
+	}
+
 	/**
 	 * Parses one entry whose "conditions" list holds the given comma-separated groups.
 	 *

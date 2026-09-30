@@ -59,7 +59,7 @@ final class SpawnData{
 	 * @phpstan-param array<array-key, mixed> $data
 	 */
 	public function __construct(
-		private readonly array $data,
+		public readonly array $data,
 		public readonly string $path = ""
 	){}
 
@@ -108,10 +108,6 @@ final class SpawnData{
 		return $value;
 	}
 
-	public function stringNullable(string $key) : ?string{
-		return $this->has($key) ? $this->string($key) : null;
-	}
-
 	/**
 	 * @phpstan-throws SpawnRulesParseException
 	 */
@@ -126,10 +122,6 @@ final class SpawnData{
 		return new self($value, $this->at($key));
 	}
 
-	public function objectNullable(string $key) : ?self{
-		return $this->has($key) ? $this->object($key) : null;
-	}
-
 	/**
 	 * A list of objects, or a single object promoted to a one-element list.
 	 *
@@ -141,7 +133,7 @@ final class SpawnData{
 		if(is_array($value) && (!array_is_list($value) || count($value) === 0)){
 			return [new self($value, $this->at($key))];
 		}
-		if(!is_array($value) || !array_is_list($value)){
+		if(!is_array($value)){
 			throw new SpawnRulesParseException("'{$this->at($key)}' must be an object or a list of objects, got " . get_debug_type($value));
 		}
 		$result = [];
