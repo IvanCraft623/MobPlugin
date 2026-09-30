@@ -132,7 +132,7 @@ generated `schema/`), with their APIs changed as described in §5.
 | `SpawnGroupBuilder` | `parse/SpawnRuleGroupBuilder` | Renamed after the class it builds. |
 | `SpawnConditionMatch` | *(deleted)* | Factories receive the `SpawnRuleGroup`. |
 | `BandCounts` | `MobCategory::$surfaceCap`, `$caveCap` + `getCap(SpawnBand)` | A pair of ints doesn't need its own class. |
-| `BiomeTagMap`, `parse/resolver/BiomeTagResolver`, `parse/resolver/VanillaBiomeTagResolver` | `BiomeTagMap` (plain class, `fromBedrockData()` factory) | The interface existed only so tests could substitute data. Tests now build a `BiomeTagMap` from an array. |
+| `BiomeTagMap`, `parse/resolver/BiomeTagResolver`, `parse/resolver/VanillaBiomeTagResolver` | `BiomeTagMap` (plain class, `fromBedrockData()` and `fromFiles()` factories) | The interface existed only so tests could substitute data. Tests now build a `BiomeTagMap` from an array. |
 | `SpawnConditionRegistry`, `SpawnRulesFactory` | `parse/SpawnRulesParser` | It owns the component parsers and `parse(json)`. `SpawnRulesParser::createVanilla()` returns an instance, and plugins call `registerComponent()` on it. It is not a singleton. |
 | `parse/SpawnConditionContext`, `SpawnConditionData` | `parse/ComponentParseContext` | The JsonMapper `map()`/`mapList()` helpers become its methods, and the name clash with the condition context goes away. |
 | `SpawnParseException`, `SpawnModelParseException` | `parse/SpawnRulesParseException` | The loader is strict and has a single failure mode. |
@@ -417,7 +417,7 @@ key values, so it is computed once per key and reused.
 final class CandidateCache{
 	public const DEFAULT_MAX_KEYS = 4096;
 
-	public function __construct(array $rules, int $maxKeys = self::DEFAULT_MAX_KEYS); // list<SpawnRules>
+	public function __construct(array $rules, int $maxKeys = self::DEFAULT_MAX_KEYS, ?TimingsHandler $resolveTimings = null); // list<SpawnRules>
 
 	public function getCandidates(SpawnConditionContext $ctx) : array;             // list<CandidateRule>
 	public function clear() : void;
@@ -507,7 +507,8 @@ hidden behind a cached result.
    A rule with no surviving groups returns `null`.
 
 A timing, `Natural Spawning - Candidate Resolve`, wraps `resolve()`, so cache warm-up
-shows up in timings reports.
+shows up in timings reports. `NaturalSpawner` passes it in as `$resolveTimings`, so the
+cache itself doesn't depend on `CustomTimings` and tests need no timings setup.
 
 #### Why it is exact
 

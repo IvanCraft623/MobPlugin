@@ -25,12 +25,14 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\spawner\CandidateRule;
 use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use PHPUnit\Framework\TestCase;
+use function array_map;
 
 /**
  * Filter-then-pick semantics: only matching rule sets compete, weighted by the group that
@@ -177,7 +179,10 @@ final class SpawnEvaluatorTest extends TestCase{
 				time: 0
 			),
 			$population,
-			$viable
+			array_map(static fn(SpawnRules $rules) : CandidateRule => new CandidateRule(
+				$rules,
+				array_map(static fn(SpawnRuleGroup $group) : array => [$group, $group->getConditions()], $rules->getGroups())
+			), $viable)
 		);
 	}
 }

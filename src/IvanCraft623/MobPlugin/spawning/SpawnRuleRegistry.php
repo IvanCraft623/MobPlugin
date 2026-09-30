@@ -133,6 +133,14 @@ final class SpawnRuleRegistry{
 		return $this->rules;
 	}
 
+	/**
+	 * Drops every cached rule evaluation. Call it when outside state read by cacheable
+	 * conditions changes.
+	 */
+	public function invalidateCache() : void{
+		$this->revision++;
+	}
+
 	public function getRevision() : int{
 		return $this->revision;
 	}

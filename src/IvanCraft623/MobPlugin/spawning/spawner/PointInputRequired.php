@@ -21,22 +21,16 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning;
-
-use IvanCraft623\MobPlugin\spawning\spawner\CandidateRule;
-use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
+namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 /**
- * Evaluator input: a sampled position that survived the candidate-cache shortlist, its census
- * counts, and the rule sets that could possibly match there.
+ * Thrown by KeyContext when a condition reads a per-attempt value. Extends \Error so a
+ * condition's catch(\Exception) can't swallow it.
  */
-final class SpawnCandidate{
-	/**
-	 * @phpstan-param non-empty-list<CandidateRule> $viable
-	 */
-	public function __construct(
-		public readonly SpawnPosition $position,
-		public readonly RegionPopulation $population,
-		public readonly array $viable
-	){}
+final class PointInputRequired extends \Error{
+	private static ?self $instance = null;
+
+	public static function get() : self{
+		return self::$instance ??= new self("Condition reads a per-attempt value");
+	}
 }

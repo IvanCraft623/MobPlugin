@@ -76,7 +76,8 @@ final class SpawnEvaluator{
 		/** @phpstan-var list<array{SpawnRules, SpawnRuleGroup, int, int}> $matches rules, group, category count, cap */
 		$matches = [];
 		$totalWeight = 0;
-		foreach($candidate->viable as $rules){
+		foreach($candidate->viable as $candidateRule){
+			$rules = $candidateRule->getRules();
 			$category = $this->categories->get($rules->getCategoryId());
 			if($category === null){
 				continue;
@@ -86,7 +87,7 @@ final class SpawnEvaluator{
 			if($categoryCount >= $cap){
 				continue; // capped categories don't compete
 			}
-			$group = $rules->check($ctx);
+			$group = $candidateRule->match($ctx);
 			if($group === null || $group->getWeight() <= 0){
 				continue;
 			}

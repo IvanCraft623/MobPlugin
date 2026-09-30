@@ -24,7 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\spawning\plan\SpawnRuleIndex;
+use IvanCraft623\MobPlugin\spawning\spawner\CandidateCache;
+use IvanCraft623\MobPlugin\spawning\spawner\CandidateRule;
+use IvanCraft623\MobPlugin\spawning\spawner\KeyContext;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
@@ -39,7 +41,7 @@ use function max;
  * Natural spawner, all on the main thread. Orchestrates only:
  *
  * 1. Collect  — SpawnCollector samples positions around players (SpawnPosition).
- * 2. Shortlist — SpawnRuleIndex drops positions no rule set can match.
+ * 2. Shortlist — CandidateCache drops positions no rule set can match.
  * 3. Census   — SpawnCensus counts nearby mobs for the survivors only (RegionPopulation).
  * 4. Evaluate — SpawnEvaluator filters matching rule sets and picks one (SpawnRequest).
  * 5. Apply    — SpawnApplier re-validates the live world and spawns herds.
@@ -53,9 +55,9 @@ final class NaturalSpawner{
 
 	private SpawnApplier $applier;
 
-	private ?SpawnRuleIndex $index = null;
+	private ?CandidateCache $candidateCache = null;
 
-	private int $indexRevision = -1;
+	private int $cacheRevision = -1;
 
 	/** Server ticks seen so far; drives batching. */
 	private int $ticks = 0;
@@ -74,7 +76,6 @@ final class NaturalSpawner{
 		private readonly SpawnRuleRegistry $registry,
 		private readonly int $attemptsPerTick,
 		private readonly WorldManager $worldManager,
-		private readonly BiomeTagMap $biomeTags,
 		private readonly int $batchInterval = 1,
 		Random $random = new Random()
 	){
@@ -100,13 +101,13 @@ final class NaturalSpawner{
 			return;
 		}
 
-		$index = $this->getIndex();
+		$candidateCache = $this->getCandidateCache();
 		$positions = $this->collect($this->attemptsPerTick * $interval);
 		if(count($positions) === 0){
 			return;
 		}
 
-		$candidates = $this->shortlistAndCount($positions, $index);
+		$candidates = $this->shortlistAndCount($positions, $candidateCache);
 		if(count($candidates) === 0){
 			return;
 		}
@@ -117,17 +118,14 @@ final class NaturalSpawner{
 		}
 	}
 
-	/**
-	 * The planner over the registered rule sets, rebuilt once per registry revision.
-	 */
-	private function getIndex() : SpawnRuleIndex{
+	private function getCandidateCache() : CandidateCache{
 		$revision = $this->registry->getRevision();
-		if($this->index === null || $revision !== $this->indexRevision){
-			$this->index = new SpawnRuleIndex($this->registry->getAll(), $this->biomeTags);
-			$this->indexRevision = $revision;
+		if($this->candidateCache === null || $revision !== $this->cacheRevision){
+			$this->candidateCache = new CandidateCache(array_values($this->registry->getAll()), resolveTimings: CustomTimings::$naturalSpawningCandidateResolve);
+			$this->cacheRevision = $revision;
 		}
 
-		return $this->index;
+		return $this->candidateCache;
 	}
 
 	/**
@@ -175,18 +173,18 @@ final class NaturalSpawner{
 	}
 
 	/**
-	 * Drops positions the rule index proves unspawnable, then runs the census (the most
+	 * Drops positions no rule can spawn at, then runs the census (the most
 	 * expensive step) only on the survivors, one entity pass per world.
 	 *
 	 * @phpstan-param list<SpawnPosition> $positions
 	 *
 	 * @phpstan-return list<SpawnCandidate>
 	 */
-	private function shortlistAndCount(array $positions, SpawnRuleIndex $index) : array{
-		/** @phpstan-var array<int, list<array{SpawnPosition, non-empty-list<SpawnRules>}>> $byWorld */
+	private function shortlistAndCount(array $positions, CandidateCache $candidateCache) : array{
+		/** @phpstan-var array<int, list<array{SpawnPosition, non-empty-list<CandidateRule>}>> $byWorld */
 		$byWorld = [];
 		foreach($positions as $position){
-			$viable = $index->candidatesFor($position->biomeId, $position->band, $position->difficulty, SpawnLiquid::fromBlockTypeId($position->feetTypeId));
+			$viable = $candidateCache->getCandidates(new KeyContext($position->biomeId, $position->band, $position->difficulty, SpawnLiquid::fromBlockTypeId($position->feetTypeId)));
 			if(count($viable) !== 0){
 				$byWorld[$position->worldId][] = [$position, $viable];
 			}

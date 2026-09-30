@@ -49,7 +49,6 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
-use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -147,8 +146,7 @@ class MobPlugin extends PluginBase {
 		$this->naturalSpawner = new NaturalSpawner(
 			SpawnRuleRegistry::getInstance(),
 			$settings->getMobNaturalSpawningAttemptsPerTick(),
-			$this->getServer()->getWorldManager(),
-			BiomeTagMap::fromBedrockData()
+			$this->getServer()->getWorldManager()
 		);
 		$this->spawningTaskHandler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask($this->naturalSpawner->tick(...)), 1);
 	}

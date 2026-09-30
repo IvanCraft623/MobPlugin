@@ -44,8 +44,12 @@ final class BiomeTagMap{
 	){}
 
 	public static function fromBedrockData() : self{
-		$idMap = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_ID_MAP_JSON), true);
-		$definitions = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_DEFINITIONS_JSON), true);
+		return self::fromFiles(BedrockDataFiles::BIOME_ID_MAP_JSON, BedrockDataFiles::BIOME_DEFINITIONS_JSON);
+	}
+
+	public static function fromFiles(string $idMapPath, string $definitionsPath) : self{
+		$idMap = json_decode(Filesystem::fileGetContents($idMapPath), true);
+		$definitions = json_decode(Filesystem::fileGetContents($definitionsPath), true);
 		if(!is_array($idMap) || !is_array($definitions)){
 			throw new PluginException("bedrock-data biome definitions are missing or corrupted");
 		}
