@@ -51,14 +51,15 @@ final class KeyContextTest extends TestCase{
 			try{
 				$ctx->$name();
 				self::fail("KeyContext::$name() must throw PointInputRequired");
-			}catch(PointInputRequired){
-				self::addToAssertionCount(1);
+			}catch(PointInputRequired $e){
+				self::assertSame($name === "getPopulation", $e->isPopulation(), $name);
 			}
 		}
 	}
 
 	public function testPointInputRequiredIsNotAnException() : void{
-		self::assertNotInstanceOf(\Exception::class, PointInputRequired::get());
+		self::assertNotInstanceOf(\Exception::class, PointInputRequired::point());
+		self::assertNotInstanceOf(\Exception::class, PointInputRequired::population());
 	}
 
 	public function testFromCopiesOnlyTheKey() : void{

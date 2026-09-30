@@ -93,7 +93,7 @@ final class NaturalSpawner{
 
 		// The revision is read once: rules registered mid-tick apply from the next tick.
 		$candidateCache = $this->getCandidateCache();
-		CustomTimings::$naturalSpawningCollect->startTiming();
+		CustomTimings::$naturalSpawning->startTiming();
 		try{
 			foreach($byWorld as [$world, $players]){
 				$pass = new WorldSpawnPass($world, $candidateCache, $this->selector, $this->herdSpawner, $this->registry, $this->random);
@@ -102,7 +102,7 @@ final class NaturalSpawner{
 				}
 			}
 		}finally{
-			CustomTimings::$naturalSpawningCollect->stopTiming();
+			CustomTimings::$naturalSpawning->stopTiming();
 		}
 	}
 

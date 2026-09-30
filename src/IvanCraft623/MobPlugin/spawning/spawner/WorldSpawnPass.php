@@ -105,6 +105,24 @@ final class WorldSpawnPass{
 	 * few cave positions at random depths below it.
 	 */
 	public function attempt(Vector3 $anchor) : void{
+		CustomTimings::$naturalSpawningSample->startTiming();
+		try{
+			$this->sampleColumn($anchor);
+		}finally{
+			CustomTimings::$naturalSpawningSample->stopTiming();
+		}
+	}
+
+	/**
+	 * Drops the ground and population memos. Called whenever code we don't control (a
+	 * factory) may have changed the world.
+	 */
+	public function invalidateWorldMemos() : void{
+		$this->placement->clear();
+		$this->census->clear();
+	}
+
+	private function sampleColumn(Vector3 $anchor) : void{
 		[$dx, $dz] = self::getRingOffset($this->random);
 		$chunkX = ((int) floor($anchor->x + $dx)) >> 4;
 		$chunkZ = ((int) floor($anchor->z + $dz)) >> 4;
@@ -136,15 +154,6 @@ final class WorldSpawnPass{
 				$this->tryPosition($x, $y, $z, $groundY, $below);
 			}
 		}
-	}
-
-	/**
-	 * Drops the ground and population memos. Called whenever code we don't control (a
-	 * factory) may have changed the world.
-	 */
-	public function invalidateWorldMemos() : void{
-		$this->placement->clear();
-		$this->census->clear();
 	}
 
 	private function tryPosition(int $x, int $y, int $z, int $groundY, Block $below) : void{
@@ -182,24 +191,37 @@ final class WorldSpawnPass{
 			return;
 		}
 
-		CustomTimings::$naturalSpawningEvaluate->startTiming();
+		// Sample stays paused while the rest of the attempt runs under its own timings.
+		CustomTimings::$naturalSpawningSample->stopTiming();
+		try{
+			$this->selectAndSpawn($ctx, $candidates);
+		}finally{
+			CustomTimings::$naturalSpawningSample->startTiming();
+		}
+	}
+
+	/**
+	 * @phpstan-param non-empty-list<CandidateRule> $candidates
+	 */
+	private function selectAndSpawn(AttemptContext $ctx, array $candidates) : void{
+		CustomTimings::$naturalSpawningSelect->startTiming();
 		try{
 			$selected = $this->selector->select($ctx, $candidates);
 		}finally{
-			CustomTimings::$naturalSpawningEvaluate->stopTiming();
+			CustomTimings::$naturalSpawningSelect->stopTiming();
 		}
 		if($selected === null){
 			return;
 		}
 
 		[$candidate, $group] = $selected;
-		CustomTimings::$naturalSpawningApply->startTiming();
+		CustomTimings::$naturalSpawningSpawn->startTiming();
 		try{
 			if($this->herdSpawner->spawn($this->placement, $ctx, $candidate->getRules(), $group, $this->players)){
 				$this->invalidateWorldMemos();
 			}
 		}finally{
-			CustomTimings::$naturalSpawningApply->stopTiming();
+			CustomTimings::$naturalSpawningSpawn->stopTiming();
 		}
 	}
 }

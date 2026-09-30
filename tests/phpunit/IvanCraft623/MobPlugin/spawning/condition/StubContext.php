@@ -30,6 +30,8 @@ use pocketmine\block\BlockTypeIds;
 use pocketmine\world\World;
 
 final class StubContext implements SpawnConditionContext{
+	public int $populationReads = 0;
+
 	public function __construct(
 		public readonly int $biomeId = 1,
 		public readonly SpawnBand $band = SpawnBand::SURFACE,
@@ -100,6 +102,8 @@ final class StubContext implements SpawnConditionContext{
 	}
 
 	public function getPopulation() : RegionPopulation{
+		$this->populationReads++;
+
 		return $this->population;
 	}
 }

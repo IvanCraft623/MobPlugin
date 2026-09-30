@@ -1,6 +1,6 @@
 # Natural spawning — runtime rewrite plan
 
-Status: **pending approval**.
+Status: **implemented** (migration steps 1–6); in-server verification pending.
 
 Scope: the runtime (sampling → census → evaluation → spawn), plus a consolidation of
 the `spawning/` package and its public API. What can spawn where comes **only** from
@@ -309,6 +309,8 @@ context**:
    else must return `false`, or call `SpawnRuleRegistry::invalidateCache()` whenever
    that state changes.
 3. **No side effects.** `test()` never mutates the world or any other state (§6.9).
+   The cache may reorder a group's residual conditions (§11.3), so `test()` must not
+   depend on which other conditions ran before it.
 4. **Let `PointInputRequired` propagate.** It extends `\Error`, so an ordinary
    `catch(\Exception)` inside a condition doesn't swallow it by accident.
 
@@ -505,6 +507,8 @@ hidden behind a cached result.
    hidden by the cache.
 3. The surviving groups keep their original order, so "first match wins" is unchanged.
    A rule with no surviving groups returns `null`.
+4. Within each group, residuals that stopped at `getPopulation()` go after the others
+   (§11.3), so the census runs only for a group that passed everything else.
 
 A timing, `Natural Spawning - Candidate Resolve`, wraps `resolve()`, so cache warm-up
 shows up in timings reports. `NaturalSpawner` passes it in as `$resolveTimings`, so the
@@ -618,10 +622,11 @@ final class SpawnSelector{
 For each candidate:
 
 1. Resolve its category live, via `$this->categories->get($rules->getCategoryId())`,
-   and skip the candidate if the category was unregistered. Skip it too if the category
-   is at its cap in the position's band, read from
-   `getPopulation()->getCategoryCount()`.
-2. Otherwise `match()` returns the first group whose residuals pass.
+   and skip the candidate if the category was unregistered or its cap in the position's
+   band is 0.
+2. `match()` returns the first group whose residuals pass.
+3. Only then read the population (once per select) and skip the candidate if its
+   category is at its cap, read from `getPopulation()->getCategoryCount()` (§11.2).
 
 Among the matches, it picks one by group weight and then applies the cap roll
 `(cap - count) / cap`. It has no world access and no singletons, so tests pass in a
@@ -861,3 +866,201 @@ Each step passes php-cs-fixer, PHPStan level 9 and `composer test`.
 6. **Settings and docs:**
    - Rename the timings and rewrite `docs/spawning.md`.
    - Build the phar and test in-server.
+
+---
+
+## 11. Follow-up: census on demand
+
+Status: **implemented**; in-server timings pending.
+
+### 11.1 Evidence
+
+The first in-server timings report (18.3 min, 21,941 ticks, about 3 players):
+
+| Timing | Total | Count | Avg |
+|---|---|---|---|
+| Natural Spawning | 27.4 s | 21,942 | 1.25 ms per tick |
+| Select (includes Census) | 19.1 s | 56,885 | 336 µs |
+| Census | 17.1 s | 56,199 | 304 µs |
+| Spawn | 0.53 s | 309 | 1.7 ms |
+| Candidate Resolve | 1.6 ms | 8 | 195 µs |
+
+The census is 62% of the spawner, and it runs on 99% of selects even though only 0.5%
+of selects spawn anything. A recount costs about 0.3 ms (81 chunk entity lists plus a
+ground scan per counted mob), and the per-pass region memo almost never hits because
+each tick's 3 attempts land around different players.
+
+Two things read the population, and both read it earlier than they need to:
+
+1. `SpawnSelector` reads it to check each candidate's category cap **before** matching
+   the candidate's groups, so every select pays for it.
+2. A group's residual conditions keep the data's order, so a `density_limit` listed
+   before a failing brightness or block check still triggers a recount. 26 of the 103
+   vanilla groups carry a `density_limit`.
+
+Goal: read the population only for a group that passes every other check. Neither fix
+changes which mob spawns: the same matches are found, and `Random` is drawn in the same
+order.
+
+### 11.2 Fix 1: selector matches before it checks the cap
+
+New order per candidate in `SpawnSelector::select()`:
+
+```php
+$population = null;
+foreach($candidates as $candidate){
+	$category = $this->categories->get($candidate->getRules()->getCategoryId());
+	if($category === null){
+		continue;
+	}
+	$cap = $category->getCap($band);
+	if($cap <= 0){
+		continue; // e.g. cave animals, surface ambient: capped without counting
+	}
+	$group = $candidate->match($ctx);
+	if($group === null || $group->getWeight() <= 0){
+		continue;
+	}
+	$population ??= $ctx->getPopulation();
+	$count = $population->getCategoryCount($category->id, $band);
+	if($count >= $cap){
+		continue;
+	}
+	$matches[] = [$candidate, $group, $count, $cap];
+	$totalWeight += $group->getWeight();
+}
+```
+
+- **The `$cap <= 0` check comes before `match()`.** A cap of 0 is full without counting
+  (count ≥ 0), and several vanilla categories have one in a band (animal and water_animal
+  in caves, ambient on the surface, creature and cat in both). Without this check those
+  candidates would now trigger a recount that today they never cause.
+- **Why the result is identical.** The set of matches is the same: a capped category is
+  excluded before or after `match()`, and `match()` is pure (condition contract, §5.3).
+  `Random` is used only after the loop (weighted pick, then cap roll), so its sequence is
+  unchanged.
+- **Cost moved elsewhere.** Candidates of a capped category now run their residual
+  conditions before being dropped. Those checks are cheap point reads (a few µs); a
+  recount is about 300 µs.
+- **`$population` is read once per select.** `AttemptContext` memoizes it anyway; the
+  local variable just saves the interface calls.
+
+### 11.3 Fix 2: population-reading residuals run last
+
+`CandidateCache::resolveRule()` orders each surviving group's residual list: conditions
+known to read the population go after the others, and each part keeps the data's order.
+
+**Knowing which residuals read the population.** `PointInputRequired` gets two shared
+instances, telling the cache which getter stopped the evaluation:
+
+```php
+final class PointInputRequired extends \Error{
+	public static function point() : self;       // any per-attempt getter except the population
+	public static function population() : self;  // getPopulation()
+	public function isPopulation() : bool;
+}
+```
+
+`KeyContext::getPopulation()` throws `PointInputRequired::population()`, and every other
+point getter throws `PointInputRequired::point()`. In `resolveRule()`, a condition whose
+key evaluation threw the population instance goes into a second list, which is appended
+to the residuals.
+
+| Residual | Classified by | Position |
+|---|---|---|
+| Stopped at `getPopulation()` (e.g. `DensityLimitCondition`) | population instance | last |
+| Stopped at another point getter | point instance | data order |
+| `isCacheable() === false` (never evaluated on the key) | not known | data order |
+
+**Limits, all conservative.** Only the *first* per-attempt getter a condition calls is
+visible. `AllOf(height, densityLimit)` stops at the height, so it stays in data order.
+Non-cacheable conditions are never probed. In both cases the order stays as it is today,
+so the result is still correct, just not faster. Vanilla `density_limit` is a top-level
+component, so every vanilla population reader is detected.
+
+**Why the result is identical.** A group matches when all its residuals pass; for
+conditions without side effects, the order of an AND changes only which conditions run,
+never the result. The condition contract already requires no side effects (§5.3, rule
+3); §11.5 states the consequence explicitly.
+
+**Interning.** The `CandidateRule` signature is built from the reordered list, so it
+stays consistent, and memory is unchanged.
+
+### 11.4 Files
+
+| File | Change |
+|---|---|
+| `spawner/SpawnSelector.php` | new loop order (§11.2) |
+| `spawner/PointInputRequired.php` | `point()`, `population()`, `isPopulation()`; `get()` removed |
+| `spawner/KeyContext.php` | `getPopulation()` throws `population()`; the others throw `point()` |
+| `spawner/CandidateCache.php` | partition residuals in `resolveRule()` (§11.3) |
+| `tests/.../condition/StubContext.php` | a public `$populationReads` counter, incremented by `getPopulation()` |
+| `tests/.../spawner/SpawnSelectorTest.php` | new tests (§11.6) |
+| `tests/.../spawner/CandidateCacheTest.php` | new tests (§11.6) |
+| `tests/.../spawner/KeyContextTest.php` | checks which instance each getter throws |
+| `docs/spawning.md` | "One attempt" step 3, the candidate cache section, the condition contract |
+| this document | §6.3 resolve table, §6.6 selector order |
+
+### 11.5 Documentation changes
+
+- **Condition contract, rule 3** gains one sentence: "The cache may reorder a group's
+  residual conditions, so `test()` must not depend on which other conditions ran
+  before it."
+- **Selector description** (here §6.6 and `docs/spawning.md`): unregistered or zero-cap
+  categories are skipped first; the population is read only for a candidate whose group
+  matched.
+- **Cache description** (here §6.3 and `docs/spawning.md`): residuals that read the
+  population run last.
+
+### 11.6 Tests
+
+**`SpawnSelectorTest`**
+- **Equivalence with the old order.** A private reference implementation of today's
+  cap-first loop runs against the new selector over 5,000 random contexts. Each run uses
+  a fresh pair of `Random`s with the same seed, and random populations, caps (including
+  0) and matching and failing groups. Every result must be the same candidate and group,
+  or `null` for both.
+- **No population read without a match.** If no group matches, `$populationReads` is 0.
+- **No population read for a zero cap.** A candidate whose group would match, in a
+  category with cap 0 in the band: `null`, and `$populationReads` is 0.
+- **One population read per select.** Two matching candidates: `$populationReads` is 1.
+- The existing tests (capped category doesn't compete, cap roll, weights, G5) stay
+  unchanged and must pass.
+
+**`CandidateCacheTest`**
+- **Population readers go last.** A group with `[DensityLimitCondition, brightness(0, 7)]`
+  in that data order, evaluated at light 15: `match()` returns `null` and
+  `$populationReads` is 0. At light 3 it matches, and `$populationReads` is 1.
+- **Unknown readers keep their order.** A non-cacheable spy placed before a brightness
+  check is still called first.
+- The existing vanilla equivalence test (20,000 contexts) must pass unchanged. It proves
+  the reordering never changes a result.
+
+**`KeyContextTest`**
+- `getPopulation()` throws an instance with `isPopulation() === true`; every other point
+  getter throws one with `isPopulation() === false`. It is still driven by reflection
+  over the interface (G2).
+
+**`WorldSpawnPassTest`**: unchanged, must pass (the density limit still holds within a
+pass).
+
+### 11.7 Verification
+
+- PHPStan level 9, php-cs-fixer, `composer test`, phar build.
+- `php tools/bench/candidate-cache.php`: the warm time per position must not get worse
+  (target ≤ 5 µs, as in §9).
+- **In-server**, same setup as the report in §11.1:
+  - `Census` Count should fall far below `Select` Count. Target: at most a quarter of it.
+    This is an estimate: the true share is the fraction of selects where some group
+    passes every check except the population, which the report doesn't show.
+  - `Natural Spawning` per tick should fall about in proportion to the `Census` total.
+  - The spawn rate per minute should stay about the same, since neither fix changes which
+    mob spawns.
+
+### 11.8 Not in scope
+
+- **Cheaper ground scans for counted mobs.** Reading state ids through a table of which
+  block types are spawnable ground would bend D5. That is a separate decision, to be
+  taken after the next timings report.
+- **Keeping census counts across ticks.** This would break the one-pass rule for
+  location-keyed memos (§6.9).

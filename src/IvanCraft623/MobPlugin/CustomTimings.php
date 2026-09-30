@@ -32,15 +32,12 @@ final class CustomTimings {
 
 	public static TimingsHandler $entityAiTick;
 
-	public static TimingsHandler $naturalSpawningCollect;
-
-	public static TimingsHandler $naturalSpawningCensus;
-
-	public static TimingsHandler $naturalSpawningEvaluate;
-
+	public static TimingsHandler $naturalSpawning;
+	public static TimingsHandler $naturalSpawningSample;
 	public static TimingsHandler $naturalSpawningCandidateResolve;
-
-	public static TimingsHandler $naturalSpawningApply;
+	public static TimingsHandler $naturalSpawningCensus;
+	public static TimingsHandler $naturalSpawningSelect;
+	public static TimingsHandler $naturalSpawningSpawn;
 
 	public static TimingsHandler $pathfinding;
 
@@ -59,11 +56,12 @@ final class CustomTimings {
 
 		self::$entityAiTick = new TimingsHandler("Entity AI Tick", group: Timings::GROUP_BREAKDOWN);
 
-		self::$naturalSpawningCollect = new TimingsHandler("Natural Spawning - Collect", group: Timings::GROUP_BREAKDOWN);
-		self::$naturalSpawningCensus = new TimingsHandler("Natural Spawning - Census", group: Timings::GROUP_BREAKDOWN);
-		self::$naturalSpawningEvaluate = new TimingsHandler("Natural Spawning - Evaluate", group: Timings::GROUP_BREAKDOWN);
-		self::$naturalSpawningCandidateResolve = new TimingsHandler("Natural Spawning - Candidate Resolve", group: Timings::GROUP_BREAKDOWN);
-		self::$naturalSpawningApply = new TimingsHandler("Natural Spawning - Apply", group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawning = new TimingsHandler("Natural Spawning", group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningSample = new TimingsHandler("Natural Spawning - Sample", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningCandidateResolve = new TimingsHandler("Natural Spawning - Candidate Resolve", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningCensus = new TimingsHandler("Natural Spawning - Census", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningSelect = new TimingsHandler("Natural Spawning - Select", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
+		self::$naturalSpawningSpawn = new TimingsHandler("Natural Spawning - Spawn", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
 
 		self::$pathfinding = new TimingsHandler("Entity Pathfinding", group: Timings::GROUP_BREAKDOWN);
 

@@ -28,9 +28,26 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
  * condition's catch(\Exception) can't swallow it.
  */
 final class PointInputRequired extends \Error{
-	private static ?self $instance = null;
+	private static ?self $point = null;
 
-	public static function get() : self{
-		return self::$instance ??= new self("Condition reads a per-attempt value");
+	private static ?self $population = null;
+
+	private function __construct(
+		string $message,
+		private readonly bool $isPopulation
+	){
+		parent::__construct($message);
+	}
+
+	public static function point() : self{
+		return self::$point ??= new self("Condition reads a per-attempt value", false);
+	}
+
+	public static function population() : self{
+		return self::$population ??= new self("Condition reads the region population", true);
+	}
+
+	public function isPopulation() : bool{
+		return $this->isPopulation;
 	}
 }

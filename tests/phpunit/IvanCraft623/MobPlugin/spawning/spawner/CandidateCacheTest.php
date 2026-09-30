@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
 use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
+use IvanCraft623\MobPlugin\spawning\condition\DensityLimitCondition;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
@@ -195,6 +196,35 @@ final class CandidateCacheTest extends TestCase{
 				self::addToAssertionCount(1);
 			}
 		}
+	}
+
+	public function testPopulationReadersRunLast() : void{
+		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([
+			new DensityLimitCondition("minecraft:a", 5, null),
+			RangeCondition::brightness(0, 7),
+		])])]);
+
+		$bright = new StubContext(light: 15);
+		foreach($cache->getCandidates($bright) as $candidate){
+			self::assertNull($candidate->match($bright));
+		}
+		self::assertSame(0, $bright->populationReads, "a failing light check spares the census");
+
+		$dark = new StubContext(light: 3);
+		foreach($cache->getCandidates($dark) as $candidate){
+			self::assertNotNull($candidate->match($dark));
+		}
+		self::assertSame(1, $dark->populationReads);
+	}
+
+	public function testUnclassifiedResidualsKeepDataOrder() : void{
+		$spy = new SpyCondition(cacheable: false);
+		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([$spy, RangeCondition::brightness(0, 7)])])]);
+		$ctx = new StubContext(light: 15);
+		foreach($cache->getCandidates($ctx) as $candidate){
+			self::assertNull($candidate->match($ctx));
+		}
+		self::assertSame(1, $spy->calls, "the non-cacheable condition still runs before the brightness check");
 	}
 
 	public function testThrowingConditionLeavesNoEntry() : void{

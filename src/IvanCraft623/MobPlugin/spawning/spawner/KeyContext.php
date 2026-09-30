@@ -59,42 +59,42 @@ final class KeyContext implements SpawnConditionContext{
 	}
 
 	public function getX() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getY() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getZ() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getGroundY() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getLight() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getWeatherLightPenalty() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getBelowTypeId() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getNearestPlayerDistance() : float{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getTime() : int{
-		throw PointInputRequired::get();
+		throw PointInputRequired::point();
 	}
 
 	public function getPopulation() : RegionPopulation{
-		throw PointInputRequired::get();
+		throw PointInputRequired::population();
 	}
 }

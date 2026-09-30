@@ -122,7 +122,8 @@ final class CandidateCache{
 				continue;
 			}
 			$residuals = [];
-			$groupSignature = ":" . spl_object_id($group);
+			// Run last: counting the region is the most expensive read of an attempt.
+			$populationResiduals = [];
 			foreach($group->getConditions() as $condition){
 				if($condition->isCacheable()){
 					try{
@@ -130,11 +131,19 @@ final class CandidateCache{
 							continue 2;
 						}
 						continue;
-					}catch(PointInputRequired){
+					}catch(PointInputRequired $e){
 						// Reads a per-attempt value: decided on each attempt.
+						if($e->isPopulation()){
+							$populationResiduals[] = $condition;
+							continue;
+						}
 					}
 				}
 				$residuals[] = $condition;
+			}
+			$residuals = [...$residuals, ...$populationResiduals];
+			$groupSignature = ":" . spl_object_id($group);
+			foreach($residuals as $condition){
 				$groupSignature .= "," . spl_object_id($condition);
 			}
 			$groups[] = [$group, $residuals];

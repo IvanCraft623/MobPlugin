@@ -31,7 +31,8 @@ use function count;
 
 /**
  * Filter, then pick: every candidate under its category cap contributes its first
- * matching group, one is picked by group weight, then the cap roll decides.
+ * matching group, one is picked by group weight, then the cap roll decides. The
+ * population is read only once some group has matched.
  */
 final class SpawnSelector{
 	public function __construct(
@@ -48,18 +49,23 @@ final class SpawnSelector{
 		/** @phpstan-var list<array{CandidateRule, SpawnRuleGroup, int, int}> $matches candidate, group, category count, cap */
 		$matches = [];
 		$totalWeight = 0;
+		$population = null;
 		foreach($candidates as $candidate){
 			$category = $this->categories->get($candidate->getRules()->getCategoryId());
 			if($category === null){
 				continue;
 			}
 			$cap = $category->getCap($band);
-			$count = $ctx->getPopulation()->getCategoryCount($category->id, $band);
-			if($count >= $cap){
-				continue;
+			if($cap <= 0){
+				continue; // full without counting
 			}
 			$group = $candidate->match($ctx);
 			if($group === null || $group->getWeight() <= 0){
+				continue;
+			}
+			$population ??= $ctx->getPopulation();
+			$count = $population->getCategoryCount($category->id, $band);
+			if($count >= $cap){
 				continue;
 			}
 			$matches[] = [$candidate, $group, $count, $cap];
