@@ -23,20 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * One spawn condition: an immutable predicate over one spawn attempt. Composition uses
- * the AllOf / AnyOf / Not combinators. Implementations must be immutable plain data;
- * runtime capabilities are captured at parse time, never looked up from the context.
- */
 interface SpawnCondition{
-
 	/**
-	 * Relative cost of one evaluation, starting at 1 (lowest/cheapest). Lower costs are
-	 * scheduled first when a SpawnRuleGroup reorders its AND-list, so a group fails
-	 * fast without paying for its priciest checks first. The scale is only relative —
-	 * integers, never zero or negative.
+	 * Whether test() depends only on the context. Return false when it also reads
+	 * outside state (configs, services, randomness), so the result is never cached.
 	 */
-	public function getEvaluationCost() : int;
+	public function isCacheable() : bool;
 
 	public function test(SpawnConditionContext $ctx) : bool;
 }

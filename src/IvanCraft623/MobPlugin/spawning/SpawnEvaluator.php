@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
+use IvanCraft623\MobPlugin\spawning\spawner\SnapshotContext;
 use pocketmine\utils\Random;
 use function count;
 
@@ -69,18 +69,9 @@ final class SpawnEvaluator{
 
 	public function evaluateOne(SpawnCandidate $candidate) : ?SpawnRequest{
 		$position = $candidate->position;
-		$counts = $candidate->counts;
+		$population = $candidate->population;
 		$band = $position->band;
-		$ctx = new SpawnConditionContext(
-			env: new CandidateSpawnEnvironment($position, $counts),
-			x: $position->x,
-			y: $position->y,
-			z: $position->z,
-			band: $band,
-			difficulty: $position->difficulty,
-			weatherLightPenalty: $position->weatherLightPenalty,
-			nearestPlayerDistance: $position->nearestPlayerDistance
-		);
+		$ctx = new SnapshotContext($position, $population);
 
 		/** @phpstan-var list<array{SpawnRules, SpawnRuleGroup, int, int}> $matches rules, group, category count, cap */
 		$matches = [];
@@ -91,7 +82,7 @@ final class SpawnEvaluator{
 				continue;
 			}
 			$cap = $category->getCap($band);
-			$categoryCount = $counts->category($category->id, $band);
+			$categoryCount = $population->getCategoryCount($category->id, $band);
 			if($categoryCount >= $cap){
 				continue; // capped categories don't compete
 			}
@@ -119,7 +110,7 @@ final class SpawnEvaluator{
 			$rules,
 			$group,
 			categoryCount: $categoryCount,
-			densityCount: $counts->identifier($rules->getIdentifier(), $band)
+			densityCount: $population->getIdentifierCount($rules->getIdentifier(), $band)
 		);
 	}
 

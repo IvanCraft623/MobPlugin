@@ -24,25 +24,35 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnEnvironment;
+use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
+use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 
-/**
- * Everything one spawn attempt can ask about, as a frozen value object; capability
- * sub-interfaces of SpawnEnvironment extend it (conditions degrade with instanceof).
- */
-final class SpawnConditionContext{
-	public function __construct(
-		readonly public SpawnEnvironment $env,
-		readonly public int $x,
-		readonly public int $y,
-		readonly public int $z,
-		/** Habitat band of the position, precomputed once per attempt. */
-		readonly public SpawnBand $band,
-		/** PocketMine difficulty constant (World::DIFFICULTY_PEACEFUL .. DIFFICULTY_HARD). */
-		readonly public int $difficulty,
-		/** Light levels subtracted by the current weather (0, rain, thunder). */
-		readonly public int $weatherLightPenalty,
-		/** Distance (blocks) to the nearest relevant player, or null when there is none. */
-		readonly public ?float $nearestPlayerDistance
-	){}
+interface SpawnConditionContext{
+	public function getBiomeId() : int;
+
+	public function getBand() : SpawnBand;
+
+	public function getDifficulty() : int;
+
+	public function getFeetLiquid() : SpawnLiquid;
+
+	public function getX() : int;
+
+	public function getY() : int;
+
+	public function getZ() : int;
+
+	public function getGroundY() : int;
+
+	public function getLight() : int;
+
+	public function getWeatherLightPenalty() : int;
+
+	public function getBelowTypeId() : int;
+
+	public function getNearestPlayerDistance() : float;
+
+	public function getTime() : int;
+
+	public function getPopulation() : RegionPopulation;
 }

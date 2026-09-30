@@ -23,12 +23,28 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/** Generic AND combinator; exposes its children so the planner folds metadata through. */
 final class AllOf implements SpawnCondition{
+	private readonly bool $cacheable;
+
 	/** @phpstan-param list<SpawnCondition> $conditions */
 	public function __construct(
 		private readonly array $conditions
-	){}
+	){
+		$this->cacheable = self::areCacheable($conditions);
+	}
+
+	/**
+	 * @phpstan-param list<SpawnCondition> $conditions
+	 */
+	private static function areCacheable(array $conditions) : bool{
+		foreach($conditions as $condition){
+			if(!$condition->isCacheable()){
+				return false;
+			}
+		}
+
+		return true;
+	}
 
 	/**
 	 * @phpstan-return list<SpawnCondition>
@@ -37,16 +53,8 @@ final class AllOf implements SpawnCondition{
 		return $this->conditions;
 	}
 
-	public function getEvaluationCost() : int{
-		// An AND runs every child on the passing path, so its cost is the sum of the
-		// children. (A failure short-circuits cheaper, but sum is the right upper bound
-		// for scheduling order.)
-		$cost = 0;
-		foreach($this->conditions as $condition){
-			$cost += $condition->getEvaluationCost();
-		}
-
-		return $cost;
+	public function isCacheable() : bool{
+		return $this->cacheable;
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{

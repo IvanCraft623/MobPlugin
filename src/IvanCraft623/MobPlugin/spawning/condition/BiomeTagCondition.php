@@ -21,12 +21,9 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\condition\vanilla;
+namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
-use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\plan\BiomeConstrained;
 use function array_keys;
 
 /**
@@ -34,7 +31,7 @@ use function array_keys;
  * required "frozen"). Tags for the position's biome come from the injected
  * BiomeTagMap; BiomeFilterParser composes trees of these leaves at parse time.
  */
-final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
+final class BiomeTagCondition implements SpawnCondition{
 	/** @phpstan-var array<string, true> */
 	private readonly array $requiredSet;
 
@@ -68,13 +65,13 @@ final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
 		return $this->forbidden;
 	}
 
-	public function getEvaluationCost() : int{
-		return 3; // enumerates the biome's tags through the resolver
+	public function isCacheable() : bool{
+		return true;
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
 		$tagMap = [];
-		foreach($this->tags->getTags($ctx->env->getBiomeId()) as $tag){
+		foreach($this->tags->getTags($ctx->getBiomeId()) as $tag){
 			$tagMap[$tag] = true;
 		}
 		foreach(array_keys($this->requiredSet) as $tag){

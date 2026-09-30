@@ -23,25 +23,32 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * Always matches — default registration for components with no runtime effect yet.
- * Ordinary replaceable registration, not a special case.
- */
-final class PassThroughSpawnCondition implements SpawnCondition{
-	private static self $instance;
+use IvanCraft623\MobPlugin\spawning\SpawnBand;
 
-	public static function instance() : self{
-		return self::$instance ??= new self();
+final class DensityLimitCondition implements SpawnCondition{
+	public function __construct(
+		private readonly string $identifier,
+		private readonly ?int $surfaceLimit,
+		private readonly ?int $caveLimit
+	){}
+
+	/**
+	 * The maximum nearby same-identifier count in the band, or null for no limit.
+	 */
+	public function getLimit(SpawnBand $band) : ?int{
+		$limit = $band === SpawnBand::SURFACE ? $this->surfaceLimit : $this->caveLimit;
+
+		return $limit !== null && $limit >= 0 ? $limit : null;
 	}
 
-	private function __construct(){
-	}
-
-	public function getEvaluationCost() : int{
-		return 1; // constant — cheapest possible, scheduled first
+	public function isCacheable() : bool{
+		return true;
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
-		return true;
+		$band = $ctx->getBand();
+		$limit = $this->getLimit($band);
+
+		return $limit === null || $ctx->getPopulation()->getIdentifierCount($this->identifier, $band) < $limit;
 	}
 }

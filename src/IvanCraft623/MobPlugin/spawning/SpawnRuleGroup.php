@@ -23,13 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\plan\LiquidConstrained;
 use function count;
 
 final class SpawnRuleGroup{
-	private readonly ?int $requiredLiquid;
+	private readonly SpawnLiquid $requiredLiquid;
 
 	/**
 	 * @phpstan-param list<SpawnCondition> $conditions
@@ -46,10 +46,10 @@ final class SpawnRuleGroup{
 			throw new \InvalidArgumentException("Invalid herd size range [$herdMin, $herdMax]");
 		}
 
-		$requiredLiquid = null;
+		$requiredLiquid = SpawnLiquid::NONE;
 		foreach($conditions as $condition){
-			if($condition instanceof LiquidConstrained){
-				$requiredLiquid = $condition->getRequiredLiquidTypeId();
+			if($condition instanceof RangeCondition && $condition->getKind() === RangeCondition::KIND_LIQUID && $condition->getMin() !== null){
+				$requiredLiquid = SpawnLiquid::from((int) $condition->getMin());
 				break;
 			}
 		}
@@ -82,7 +82,7 @@ final class SpawnRuleGroup{
 		return $this->permutations;
 	}
 
-	public function getRequiredLiquid() : ?int{
+	public function getRequiredLiquid() : SpawnLiquid{
 		return $this->requiredLiquid;
 	}
 

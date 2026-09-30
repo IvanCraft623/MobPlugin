@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
+
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
@@ -60,7 +62,7 @@ final class SpawnCensus{
 	 *
 	 * @phpstan-param list<Vector3> $centers
 	 *
-	 * @phpstan-return list<SpawnCounts> aligned with $centers
+	 * @phpstan-return list<RegionPopulation> aligned with $centers
 	 */
 	public function count(World $world, array $centers) : array{
 		/** @phpstan-var array<int, list<array{float, float, float, string, string, int}>> $chunkBuckets */
@@ -82,10 +84,10 @@ final class SpawnCensus{
 		$radiusSquared = self::SPAWN_REGION_RADIUS ** 2;
 		$chunkSpread = intdiv(self::SPAWN_REGION_RADIUS, 16) + 1; // +1: the center may sit anywhere in its chunk
 		foreach($centers as $center){
-			/** @phpstan-var array<string, array{int, int}> $density */
-			$density = [];
-			/** @phpstan-var array<string, array{int, int}> $population */
-			$population = [];
+			/** @phpstan-var array<int, array<string, int>> $identifierCounts */
+			$identifierCounts = [];
+			/** @phpstan-var array<int, array<string, int>> $categoryCounts */
+			$categoryCounts = [];
 			if(count($chunkBuckets) !== 0){
 				$centerChunkX = ((int) floor($center->x)) >> 4;
 				$centerChunkZ = ((int) floor($center->z)) >> 4;
@@ -106,33 +108,18 @@ final class SpawnCensus{
 								// Water is skipped by the ground scan, so aquatic mobs above the sea
 								// floor count as surface (squids are an animal-surface population).
 								$groundY = SpawnPlacement::groundY($world, (int) floor($row[0]), (int) floor($row[2]));
-								$row[5] = SpawnBand::fromPosition($row[1], $groundY) === SpawnBand::SURFACE ? 0 : 1;
+								$row[5] = SpawnBand::fromPosition($row[1], $groundY)->value;
 							}
-							$density[$row[3]] = self::increment($density[$row[3]] ?? [0, 0], $row[5]);
-							$population[$row[4]] = self::increment($population[$row[4]] ?? [0, 0], $row[5]);
+							$identifierCounts[$row[5]][$row[3]] = ($identifierCounts[$row[5]][$row[3]] ?? 0) + 1;
+							$categoryCounts[$row[5]][$row[4]] = ($categoryCounts[$row[5]][$row[4]] ?? 0) + 1;
 						}
 						unset($row);
 					}
 				}
 			}
-			$results[] = new SpawnCounts($density, $population);
+			$results[] = new RegionPopulation($categoryCounts, $identifierCounts);
 		}
 
 		return $results;
-	}
-
-	/**
-	 * @phpstan-param array{int, int} $pair [surface, cave]
-	 *
-	 * @phpstan-return array{int, int}
-	 */
-	private static function increment(array $pair, int $bandKey) : array{
-		if($bandKey === 0){
-			$pair[0]++;
-		}else{
-			$pair[1]++;
-		}
-
-		return $pair;
 	}
 }

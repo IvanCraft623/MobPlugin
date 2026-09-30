@@ -23,13 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\HabitatBandCondition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use function array_values;
 use function count;
-use function uasort;
 
 /**
  * Filled by the component parsers of one condition object, in any order: payloads are
@@ -48,8 +47,10 @@ final class SpawnRuleGroupBuilder{
 	/** @phpstan-var array<string, int> */
 	private array $permutations = [];
 
-	/** @phpstan-var array<string, SpawnBand> */
+	/** @phpstan-var array<int, SpawnBand> */
 	private array $habitatBands = [];
+
+	private bool $neverSpawns = false;
 
 	public function __construct(
 		private readonly string $identifier
@@ -64,7 +65,14 @@ final class SpawnRuleGroupBuilder{
 	}
 
 	public function allowHabitatBand(SpawnBand $band) : void{
-		$this->habitatBands[$band->name] = $band;
+		$this->habitatBands[$band->value] = $band;
+	}
+
+	/**
+	 * Drops the whole group at build time, e.g. for a component that isn't implemented.
+	 */
+	public function markNeverSpawns() : void{
+		$this->neverSpawns = true;
 	}
 
 	public function setWeight(int $weight) : void{
@@ -83,16 +91,16 @@ final class SpawnRuleGroupBuilder{
 		$this->permutations = $permutations;
 	}
 
-	public function build() : SpawnRuleGroup{
+	public function build() : ?SpawnRuleGroup{
+		if($this->neverSpawns){
+			return null;
+		}
 		$conditions = $this->conditions;
 		if(count($this->habitatBands) === 1){
 			// A single marker pins the band; both markers allow any band.
-			$conditions[] = new HabitatBandCondition(array_values($this->habitatBands));
+			$conditions[] = RangeCondition::band(array_values($this->habitatBands)[0]);
 		}
 
-		// Cheapest first; the stable sort keeps parse order for equal costs.
-		uasort($conditions, static fn(SpawnCondition $a, SpawnCondition $b) : int => $a->getEvaluationCost() <=> $b->getEvaluationCost());
-
-		return new SpawnRuleGroup(array_values($conditions), $this->weight, $this->herdMin, $this->herdMax, $this->permutations);
+		return new SpawnRuleGroup($conditions, $this->weight, $this->herdMin, $this->herdMax, $this->permutations);
 	}
 }

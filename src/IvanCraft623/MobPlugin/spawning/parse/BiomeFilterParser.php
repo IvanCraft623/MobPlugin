@@ -26,9 +26,9 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
+use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
 use IvanCraft623\MobPlugin\spawning\condition\Not;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\BiomeTagCondition;
 
 use function array_is_list;
 use function array_keys;

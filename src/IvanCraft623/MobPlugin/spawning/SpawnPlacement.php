@@ -73,13 +73,13 @@ final class SpawnPlacement{
 	 * spawnable ground. Aquatic mobs (a required liquid) need that liquid at the feet and a
 	 * passable head cell; they need no ground, so herd members can float mid-water.
 	 */
-	public static function hasRoom(World $world, int $x, int $y, int $z, ?int $requiredLiquid = null) : bool{
+	public static function hasRoom(World $world, int $x, int $y, int $z, SpawnLiquid $requiredLiquid = SpawnLiquid::NONE) : bool{
 		if($world->getBlockAt($x, $y + 1, $z)->isSolid()){
 			return false;
 		}
 		$feet = $world->getBlockAt($x, $y, $z);
-		if($requiredLiquid !== null){
-			return $feet->getTypeId() === $requiredLiquid;
+		if($requiredLiquid !== SpawnLiquid::NONE){
+			return SpawnLiquid::fromBlockTypeId($feet->getTypeId()) === $requiredLiquid;
 		}
 		if($feet->isSolid() || self::isLiquid($feet->getTypeId())){
 			return false;

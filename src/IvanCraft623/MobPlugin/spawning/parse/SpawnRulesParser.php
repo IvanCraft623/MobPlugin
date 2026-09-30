@@ -24,16 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
-use IvanCraft623\MobPlugin\spawning\condition\NeverSpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\PassThroughSpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\BrightnessFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\DensityLimitCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\DifficultyFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\DistanceFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\HeightFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsInLiquid;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsOnBlock;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\WorldAgeFilter;
+use IvanCraft623\MobPlugin\spawning\condition\DensityLimitCondition;
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\condition\SpawnsOnBlock;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\BrightnessFilterData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\DensityLimitData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\DifficultyFilterData;
@@ -47,10 +40,12 @@ use IvanCraft623\MobPlugin\spawning\parse\schema\model\WorldAgeFilterData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
 use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
-use pocketmine\block\BlockTypeIds;
 use pocketmine\utils\Filesystem;
+use pocketmine\world\World;
 use function count;
+use function implode;
 use function max;
 use function str_starts_with;
 use function strlen;
@@ -69,7 +64,7 @@ final class SpawnRulesParser{
 	private const SPAWN_RULES_KEY = "minecraft:spawn_rules";
 
 	/**
-	 * Vanilla components with no implementation, registered to fail closed.
+	 * Vanilla components with no implementation: groups using them never spawn.
 	 *
 	 * @var list<string>
 	 */
@@ -199,14 +194,17 @@ final class SpawnRulesParser{
 		$groups = [];
 		if($spawnRules->has(SpawnSchema::KEY_CONDITIONS)){
 			foreach($spawnRules->objectOrList(SpawnSchema::KEY_CONDITIONS) as $condition){
-				$groups[] = $this->parseGroup($condition, $identifier);
+				$group = $this->parseGroup($condition, $identifier);
+				if($group !== null){
+					$groups[] = $group;
+				}
 			}
 		}
 
 		return [$categoryId, $groups];
 	}
 
-	private function parseGroup(SpawnData $condition, string $identifier) : SpawnRuleGroup{
+	private function parseGroup(SpawnData $condition, string $identifier) : ?SpawnRuleGroup{
 		$normalized = [];
 		foreach($condition->keys() as $key){
 			$normalized[self::normalize($key)] = $condition->raw($key);
@@ -234,33 +232,33 @@ final class SpawnRulesParser{
 			$builder->allowHabitatBand(SpawnBand::CAVE);
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_UNDERWATER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(new SpawnsInLiquid(BlockTypeIds::WATER));
+			$builder->addCondition(RangeCondition::liquid(SpawnLiquid::WATER));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_LAVA, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(new SpawnsInLiquid(BlockTypeIds::LAVA));
+			$builder->addCondition(RangeCondition::liquid(SpawnLiquid::LAVA));
 		});
 		$this->registerComponent(VanillaSpawnConditions::BRIGHTNESS_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(BrightnessFilterData::class);
-			$builder->addCondition(new BrightnessFilter($m->min ?? 0, $m->max ?? 15, $m->adjust_for_weather ?? false));
+			$builder->addCondition(RangeCondition::brightness($m->min ?? 0, $m->max ?? 15, $m->adjust_for_weather ?? false));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DIFFICULTY_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DifficultyFilterData::class);
-			$builder->addCondition(DifficultyFilter::fromNames($m->min, $m->max));
+			$builder->addCondition(RangeCondition::difficulty(self::parseDifficulty($m->min ?? SpawnSchema::DIFFICULTY_MIN), self::parseDifficulty($m->max ?? SpawnSchema::DIFFICULTY_MAX)));
 		});
 		$this->registerComponent(VanillaSpawnConditions::HEIGHT_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(HeightFilterData::class);
-			$builder->addCondition(new HeightFilter($m->min, $m->max));
+			$builder->addCondition(RangeCondition::height($m->min, $m->max));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DISTANCE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DistanceFilterData::class);
-			$builder->addCondition(new DistanceFilter(
+			$builder->addCondition(RangeCondition::distance(
 				$m->min === null ? null : (float) $m->min,
 				$m->max === null ? null : (float) $m->max
 			));
 		});
 		$this->registerComponent(VanillaSpawnConditions::WORLD_AGE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(WorldAgeFilterData::class);
-			$builder->addCondition(new WorldAgeFilter($m->min, $m->max));
+			$builder->addCondition(RangeCondition::worldAge($m->min, $m->max));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_ON_BLOCK_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlockSet(), false));
@@ -303,14 +301,21 @@ final class SpawnRulesParser{
 
 		foreach(self::UNSUPPORTED_VANILLA as $component){
 			$this->registerComponent($component, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-				$builder->addCondition(NeverSpawnCondition::instance());
+				$builder->markNeverSpawns();
 			});
 		}
 		foreach(self::PASS_THROUGH_VANILLA as $component){
-			$this->registerComponent($component, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-				$builder->addCondition(PassThroughSpawnCondition::instance());
-			});
+			$this->registerComponent($component, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{});
 		}
+	}
+
+	private static function parseDifficulty(string $name) : int{
+		$difficulty = World::getDifficultyFromString($name);
+		if($difficulty === -1){
+			throw new SpawnRulesParseException("unknown difficulty \"$name\"; names declared by the schema: " . implode(", ", SpawnSchema::DIFFICULTY_CASES));
+		}
+
+		return $difficulty;
 	}
 
 	private static function normalize(string $component) : string{

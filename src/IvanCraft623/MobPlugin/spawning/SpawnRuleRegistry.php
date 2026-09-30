@@ -27,9 +27,9 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\BiomeTagCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\HeightFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\IsSlimeChunkCondition;
+use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
@@ -97,8 +97,8 @@ final class SpawnRuleRegistry{
 		foreach($groups as $group){
 			$result[] = $group->withConditions([new AnyOf([
 				new AllOf([
-					new HeightFilter(null, 40),
-					new IsSlimeChunkCondition(),
+					RangeCondition::height(null, 40),
+					new SlimeChunkCondition(),
 				]),
 				new BiomeTagCondition($tags, ["spawns_slimes_on_surface"], []),
 			])]);

@@ -21,18 +21,20 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\plan;
+namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use pocketmine\block\BlockTypeIds;
 
-/**
- * Planning metadata: the condition restricts the habitat bands (surface/cave).
- * Implementing is optional — unimplemented conditions land in the unconstrained bucket.
- */
-interface HabitatConstrained{
+enum SpawnLiquid : int{
+	case NONE = 0;
+	case WATER = 1;
+	case LAVA = 2;
 
-	/**
-	 * @phpstan-return list<SpawnBand> bands the condition can accept
-	 */
-	public function getAllowedHabitatBands() : array;
+	public static function fromBlockTypeId(int $typeId) : self{
+		return match($typeId){
+			BlockTypeIds::WATER => self::WATER,
+			BlockTypeIds::LAVA => self::LAVA,
+			default => self::NONE,
+		};
+	}
 }

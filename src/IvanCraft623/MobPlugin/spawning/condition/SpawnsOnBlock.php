@@ -21,14 +21,22 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\plan;
+namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * Planning metadata: the condition restricts the world difficulty to a closed range.
- */
-interface DifficultyConstrained{
+final class SpawnsOnBlock implements SpawnCondition{
+	/**
+	 * @phpstan-param array<int, true> $typeIds block type ids checked against the block under the feet
+	 */
+	public function __construct(
+		private readonly array $typeIds,
+		private readonly bool $prevent
+	){}
 
-	public function getMinDifficulty() : int;
+	public function isCacheable() : bool{
+		return true;
+	}
 
-	public function getMaxDifficulty() : int;
+	public function test(SpawnConditionContext $ctx) : bool{
+		return isset($this->typeIds[$ctx->getBelowTypeId()]) !== $this->prevent;
+	}
 }

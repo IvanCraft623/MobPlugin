@@ -40,7 +40,7 @@ use function max;
  *
  * 1. Collect  — SpawnCollector samples positions around players (SpawnPosition).
  * 2. Shortlist — SpawnRuleIndex drops positions no rule set can match.
- * 3. Census   — SpawnCensus counts nearby mobs for the survivors only (SpawnCounts).
+ * 3. Census   — SpawnCensus counts nearby mobs for the survivors only (RegionPopulation).
  * 4. Evaluate — SpawnEvaluator filters matching rule sets and picks one (SpawnRequest).
  * 5. Apply    — SpawnApplier re-validates the live world and spawns herds.
  */
@@ -186,7 +186,7 @@ final class NaturalSpawner{
 		/** @phpstan-var array<int, list<array{SpawnPosition, non-empty-list<SpawnRules>}>> $byWorld */
 		$byWorld = [];
 		foreach($positions as $position){
-			$viable = $index->candidatesFor($position->biomeId, $position->band, $position->difficulty, $position->feetTypeId);
+			$viable = $index->candidatesFor($position->biomeId, $position->band, $position->difficulty, SpawnLiquid::fromBlockTypeId($position->feetTypeId));
 			if(count($viable) !== 0){
 				$byWorld[$position->worldId][] = [$position, $viable];
 			}

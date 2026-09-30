@@ -21,21 +21,25 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning;
+namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
+use IvanCraft623\MobPlugin\spawning\SpawnBand;
 
-/**
- * Evaluator input: a sampled position that survived the rule-index shortlist, its census
- * counts, and the rule sets that could possibly match there.
- */
-final class SpawnCandidate{
+final class RegionPopulation{
 	/**
-	 * @phpstan-param non-empty-list<SpawnRules> $viable
+	 * @phpstan-param array<int, array<string, int>> $categoryCounts   band value => category id => count
+	 * @phpstan-param array<int, array<string, int>> $identifierCounts band value => entity identifier => count
 	 */
 	public function __construct(
-		public readonly SpawnPosition $position,
-		public readonly RegionPopulation $population,
-		public readonly array $viable
+		private readonly array $categoryCounts = [],
+		private readonly array $identifierCounts = []
 	){}
+
+	public function getCategoryCount(string $categoryId, SpawnBand $band) : int{
+		return $this->categoryCounts[$band->value][$categoryId] ?? 0;
+	}
+
+	public function getIdentifierCount(string $identifier, SpawnBand $band) : int{
+		return $this->identifierCounts[$band->value][$identifier] ?? 0;
+	}
 }

@@ -24,7 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\DifficultyFilter;
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
@@ -99,7 +100,7 @@ final class SpawnEvaluatorTest extends TestCase{
 				self::rules("minecraft:capped", "full", [self::group([], 1000)]),
 				self::rules("minecraft:free", "free", [self::group([], 1)]),
 			],
-			new SpawnCounts([], ["full" => [2, 0]])
+			new RegionPopulation([SpawnBand::SURFACE->value => ["full" => 2]])
 		);
 
 		for($i = 0; $i < self::TRIALS; $i++){
@@ -113,7 +114,7 @@ final class SpawnEvaluatorTest extends TestCase{
 		$evaluator = new SpawnEvaluator(new Random(4), MobCategoryRegistry::getInstance());
 		$candidate = self::candidate(
 			[self::rules("minecraft:mob", "m", [self::group([], 1)])],
-			new SpawnCounts(["minecraft:mob" => [2, 0]], ["m" => [3, 0]])
+			new RegionPopulation([SpawnBand::SURFACE->value => ["m" => 3]], [SpawnBand::SURFACE->value => ["minecraft:mob" => 2]])
 		);
 
 		$accepted = 0;
@@ -138,7 +139,7 @@ final class SpawnEvaluatorTest extends TestCase{
 	}
 
 	private static function neverMatches() : SpawnCondition{
-		return new DifficultyFilter(World::DIFFICULTY_HARD, World::DIFFICULTY_HARD);
+		return RangeCondition::difficulty(World::DIFFICULTY_HARD, World::DIFFICULTY_HARD);
 	}
 
 	/**
@@ -158,7 +159,7 @@ final class SpawnEvaluatorTest extends TestCase{
 	/**
 	 * @phpstan-param non-empty-list<SpawnRules> $viable
 	 */
-	private static function candidate(array $viable, SpawnCounts $counts = new SpawnCounts()) : SpawnCandidate{
+	private static function candidate(array $viable, RegionPopulation $population = new RegionPopulation()) : SpawnCandidate{
 		return new SpawnCandidate(
 			new SpawnPosition(
 				worldId: 1,
@@ -175,7 +176,7 @@ final class SpawnEvaluatorTest extends TestCase{
 				nearestPlayerDistance: 30.0,
 				time: 0
 			),
-			$counts,
+			$population,
 			$viable
 		);
 	}

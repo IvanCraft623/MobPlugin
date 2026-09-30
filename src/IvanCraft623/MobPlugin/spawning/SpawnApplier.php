@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\DensityLimitCondition;
+use IvanCraft623\MobPlugin\spawning\condition\DensityLimitCondition;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
@@ -156,7 +156,7 @@ final class SpawnApplier{
 			return null;
 		}
 		$liquid = $group->getRequiredLiquid();
-		$y = $liquid === null && $lead->band === SpawnBand::SURFACE
+		$y = $liquid === SpawnLiquid::NONE && $lead->band === SpawnBand::SURFACE
 			? SpawnPlacement::groundY($world, $x, $z) + 1
 			: $lead->y;
 		if(!SpawnPlacement::hasRoom($world, $x, $y, $z, $liquid)){
@@ -212,7 +212,7 @@ final class SpawnApplier{
 		$limit = null;
 		foreach($group->getConditions() as $condition){
 			if($condition instanceof DensityLimitCondition){
-				$bandLimit = $condition->limitFor($band);
+				$bandLimit = $condition->getLimit($band);
 				if($bandLimit !== null){
 					$limit = $limit === null ? $bandLimit : min($limit, $bandLimit);
 				}

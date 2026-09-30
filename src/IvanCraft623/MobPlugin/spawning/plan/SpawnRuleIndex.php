@@ -25,10 +25,12 @@ namespace IvanCraft623\MobPlugin\spawning\plan;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
+use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
-use pocketmine\block\BlockTypeIds;
 use function array_values;
 use function count;
 
@@ -84,14 +86,14 @@ final class SpawnRuleIndex{
 	 *
 	 * @phpstan-return list<SpawnRules>
 	 */
-	public function candidatesFor(int $biomeId, SpawnBand $band, int $difficulty, int $feetBlockTypeId) : array{
-		$key = $biomeId . "|" . $band->name . "|" . $difficulty . "|" . $feetBlockTypeId;
+	public function candidatesFor(int $biomeId, SpawnBand $band, int $difficulty, SpawnLiquid $feetLiquid) : array{
+		$key = $biomeId . "|" . $band->name . "|" . $difficulty . "|" . $feetLiquid->value;
 		$cached = $this->candidateCache[$key] ?? null;
 		if($cached !== null){
 			return $cached;
 		}
 
-		$isLiquid = $feetBlockTypeId === BlockTypeIds::WATER || $feetBlockTypeId === BlockTypeIds::LAVA;
+		$isLiquid = $feetLiquid !== SpawnLiquid::NONE;
 		$biomeTags = null;
 		$result = [];
 		foreach($this->entries as [$rule, $constraint]){
@@ -99,7 +101,7 @@ final class SpawnRuleIndex{
 				continue;
 			}
 			if($constraint->requiredLiquid !== null){
-				if($constraint->requiredLiquid !== $feetBlockTypeId){
+				if($constraint->requiredLiquid !== $feetLiquid){
 					continue;
 				}
 			}elseif($isLiquid){
@@ -171,17 +173,18 @@ final class SpawnRuleIndex{
 
 			return $constraint;
 		}
-		if($condition instanceof HabitatConstrained){
-			$constraint = $constraint->andFold(SpawnConstraint::bands($condition->getAllowedHabitatBands()));
+		if($condition instanceof RangeCondition){
+			$min = $condition->getMin();
+			$max = $condition->getMax();
+			return match($condition->getKind()){
+				RangeCondition::KIND_BAND => $min !== null ? SpawnConstraint::bands([SpawnBand::from((int) $min)]) : $constraint,
+				RangeCondition::KIND_LIQUID => $min !== null ? SpawnConstraint::liquid(SpawnLiquid::from((int) $min)) : $constraint,
+				RangeCondition::KIND_DIFFICULTY => $min !== null && $max !== null ? SpawnConstraint::difficulty((int) $min, (int) $max) : $constraint,
+				default => $constraint,
+			};
 		}
-		if($condition instanceof LiquidConstrained){
-			$constraint = $constraint->andFold(SpawnConstraint::liquid($condition->getRequiredLiquidTypeId()));
-		}
-		if($condition instanceof DifficultyConstrained){
-			$constraint = $constraint->andFold(SpawnConstraint::difficulty($condition->getMinDifficulty(), $condition->getMaxDifficulty()));
-		}
-		if($condition instanceof BiomeConstrained){
-			$constraint = $constraint->andFold(SpawnConstraint::biomeTags($condition->getRequiredBiomeTags(), $condition->getForbiddenBiomeTags()));
+		if($condition instanceof BiomeTagCondition){
+			return SpawnConstraint::biomeTags($condition->getRequiredBiomeTags(), $condition->getForbiddenBiomeTags());
 		}
 
 		return $constraint;

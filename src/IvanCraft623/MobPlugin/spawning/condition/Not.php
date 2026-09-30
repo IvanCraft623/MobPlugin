@@ -23,16 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * Generic negation; the planner does not fold metadata through it (conservative).
- */
 final class Not implements SpawnCondition{
 	public function __construct(
 		private readonly SpawnCondition $condition
 	){}
 
-	public function getEvaluationCost() : int{
-		return $this->condition->getEvaluationCost();
+	public function getChild() : SpawnCondition{
+		return $this->condition;
+	}
+
+	public function isCacheable() : bool{
+		return $this->condition->isCacheable();
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{

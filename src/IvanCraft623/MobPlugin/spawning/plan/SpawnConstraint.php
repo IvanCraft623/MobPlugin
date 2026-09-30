@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\plan;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use function array_intersect;
 use function array_merge;
 use function array_unique;
@@ -48,8 +49,7 @@ final class SpawnConstraint{
 		public readonly ?array $requiredTags,
 		/** @phpstan-var list<string>|null forbidden biome tags, null = none */
 		public readonly ?array $forbiddenTags,
-		/** @phpstan-var int|null BlockTypeIds::WATER/LAVA when the feet block is pinned */
-		public readonly ?int $requiredLiquid,
+		public readonly ?SpawnLiquid $requiredLiquid,
 		public readonly bool $impossible = false
 	){}
 
@@ -81,8 +81,8 @@ final class SpawnConstraint{
 		return new self(null, null, null, $required, $forbidden, null, false);
 	}
 
-	public static function liquid(int $liquidTypeId) : self{
-		return new self(null, null, null, null, null, $liquidTypeId, false);
+	public static function liquid(SpawnLiquid $liquid) : self{
+		return new self(null, null, null, null, null, $liquid, false);
 	}
 
 	private static function impossible() : self{

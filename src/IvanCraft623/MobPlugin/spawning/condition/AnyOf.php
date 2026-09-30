@@ -23,27 +23,38 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * Generic OR combinator, for vanilla any_of groups and composed plugin conditions.
- */
 final class AnyOf implements SpawnCondition{
+	private readonly bool $cacheable;
+
 	/** @phpstan-param list<SpawnCondition> $conditions */
 	public function __construct(
 		private readonly array $conditions
-	){}
+	){
+		$this->cacheable = self::areCacheable($conditions);
+	}
 
-	public function getEvaluationCost() : int{
-		// An OR succeeds as soon as any child passes, so the expected cost is bounded by
-		// the cheapest child; that governs where the group schedules this branch.
-		$cost = null;
-		foreach($this->conditions as $condition){
-			$child = $condition->getEvaluationCost();
-			if($cost === null || $child < $cost){
-				$cost = $child;
+	/**
+	 * @phpstan-param list<SpawnCondition> $conditions
+	 */
+	private static function areCacheable(array $conditions) : bool{
+		foreach($conditions as $condition){
+			if(!$condition->isCacheable()){
+				return false;
 			}
 		}
 
-		return $cost ?? 1;
+		return true;
+	}
+
+	/**
+	 * @phpstan-return list<SpawnCondition>
+	 */
+	public function getChildren() : array{
+		return $this->conditions;
+	}
+
+	public function isCacheable() : bool{
+		return $this->cacheable;
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{

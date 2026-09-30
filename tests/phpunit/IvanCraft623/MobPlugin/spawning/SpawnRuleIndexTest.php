@@ -23,15 +23,11 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
-use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\BiomeTagCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\BrightnessFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\DifficultyFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\HabitatBandCondition;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\HeightFilter;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsInLiquid;
-use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsOnBlock;
+use IvanCraft623\MobPlugin\spawning\condition\SpawnsOnBlock;
+use IvanCraft623\MobPlugin\spawning\condition\StubContext;
 use IvanCraft623\MobPlugin\spawning\plan\SpawnRuleIndex;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
@@ -72,10 +68,10 @@ final class SpawnRuleIndexTest extends TestCase{
 		foreach([SpawnBand::SURFACE, SpawnBand::CAVE] as $band){
 			foreach([0, 1, 3] as $difficulty){
 				foreach([self::FROZEN_BIOME_ID, 401, 402] as $biomeId){
-					foreach([BlockTypeIds::STONE, BlockTypeIds::WATER, BlockTypeIds::LAVA] as $feetBlock){
+					foreach(SpawnLiquid::cases() as $feetLiquid){
 						foreach([10, 39, 40, 41, 80] as $y){
 							$surfaceY = $band === SpawnBand::SURFACE ? $y - 1 : $y + 10;
-							$candidates = $index->candidatesFor($biomeId, $band, $difficulty, $feetBlock);
+							$candidates = $index->candidatesFor($biomeId, $band, $difficulty, $feetLiquid);
 							foreach(array_values($rules) as $rule){
 								$identifier = $rule->getIdentifier();
 								if(count($rule->getGroups()) === 0){
@@ -86,7 +82,7 @@ final class SpawnRuleIndexTest extends TestCase{
 								// attempted. The brute-force oracle must mirror that, or it would
 								// expect a land rule set (e.g. habitat-band-only) to be a candidate
 								// on water/lava, which the index correctly rejects.
-								if(self::isLiquid($feetBlock) && !self::declaresLiquid($rule, $feetBlock)){
+								if($feetLiquid !== SpawnLiquid::NONE && !self::declaresLiquid($rule, $feetLiquid)){
 									continue;
 								}
 								if(self::bruteForceMatches(
@@ -96,11 +92,11 @@ final class SpawnRuleIndexTest extends TestCase{
 									$difficulty,
 									$y,
 									$surfaceY,
-									$feetBlock
+									$feetLiquid
 								)){
 									self::assertTrue(
 										self::containsIdentifier($candidates, $identifier),
-										"index rejected rule set \"$identifier\" that brute-force matches at band=$band->name, diff=$difficulty, biome=$biomeId, feet=$feetBlock, y=$y"
+										"index rejected rule set \"$identifier\" that brute-force matches at band=$band->name, diff=$difficulty, biome=$biomeId, feet=$feetLiquid->name, y=$y"
 									);
 								}
 							}
@@ -121,15 +117,15 @@ final class SpawnRuleIndexTest extends TestCase{
 			// Two folded difficulty constraints that meet in a contradiction: the group
 			// needs difficulty >=3 AND <=2 at the same position — impossible.
 			"impossible" => self::rules("minecraft:impossible", "monster", [
-				self::group([new DifficultyFilter(3, 3), new DifficultyFilter(1, 2)]),
+				self::group([RangeCondition::difficulty(3, 3), RangeCondition::difficulty(1, 2)]),
 			]),
 			"possible" => self::rules("minecraft:possible", "monster", [
-				self::group([new DifficultyFilter(1, 3)]),
+				self::group([RangeCondition::difficulty(1, 3)]),
 			]),
 		];
 		$index = new SpawnRuleIndex($rules, self::tags());
 
-		$candidates = $index->candidatesFor(401, SpawnBand::CAVE, 2, BlockTypeIds::STONE);
+		$candidates = $index->candidatesFor(401, SpawnBand::CAVE, 2, SpawnLiquid::NONE);
 		self::assertFalse(self::containsIdentifier($candidates, "minecraft:impossible"));
 		self::assertTrue(self::containsIdentifier($candidates, "minecraft:possible"));
 	}
@@ -141,49 +137,31 @@ final class SpawnRuleIndexTest extends TestCase{
 		int $difficulty,
 		int $y,
 		int $surfaceY,
-		int $feetBlock
+		SpawnLiquid $feetLiquid
 	) : bool{
-		$env = new FixtureSpawnEnvironment($biomeId, $surfaceY, $feetBlock, self::LIGHT);
-		foreach($rule->getGroups() as $group){
-			$allPass = true;
-			foreach($group->getConditions() as $condition){
-				$ctx = new SpawnConditionContext(
-					env: $env,
-					x: 0,
-					y: $y,
-					z: 0,
-					band: $band,
-					difficulty: $difficulty,
-					weatherLightPenalty: 0,
-					nearestPlayerDistance: 40.0
-				);
-				if(!$condition->test($ctx)){
-					$allPass = false;
-					break;
-				}
-			}
-			if($allPass){
-				return true;
-			}
-		}
+		$ctx = new StubContext(
+			biomeId: $biomeId,
+			band: $band,
+			difficulty: $difficulty,
+			feetLiquid: $feetLiquid,
+			y: $y,
+			groundY: $surfaceY,
+			light: self::LIGHT,
+			belowTypeId: BlockTypeIds::STONE,
+			nearestPlayerDistance: 40.0
+		);
 
-		return false;
-	}
-
-	private static function isLiquid(int $feetBlock) : bool{
-		return $feetBlock === BlockTypeIds::WATER || $feetBlock === BlockTypeIds::LAVA;
+		return $rule->check($ctx) !== null;
 	}
 
 	/**
 	 * Whether any group of the rule explicitly declares that the given liquid must be the
 	 * feet block (the condition the pipeline's liquid opt-in keys on).
 	 */
-	private static function declaresLiquid(SpawnRules $rule, int $liquidTypeId) : bool{
+	private static function declaresLiquid(SpawnRules $rule, SpawnLiquid $liquid) : bool{
 		foreach($rule->getGroups() as $group){
-			foreach($group->getConditions() as $condition){
-				if($condition instanceof SpawnsInLiquid && $condition->getRequiredLiquidTypeId() === $liquidTypeId){
-					return true;
-				}
+			if($group->getRequiredLiquid() === $liquid){
+				return true;
 			}
 		}
 
@@ -223,25 +201,25 @@ final class SpawnRuleIndexTest extends TestCase{
 
 	private static function ruleSurface() : SpawnRules{
 		return self::rules("minecraft:surface_animal", "animal", [
-			self::group([new HabitatBandCondition([SpawnBand::SURFACE])]),
+			self::group([RangeCondition::band(SpawnBand::SURFACE)]),
 		]);
 	}
 
 	private static function ruleCave() : SpawnRules{
 		return self::rules("minecraft:cave_monster", "monster", [
-			self::group([new HabitatBandCondition([SpawnBand::CAVE])]),
+			self::group([RangeCondition::band(SpawnBand::CAVE)]),
 		]);
 	}
 
 	private static function ruleUnderwater() : SpawnRules{
 		return self::rules("minecraft:wet_monster", "monster", [
-			self::group([new SpawnsInLiquid(BlockTypeIds::WATER)]),
+			self::group([RangeCondition::liquid(SpawnLiquid::WATER)]),
 		]);
 	}
 
 	private static function ruleBright() : SpawnRules{
 		return self::rules("minecraft:diurnal", "animal", [
-			self::group([new BrightnessFilter(7, 15, false)]),
+			self::group([RangeCondition::brightness(7, 15)]),
 		]);
 	}
 
@@ -253,21 +231,21 @@ final class SpawnRuleIndexTest extends TestCase{
 
 	private static function ruleBelow40() : SpawnRules{
 		return self::rules("minecraft:below_y40", "monster", [
-			self::group([new HeightFilter(null, 40)]),
+			self::group([RangeCondition::height(null, 40)]),
 		]);
 	}
 
 	private static function ruleHardOnly() : SpawnRules{
 		return self::rules("minecraft:hard_only", "monster", [
-			self::group([new DifficultyFilter(3, 3)]),
+			self::group([RangeCondition::difficulty(3, 3)]),
 		]);
 	}
 
 	private static function ruleDarkCaveOnStone() : SpawnRules{
 		return self::rules("minecraft:dark_cave_stone", "monster", [
 			self::group([
-				new HabitatBandCondition([SpawnBand::CAVE]),
-				new BrightnessFilter(0, 7, false),
+				RangeCondition::band(SpawnBand::CAVE),
+				RangeCondition::brightness(0, 7),
 				new SpawnsOnBlock([BlockTypeIds::STONE => true], false),
 			]),
 		]);
@@ -275,47 +253,5 @@ final class SpawnRuleIndexTest extends TestCase{
 
 	private static function ruleNoConditions() : SpawnRules{
 		return self::rules("minecraft:empty", "monster", []);
-	}
-}
-
-/** Fixture environment carrying the position facts the conditions read. */
-final class FixtureSpawnEnvironment implements SpawnEnvironment{
-	public function __construct(
-		private readonly int $biomeId,
-		private readonly int $surfaceY,
-		private readonly int $feetBlock,
-		private readonly int $light
-	){}
-
-	public function getBiomeId() : int{
-		return $this->biomeId;
-	}
-
-	public function getSurfaceY() : int{
-		return $this->surfaceY;
-	}
-
-	public function getLight() : int{
-		return $this->light;
-	}
-
-	public function getBlockTypeId() : int{
-		return $this->feetBlock;
-	}
-
-	public function getBelowBlockTypeId() : int{
-		return BlockTypeIds::STONE; // the ground under the feet
-	}
-
-	public function countNearby(string $identifier) : int{
-		return 0;
-	}
-
-	public function getTime() : int{
-		return 0;
-	}
-
-	public function getTimeOfDay() : int{
-		return 0;
 	}
 }
