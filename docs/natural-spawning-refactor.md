@@ -594,7 +594,8 @@ Three structures grow, and all three are capped by `maxKeys` and emptied togethe
 
 It is built once per world per tick and holds the `World`, player positions,
 `SpawnPlacement`, `PopulationCensus`, the shared `CandidateCache`, and the difficulty,
-time and weather values for the pass. `attempt(Player $anchor)` does the following:
+time and weather values for the pass. `attempt(Vector3 $anchor)` (the anchor player's
+position, so tests need no `Player`) does the following:
 
 1. Picks a ring offset (`getRingOffset()`, static and testable).
 2. Picks a column, then its surface position and cave positions.

@@ -26,31 +26,44 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
-use IvanCraft623\MobPlugin\spawning\SpawnPosition;
+use pocketmine\world\World;
 
 /**
- * TEMPORARY (migration step 2 to 5): eager context over the batched pipeline's values.
+ * One sampled position. Light and population are read on first use only, so positions
+ * no rule can use never pay for them.
  */
-final class SnapshotContext implements SpawnConditionContext{
-	private readonly SpawnLiquid $feetLiquid;
+final class AttemptContext implements SpawnConditionContext{
+	private ?int $light = null;
+
+	private ?RegionPopulation $population = null;
 
 	public function __construct(
-		private readonly SpawnPosition $position,
-		private readonly RegionPopulation $population
-	){
-		$this->feetLiquid = SpawnLiquid::fromBlockTypeId($position->feetTypeId);
-	}
+		private readonly World $world,
+		private readonly PopulationCensus $census,
+		private readonly int $x,
+		private readonly int $y,
+		private readonly int $z,
+		private readonly int $groundY,
+		private readonly SpawnBand $band,
+		private readonly int $biomeId,
+		private readonly SpawnLiquid $feetLiquid,
+		private readonly int $belowTypeId,
+		private readonly int $difficulty,
+		private readonly float $nearestPlayerDistance,
+		private readonly int $time,
+		private readonly int $weatherLightPenalty
+	){}
 
 	public function getBiomeId() : int{
-		return $this->position->biomeId;
+		return $this->biomeId;
 	}
 
 	public function getBand() : SpawnBand{
-		return $this->position->band;
+		return $this->band;
 	}
 
 	public function getDifficulty() : int{
-		return $this->position->difficulty;
+		return $this->difficulty;
 	}
 
 	public function getFeetLiquid() : SpawnLiquid{
@@ -58,42 +71,42 @@ final class SnapshotContext implements SpawnConditionContext{
 	}
 
 	public function getX() : int{
-		return $this->position->x;
+		return $this->x;
 	}
 
 	public function getY() : int{
-		return $this->position->y;
+		return $this->y;
 	}
 
 	public function getZ() : int{
-		return $this->position->z;
+		return $this->z;
 	}
 
 	public function getGroundY() : int{
-		return $this->position->groundY;
+		return $this->groundY;
 	}
 
 	public function getLight() : int{
-		return $this->position->light;
+		return $this->light ??= $this->world->getFullLightAt($this->x, $this->y, $this->z);
 	}
 
 	public function getWeatherLightPenalty() : int{
-		return $this->position->weatherLightPenalty;
+		return $this->weatherLightPenalty;
 	}
 
 	public function getBelowTypeId() : int{
-		return $this->position->belowTypeId;
+		return $this->belowTypeId;
 	}
 
 	public function getNearestPlayerDistance() : float{
-		return $this->position->nearestPlayerDistance;
+		return $this->nearestPlayerDistance;
 	}
 
 	public function getTime() : int{
-		return $this->position->time;
+		return $this->time;
 	}
 
 	public function getPopulation() : RegionPopulation{
-		return $this->population;
+		return $this->population ??= $this->census->getRegionPopulation($this->x >> 4, $this->z >> 4);
 	}
 }

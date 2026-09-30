@@ -21,21 +21,25 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning;
+namespace IvanCraft623\MobPlugin\spawning\spawner;
+
+use pocketmine\entity\Entity;
 
 /**
- * One successful evaluation, handed from the evaluator to the applier: where, which
- * rule set and matched group, and the census counts that passed the gates (so the applier
- * can re-check them against same-pass spawns without rescanning the world).
+ * What a test factory returns: never constructed, and spawnToAll() does nothing.
  */
-final class SpawnRequest{
-	public function __construct(
-		public readonly SpawnPosition $position,
-		public readonly SpawnRules $rules,
-		public readonly SpawnRuleGroup $group,
-		/** Nearby count of the rule set's category in the position's band. */
-		public readonly int $categoryCount,
-		/** Nearby count of the rule set's identifier in the position's band. */
-		public readonly int $densityCount
-	){}
+final class SpawnedEntityStub extends CensusTestEntity{
+	public static function create() : self{
+		$entity = (new \ReflectionClass(self::class))->newInstanceWithoutConstructor();
+		(new \ReflectionProperty(Entity::class, "closeInFlight"))->setValue($entity, true);
+
+		return $entity;
+	}
+
+	public static function getNetworkTypeId() : string{
+		return "test:spawned";
+	}
+
+	public function spawnToAll() : void{
+	}
 }

@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
+use pocketmine\timings\TimingsHandler;
 use pocketmine\world\World;
 use function floor;
 
@@ -43,7 +44,8 @@ final class PopulationCensus{
 
 	public function __construct(
 		private readonly SpawnPlacement $placement,
-		private readonly SpawnRuleRegistry $registry
+		private readonly SpawnRuleRegistry $registry,
+		private readonly ?TimingsHandler $timings = null
 	){}
 
 	public function getRegionPopulation(int $chunkX, int $chunkZ) : RegionPopulation{
@@ -52,6 +54,15 @@ final class PopulationCensus{
 			return $this->regions[$key];
 		}
 
+		$this->timings?->startTiming();
+		try{
+			return $this->regions[$key] = $this->countRegion($chunkX, $chunkZ);
+		}finally{
+			$this->timings?->stopTiming();
+		}
+	}
+
+	private function countRegion(int $chunkX, int $chunkZ) : RegionPopulation{
 		$categoryCounts = [];
 		$identifierCounts = [];
 		for($x = $chunkX - self::REGION_RADIUS; $x <= $chunkX + self::REGION_RADIUS; $x++){
@@ -70,7 +81,7 @@ final class PopulationCensus{
 			}
 		}
 
-		return $this->regions[$key] = new RegionPopulation($categoryCounts, $identifierCounts);
+		return new RegionPopulation($categoryCounts, $identifierCounts);
 	}
 
 	/**

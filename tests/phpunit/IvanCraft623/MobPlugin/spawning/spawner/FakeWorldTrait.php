@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use pocketmine\block\Block;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
@@ -51,7 +52,7 @@ trait FakeWorldTrait{
 
 	private int $blockReads = 0;
 
-	private function createWorld() : World{
+	private function createWorld() : World&MockObject{
 		$world = $this->createMock(World::class);
 		$world->method("getMinY")->willReturn(0);
 		$world->method("getMaxY")->willReturn(256);
