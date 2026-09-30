@@ -23,8 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-use function count;
-
 /**
  * Bedrock slime chunks: seed = (chunkX * 0x1f1f1f1f) XOR chunkZ (32-bit), and the chunk is
  * slimy when the first MT19937 output divides by 10. No world seed is involved.
@@ -36,11 +34,6 @@ final class SlimeChunkCondition implements SpawnCondition{
 	private const MT_UPPER_MASK = 0x80000000;
 	private const MT_LOWER_MASK = 0x7fffffff;
 
-	private const MEMO_LIMIT = 4096;
-
-	/** @phpstan-var array<int, bool> chunk hash => result; a memo of a pure function */
-	private static array $memo = [];
-
 	public function isCacheable() : bool{
 		return true;
 	}
@@ -50,15 +43,7 @@ final class SlimeChunkCondition implements SpawnCondition{
 	}
 
 	public static function isSlimeChunk(int $chunkX, int $chunkZ) : bool{
-		$key = (($chunkX & 0xFFFFFFFF) << 32) | ($chunkZ & 0xFFFFFFFF);
-		if(isset(self::$memo[$key])){
-			return self::$memo[$key];
-		}
-		if(count(self::$memo) >= self::MEMO_LIMIT){
-			self::$memo = [];
-		}
-
-		return self::$memo[$key] = self::getFirstOutput((($chunkX & 0xFFFFFFFF) * 0x1f1f1f1f & 0xFFFFFFFF) ^ ($chunkZ & 0xFFFFFFFF)) % 10 === 0;
+		return self::getFirstOutput((($chunkX & 0xFFFFFFFF) * 0x1f1f1f1f & 0xFFFFFFFF) ^ ($chunkZ & 0xFFFFFFFF)) % 10 === 0;
 	}
 
 	/**

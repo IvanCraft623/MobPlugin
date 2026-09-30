@@ -30,9 +30,7 @@ final class SlimeChunkConditionTest extends TestCase{
 	public function testMatchesFullMersenneTwisterReference() : void{
 		for($chunkX = -40; $chunkX <= 40; $chunkX++){
 			for($chunkZ = -40; $chunkZ <= 40; $chunkZ++){
-				$expected = self::reference($chunkX, $chunkZ);
-				self::assertSame($expected, SlimeChunkCondition::isSlimeChunk($chunkX, $chunkZ), "chunk ($chunkX, $chunkZ)");
-				self::assertSame($expected, SlimeChunkCondition::isSlimeChunk($chunkX, $chunkZ), "chunk ($chunkX, $chunkZ) memoized");
+				self::assertSame(self::reference($chunkX, $chunkZ), SlimeChunkCondition::isSlimeChunk($chunkX, $chunkZ), "chunk ($chunkX, $chunkZ)");
 			}
 		}
 	}

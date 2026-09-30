@@ -27,9 +27,7 @@ use pocketmine\data\bedrock\BedrockDataFiles;
 use pocketmine\plugin\PluginException;
 use pocketmine\utils\Filesystem;
 use pocketmine\utils\Utils;
-use function array_merge;
-use function array_unique;
-use function array_values;
+use function array_keys;
 use function is_array;
 use function is_int;
 use function is_string;
@@ -37,7 +35,7 @@ use function json_decode;
 
 final class BiomeTagMap{
 	/**
-	 * @phpstan-param array<int, list<string>> $tagsByBiomeId
+	 * @phpstan-param array<int, array<string, true>> $tagsByBiomeId biome id => set of tags
 	 */
 	public function __construct(
 		private readonly array $tagsByBiomeId
@@ -60,25 +58,28 @@ final class BiomeTagMap{
 				continue;
 			}
 			$definition = $definitions["minecraft:" . $name] ?? null;
-			$tags = [];
+			// Multiple biome names can share one id; union their tags.
+			$map[$id] ??= [];
 			if(is_array($definition) && is_array($definition["tags"] ?? null)){
 				foreach($definition["tags"] as $tag){
 					if(is_string($tag) && $tag !== ""){
-						$tags[] = $tag;
+						$map[$id][$tag] = true;
 					}
 				}
 			}
-			// Multiple biome names can share one id; union their tags.
-			$map[$id] = isset($map[$id]) ? array_values(array_unique(array_merge($map[$id], $tags))) : $tags;
 		}
 
 		return new self($map);
+	}
+
+	public function hasTag(int $biomeId, string $tag) : bool{
+		return isset($this->tagsByBiomeId[$biomeId][$tag]);
 	}
 
 	/**
 	 * @phpstan-return list<string>
 	 */
 	public function getTags(int $biomeId) : array{
-		return $this->tagsByBiomeId[$biomeId] ?? [];
+		return array_keys($this->tagsByBiomeId[$biomeId] ?? []);
 	}
 }

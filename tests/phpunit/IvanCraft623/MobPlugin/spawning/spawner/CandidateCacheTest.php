@@ -60,7 +60,7 @@ final class CandidateCacheTest extends TestCase{
 		// The registry's slime workaround: a combinator mixing key and point reads.
 		$rules[] = self::rules("minecraft:slime_like", [new SpawnRuleGroup([new AnyOf([
 			new AllOf([RangeCondition::height(null, 40), new SlimeChunkCondition()]),
-			new BiomeTagCondition($tags, ["spawns_slimes_on_surface"], []),
+			new BiomeTagCondition($tags, "spawns_slimes_on_surface"),
 		])])]);
 
 		$biomeIds = [];

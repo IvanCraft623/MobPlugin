@@ -195,7 +195,8 @@ conditions must follow them:
 4. **Let `PointInputRequired` propagate.** It extends `\Error`, so `catch(\Exception)`
    won't swallow it; don't catch `\Throwable` or `\Error` inside a condition.
 
-`AllOf`, `AnyOf` and `Not` are cacheable only when all their children are.
+`AllOf`, `AnyOf` and `Not` are cacheable only when all their children are; a custom
+combinator can extend `CompositeCondition` to get the same rule.
 
 A condition that needs more than the context's values can read the attempt's world
 through `getWorld()`. Like the coordinates it is a per-attempt value, so such a condition

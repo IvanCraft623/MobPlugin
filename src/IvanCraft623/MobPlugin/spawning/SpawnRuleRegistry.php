@@ -100,7 +100,7 @@ final class SpawnRuleRegistry{
 					RangeCondition::height(null, 40),
 					new SlimeChunkCondition(),
 				]),
-				new BiomeTagCondition($tags, ["spawns_slimes_on_surface"], []),
+				new BiomeTagCondition($tags, "spawns_slimes_on_surface"),
 			])]);
 		}
 

@@ -23,24 +23,22 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
-
-final class DensityLimitCondition implements SpawnCondition{
+/**
+ * A condition over child conditions; cacheable only when every child is.
+ */
+abstract class CompositeCondition implements SpawnCondition{
+	/** @phpstan-param list<SpawnCondition> $conditions */
 	public function __construct(
-		private readonly string $identifier,
-		private readonly ?int $surfaceLimit,
-		private readonly ?int $caveLimit
+		protected readonly array $conditions
 	){}
 
 	public function isCacheable() : bool{
+		foreach($this->conditions as $condition){
+			if(!$condition->isCacheable()){
+				return false;
+			}
+		}
+
 		return true;
-	}
-
-	public function test(SpawnConditionContext $ctx) : bool{
-		$band = $ctx->getBand();
-		$limit = $band === SpawnBand::SURFACE ? $this->surfaceLimit : $this->caveLimit;
-
-		// A missing or negative limit is no limit, decided without reading the population.
-		return $limit === null || $limit < 0 || $ctx->getPopulation()->getIdentifierCount($this->identifier, $band) < $limit;
 	}
 }

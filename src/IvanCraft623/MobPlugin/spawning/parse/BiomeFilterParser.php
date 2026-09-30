@@ -86,7 +86,7 @@ final class BiomeFilterParser{
 	private function fromLeaf(SpawnData $node) : SpawnCondition{
 		$test = $node->string("test");
 		if($test === "is_snow_covered"){
-			return new BiomeTagCondition($this->tags, ["frozen"], []);
+			return new BiomeTagCondition($this->tags, "frozen");
 		}
 		if($test !== "has_biome_tag"){
 			throw new SpawnRulesParseException("'{$node->at("test")}' must be 'has_biome_tag' or 'is_snow_covered', got '$test'");
@@ -100,12 +100,12 @@ final class BiomeFilterParser{
 		if($node->has("operator") && $node->raw("operator") !== null){
 			$operator = $node->string("operator");
 		}
-		$match = match($operator){
-			null, "==" => true,
-			"!=", "not" => false,
+		$condition = new BiomeTagCondition($this->tags, $value);
+
+		return match($operator){
+			null, "==" => $condition,
+			"!=", "not" => new Not($condition),
 			default => throw new SpawnRulesParseException("'{$node->at("operator")}' must be one of '==', '!=', 'not', got '$operator'"),
 		};
-
-		return new BiomeTagCondition($this->tags, $match ? [$value] : [], $match ? [] : [$value]);
 	}
 }

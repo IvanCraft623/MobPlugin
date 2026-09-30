@@ -23,40 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-final class AnyOf implements SpawnCondition{
-	private readonly bool $cacheable;
-
-	/** @phpstan-param list<SpawnCondition> $conditions */
-	public function __construct(
-		private readonly array $conditions
-	){
-		$this->cacheable = self::areCacheable($conditions);
-	}
-
-	/**
-	 * @phpstan-param list<SpawnCondition> $conditions
-	 */
-	private static function areCacheable(array $conditions) : bool{
-		foreach($conditions as $condition){
-			if(!$condition->isCacheable()){
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * @phpstan-return list<SpawnCondition>
-	 */
-	public function getChildren() : array{
-		return $this->conditions;
-	}
-
-	public function isCacheable() : bool{
-		return $this->cacheable;
-	}
-
+final class AnyOf extends CompositeCondition{
 	public function test(SpawnConditionContext $ctx) : bool{
 		foreach($this->conditions as $condition){
 			if($condition->test($ctx)){

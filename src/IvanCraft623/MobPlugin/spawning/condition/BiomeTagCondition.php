@@ -24,81 +24,22 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
-use function array_keys;
 
 /**
- * One biome tag condition compiled from a biome_filter leaf (is_snow_covered ≈
- * required "frozen"). Tags for the position's biome come from the injected
- * BiomeTagMap; BiomeFilterParser composes trees of these leaves at parse time.
+ * Whether the position's biome has a tag. BiomeFilterParser composes these into the
+ * biome_filter tree (a "!=" test is a Not around one).
  */
 final class BiomeTagCondition implements SpawnCondition{
-	/** @phpstan-var array<string, true> */
-	private readonly array $requiredSet;
-
-	/** @phpstan-var array<string, true> */
-	private readonly array $forbiddenSet;
-
-	/**
-	 * @phpstan-param list<string> $required
-	 * @phpstan-param list<string> $forbidden
-	 */
 	public function __construct(
 		private readonly BiomeTagMap $tags,
-		private readonly array $required,
-		private readonly array $forbidden
-	){
-		$this->requiredSet = self::toSet($required);
-		$this->forbiddenSet = self::toSet($forbidden);
-	}
-
-	/**
-	 * @phpstan-return list<string>
-	 */
-	public function getRequiredBiomeTags() : array{
-		return $this->required;
-	}
-
-	/**
-	 * @phpstan-return list<string>
-	 */
-	public function getForbiddenBiomeTags() : array{
-		return $this->forbidden;
-	}
+		private readonly string $tag
+	){}
 
 	public function isCacheable() : bool{
 		return true;
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
-		$tagMap = [];
-		foreach($this->tags->getTags($ctx->getBiomeId()) as $tag){
-			$tagMap[$tag] = true;
-		}
-		foreach(array_keys($this->requiredSet) as $tag){
-			if(!isset($tagMap[$tag])){
-				return false;
-			}
-		}
-		foreach(array_keys($this->forbiddenSet) as $tag){
-			if(isset($tagMap[$tag])){
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * @phpstan-param list<string> $tags
-	 *
-	 * @phpstan-return array<string, true>
-	 */
-	private static function toSet(array $tags) : array{
-		$set = [];
-		foreach($tags as $tag){
-			$set[$tag] = true;
-		}
-
-		return $set;
+		return $this->tags->hasTag($ctx->getBiomeId(), $this->tag);
 	}
 }
