@@ -27,8 +27,8 @@ use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\spawner\CandidateCache;
 use IvanCraft623\MobPlugin\spawning\spawner\CandidateRule;
 use IvanCraft623\MobPlugin\spawning\spawner\KeyContext;
-use pocketmine\entity\Entity;
-use pocketmine\math\Vector3;
+use IvanCraft623\MobPlugin\spawning\spawner\PopulationCensus;
+use IvanCraft623\MobPlugin\spawning\spawner\SpawnPlacement;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
@@ -42,12 +42,17 @@ use function max;
  *
  * 1. Collect  — SpawnCollector samples positions around players (SpawnPosition).
  * 2. Shortlist — CandidateCache drops positions no rule set can match.
- * 3. Census   — SpawnCensus counts nearby mobs for the survivors only (RegionPopulation).
+ * 3. Census   — PopulationCensus counts the 9×9 chunk region for the survivors only.
  * 4. Evaluate — SpawnEvaluator filters matching rule sets and picks one (SpawnRequest).
  * 5. Apply    — SpawnApplier re-validates the live world and spawns herds.
  */
 final class NaturalSpawner{
-	private SpawnCensus $census;
+	/**
+	 * This tick's placement per world id, shared by collection, census and apply.
+	 *
+	 * @phpstan-var array<int, SpawnPlacement>
+	 */
+	private array $placements = [];
 
 	private SpawnCollector $collector;
 
@@ -79,9 +84,6 @@ final class NaturalSpawner{
 		private readonly int $batchInterval = 1,
 		Random $random = new Random()
 	){
-		$this->census = new SpawnCensus(
-			static fn(Entity $entity) : ?string => $registry->get($entity::getNetworkTypeId())?->getCategoryId()
-		);
 		$this->collector = new SpawnCollector($random);
 		$this->evaluator = new SpawnEvaluator($random, MobCategoryRegistry::getInstance());
 		$this->applier = new SpawnApplier($registry, MobCategoryRegistry::getInstance(), $worldManager, $random);
@@ -101,8 +103,15 @@ final class NaturalSpawner{
 			return;
 		}
 
-		$candidateCache = $this->getCandidateCache();
-		$positions = $this->collect($this->attemptsPerTick * $interval);
+		try{
+			$this->runPass($this->getCandidateCache(), $this->attemptsPerTick * $interval);
+		}finally{
+			$this->placements = [];
+		}
+	}
+
+	private function runPass(CandidateCache $candidateCache, int $budget) : void{
+		$positions = $this->collect($budget);
 		if(count($positions) === 0){
 			return;
 		}
@@ -114,7 +123,7 @@ final class NaturalSpawner{
 
 		$requests = $this->evaluator->evaluate($candidates);
 		if(count($requests) !== 0){
-			$this->applier->apply($requests);
+			$this->applier->apply($requests, $this->placements);
 		}
 	}
 
@@ -161,7 +170,7 @@ final class NaturalSpawner{
 				if($attempts < 1){
 					continue;
 				}
-				foreach($this->collector->collect($world, $players, $attempts) as $position){
+				foreach($this->collector->collect($this->placements[$world->getId()] ??= new SpawnPlacement($world), $players, $attempts) as $position){
 					$positions[] = $position;
 				}
 			}
@@ -201,13 +210,9 @@ final class NaturalSpawner{
 				if($world === null){
 					continue;
 				}
-				$centers = [];
-				foreach($survivors as [$position]){
-					$centers[] = new Vector3($position->x + 0.5, $position->y, $position->z + 0.5);
-				}
-				$counts = $this->census->count($world, $centers);
-				foreach($survivors as $i => [$position, $viable]){
-					$candidates[] = new SpawnCandidate($position, $counts[$i], $viable);
+				$census = new PopulationCensus($this->placements[$worldId] ??= new SpawnPlacement($world), $this->registry);
+				foreach($survivors as [$position, $viable]){
+					$candidates[] = new SpawnCandidate($position, $census->getRegionPopulation($position->x >> 4, $position->z >> 4), $viable);
 				}
 			}
 

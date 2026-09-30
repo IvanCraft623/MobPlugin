@@ -46,7 +46,7 @@ final class SpawnTallyTest extends TestCase{
 		self::assertSame(0, $tally->countCategory(1, "monster", SpawnBand::SURFACE, $origin), "other category");
 		self::assertSame(0, $tally->countIdentifier(1, "minecraft:pig", SpawnBand::SURFACE, $origin), "other identifier");
 
-		$far = new Vector3(SpawnCensus::SPAWN_REGION_RADIUS + 10, 64, 0);
+		$far = new Vector3(SpawnTally::REGION_RADIUS + 10, 64, 0);
 		self::assertSame(0, $tally->countCategory(1, "animal", SpawnBand::SURFACE, $far), "outside the region");
 	}
 }

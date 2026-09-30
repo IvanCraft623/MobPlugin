@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\spawner\SpawnPlacement;
+
 use pocketmine\block\Block;
 use pocketmine\player\Player;
 use pocketmine\utils\Random;
@@ -40,7 +42,7 @@ use const PHP_FLOAT_MAX;
  * Stage 1 — Collect. Samples random positions in the spawn ring around the world's
  * players and reads the world facts the conditions need. Positions a mob provably can't
  * use (too close to a player, no room) are dropped here, before any rule is weighed. The
- * census is not run here: NaturalSpawner runs it only on positions the rule index keeps.
+ * census is not run here: NaturalSpawner runs it only on positions the candidate cache keeps.
  */
 final class SpawnCollector{
 	/** Mobs never spawn closer than this to a player (vanilla despawns them immediately). */
@@ -67,7 +69,7 @@ final class SpawnCollector{
 	 *
 	 * @phpstan-return list<SpawnPosition>
 	 */
-	public function collect(World $world, array $players, int $attempts) : array{
+	public function collect(SpawnPlacement $placement, array $players, int $attempts) : array{
 		$playerPositions = [];
 		foreach($players as $player){
 			$pos = $player->getPosition();
@@ -79,7 +81,7 @@ final class SpawnCollector{
 
 		$positions = [];
 		for($attempt = 0; $attempt < $attempts; $attempt++){
-			$this->sampleColumn($world, $playerPositions, $positions);
+			$this->sampleColumn($placement, $playerPositions, $positions);
 		}
 
 		return $positions;
@@ -107,7 +109,8 @@ final class SpawnCollector{
 	 * @phpstan-param non-empty-list<array{float, float, float}> $players player x/y/z
 	 * @phpstan-param list<SpawnPosition>                        $out
 	 */
-	private function sampleColumn(World $world, array $players, array &$out) : void{
+	private function sampleColumn(SpawnPlacement $placement, array $players, array &$out) : void{
+		$world = $placement->getWorld();
 		[$px, , $pz] = $players[$this->random->nextBoundedInt(count($players))];
 		[$dx, $dz] = self::ringOffset($this->random);
 		$chunkX = ((int) floor($px + $dx)) >> 4;
@@ -122,7 +125,7 @@ final class SpawnCollector{
 		$minY = $world->getMinY();
 
 		// Surface: the mob stands in the cell above the column's ground.
-		$groundY = SpawnPlacement::groundY($world, $x, $z);
+		$groundY = $placement->getGroundY($x, $z);
 		$ground = $world->getBlockAt($x, $groundY, $z);
 		if(SpawnPlacement::isSpawnableGround($ground) && $groundY + 2 < $world->getMaxY()){
 			$position = $this->position($world, $players, $x, $groundY + 1, $z, $groundY, $ground);

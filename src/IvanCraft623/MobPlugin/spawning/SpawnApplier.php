@@ -25,11 +25,13 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\condition\DensityLimitCondition;
+use IvanCraft623\MobPlugin\spawning\spawner\SpawnPlacement;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
 use function array_key_last;
+use function count;
 use function min;
 
 /**
@@ -59,14 +61,15 @@ final class SpawnApplier{
 	){}
 
 	/**
-	 * @phpstan-param list<SpawnRequest> $requests
+	 * @phpstan-param list<SpawnRequest>         $requests
+	 * @phpstan-param array<int, SpawnPlacement> $placements world id => this tick's placement
 	 */
-	public function apply(array $requests) : void{
+	public function apply(array $requests, array $placements) : void{
 		CustomTimings::$naturalSpawningApply->startTiming();
 		try{
 			$tally = new SpawnTally();
 			foreach($requests as $request){
-				$this->applyOne($request, $tally);
+				$this->applyOne($request, $tally, $placements);
 			}
 		}finally{
 			$this->playerPositions = [];
@@ -74,14 +77,18 @@ final class SpawnApplier{
 		}
 	}
 
-	private function applyOne(SpawnRequest $request, SpawnTally $tally) : void{
+	/**
+	 * @phpstan-param array<int, SpawnPlacement> $placements
+	 */
+	private function applyOne(SpawnRequest $request, SpawnTally $tally, array $placements) : void{
 		$position = $request->position;
 		$world = $this->worldManager->getWorld($position->worldId);
 		if($world === null || !$world->isChunkLoaded($position->x >> 4, $position->z >> 4)){
 			return;
 		}
+		$placement = $placements[$position->worldId] ?? new SpawnPlacement($world);
 		$group = $request->group;
-		if(!SpawnPlacement::hasRoom($world, $position->x, $position->y, $position->z, $group->getRequiredLiquid())){
+		if(!$placement->hasRoom($position->x, $position->y, $position->z, $group->getRequiredLiquid())){
 			return; // blocks changed since sampling
 		}
 
@@ -111,8 +118,12 @@ final class SpawnApplier{
 			$spawnRules = $this->registry->get($permuteTarget) ?? $rules;
 		}
 
-		foreach($this->spawnHerd($world, $spawnRules, $group, $position) as $spawned){
+		$spawnedPositions = $this->spawnHerd($placement, $spawnRules, $group, $position);
+		foreach($spawnedPositions as $spawned){
 			$tally->record($position->worldId, $identifier, $category->id, $band, $spawned);
+		}
+		if(count($spawnedPositions) !== 0){
+			$placement->clear(); // factories may have edited the world
 		}
 	}
 
@@ -123,7 +134,8 @@ final class SpawnApplier{
 	 *
 	 * @phpstan-return list<Vector3>
 	 */
-	private function spawnHerd(World $world, SpawnRules $rules, SpawnRuleGroup $group, SpawnPosition $lead) : array{
+	private function spawnHerd(SpawnPlacement $placement, SpawnRules $rules, SpawnRuleGroup $group, SpawnPosition $lead) : array{
+		$world = $placement->getWorld();
 		$herdSize = $this->random->nextRange($group->getHerdMin(), $group->getHerdMax());
 		$factory = $rules->getFactory();
 
@@ -131,7 +143,7 @@ final class SpawnApplier{
 		for($i = 0; $i < $herdSize; $i++){
 			$memberPos = $i === 0
 				? new Vector3($lead->x + 0.5, $lead->y, $lead->z + 0.5)
-				: $this->herdMemberPosition($world, $group, $lead);
+				: $this->herdMemberPosition($placement, $group, $lead);
 			if($memberPos === null || !$this->isFarEnoughFromPlayers($world, $memberPos)){
 				continue;
 			}
@@ -149,7 +161,8 @@ final class SpawnApplier{
 	 * lead stand on their own column's ground (terrain is uneven); land members of a cave
 	 * lead keep its depth.
 	 */
-	private function herdMemberPosition(World $world, SpawnRuleGroup $group, SpawnPosition $lead) : ?Vector3{
+	private function herdMemberPosition(SpawnPlacement $placement, SpawnRuleGroup $group, SpawnPosition $lead) : ?Vector3{
+		$world = $placement->getWorld();
 		$x = $lead->x + $this->random->nextRange(-self::HERD_SPREAD, self::HERD_SPREAD);
 		$z = $lead->z + $this->random->nextRange(-self::HERD_SPREAD, self::HERD_SPREAD);
 		if(!$world->isChunkLoaded($x >> 4, $z >> 4)){
@@ -157,9 +170,9 @@ final class SpawnApplier{
 		}
 		$liquid = $group->getRequiredLiquid();
 		$y = $liquid === SpawnLiquid::NONE && $lead->band === SpawnBand::SURFACE
-			? SpawnPlacement::groundY($world, $x, $z) + 1
+			? $placement->getGroundY($x, $z) + 1
 			: $lead->y;
-		if(!SpawnPlacement::hasRoom($world, $x, $y, $z, $liquid)){
+		if(!$placement->hasRoom($x, $y, $z, $liquid)){
 			return null;
 		}
 

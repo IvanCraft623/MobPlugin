@@ -31,6 +31,9 @@ use pocketmine\math\Vector3;
  * the census: same world, same band, within the population region radius.
  */
 final class SpawnTally{
+	/** Radius (blocks) approximating the 9×9 chunk population region. */
+	public const REGION_RADIUS = 72;
+
 	/** @phpstan-var array<string, list<Vector3>> */
 	private array $byCategory = [];
 
@@ -58,7 +61,7 @@ final class SpawnTally{
 	 * @phpstan-param list<Vector3> $positions
 	 */
 	private static function countNear(array $positions, Vector3 $center) : int{
-		$radiusSquared = SpawnCensus::SPAWN_REGION_RADIUS ** 2;
+		$radiusSquared = self::REGION_RADIUS ** 2;
 		$count = 0;
 		foreach($positions as $pos){
 			if($pos->distanceSquared($center) <= $radiusSquared){

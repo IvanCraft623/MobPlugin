@@ -36,7 +36,7 @@ final class SpawnPosition{
 		public readonly int $x,
 		public readonly int $y,
 		public readonly int $z,
-		/** Y of the column's spawnable ground (see SpawnPlacement::groundY()). */
+		/** Y of the column's spawnable ground (see SpawnPlacement::getGroundY()). */
 		public readonly int $groundY,
 		/** Habitat band, derived from y against groundY. */
 		public readonly SpawnBand $band,
