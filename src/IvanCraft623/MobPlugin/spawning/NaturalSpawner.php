@@ -24,8 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\VanillaBiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\plan\SpawnRuleIndex;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
@@ -57,13 +55,6 @@ final class NaturalSpawner{
 
 	private ?SpawnRuleIndex $index = null;
 
-	/**
-	 * The bindings the current index was built from, by identifier.
-	 *
-	 * @phpstan-var array<string, SpawnRuleBinding>
-	 */
-	private array $bindings = [];
-
 	private int $indexRevision = -1;
 
 	/** Server ticks seen so far; drives batching. */
@@ -83,16 +74,16 @@ final class NaturalSpawner{
 		private readonly SpawnRuleRegistry $registry,
 		private readonly int $attemptsPerTick,
 		private readonly WorldManager $worldManager,
-		private readonly BiomeTagResolver $biomeTags = new VanillaBiomeTagResolver(),
+		private readonly BiomeTagMap $biomeTags,
 		private readonly int $batchInterval = 1,
 		Random $random = new Random()
 	){
 		$this->census = new SpawnCensus(
-			static fn(Entity $entity) : ?MobCategory => $registry->get($entity::getNetworkTypeId())?->getCategory()
+			static fn(Entity $entity) : ?string => $registry->get($entity::getNetworkTypeId())?->getCategoryId()
 		);
 		$this->collector = new SpawnCollector($random);
-		$this->evaluator = new SpawnEvaluator($random);
-		$this->applier = new SpawnApplier($registry, $worldManager, $random);
+		$this->evaluator = new SpawnEvaluator($random, MobCategoryRegistry::getInstance());
+		$this->applier = new SpawnApplier($registry, MobCategoryRegistry::getInstance(), $worldManager, $random);
 	}
 
 	public function getRegistry() : SpawnRuleRegistry{
@@ -105,7 +96,7 @@ final class NaturalSpawner{
 	public function tick() : void{
 		$this->ticks++;
 		$interval = max(1, $this->batchInterval);
-		if($this->ticks % $interval !== 0 || $this->attemptsPerTick < 1 || count($this->registry->getSpawnEntries()) === 0){
+		if($this->ticks % $interval !== 0 || $this->attemptsPerTick < 1 || count($this->registry->getAll()) === 0){
 			return;
 		}
 
@@ -127,18 +118,12 @@ final class NaturalSpawner{
 	}
 
 	/**
-	 * The planner over the registered rule sets, rebuilt once per registry revision
-	 * together with the bindings snapshot it maps back to.
+	 * The planner over the registered rule sets, rebuilt once per registry revision.
 	 */
 	private function getIndex() : SpawnRuleIndex{
 		$revision = $this->registry->getRevision();
 		if($this->index === null || $revision !== $this->indexRevision){
-			$this->bindings = $this->registry->getSpawnEntries();
-			$rules = [];
-			foreach($this->bindings as $identifier => $binding){
-				$rules[$identifier] = $binding->getRules();
-			}
-			$this->index = new SpawnRuleIndex($rules, $this->biomeTags);
+			$this->index = new SpawnRuleIndex($this->registry->getAll(), $this->biomeTags);
 			$this->indexRevision = $revision;
 		}
 
@@ -198,16 +183,10 @@ final class NaturalSpawner{
 	 * @phpstan-return list<SpawnCandidate>
 	 */
 	private function shortlistAndCount(array $positions, SpawnRuleIndex $index) : array{
-		/** @phpstan-var array<int, list<array{SpawnPosition, non-empty-list<SpawnRuleBinding>}>> $byWorld */
+		/** @phpstan-var array<int, list<array{SpawnPosition, non-empty-list<SpawnRules>}>> $byWorld */
 		$byWorld = [];
 		foreach($positions as $position){
-			$viable = [];
-			foreach($index->candidatesFor($position->biomeId, $position->band, $position->difficulty, $position->feetTypeId) as $rules){
-				$binding = $this->bindings[$rules->getIdentifier()] ?? null;
-				if($binding !== null){
-					$viable[] = $binding;
-				}
-			}
+			$viable = $index->candidatesFor($position->biomeId, $position->band, $position->difficulty, $position->feetTypeId);
 			if(count($viable) !== 0){
 				$byWorld[$position->worldId][] = [$position, $viable];
 			}

@@ -23,16 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition\vanilla;
 
+use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\plan\BiomeConstrained;
 use function array_keys;
 
 /**
  * One biome tag condition compiled from a biome_filter leaf (is_snow_covered ≈
  * required "frozen"). Tags for the position's biome come from the injected
- * BiomeTagResolver; BiomeFilterParser composes trees of these leaves at parse time.
+ * BiomeTagMap; BiomeFilterParser composes trees of these leaves at parse time.
  */
 final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
 	/** @phpstan-var array<string, true> */
@@ -46,7 +46,7 @@ final class BiomeTagCondition implements SpawnCondition, BiomeConstrained{
 	 * @phpstan-param list<string> $forbidden
 	 */
 	public function __construct(
-		private readonly BiomeTagResolver $tags,
+		private readonly BiomeTagMap $tags,
 		private readonly array $required,
 		private readonly array $forbidden
 	){

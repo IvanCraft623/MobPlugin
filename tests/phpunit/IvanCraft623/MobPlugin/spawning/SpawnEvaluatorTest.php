@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\DifficultyFilter;
-use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
@@ -42,36 +41,51 @@ final class SpawnEvaluatorTest extends TestCase{
 	/** Difficulty of every fixture position. */
 	private const DIFFICULTY = World::DIFFICULTY_NORMAL;
 
+	/** Category id => surface and cave cap. */
+	private const CATEGORIES = ["a" => 100, "b" => 100, "free" => 100, "full" => 2, "m" => 4];
+
+	protected function setUp() : void{
+		foreach(self::CATEGORIES as $id => $cap){
+			MobCategoryRegistry::getInstance()->register(new MobCategory($id, $cap, $cap, 64));
+		}
+	}
+
+	protected function tearDown() : void{
+		foreach(self::CATEGORIES as $id => $_){
+			MobCategoryRegistry::getInstance()->unregister($id);
+		}
+	}
+
 	public function testFailingRuleDoesNotWasteTheAttempt() : void{
-		$evaluator = new SpawnEvaluator(new Random(1));
+		$evaluator = new SpawnEvaluator(new Random(1), MobCategoryRegistry::getInstance());
 		$candidate = self::candidate([
-			self::binding("minecraft:never", self::category("a"), [self::group([self::neverMatches()], 1000)]),
-			self::binding("minecraft:always", self::category("b"), [self::group([], 1)]),
+			self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1000)]),
+			self::rules("minecraft:always", "b", [self::group([], 1)]),
 		]);
 
 		for($i = 0; $i < self::TRIALS; $i++){
 			$request = $evaluator->evaluateOne($candidate);
 			self::assertNotNull($request, "a matching rule set must always be picked when the heavy one fails");
-			self::assertSame("minecraft:always", $request->binding->getRules()->getIdentifier());
+			self::assertSame("minecraft:always", $request->rules->getIdentifier());
 		}
 	}
 
 	public function testPickWeightIsTheMatchedGroupsWeight() : void{
-		$evaluator = new SpawnEvaluator(new Random(2));
+		$evaluator = new SpawnEvaluator(new Random(2), MobCategoryRegistry::getInstance());
 		$candidate = self::candidate([
 			// A heavy group that never matches must not inflate its rule set's share.
-			self::binding("minecraft:split", self::category("a"), [
+			self::rules("minecraft:split", "a", [
 				self::group([self::neverMatches()], 1000),
 				self::group([], 1),
 			]),
-			self::binding("minecraft:plain", self::category("b"), [self::group([], 1)]),
+			self::rules("minecraft:plain", "b", [self::group([], 1)]),
 		]);
 
 		$split = 0;
 		for($i = 0; $i < self::TRIALS; $i++){
 			$request = $evaluator->evaluateOne($candidate);
 			self::assertNotNull($request);
-			if($request->binding->getRules()->getIdentifier() === "minecraft:split"){
+			if($request->rules->getIdentifier() === "minecraft:split"){
 				$split++;
 			}
 		}
@@ -79,28 +93,27 @@ final class SpawnEvaluatorTest extends TestCase{
 	}
 
 	public function testCappedCategoryDoesNotCompete() : void{
-		$evaluator = new SpawnEvaluator(new Random(3));
-		$full = self::category("full", 2);
-		$candidate = self::candidate(
+		$evaluator = new SpawnEvaluator(new Random(3), MobCategoryRegistry::getInstance());
+				$candidate = self::candidate(
 			[
-				self::binding("minecraft:capped", $full, [self::group([], 1000)]),
-				self::binding("minecraft:free", self::category("free"), [self::group([], 1)]),
+				self::rules("minecraft:capped", "full", [self::group([], 1000)]),
+				self::rules("minecraft:free", "free", [self::group([], 1)]),
 			],
-			new SpawnCounts([], ["full" => new BandCounts(2, 0)])
+			new SpawnCounts([], ["full" => [2, 0]])
 		);
 
 		for($i = 0; $i < self::TRIALS; $i++){
 			$request = $evaluator->evaluateOne($candidate);
 			self::assertNotNull($request);
-			self::assertSame("minecraft:free", $request->binding->getRules()->getIdentifier());
+			self::assertSame("minecraft:free", $request->rules->getIdentifier());
 		}
 	}
 
 	public function testCapRollScalesWithFreeRoom() : void{
-		$evaluator = new SpawnEvaluator(new Random(4));
+		$evaluator = new SpawnEvaluator(new Random(4), MobCategoryRegistry::getInstance());
 		$candidate = self::candidate(
-			[self::binding("minecraft:mob", self::category("m", 4), [self::group([], 1)])],
-			new SpawnCounts(["minecraft:mob" => new BandCounts(2, 0)], ["m" => new BandCounts(3, 0)])
+			[self::rules("minecraft:mob", "m", [self::group([], 1)])],
+			new SpawnCounts(["minecraft:mob" => [2, 0]], ["m" => [3, 0]])
 		);
 
 		$accepted = 0;
@@ -116,9 +129,9 @@ final class SpawnEvaluatorTest extends TestCase{
 	}
 
 	public function testNothingMatchesYieldsNoRequest() : void{
-		$evaluator = new SpawnEvaluator(new Random(5));
+		$evaluator = new SpawnEvaluator(new Random(5), MobCategoryRegistry::getInstance());
 		$candidate = self::candidate([
-			self::binding("minecraft:never", self::category("a"), [self::group([self::neverMatches()], 1)]),
+			self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1)]),
 		]);
 
 		self::assertNull($evaluator->evaluateOne($candidate));
@@ -131,27 +144,19 @@ final class SpawnEvaluatorTest extends TestCase{
 	/**
 	 * @phpstan-param list<SpawnCondition> $conditions
 	 */
-	private static function group(array $conditions, int $weight) : SpawnConditionGroup{
-		return new SpawnConditionGroup($conditions, $weight);
-	}
-
-	private static function category(string $id, int $surfaceCap = 100) : MobCategory{
-		return new MobCategory($id, new BandCounts($surfaceCap, $surfaceCap), 64);
+	private static function group(array $conditions, int $weight) : SpawnRuleGroup{
+		return new SpawnRuleGroup($conditions, $weight);
 	}
 
 	/**
-	 * @phpstan-param list<SpawnConditionGroup> $groups
+	 * @phpstan-param list<SpawnRuleGroup> $groups
 	 */
-	private static function binding(string $identifier, MobCategory $category, array $groups) : SpawnRuleBinding{
-		return new SpawnRuleBinding(
-			new SpawnRules($identifier, $category->id, $groups),
-			static fn() : Entity => throw new \LogicException("the evaluator never spawns"),
-			$category
-		);
+	private static function rules(string $identifier, string $categoryId, array $groups) : SpawnRules{
+		return new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("the evaluator never spawns"));
 	}
 
 	/**
-	 * @phpstan-param non-empty-list<SpawnRuleBinding> $viable
+	 * @phpstan-param non-empty-list<SpawnRules> $viable
 	 */
 	private static function candidate(array $viable, SpawnCounts $counts = new SpawnCounts()) : SpawnCandidate{
 		return new SpawnCandidate(

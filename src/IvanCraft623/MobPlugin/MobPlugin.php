@@ -49,6 +49,7 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
+use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -64,6 +65,7 @@ use pocketmine\scheduler\TaskHandler;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
+use Symfony\Component\Filesystem\Path;
 
 use xenialdan\apibossbar\API as BossBarAPI;
 
@@ -120,6 +122,7 @@ class MobPlugin extends PluginBase {
 
 		$this->registerAttributes();
 		$this->registerEntities();
+		SpawnRuleRegistry::getInstance()->registerVanilla(Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json"));
 		$this->registerMetrics();
 		$this->registerNaturalSpawning();
 
@@ -144,7 +147,8 @@ class MobPlugin extends PluginBase {
 		$this->naturalSpawner = new NaturalSpawner(
 			SpawnRuleRegistry::getInstance(),
 			$settings->getMobNaturalSpawningAttemptsPerTick(),
-			$this->getServer()->getWorldManager()
+			$this->getServer()->getWorldManager(),
+			BiomeTagMap::fromBedrockData()
 		);
 		$this->spawningTaskHandler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask($this->naturalSpawner->tick(...)), 1);
 	}
@@ -185,7 +189,7 @@ class MobPlugin extends PluginBase {
 
 	public function trackEntity(Mob $mob) : void {
 		$this->totalEntitiesCount++;
-		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategory()->id ?? "unknown";
+		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategoryId() ?? "unknown";
 		$mobName = strtolower($mob->getName());
 		$this->entitiesStats[$categoryName][$mobName] =
 			($this->entitiesStats[$categoryName][$mobName] ?? 0) + 1
@@ -193,7 +197,7 @@ class MobPlugin extends PluginBase {
 	}
 
 	public function untrackEntity(Mob $mob) : void {
-		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategory()->id ?? "unknown";
+		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategoryId() ?? "unknown";
 		$mobName = strtolower($mob->getName());
 		if (isset($this->entitiesStats[$categoryName][$mobName])) {
 			$this->totalEntitiesCount--;

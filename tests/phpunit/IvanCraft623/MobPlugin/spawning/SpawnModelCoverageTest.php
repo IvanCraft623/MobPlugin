@@ -29,20 +29,21 @@ use IvanCraft623\MobPlugin\spawning\parse\schema\model\DensityLimitData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\DelayFilterData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\SpawnAboveBlockFilterData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\WeightData;
-use IvanCraft623\MobPlugin\spawning\parse\SpawnConditionData;
+use IvanCraft623\MobPlugin\spawning\parse\BlockNameResolver;
+use IvanCraft623\MobPlugin\spawning\parse\ComponentParseContext;
 use PHPUnit\Framework\TestCase;
 use function json_encode;
 use function is_string;
 
 /**
  * Guards the generated XxxData payload models: maps concrete payload shapes (required,
- * array-typed) through JsonMapper via SpawnConditionData, so model/data drift fails here.
+ * array-typed) through JsonMapper via ComponentParseContext, so model/data drift fails here.
  */
 final class SpawnModelCoverageTest extends TestCase{
 
 	public function testBrightnessFilterModelMaps() : void{
 		/** @var BrightnessFilterData $m */
-		$m = SpawnConditionData::map(self::data("brightness_filter", ["min" => 0, "max" => 7, "adjust_for_weather" => true]), "brightness_filter", BrightnessFilterData::class);
+		$m = self::context("brightness_filter", ["min" => 0, "max" => 7, "adjust_for_weather" => true])->map(BrightnessFilterData::class);
 		self::assertSame(0, $m->min);
 		self::assertSame(7, $m->max);
 		self::assertTrue($m->adjust_for_weather);
@@ -50,7 +51,7 @@ final class SpawnModelCoverageTest extends TestCase{
 
 	public function testBrightnessFilterDefaultsWhenAbsent() : void{
 		/** @var BrightnessFilterData $m */
-		$m = SpawnConditionData::map(self::data("brightness_filter", []), "brightness_filter", BrightnessFilterData::class);
+		$m = self::context("brightness_filter", [])->map(BrightnessFilterData::class);
 		self::assertNull($m->min);
 		self::assertNull($m->max);
 		self::assertNull($m->adjust_for_weather);
@@ -58,20 +59,20 @@ final class SpawnModelCoverageTest extends TestCase{
 
 	public function testDensityLimitModelMaps() : void{
 		/** @var DensityLimitData $m */
-		$m = SpawnConditionData::map(self::data("density_limit", ["surface" => 8, "underground" => 16]), "density_limit", DensityLimitData::class);
+		$m = self::context("density_limit", ["surface" => 8, "underground" => 16])->map(DensityLimitData::class);
 		self::assertSame(8, $m->surface);
 		self::assertSame(16, $m->underground);
 	}
 
 	public function testWeightRequiredDefaultIsEnforced() : void{
 		/** @var WeightData $m */
-		$m = SpawnConditionData::map(self::data("weight", ["default" => 100]), "weight", WeightData::class);
+		$m = self::context("weight", ["default" => 100])->map(WeightData::class);
 		self::assertSame(100, $m->default);
 	}
 
 	public function testDelayFilterModelMaps() : void{
 		/** @var DelayFilterData $m */
-		$m = SpawnConditionData::map(self::data("delay_filter", ["identifier" => "day", "min" => 5, "max" => 10, "spawn_chance" => 50]), "delay_filter", DelayFilterData::class);
+		$m = self::context("delay_filter", ["identifier" => "day", "min" => 5, "max" => 10, "spawn_chance" => 50])->map(DelayFilterData::class);
 		self::assertSame("day", $m->identifier);
 		self::assertSame(50, $m->spawn_chance);
 	}
@@ -79,21 +80,18 @@ final class SpawnModelCoverageTest extends TestCase{
 	public function testSpawnAboveBlockFilterArrayFieldMaps() : void{
 		// spawns_above_block_filter.blocks is an array-typed field; absence leaves it null.
 		/** @var SpawnAboveBlockFilterData $m */
-		$m = SpawnConditionData::map(self::data("spawns_above_block_filter", ["distance" => 3]), "spawns_above_block_filter", SpawnAboveBlockFilterData::class);
+		$m = self::context("spawns_above_block_filter", ["distance" => 3])->map(SpawnAboveBlockFilterData::class);
 		self::assertSame(3, $m->distance);
 		self::assertNull($m->blocks);
 	}
 
 	/**
-	 * Builds a SpawnData whose root object holds the payload under the component key, the
-	 * shape the registry hands to SpawnConditionData::map().
-	 *
 	 * @phpstan-param array<string, mixed> $payload
 	 */
-	private static function data(string $component, array $payload) : SpawnData{
+	private static function context(string $component, array $payload) : ComponentParseContext{
 		$encoded = json_encode([$component => $payload]);
 		self::assertTrue(is_string($encoded), "test payload must encode to JSON");
 
-		return SpawnData::fromJson((string) $encoded);
+		return new ComponentParseContext(SpawnData::fromJson((string) $encoded), $component, new BlockNameResolver(), new BiomeTagMap([]));
 	}
 }

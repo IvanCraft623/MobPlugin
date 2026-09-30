@@ -25,7 +25,7 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
-use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesFactory;
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
 use function implode;
 
@@ -37,15 +37,15 @@ use function implode;
 final class VanillaSpawnConditionsCoverageTest extends TestCase{
 
 	public function testEverySchemaConditionIsRegistered() : void{
-		$registry = SpawnRulesFactory::createDefault()->getConditionRegistry();
+		$parser = SpawnRulesParser::createVanilla(new BiomeTagMap([]));
 
 		$missing = [];
 		foreach(VanillaSpawnConditions::getAll() as $condition){
-			if($registry->get($condition) === null){
+			if($parser->getComponent($condition) === null){
 				$missing[] = $condition;
 			}
 		}
-		self::assertSame([], $missing, "Spawn conditions not classified by SpawnConditionRegistry::getInstance()'s default registrations: " . implode(", ", $missing));
+		self::assertSame([], $missing, "Spawn conditions not registered by SpawnRulesParser::createVanilla(new BiomeTagMap([])): " . implode(", ", $missing));
 	}
 
 	public function testSchemaVersionIsPinned() : void{

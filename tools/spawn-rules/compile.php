@@ -37,7 +37,7 @@ declare(strict_types=1);
  * Contents stay byte-faithful to the source data; the only transformations are stripping
  * comments outside strings (some vanilla files are not strict JSON) and reformatting. All
  * parsing semantics belong to the plugin's runtime loader
- * (src/IvanCraft623/MobPlugin/spawning/parse/SpawnRulesFactory.php).
+ * (src/IvanCraft623/MobPlugin/spawning/parse/SpawnRulesParser.php).
  *
  * The merge doubles as the schema-compatibility gate: every merged body is validated
  * against the official Mojang spawn schemas pinned by --schema-version, and every

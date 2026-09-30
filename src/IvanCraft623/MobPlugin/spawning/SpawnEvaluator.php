@@ -25,13 +25,12 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use pocketmine\utils\Random;
 use function count;
 
 /**
  * Stage 2 — Evaluate. Pure: reads only the candidate (position, census counts, viable
- * bindings) and the injected Random, never a live World or a registry.
+ * rule sets), the injected Random and the category registry, never a live World or a registry.
  *
  * Filter, then pick (Bedrock semantics — `weight` belongs to each condition group, so it
  * can only be weighed once the group has matched): every viable rule set whose category
@@ -42,7 +41,8 @@ use function count;
 final class SpawnEvaluator{
 
 	public function __construct(
-		private readonly Random $random
+		private readonly Random $random,
+		private readonly MobCategoryRegistry $categories
 	){}
 
 	/**
@@ -82,48 +82,51 @@ final class SpawnEvaluator{
 			nearestPlayerDistance: $position->nearestPlayerDistance
 		);
 
-		/** @phpstan-var list<array{SpawnRuleBinding, SpawnConditionGroup, int}> $matches binding, group, category count */
+		/** @phpstan-var list<array{SpawnRules, SpawnRuleGroup, int, int}> $matches rules, group, category count, cap */
 		$matches = [];
 		$totalWeight = 0;
-		foreach($candidate->viable as $binding){
-			$category = $binding->getCategory();
+		foreach($candidate->viable as $rules){
+			$category = $this->categories->get($rules->getCategoryId());
+			if($category === null){
+				continue;
+			}
+			$cap = $category->getCap($band);
 			$categoryCount = $counts->category($category->id, $band);
-			if($categoryCount >= $category->getPopulationCaps()->get($band)){
+			if($categoryCount >= $cap){
 				continue; // capped categories don't compete
 			}
-			$group = $binding->getRules()->check($ctx);
+			$group = $rules->check($ctx);
 			if($group === null || $group->getWeight() <= 0){
 				continue;
 			}
-			$matches[] = [$binding, $group, $categoryCount];
+			$matches[] = [$rules, $group, $categoryCount, $cap];
 			$totalWeight += $group->getWeight();
 		}
 		if(count($matches) === 0){
 			return null;
 		}
 
-		[$binding, $group, $categoryCount] = $this->pick($matches, $totalWeight);
+		[$rules, $group, $categoryCount, $cap] = $this->pick($matches, $totalWeight);
 
 		// Population cap roll: the fuller the category's region, the likelier the attempt
 		// is dropped.
-		$cap = $binding->getCategory()->getPopulationCaps()->get($band);
 		if($this->random->nextFloat() * $cap >= $cap - $categoryCount){
 			return null;
 		}
 
 		return new SpawnRequest(
 			$position,
-			$binding,
+			$rules,
 			$group,
 			categoryCount: $categoryCount,
-			densityCount: $counts->identifier($binding->getRules()->getIdentifier(), $band)
+			densityCount: $counts->identifier($rules->getIdentifier(), $band)
 		);
 	}
 
 	/**
-	 * @phpstan-param non-empty-list<array{SpawnRuleBinding, SpawnConditionGroup, int}> $matches
+	 * @phpstan-param non-empty-list<array{SpawnRules, SpawnRuleGroup, int, int}> $matches
 	 *
-	 * @phpstan-return array{SpawnRuleBinding, SpawnConditionGroup, int}
+	 * @phpstan-return array{SpawnRules, SpawnRuleGroup, int, int}
 	 */
 	private function pick(array $matches, int $totalWeight) : array{
 		$roll = $this->random->nextBoundedInt($totalWeight);

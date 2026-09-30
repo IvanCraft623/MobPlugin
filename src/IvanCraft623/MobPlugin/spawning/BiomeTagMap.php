@@ -26,7 +26,6 @@ namespace IvanCraft623\MobPlugin\spawning;
 use pocketmine\data\bedrock\BedrockDataFiles;
 use pocketmine\plugin\PluginException;
 use pocketmine\utils\Filesystem;
-use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use function array_merge;
 use function array_unique;
@@ -36,17 +35,15 @@ use function is_int;
 use function is_string;
 use function json_decode;
 
-/**
- * Maps Bedrock biome ids to their vanilla biome tags, loaded lazily from PocketMine's
- * biome_definitions.json. Unknown biome ids resolve to an empty tag set.
- */
 final class BiomeTagMap{
-	use SingletonTrait;
+	/**
+	 * @phpstan-param array<int, list<string>> $tagsByBiomeId
+	 */
+	public function __construct(
+		private readonly array $tagsByBiomeId
+	){}
 
-	/** @var array<int, list<string>> @phpstan-var array<int, list<string>> */
-	private array $tagsByBiomeId;
-
-	private function __construct(){
+	public static function fromBedrockData() : self{
 		$idMap = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_ID_MAP_JSON), true);
 		$definitions = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_DEFINITIONS_JSON), true);
 		if(!is_array($idMap) || !is_array($definitions)){
@@ -68,13 +65,10 @@ final class BiomeTagMap{
 				}
 			}
 			// Multiple biome names can share one id; union their tags.
-			if(isset($map[$id]) && is_array($map[$id])){
-				$map[$id] = array_values(array_unique(array_merge($map[$id], $tags)));
-			}else{
-				$map[$id] = $tags;
-			}
+			$map[$id] = isset($map[$id]) ? array_values(array_unique(array_merge($map[$id], $tags))) : $tags;
 		}
-		$this->tagsByBiomeId = $map;
+
+		return new self($map);
 	}
 
 	/**

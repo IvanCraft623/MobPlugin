@@ -35,6 +35,7 @@ use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
+use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
@@ -464,7 +465,8 @@ abstract class Mob extends Living {
 			}
 
 			$nearestPlayer = Utils::getNearestPlayer($this);
-			$mobCategory = SpawnRuleRegistry::getInstance()->get(static::getNetworkTypeId())?->getCategory() ?? null;
+			$categoryId = SpawnRuleRegistry::getInstance()->get(static::getNetworkTypeId())?->getCategoryId();
+			$mobCategory = $categoryId !== null ? MobCategoryRegistry::getInstance()->get($categoryId) : null;
 			if ($nearestPlayer !== null && $mobCategory !== null) {
 				$distanceSquared = $this->location->distanceSquared($nearestPlayer->getPosition());
 				if ($this->shouldDespawnWhenFarAway($distanceSquared) &&

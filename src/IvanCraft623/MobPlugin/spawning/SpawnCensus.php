@@ -43,8 +43,8 @@ final class SpawnCensus{
 	public const SPAWN_REGION_RADIUS = 72;
 
 	/**
-	 * @phpstan-param \Closure(Entity): ?MobCategory $categoryResolver resolves an entity
-	 *     to the population-control category it counts against, or null to skip it
+	 * @phpstan-param \Closure(Entity): ?string $categoryResolver resolves an entity
+	 *     to the id of the population-control category it counts against, or null to skip it
 	 */
 	public function __construct(
 		private readonly \Closure $categoryResolver
@@ -75,7 +75,7 @@ final class SpawnCensus{
 			}
 			$pos = $entity->getPosition();
 			$chunkKey = World::chunkHash(((int) floor($pos->x)) >> 4, ((int) floor($pos->z)) >> 4);
-			$chunkBuckets[$chunkKey][] = [$pos->x, $pos->y, $pos->z, $entity::getNetworkTypeId(), $category->id, -1];
+			$chunkBuckets[$chunkKey][] = [$pos->x, $pos->y, $pos->z, $entity::getNetworkTypeId(), $category, -1];
 		}
 
 		$results = [];
@@ -115,7 +115,7 @@ final class SpawnCensus{
 					}
 				}
 			}
-			$results[] = new SpawnCounts(self::materialize($density), self::materialize($population));
+			$results[] = new SpawnCounts($density, $population);
 		}
 
 		return $results;
@@ -134,19 +134,5 @@ final class SpawnCensus{
 		}
 
 		return $pair;
-	}
-
-	/**
-	 * @phpstan-param array<string, array{int, int}> $accum
-	 *
-	 * @phpstan-return array<string, BandCounts>
-	 */
-	private static function materialize(array $accum) : array{
-		$result = [];
-		foreach($accum as $key => [$surface, $cave]){
-			$result[$key] = new BandCounts($surface, $cave);
-		}
-
-		return $result;
 	}
 }

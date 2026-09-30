@@ -25,11 +25,11 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 /**
  * Evaluator input: a sampled position that survived the rule-index shortlist, its census
- * counts, and the rule bindings that could possibly match there.
+ * counts, and the rule sets that could possibly match there.
  */
 final class SpawnCandidate{
 	/**
-	 * @phpstan-param non-empty-list<SpawnRuleBinding> $viable
+	 * @phpstan-param non-empty-list<SpawnRules> $viable
 	 */
 	public function __construct(
 		public readonly SpawnPosition $position,

@@ -39,8 +39,8 @@ final class MobCategoryRegistryTest extends TestCase{
 		self::assertNotNull($animal, "vanilla 'animal' category must be registered");
 		// Squid species use "population_control": "animal" — the cap that was being
 		// bypassed because raw-PMMP squids never entered the census.
-		self::assertSame(4, $animal->getPopulationCaps()->get(SpawnBand::SURFACE));
-		self::assertSame(0, $animal->getPopulationCaps()->get(SpawnBand::CAVE));
+		self::assertSame(4, $animal->getCap(SpawnBand::SURFACE));
+		self::assertSame(0, $animal->getCap(SpawnBand::CAVE));
 	}
 
 	public function testAllVanillaCategoriesAreRegistered() : void{
@@ -53,12 +53,12 @@ final class MobCategoryRegistryTest extends TestCase{
 		$registry = MobCategoryRegistry::getInstance();
 		$id = "test_custom_" . bin2hex(random_bytes(4));
 		try{
-			$registry->register(new MobCategory($id, new BandCounts(2, 6), 48));
+			$registry->register(new MobCategory($id, 2, 6, 48));
 			$custom = $registry->get($id);
 			self::assertNotNull($custom);
 			self::assertSame($id, $custom->id);
-			self::assertSame(2, $custom->getPopulationCaps()->get(SpawnBand::SURFACE));
-			self::assertSame(6, $custom->getPopulationCaps()->get(SpawnBand::CAVE));
+			self::assertSame(2, $custom->getCap(SpawnBand::SURFACE));
+			self::assertSame(6, $custom->getCap(SpawnBand::CAVE));
 			self::assertSame(48, $custom->getDespawnDistance());
 		}finally{
 			// leave the registry in its original shape for other tests

@@ -32,7 +32,7 @@ interface SpawnCondition{
 
 	/**
 	 * Relative cost of one evaluation, starting at 1 (lowest/cheapest). Lower costs are
-	 * scheduled first when a SpawnConditionGroup reorders its AND-list, so a group fails
+	 * scheduled first when a SpawnRuleGroup reorders its AND-list, so a group fails
 	 * fast without paying for its priciest checks first. The scale is only relative —
 	 * integers, never zero or negative.
 	 */

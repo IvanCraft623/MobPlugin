@@ -23,9 +23,5 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
-/**
- * Thrown when a spawn-rule model cannot be compiled as-is; the strict loader aborts the
- * whole load rather than degrading silently.
- */
-final class SpawnModelParseException extends \InvalidArgumentException{
+final class SpawnRulesParseException extends \InvalidArgumentException{
 }

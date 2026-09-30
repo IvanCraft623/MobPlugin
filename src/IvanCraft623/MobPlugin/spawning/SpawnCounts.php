@@ -30,8 +30,8 @@ namespace IvanCraft623\MobPlugin\spawning;
  */
 final class SpawnCounts{
 	/**
-	 * @phpstan-param array<string, BandCounts> $byIdentifier
-	 * @phpstan-param array<string, BandCounts> $byCategory
+	 * @phpstan-param array<string, array{int, int}> $byIdentifier surface, cave
+	 * @phpstan-param array<string, array{int, int}> $byCategory   surface, cave
 	 */
 	public function __construct(
 		private readonly array $byIdentifier = [],
@@ -39,10 +39,10 @@ final class SpawnCounts{
 	){}
 
 	public function identifier(string $identifier, SpawnBand $band) : int{
-		return ($this->byIdentifier[$identifier] ?? null)?->get($band) ?? 0;
+		return $this->byIdentifier[$identifier][$band === SpawnBand::SURFACE ? 0 : 1] ?? 0;
 	}
 
 	public function category(string $categoryId, SpawnBand $band) : int{
-		return ($this->byCategory[$categoryId] ?? null)?->get($band) ?? 0;
+		return $this->byCategory[$categoryId][$band === SpawnBand::SURFACE ? 0 : 1] ?? 0;
 	}
 }

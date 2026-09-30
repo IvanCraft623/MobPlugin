@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\plan;
 
+use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use pocketmine\block\BlockTypeIds;
@@ -63,7 +63,7 @@ final class SpawnRuleIndex{
 	 */
 	public function __construct(
 		array $rules,
-		private readonly BiomeTagResolver $tags
+		private readonly BiomeTagMap $tags
 	){
 		foreach($rules as $rule){
 			if(count($rule->getGroups()) === 0){

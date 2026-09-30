@@ -34,22 +34,22 @@ use const JSON_THROW_ON_ERROR;
 
 /**
  * Path-tracking reader over decoded spawn-rule JSON; structural work only — payload
- * values go through SpawnConditionData. Mismatches throw SpawnParseException with the
+ * values go through ComponentParseContext. Mismatches throw SpawnRulesParseException with the
  * full JSON path.
  */
 final class SpawnData{
 
 	/**
-	 * @phpstan-throws SpawnParseException
+	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public static function fromJson(string $json) : self{
 		try{
 			$decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
 		}catch(\JsonException $e){
-			throw new SpawnParseException("Malformed JSON: {$e->getMessage()}", 0, $e);
+			throw new SpawnRulesParseException("Malformed JSON: {$e->getMessage()}", 0, $e);
 		}
 		if(!is_array($decoded)){
-			throw new SpawnParseException("Expected a JSON object at the root, got " . get_debug_type($decoded));
+			throw new SpawnRulesParseException("Expected a JSON object at the root, got " . get_debug_type($decoded));
 		}
 
 		return new self($decoded, "");
@@ -86,23 +86,23 @@ final class SpawnData{
 	}
 
 	/**
-	 * @phpstan-throws SpawnParseException
+	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function raw(string $key) : mixed{
 		if(!array_key_exists($key, $this->data)){
-			throw new SpawnParseException("'{$this->at($key)}' directive not found");
+			throw new SpawnRulesParseException("'{$this->at($key)}' directive not found");
 		}
 
 		return $this->data[$key];
 	}
 
 	/**
-	 * @phpstan-throws SpawnParseException
+	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function string(string $key) : string{
 		$value = $this->raw($key);
 		if(!is_string($value)){
-			throw new SpawnParseException("'{$this->at($key)}' must be a string, got " . get_debug_type($value));
+			throw new SpawnRulesParseException("'{$this->at($key)}' must be a string, got " . get_debug_type($value));
 		}
 
 		return $value;
@@ -113,14 +113,14 @@ final class SpawnData{
 	}
 
 	/**
-	 * @phpstan-throws SpawnParseException
+	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function object(string $key) : self{
 		$value = $this->raw($key);
 		// An empty PHP array is a list per array_is_list(), but JSON {} is an object —
 		// marker components are exactly that.
 		if(!is_array($value) || (array_is_list($value) && count($value) !== 0)){
-			throw new SpawnParseException("'{$this->at($key)}' must be an object, got " . get_debug_type($value));
+			throw new SpawnRulesParseException("'{$this->at($key)}' must be an object, got " . get_debug_type($value));
 		}
 
 		return new self($value, $this->at($key));
@@ -134,7 +134,7 @@ final class SpawnData{
 	 * A list of objects, or a single object promoted to a one-element list.
 	 *
 	 * @phpstan-return list<self>
-	 * @phpstan-throws SpawnParseException
+	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function objectOrList(string $key) : array{
 		$value = $this->raw($key);
@@ -142,12 +142,12 @@ final class SpawnData{
 			return [new self($value, $this->at($key))];
 		}
 		if(!is_array($value) || !array_is_list($value)){
-			throw new SpawnParseException("'{$this->at($key)}' must be an object or a list of objects, got " . get_debug_type($value));
+			throw new SpawnRulesParseException("'{$this->at($key)}' must be an object or a list of objects, got " . get_debug_type($value));
 		}
 		$result = [];
 		foreach($value as $index => $entry){
 			if(!is_array($entry) || array_is_list($entry)){
-				throw new SpawnParseException("'{$this->at($key)}[{$index}]' must be an object, got " . get_debug_type($entry));
+				throw new SpawnRulesParseException("'{$this->at($key)}[{$index}]' must be an object, got " . get_debug_type($entry));
 			}
 			$result[] = new self($entry, "{$this->at($key)}[{$index}]");
 		}

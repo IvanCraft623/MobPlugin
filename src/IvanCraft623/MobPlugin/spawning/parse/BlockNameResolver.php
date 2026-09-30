@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\parse\resolver;
+namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use pocketmine\item\ItemBlock;
 use pocketmine\item\StringToItemParser;
@@ -29,11 +29,35 @@ use function str_starts_with;
 use function strlen;
 use function substr;
 
-/** Resolves through PocketMine's StringToItemParser after stripping the "minecraft:" prefix. */
-final class StringToItemBlockNameResolver implements BlockNameResolver{
+final class BlockNameResolver{
 	private const PREFIX = "minecraft:";
 
+	/**
+	 * Bedrock block names PocketMine registers under a different key.
+	 *
+	 * @var array<string, string>
+	 */
+	private const ALIASES = [
+		"minecraft:grass_block" => "minecraft:grass",
+		"minecraft:clay" => "minecraft:clay_block",
+		"minecraft:brown_terracotta" => "minecraft:brown_stained_clay",
+		"minecraft:light_gray_terracotta" => "minecraft:light_gray_stained_clay",
+		"minecraft:orange_terracotta" => "minecraft:orange_stained_clay",
+		"minecraft:red_terracotta" => "minecraft:red_stained_clay",
+		"minecraft:white_terracotta" => "minecraft:white_stained_clay",
+		"minecraft:yellow_terracotta" => "minecraft:yellow_stained_clay",
+	];
+
 	public function resolve(string $name) : ?int{
+		$typeId = self::parse($name);
+		if($typeId === null && isset(self::ALIASES[$name])){
+			$typeId = self::parse(self::ALIASES[$name]);
+		}
+
+		return $typeId;
+	}
+
+	private static function parse(string $name) : ?int{
 		$localName = str_starts_with($name, self::PREFIX) ? substr($name, strlen(self::PREFIX)) : $name;
 		$parsed = StringToItemParser::getInstance()->parse($localName);
 

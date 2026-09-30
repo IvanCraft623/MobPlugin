@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesFactory;
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
 use function array_keys;
 use function dirname;
@@ -44,8 +44,7 @@ final class SpawnRulesParseableTest extends TestCase{
 	];
 
 	public function testBundledResourceCompilesStrictly() : void{
-		$factory = SpawnRulesFactory::createDefault();
-		$rules = $factory->loadFile(dirname(__DIR__, 5) . "/resources/spawning/spawn_rules.json");
+		$rules = SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parseFile(dirname(__DIR__, 5) . "/resources/spawning/spawn_rules.json");
 
 		self::assertNotEmpty($rules);
 		foreach(array_keys($rules) as $identifier){

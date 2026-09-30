@@ -24,12 +24,13 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
+use IvanCraft623\MobPlugin\spawning\condition\vanilla\DensityLimitCondition;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
-use function count;
+use function array_key_last;
+use function min;
 
 /**
  * Stage 3 — Apply. Materializes spawn requests on the main thread: re-validates the live
@@ -52,6 +53,7 @@ final class SpawnApplier{
 	 */
 	public function __construct(
 		private readonly SpawnRuleRegistry $registry,
+		private readonly MobCategoryRegistry $categories,
 		private readonly WorldManager $worldManager,
 		private readonly Random $random
 	){}
@@ -83,30 +85,33 @@ final class SpawnApplier{
 			return; // blocks changed since sampling
 		}
 
-		$binding = $request->binding;
-		$identifier = $binding->getRules()->getIdentifier();
-		$category = $binding->getCategory();
+		$rules = $request->rules;
+		$identifier = $rules->getIdentifier();
+		$category = $this->categories->get($rules->getCategoryId());
+		if($category === null){
+			return;
+		}
 		$band = $position->band;
 		$center = new Vector3($position->x + 0.5, $position->y, $position->z + 0.5);
 
-		if($request->categoryCount + $tally->countCategory($position->worldId, $category->id, $band, $center) >= $category->getPopulationCaps()->get($band)){
+		if($request->categoryCount + $tally->countCategory($position->worldId, $category->id, $band, $center) >= $category->getCap($band)){
 			return;
 		}
-		$densityLimit = $group->densityLimitFor($band);
+		$densityLimit = self::getDensityLimit($group, $band);
 		if($densityLimit !== null && $request->densityCount + $tally->countIdentifier($position->worldId, $identifier, $band, $center) >= $densityLimit){
 			return;
 		}
 
-		// permute_type: unregistered targets fall back to the base binding. The herd
+		// permute_type: unregistered targets fall back to the base rules. The herd
 		// still counts against the base rule's identifier and category, which is what the
 		// density limit and cap above refer to.
-		$spawnBinding = $binding;
+		$spawnRules = $rules;
 		$permuteTarget = $this->pickPermutation($group);
 		if($permuteTarget !== null){
-			$spawnBinding = $this->registry->get($permuteTarget) ?? $binding;
+			$spawnRules = $this->registry->get($permuteTarget) ?? $rules;
 		}
 
-		foreach($this->spawnHerd($world, $spawnBinding, $group, $position) as $spawned){
+		foreach($this->spawnHerd($world, $spawnRules, $group, $position) as $spawned){
 			$tally->record($position->worldId, $identifier, $category->id, $band, $spawned);
 		}
 	}
@@ -118,11 +123,9 @@ final class SpawnApplier{
 	 *
 	 * @phpstan-return list<Vector3>
 	 */
-	private function spawnHerd(World $world, SpawnRuleBinding $binding, SpawnConditionGroup $group, SpawnPosition $lead) : array{
-		$herd = $group->getHerd();
-		$herdSize = $herd !== null ? $this->random->nextRange($herd->minSize, $herd->maxSize) : 1;
-		$factory = $binding->getFactory();
-		$match = new SpawnConditionMatch($binding->getRules()->getIdentifier(), $group);
+	private function spawnHerd(World $world, SpawnRules $rules, SpawnRuleGroup $group, SpawnPosition $lead) : array{
+		$herdSize = $this->random->nextRange($group->getHerdMin(), $group->getHerdMax());
+		$factory = $rules->getFactory();
 
 		$spawned = [];
 		for($i = 0; $i < $herdSize; $i++){
@@ -132,7 +135,7 @@ final class SpawnApplier{
 			if($memberPos === null || !$this->isFarEnoughFromPlayers($world, $memberPos)){
 				continue;
 			}
-			$entity = $factory($world, $memberPos, $match);
+			$entity = $factory($world, $memberPos, $group);
 			$entity->spawnToAll();
 			$spawned[] = $memberPos;
 		}
@@ -146,7 +149,7 @@ final class SpawnApplier{
 	 * lead stand on their own column's ground (terrain is uneven); land members of a cave
 	 * lead keep its depth.
 	 */
-	private function herdMemberPosition(World $world, SpawnConditionGroup $group, SpawnPosition $lead) : ?Vector3{
+	private function herdMemberPosition(World $world, SpawnRuleGroup $group, SpawnPosition $lead) : ?Vector3{
 		$x = $lead->x + $this->random->nextRange(-self::HERD_SPREAD, self::HERD_SPREAD);
 		$z = $lead->z + $this->random->nextRange(-self::HERD_SPREAD, self::HERD_SPREAD);
 		if(!$world->isChunkLoaded($x >> 4, $z >> 4)){
@@ -184,23 +187,38 @@ final class SpawnApplier{
 	}
 
 	/** Weighted pick from the group's permute_type payload; null keeps the base type. */
-	private function pickPermutation(SpawnConditionGroup $group) : ?string{
-		$permutations = $group->getPermuteTypes();
+	private function pickPermutation(SpawnRuleGroup $group) : ?string{
+		$permutations = $group->getPermutations();
 		$total = 0;
-		foreach($permutations as $permutation){
-			$total += $permutation->weight;
+		foreach($permutations as $weight){
+			$total += $weight;
 		}
 		if($total <= 0){
 			return null;
 		}
 		$roll = $this->random->nextBoundedInt($total);
-		foreach($permutations as $permutation){
-			$roll -= $permutation->weight;
+		foreach($permutations as $identifier => $weight){
+			$roll -= $weight;
 			if($roll < 0){
-				return $permutation->entityType;
+				return $identifier;
 			}
 		}
 
-		return $permutations[count($permutations) - 1]->entityType;
+		return array_key_last($permutations);
+	}
+
+	/** The tightest density_limit the group sets for the band, or null when it sets none. */
+	private static function getDensityLimit(SpawnRuleGroup $group, SpawnBand $band) : ?int{
+		$limit = null;
+		foreach($group->getConditions() as $condition){
+			if($condition instanceof DensityLimitCondition){
+				$bandLimit = $condition->limitFor($band);
+				if($bandLimit !== null){
+					$limit = $limit === null ? $bandLimit : min($limit, $bandLimit);
+				}
+			}
+		}
+
+		return $limit;
 	}
 }

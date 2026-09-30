@@ -32,10 +32,9 @@ use IvanCraft623\MobPlugin\spawning\condition\vanilla\HabitatBandCondition;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\HeightFilter;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsInLiquid;
 use IvanCraft623\MobPlugin\spawning\condition\vanilla\SpawnsOnBlock;
-use IvanCraft623\MobPlugin\spawning\parse\resolver\BiomeTagResolver;
-use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
 use IvanCraft623\MobPlugin\spawning\plan\SpawnRuleIndex;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\entity\Entity;
 use PHPUnit\Framework\TestCase;
 use function array_values;
 use function count;
@@ -121,10 +120,10 @@ final class SpawnRuleIndexTest extends TestCase{
 		$rules = [
 			// Two folded difficulty constraints that meet in a contradiction: the group
 			// needs difficulty >=3 AND <=2 at the same position — impossible.
-			"impossible" => new SpawnRules("minecraft:impossible", "monster", [
+			"impossible" => self::rules("minecraft:impossible", "monster", [
 				self::group([new DifficultyFilter(3, 3), new DifficultyFilter(1, 2)]),
 			]),
-			"possible" => new SpawnRules("minecraft:possible", "monster", [
+			"possible" => self::rules("minecraft:possible", "monster", [
 				self::group([new DifficultyFilter(1, 3)]),
 			]),
 		];
@@ -204,61 +203,68 @@ final class SpawnRuleIndexTest extends TestCase{
 		return false;
 	}
 
-	private static function tags() : TestBiomeTagResolver{
-		return new TestBiomeTagResolver();
+	private static function tags() : BiomeTagMap{
+		return new BiomeTagMap([self::FROZEN_BIOME_ID => ["frozen"]]);
 	}
 
 	/**
 	 * @phpstan-param list<SpawnCondition> $conditions
 	 */
-	private static function group(array $conditions) : SpawnConditionGroup{
-		return new SpawnConditionGroup($conditions);
+	private static function group(array $conditions) : SpawnRuleGroup{
+		return new SpawnRuleGroup($conditions);
+	}
+
+	/**
+	 * @phpstan-param list<SpawnRuleGroup> $groups
+	 */
+	private static function rules(string $identifier, string $categoryId, array $groups) : SpawnRules{
+		return new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("the index never spawns"));
 	}
 
 	private static function ruleSurface() : SpawnRules{
-		return new SpawnRules("minecraft:surface_animal", "animal", [
+		return self::rules("minecraft:surface_animal", "animal", [
 			self::group([new HabitatBandCondition([SpawnBand::SURFACE])]),
 		]);
 	}
 
 	private static function ruleCave() : SpawnRules{
-		return new SpawnRules("minecraft:cave_monster", "monster", [
+		return self::rules("minecraft:cave_monster", "monster", [
 			self::group([new HabitatBandCondition([SpawnBand::CAVE])]),
 		]);
 	}
 
 	private static function ruleUnderwater() : SpawnRules{
-		return new SpawnRules("minecraft:wet_monster", "monster", [
+		return self::rules("minecraft:wet_monster", "monster", [
 			self::group([new SpawnsInLiquid(BlockTypeIds::WATER)]),
 		]);
 	}
 
 	private static function ruleBright() : SpawnRules{
-		return new SpawnRules("minecraft:diurnal", "animal", [
+		return self::rules("minecraft:diurnal", "animal", [
 			self::group([new BrightnessFilter(7, 15, false)]),
 		]);
 	}
 
-	private static function ruleFrozen(BiomeTagResolver $tags) : SpawnRules{
-		return new SpawnRules("minecraft:frozen", "animal", [
+	private static function ruleFrozen(BiomeTagMap $tags) : SpawnRules{
+		return self::rules("minecraft:frozen", "animal", [
 			self::group([new BiomeTagCondition($tags, ["frozen"], [])]),
 		]);
 	}
 
 	private static function ruleBelow40() : SpawnRules{
-		return new SpawnRules("minecraft:below_y40", "monster", [
+		return self::rules("minecraft:below_y40", "monster", [
 			self::group([new HeightFilter(null, 40)]),
 		]);
 	}
 
 	private static function ruleHardOnly() : SpawnRules{
-		return new SpawnRules("minecraft:hard_only", "monster", [
+		return self::rules("minecraft:hard_only", "monster", [
 			self::group([new DifficultyFilter(3, 3)]),
 		]);
 	}
 
 	private static function ruleDarkCaveOnStone() : SpawnRules{
-		return new SpawnRules("minecraft:dark_cave_stone", "monster", [
+		return self::rules("minecraft:dark_cave_stone", "monster", [
 			self::group([
 				new HabitatBandCondition([SpawnBand::CAVE]),
 				new BrightnessFilter(0, 7, false),
@@ -268,7 +274,7 @@ final class SpawnRuleIndexTest extends TestCase{
 	}
 
 	private static function ruleNoConditions() : SpawnRules{
-		return new SpawnRules("minecraft:empty", "monster", []);
+		return self::rules("minecraft:empty", "monster", []);
 	}
 }
 
@@ -311,12 +317,5 @@ final class FixtureSpawnEnvironment implements SpawnEnvironment{
 
 	public function getTimeOfDay() : int{
 		return 0;
-	}
-}
-
-/** Deterministic resolver: one biome id carries "frozen", all others carry none. */
-final class TestBiomeTagResolver implements BiomeTagResolver{
-	public function getTags(int $biomeId) : array{
-		return $biomeId === SpawnRuleIndexTest::FROZEN_BIOME_ID ? ["frozen"] : [];
 	}
 }

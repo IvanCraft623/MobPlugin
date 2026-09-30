@@ -24,48 +24,48 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
-use IvanCraft623\MobPlugin\spawning\payload\SpawnConditionGroup;
+use pocketmine\entity\Entity;
+use pocketmine\math\Vector3;
+use pocketmine\world\World;
 
 /**
- * A mob's compiled spawn rule set: an ordered list of condition groups (first matching
- * group wins) plus the id of the population-control category it counts against.
- * Immutable plain data, shared across ticks and worlds. The id is resolved to a
- * MobCategory once, when the rule set is registered (SpawnRuleBinding::getCategory()).
+ * @phpstan-type SpawnFactory \Closure(World $world, Vector3 $pos, SpawnRuleGroup $group) : Entity
  */
 final class SpawnRules{
 	/**
-	 * @phpstan-param list<SpawnConditionGroup> $groups
+	 * @phpstan-param list<SpawnRuleGroup> $groups
+	 * @phpstan-param SpawnFactory         $factory
 	 */
 	public function __construct(
 		private readonly string $identifier,
 		private readonly string $categoryId,
-		private readonly array $groups
+		private readonly array $groups,
+		private readonly \Closure $factory
 	){}
 
 	public function getIdentifier() : string{
 		return $this->identifier;
 	}
 
-	/**
-	 * The population_control id this rule set counts against (the Bedrock string).
-	 */
 	public function getCategoryId() : string{
 		return $this->categoryId;
 	}
 
 	/**
-	 * @phpstan-return list<SpawnConditionGroup>
+	 * @phpstan-return list<SpawnRuleGroup>
 	 */
 	public function getGroups() : array{
 		return $this->groups;
 	}
 
 	/**
-	 * Evaluates the rule set at the given position and returns the first matching group
-	 * (vanilla Bedrock semantics: conditions are ordered alternatives), or null when no
-	 * group matches.
+	 * @phpstan-return SpawnFactory
 	 */
-	public function check(SpawnConditionContext $ctx) : ?SpawnConditionGroup{
+	public function getFactory() : \Closure{
+		return $this->factory;
+	}
+
+	public function check(SpawnConditionContext $ctx) : ?SpawnRuleGroup{
 		foreach($this->groups as $group){
 			if($group->matches($ctx)){
 				return $group;

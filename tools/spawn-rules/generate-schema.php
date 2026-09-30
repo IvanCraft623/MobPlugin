@@ -30,7 +30,7 @@ declare(strict_types=1);
  *
  *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/VanillaSpawnConditions.php
  *     One constant per "minecraft:*" spawn condition the schema declares (a pure
- *     collection of the vanilla component names). SpawnConditionRegistry registers a
+ *     collection of the vanilla component names). SpawnRulesParser registers a
  *     parser for every name (enforced by the PHPUnit suite), so a renamed or removed
  *     component breaks PHPStan instead of silently mis-parsing.
  *
@@ -652,7 +652,7 @@ namespace IvanCraft623\MobPlugin\spawning\parse\schema\model;
 /**
  * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Payload data model for a spawn-rule condition (JsonMapper / SpawnConditionData).
+ * Payload data model for a spawn-rule condition (JsonMapper / ComponentParseContext).
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class %s{
