@@ -24,8 +24,8 @@ declare(strict_types=1);
 /**
  * MobPlugin spawn-rules merger tool.
  *
- * Merges the vanilla entity spawn rules from a checkout of Mojang/bedrock-samples into a
- * single deterministic JSON document, keyed by every file's description.identifier.
+ * Merges the vanilla entity spawn rules from the pinned Mojang/bedrock-samples checkout into
+ * a single deterministic JSON document, keyed by every file's description.identifier.
  *
  * This tool is a PURE MERGER, by design it does NOT:
  *  - rename "minecraft:<name>" keys,
@@ -49,12 +49,12 @@ declare(strict_types=1);
  *   php tools/spawn-rules/generate-schema.php
  *
  * Usage:
- *   php tools/spawn-rules/compile.php [--check] [--samples-dir=<path>] [--out=<path>] [--source-commit=<sha>] [--schema-version=<version>]
+ *   php tools/spawn-rules/compile.php
  *
- * The samples directory, commit and schema version default to the mojang/bedrock-samples
- * package pinned in composer.json. --check compares instead of writing, for CI.
+ * The samples, their commit and the schema version all come from the mojang/bedrock-samples
+ * package pinned in composer.json. CI regenerates and fails on any diff.
  *
- * Exit codes: 0 = success / in sync, 1 = failure or drift (no partial output is ever written).
+ * Exit codes: 0 = success, 1 = failure (no partial output is ever written).
  */
 
 namespace IvanCraft623\MobPlugin\tools\spawnrules\compile;
@@ -63,10 +63,8 @@ require __DIR__ . "/../../vendor/autoload.php";
 require_once __DIR__ . "/SpawnRuleSchemaValidator.php";
 require_once __DIR__ . "/BedrockSamples.php";
 
-use Exception;
 use FilesystemIterator;
 use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
-use IvanCraft623\MobPlugin\tools\spawnrules\SchemaSetupException;
 use IvanCraft623\MobPlugin\tools\spawnrules\SpawnRuleSchemaValidator;
 use JsonException;
 use RecursiveDirectoryIterator;
@@ -74,36 +72,28 @@ use RecursiveIteratorIterator;
 use stdClass;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function basename;
 use function count;
 use function dirname;
-use function escapeshellarg;
-use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
 use function get_object_vars;
-use function getopt;
 use function implode;
 use function is_array;
-use function is_dir;
 use function is_file;
 use function is_string;
 use function json_decode;
 use function json_encode;
 use function json_last_error_msg;
 use function ksort;
-use function mkdir;
 use function printf;
-use function shell_exec;
 use function sort;
 use function sprintf;
 use function str_starts_with;
 use function strlen;
 use function strtolower;
 use function substr;
-use function trim;
 use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_PRETTY_PRINT;
 use const JSON_THROW_ON_ERROR;
@@ -118,47 +108,19 @@ const SOURCE_PATH = "behavior_pack/spawn_rules";
 const SCHEMA_PATH = "metadata/json_schemas/server/spawn";
 const CONDITION_PREFIX = "minecraft:";
 
-/**
- * @param list<string> $argv
- */
-function main(array $argv) : int{
-	$opts = getopt("", ["samples-dir::", "out::", "source-commit::", "schema-version::", "check"]);
-	if(!is_array($opts)){
-		return fail("Unable to parse command line options.");
-	}
-	$customSamplesDir = readStringOption($opts, "samples-dir");
+function main() : int{
 	try{
-		$schemaVersion = readStringOption($opts, "schema-version") ?? BedrockSamples::getSchemaVersion();
-		$samplesDir = $customSamplesDir ?? BedrockSamples::getInstallPath();
+		$schemaVersion = BedrockSamples::getSchemaVersion();
+		$samplesDir = BedrockSamples::getInstallPath();
+		$schemaDir = $samplesDir . "/" . SCHEMA_PATH . "/" . $schemaVersion;
+		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($schemaDir . "/Spawn Rules.json", $schemaVersion);
+		$inventory = readSchemaConditionsInventory($schemaDir);
+		$files = listRuleFiles($samplesDir . "/" . SOURCE_PATH);
 	}catch(\RuntimeException $e){
 		return fail($e->getMessage());
 	}
-	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/resources/spawning";
-	$commitOverride = readStringOption($opts, "source-commit");
-	$check = isset($opts["check"]);
-
-	if(!is_dir($samplesDir)){
-		return fail("Samples directory does not exist: $samplesDir");
-	}
-	$rulesDir = $samplesDir . "/" . SOURCE_PATH;
-	if(!is_dir($rulesDir)){
-		return fail("Spawn rules directory does not exist inside the samples checkout: $rulesDir");
-	}
-	$schemaDir = $samplesDir . "/" . SCHEMA_PATH . "/" . $schemaVersion;
-	if(!is_dir($schemaDir)){
-		return fail("Spawn schema directory does not exist inside the samples checkout: $schemaDir");
-	}
-
-	try{
-		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($schemaDir . "/Spawn Rules.json", $schemaVersion);
-		$inventory = readSchemaConditionsInventory($schemaDir);
-	}catch(SchemaSetupException $e){
-		return fail($e->getMessage());
-	}
-
-	$files = listRuleFiles($rulesDir);
 	if(count($files) === 0){
-		return fail("No spawn rule JSON files found in: $rulesDir");
+		return fail("No spawn rule JSON files found in: $samplesDir/" . SOURCE_PATH);
 	}
 
 	$errors = [];
@@ -166,14 +128,9 @@ function main(array $argv) : int{
 	$sources = []; // identifier -> source file, for duplicate detection
 	foreach($files as $file){
 		try{
-			[$identifier, $body] = parseRuleFile($file);
-		}catch(JsonParseException $e){
+			[$identifier, $body, $spawnRules] = parseRuleFile($file);
+		}catch(\RuntimeException $e){
 			$errors[] = $e->getMessage();
-			continue;
-		}
-		$spawnRules = $body->{"minecraft:spawn_rules"} ?? null;
-		if(!$spawnRules instanceof stdClass){
-			$errors[] = "Missing \"minecraft:spawn_rules\" object in \"$file\"."; // parseRuleFile guarantees it; unreachable
 			continue;
 		}
 		foreach(array_keys(get_object_vars($body)) as $rootKey){
@@ -200,11 +157,7 @@ function main(array $argv) : int{
 
 	ksort($merged, SORT_STRING);
 
-	// Only ask git about a checkout that is itself a repository: git would otherwise walk
-	// up and report the enclosing repository's commit.
-	$commit = $commitOverride ?? ($customSamplesDir === null
-		? BedrockSamples::getReference()
-		: (file_exists($samplesDir . "/.git") ? resolveGitValue($samplesDir, "rev-parse HEAD") : null));
+	$commit = BedrockSamples::getReference();
 	$gameVersion = readGameVersion($samplesDir);
 
 	$json = json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
@@ -215,39 +168,21 @@ function main(array $argv) : int{
 
 	$notice = buildNotice($merged, $commit, $gameVersion, $schemaVersion);
 
-	$rulesPath = $outDir . "/spawn_rules.json";
-	$noticePath = $outDir . "/NOTICE.md";
-	if($check){
-		return checkOutputs([$rulesPath => $json, $noticePath => $notice]);
-	}
-	if(!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)){
-		return fail("Unable to create output directory: $outDir");
-	}
-
 	// Both outputs are written only after every source file merged successfully.
-	if(file_put_contents($rulesPath, $json) === false){
-		return fail("Failed to write: $rulesPath");
-	}
-	if(file_put_contents($noticePath, $notice) === false){
-		return fail("Failed to write: $noticePath");
+	$outDir = dirname(__DIR__, 2) . "/resources/spawning";
+	foreach([$outDir . "/spawn_rules.json" => $json, $outDir . "/NOTICE.md" => $notice] as $path => $contents){
+		if(file_put_contents($path, $contents) === false){
+			return fail("Failed to write: $path");
+		}
 	}
 
 	printf("Merged %d spawn rule file(s) from %s\n", count($merged), $samplesDir);
 	printf("Game version: %s\n", $gameVersion);
 	printf("Source commit: %s\n", $commit ?? "unknown");
 	printf("Schema validation: %d entr%s valid against schema version %s\n", count($merged), count($merged) === 1 ? "y" : "ies", $schemaVersion);
-	printf("Wrote %s (%d bytes)\n", $rulesPath, strlen($json));
-	printf("Wrote %s (%d bytes)\n", $noticePath, strlen($notice));
+	printf("Wrote %s/spawn_rules.json (%d bytes) and NOTICE.md (%d bytes)\n", $outDir, strlen($json), strlen($notice));
 
 	return 0;
-}
-
-/**
- * @param array<string, mixed> $opts
- */
-function readStringOption(array $opts, string $name) : ?string{
-	$value = $opts[$name] ?? null;
-	return is_string($value) && $value !== "" ? $value : null;
 }
 
 function fail(string $message) : int{
@@ -257,38 +192,39 @@ function fail(string $message) : int{
 }
 
 /**
- * @return array{0: string, 1: stdClass} identifier and the file body, byte-faithful
+ * @return array{string, stdClass, stdClass} identifier, the byte-faithful file body and its
+ *                                           "minecraft:spawn_rules" object
  */
 function parseRuleFile(string $file) : array{
 	$raw = file_get_contents($file);
 	if($raw === false){
-		throw new JsonParseException("Cannot read file: $file");
+		throw new \RuntimeException("Cannot read file: $file");
 	}
 	// Objects (not assoc arrays) are decoded on purpose: empty JSON objects must survive the
 	// round-trip as {} instead of being mangled into [].
 	try{
 		$decoded = json_decode(stripJsonComments($raw), false, 512, JSON_THROW_ON_ERROR);
 	}catch(JsonException $e){
-		throw new JsonParseException("Invalid JSON in \"$file\": " . $e->getMessage());
+		throw new \RuntimeException("Invalid JSON in \"$file\": " . $e->getMessage());
 	}
 	if(!$decoded instanceof stdClass){
-		throw new JsonParseException("Root of \"$file\" should be a JSON object.");
+		throw new \RuntimeException("Root of \"$file\" should be a JSON object.");
 	}
 	$formatVersion = $decoded->{"format_version"} ?? null;
 	if(!is_string($formatVersion) || $formatVersion === ""){
-		throw new JsonParseException("Missing or invalid \"format_version\" in \"$file\".");
+		throw new \RuntimeException("Missing or invalid \"format_version\" in \"$file\".");
 	}
 	$spawnRules = $decoded->{"minecraft:spawn_rules"} ?? null;
 	if(!$spawnRules instanceof stdClass){
-		throw new JsonParseException("Missing or invalid \"minecraft:spawn_rules\" object in \"$file\".");
+		throw new \RuntimeException("Missing or invalid \"minecraft:spawn_rules\" object in \"$file\".");
 	}
 	$description = $spawnRules->{"description"} ?? null;
 	$identifier = $description instanceof stdClass ? ($description->{"identifier"} ?? null) : null;
 	if(!is_string($identifier) || $identifier === ""){
-		throw new JsonParseException("Missing or invalid \"description.identifier\" in \"$file\".");
+		throw new \RuntimeException("Missing or invalid \"description.identifier\" in \"$file\".");
 	}
 
-	return [$identifier, $decoded];
+	return [$identifier, $decoded, $spawnRules];
 }
 
 /**
@@ -355,33 +291,25 @@ function listRuleFiles(string $rulesDir) : array{
 	return $files;
 }
 
-function resolveGitValue(string $repoDir, string $args) : ?string{
-	$command = "git -C " . escapeshellarg($repoDir) . " $args 2>/dev/null";
-	$output = shell_exec($command);
-
-	return is_string($output) && trim($output) !== "" ? trim($output) : null;
-}
-
 /**
  * Component inventory of the pinned schema (the properties of Spawn BiomeConditions.json),
  * normalized to unprefixed names.
  *
  * @phpstan-return array<string, true>
- * @phpstan-throws SchemaSetupException
  */
 function readSchemaConditionsInventory(string $schemaDir) : array{
 	$file = $schemaDir . "/Spawn BiomeConditions.json";
 	$decoded = json_decode((string) file_get_contents($file));
 	$properties = $decoded instanceof stdClass ? ($decoded->properties ?? null) : null;
 	if(!$properties instanceof stdClass){
-		throw new SchemaSetupException("Spawn BiomeConditions.json has no \"properties\" object: $file");
+		throw new \RuntimeException("Spawn BiomeConditions.json has no \"properties\" object: $file");
 	}
 	$inventory = [];
 	foreach(array_keys(get_object_vars($properties)) as $rawName){
 		$inventory[str_starts_with($rawName, CONDITION_PREFIX) ? substr($rawName, strlen(CONDITION_PREFIX)) : $rawName] = true;
 	}
 	if(count($inventory) === 0){
-		throw new SchemaSetupException("Spawn BiomeConditions.json declares no components: $file");
+		throw new \RuntimeException("Spawn BiomeConditions.json declares no components: $file");
 	}
 
 	return $inventory;
@@ -458,33 +386,10 @@ function readGameVersion(string $samplesDir) : string{
 }
 
 /**
- * @param array<string, string> $outputs path -> expected content
- */
-function checkOutputs(array $outputs) : int{
-	$drifted = false;
-	foreach($outputs as $path => $expected){
-		$actual = is_file($path) ? file_get_contents($path) : false;
-		if($actual === $expected){
-			printf("In sync: %s\n", $path);
-			continue;
-		}
-		$drifted = true;
-		fwrite(STDERR, "DRIFT: $path does not match a merge of the pinned samples.\n");
-	}
-	if($drifted){
-		fwrite(STDERR, "\nRegenerate with: php tools/spawn-rules/compile.php\n");
-
-		return 1;
-	}
-
-	return 0;
-}
-
-/**
  * @param array<string, mixed> $merged identifier -> spawn rule body
  */
 function buildNotice(array $merged, ?string $commit, string $gameVersion, string $schemaVersion) : string{
-	$lines = [
+	return implode("\n", [
 		"# NOTICE — vanilla spawn rules data",
 		"",
 		"`spawn_rules.json` in this directory is a machine-generated, deterministic merge of the",
@@ -501,8 +406,6 @@ function buildNotice(array $merged, ?string $commit, string $gameVersion, string
 		"| Schema validation | `" . SCHEMA_PATH . "/" . $schemaVersion . "` |",
 		"| Merged entities | " . count($merged) . " |",
 		"| Merged by | `tools/spawn-rules/compile.php` v" . TOOL_VERSION . " |",
-	];
-	$lines = array_merge($lines, [
 		"",
 		"The merger strips comments (some vanilla files are not strict JSON), keys every entry by its",
 		"`description.identifier`, sorts identifiers and pretty-prints. **No other transformation is",
@@ -525,12 +428,6 @@ function buildNotice(array $merged, ?string $commit, string $gameVersion, string
 		"```",
 		"",
 	]);
-
-	return implode("\n", $lines);
 }
 
-final class JsonParseException extends Exception{
-
-}
-
-exit(main($argv));
+exit(main());

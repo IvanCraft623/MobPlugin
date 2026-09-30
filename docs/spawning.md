@@ -25,8 +25,8 @@ composer compile-spawn-rules     # php tools/spawn-rules/compile.php
 composer generate-spawn-schema   # php tools/spawn-rules/generate-schema.php
 ```
 
-Both default to the pinned package, and both accept `--check` to compare instead of
-writing.
+Both read only the pinned package and take no options. Their output is deterministic, so
+CI regenerates it and fails on any diff.
 
 - **`compile.php`** merges the spawn rules into `spawn_rules.json` and writes `NOTICE.md`.
   It only strips JSON comments (some vanilla files aren't strict JSON), keys entries by
@@ -45,8 +45,7 @@ writing.
 
 | Check | Where | Catches |
 |---|---|---|
-| `generate-schema.php --check` | CI (`ci.yml`) | generated artifacts out of date with the pinned schemas, or stale models they no longer produce |
-| `compile.php --check` | CI (`ci.yml`) | `spawn_rules.json` or `NOTICE.md` edited by hand, or not regenerated after a pin change |
+| Regenerate, then `git diff --exit-code` | CI (`ci.yml`) | `spawn_rules.json`, `NOTICE.md` or `parse/schema/` edited by hand, not regenerated after a pin change, or holding a stale model |
 | `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile; entries or groups skipped or dropped beyond the by-design cases |
 | `MobCategoryRegistryTest` | `composer test` | a rule whose `population_control` has no registered category |
 | `VanillaSpawnConditionsCoverageTest` | `composer test` | a component without a parser; artifacts generated from another version |

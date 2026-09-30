@@ -25,24 +25,19 @@ namespace IvanCraft623\MobPlugin\tools\spawnrules;
 
 use JsonSchema\Constraints\Factory;
 use JsonSchema\SchemaStorage;
-use JsonSchema\Uri\Retrievers\FileGetContents;
-use JsonSchema\Uri\UriRetriever;
 use JsonSchema\Validator;
-use function array_map;
 use function array_pop;
 use function array_slice;
 use function dirname;
 use function file_get_contents;
 use function get_object_vars;
 use function is_array;
-use function is_file;
 use function is_string;
 use function json_decode;
 use function rawurldecode;
 use function realpath;
 use function sprintf;
 use function str_replace;
-use function str_starts_with;
 use const DIRECTORY_SEPARATOR;
 
 /**
@@ -57,112 +52,56 @@ use const DIRECTORY_SEPARATOR;
  * Used by the merge tool (tools/spawn-rules/compile.php) as its schema gate.
  */
 final class SpawnRuleSchemaValidator{
-	private readonly Factory $factory;
-	private readonly \stdClass $rootSchema;
-
-	private function __construct(Factory $factory, \stdClass $rootSchema){
-		$this->factory = $factory;
-		$this->rootSchema = $rootSchema;
-	}
+	private function __construct(
+		private readonly Factory $factory,
+		private readonly \stdClass $rootSchema
+	){}
 
 	/**
 	 * Builds a validator from the root spawn-rule schema file. The full $ref closure
 	 * reachable from it (the spawn schemas in the same version directory plus the shared
 	 * client_server/common schemas they reference) is loaded and patched eagerly, so
-	 * no raw (unpatched) schema file is ever fetched lazily by SchemaStorage.
+	 * SchemaStorage never fetches a raw (unpatched) schema file.
 	 *
-	 * When $expectedSchemaVersion is given, the root schema's x-format-version is checked
-	 * against it and a SchemaSetupException is thrown on mismatch.
-	 *
-	 * @phpstan-throws SchemaSetupException
+	 * @throws \RuntimeException when a schema is missing or unresolvable, or the root schema
+	 *                           doesn't declare $schemaVersion
 	 */
-	public static function fromSchemaTree(string $rootSchemaFile, ?string $expectedSchemaVersion = null) : self{
-		$retriever = new UriRetriever();
-		$retriever->setUriRetriever(new class extends FileGetContents{
-			public function retrieve($uri){
-				return parent::retrieve(rawurldecode($uri));
-			}
-		});
-		$storage = new SchemaStorage($retriever);
-
-		// Resolve the full $ref closure from the root schema and pre-register every file
-		// through patchNode, instead of lazily letting SchemaStorage fetch shared refs raw.
-		$rootReal = (string) realpath($rootSchemaFile);
-		if($rootReal === "" || !is_file($rootReal)){
-			throw new SchemaSetupException("Spawn Rules.json root schema not found: $rootSchemaFile");
+	public static function fromSchemaTree(string $rootSchemaFile, string $schemaVersion) : self{
+		$rootReal = realpath($rootSchemaFile);
+		if($rootReal === false){
+			throw new \RuntimeException("Spawn Rules.json root schema not found: $rootSchemaFile");
 		}
 
+		$storage = new SchemaStorage();
 		$loaded = [];
 		$pending = [$rootReal];
-		while($pending !== []){
-			$path = (string) array_pop($pending);
-			$real = (string) realpath($path);
-			if($real === "" || isset($loaded[$real])){
+		while(($path = array_pop($pending)) !== null){
+			if(isset($loaded[$path])){
 				continue;
 			}
-			$loaded[$real] = true;
-			$schema = json_decode((string) file_get_contents($real));
+			$loaded[$path] = true;
+			$schema = json_decode((string) file_get_contents($path));
 			if(!$schema instanceof \stdClass){
-				continue;
+				throw new \RuntimeException("Schema file is not a JSON object: $path");
 			}
-			$patched = self::patchNode($schema, dirname($real));
-			if(!$patched instanceof \stdClass){
-				continue;
-			}
-			$storage->addSchema("file://" . $real, $patched);
-			self::collectRefTargets($schema, $real, $pending);
-		}
-
-		if($expectedSchemaVersion !== null){
-			$rootRaw = json_decode((string) file_get_contents($rootReal));
-			$declared = $rootRaw instanceof \stdClass ? ($rootRaw->{"x-format-version"} ?? null) : null;
-			if(!is_string($declared) || $declared !== $expectedSchemaVersion){
-				throw new SchemaSetupException(sprintf(
-					"Spawn Rules.json declares x-format-version \"%s\" but version \"%s\" was requested.",
-					is_string($declared) ? $declared : "?",
-					$expectedSchemaVersion
-				));
-			}
+			// Every $ref target patchObject() resolves is queued, so the closure is registered.
+			$storage->addSchema("file://" . $path, self::patchObject($schema, dirname($path), $pending));
 		}
 
 		$rootSchema = $storage->getSchema("file://" . $rootReal);
 		if(!$rootSchema instanceof \stdClass){
-			throw new SchemaSetupException("The spawn-rules root schema did not resolve to an object.");
+			throw new \RuntimeException("The spawn-rules root schema did not resolve to an object.");
+		}
+		$declared = $rootSchema->{"x-format-version"} ?? null;
+		if($declared !== $schemaVersion){
+			throw new \RuntimeException(sprintf(
+				"Spawn Rules.json declares x-format-version \"%s\" but version \"%s\" was requested.",
+				is_string($declared) ? $declared : "?",
+				$schemaVersion
+			));
 		}
 
 		return new self(new Factory($storage), $rootSchema);
-	}
-
-	/**
-	 * Enqueues the real file target of every $ref, including ones already rewritten to
-	 * absolute file:// URIs, so the closure (spawn schemas plus shared refs) is all
-	 * registered through patchNode before validation.
-	 *
-	 * @param list<string> $pending
-	 */
-	private static function collectRefTargets(mixed $node, string $path, array &$pending) : void{
-		$base = dirname($path);
-		$visit = function(mixed $n) use (&$visit, $base, &$pending) : void{
-			if($n instanceof \stdClass){
-				$ref = $n->{"\$ref"} ?? null;
-				if(is_string($ref)){
-					$target = str_starts_with($ref, "file://")
-						? (string) str_replace("file://", "", rawurldecode($ref))
-						: $base . "/" . rawurldecode(str_replace("\\", "/", $ref));
-					if(is_file($target)){
-						$pending[] = $target;
-					}
-				}
-				foreach(get_object_vars($n) as $value){
-					$visit($value);
-				}
-			}elseif(is_array($n)){
-				foreach($n as $value){
-					$visit($value);
-				}
-			}
-		};
-		$visit($node);
 	}
 
 	/**
@@ -190,41 +129,44 @@ final class SpawnRuleSchemaValidator{
 	}
 
 	/**
-	 * oneOf -> anyOf, and relative $refs -> absolute file:// URIs (recursively).
+	 * oneOf -> anyOf, and relative $refs -> absolute file:// URIs (recursively). Every
+	 * resolved $ref target is appended to $refs.
+	 *
+	 * @param list<string> $refs
 	 */
-	private static function patchNode(mixed $node, string $baseDir) : mixed{
-		if($node instanceof \stdClass){
-			$out = new \stdClass();
-			foreach(get_object_vars($node) as $key => $value){
-				if($key === "oneOf"){
-					$out->anyOf = self::patchNode($value, $baseDir);
-				}elseif($key === "\$ref" && is_string($value)){
-					$target = str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $baseDir . "/" . rawurldecode($value));
-					$real = realpath($target);
-					if($real === false){
-						throw new SchemaSetupException("Cannot resolve schema ref \"$value\" from \"$baseDir\"");
-					}
-					$out->{"\$ref"} = "file://" . $real;
-				}else{
-					$out->{$key} = self::patchNode($value, $baseDir);
+	private static function patchObject(\stdClass $node, string $baseDir, array &$refs) : \stdClass{
+		$out = new \stdClass();
+		foreach(get_object_vars($node) as $key => $value){
+			if($key === "oneOf"){
+				$out->anyOf = self::patchValue($value, $baseDir, $refs);
+			}elseif($key === "\$ref" && is_string($value)){
+				$real = realpath(str_replace(["/", "\\"], DIRECTORY_SEPARATOR, $baseDir . "/" . rawurldecode($value)));
+				if($real === false){
+					throw new \RuntimeException("Cannot resolve schema ref \"$value\" from \"$baseDir\"");
 				}
+				$refs[] = $real;
+				$out->{"\$ref"} = "file://" . $real;
+			}else{
+				$out->{$key} = self::patchValue($value, $baseDir, $refs);
 			}
-
-			return $out;
-		}
-		if(is_array($node)){
-			return array_map(static fn($value) => self::patchNode($value, $baseDir), $node);
 		}
 
-		return $node;
+		return $out;
 	}
-}
 
-/**
- * Signals an unusable or mismatched schema set (missing root, unresolved $ref, or a
- * requested schema version the root does not declare). Shared by the merge tool and the
- * test suite.
- */
-final class SchemaSetupException extends \RuntimeException{
+	/**
+	 * @param list<string> $refs
+	 */
+	private static function patchValue(mixed $value, string $baseDir, array &$refs) : mixed{
+		if($value instanceof \stdClass){
+			return self::patchObject($value, $baseDir, $refs);
+		}
+		if(is_array($value)){
+			foreach($value as $index => $item){
+				$value[$index] = self::patchValue($item, $baseDir, $refs);
+			}
+		}
 
+		return $value;
+	}
 }

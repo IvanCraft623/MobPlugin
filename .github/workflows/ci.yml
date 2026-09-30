@@ -36,11 +36,12 @@ jobs:
         run: composer test
 
       # The pinned mojang/bedrock-samples dev dependency drives both the generated PHP
-      # artifacts and the merged spawn data; see docs/spawning.md.
-      - name: Generated schema artifacts match the pinned schemas
+      # artifacts and the merged spawn data; see docs/spawning.md. Regenerating must not
+      # change, add or delete any committed file.
+      - name: Spawn data and schema artifacts match the pinned samples
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: php tools/spawn-rules/generate-schema.php --check
-
-      - name: spawn_rules.json and NOTICE.md match a merge of the pinned samples
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: php tools/spawn-rules/compile.php --check
+        run: |
+          composer generate-spawn-schema
+          composer compile-spawn-rules
+          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema
+          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema

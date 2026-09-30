@@ -94,8 +94,8 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
 
 - `.github/workflows/build.yml` — nightly phar on pushes to `main`.
 - `.github/workflows/ci.yml` — on pull requests and pushes to `main`: PHPStan, PHPUnit
-  (`composer test`) and the spawn data drift checks (`generate-schema.php --check`,
-  `compile.php --check`), after a single `composer install`. Skip it with `[skip ci]`
+  (`composer test`) and the spawn data drift check (both spawn tools regenerate, then
+  `git diff --exit-code`), after a single `composer install`. Skip it with `[skip ci]`
   in the commit message.
 - `.github/workflows/release.yml` — tagged release builds (`v1.2.3` or `1.2.3`, with
   optional `-pre.0` suffixes).
