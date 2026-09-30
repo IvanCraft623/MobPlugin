@@ -80,7 +80,7 @@ final class SpawnRulesParser{
 	 *
 	 * @var list<string>
 	 */
-	public const PASS_THROUGH_VANILLA = [
+	private const PASS_THROUGH_VANILLA = [
 		VanillaSpawnConditions::DISALLOW_SPAWNS_IN_BUBBLE, // PocketMine has no bubble-column blocks
 		VanillaSpawnConditions::IS_PERSISTENT,
 		VanillaSpawnConditions::IS_EXPERIMENTAL,
@@ -125,10 +125,6 @@ final class SpawnRulesParser{
 			throw new \InvalidArgumentException("Spawn rule component \"$component\" is already registered");
 		}
 		$this->components[$component] = $parser;
-	}
-
-	public function unregisterComponent(string $component) : void{
-		unset($this->components[self::normalize($component)]);
 	}
 
 	/**

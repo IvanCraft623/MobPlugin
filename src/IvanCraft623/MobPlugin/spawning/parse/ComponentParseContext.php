@@ -44,10 +44,6 @@ final class ComponentParseContext{
 		private readonly BlockNameResolver $blocks
 	){}
 
-	public function getComponent() : string{
-		return $this->component;
-	}
-
 	public function getPath() : string{
 		return $this->condition->at($this->component);
 	}

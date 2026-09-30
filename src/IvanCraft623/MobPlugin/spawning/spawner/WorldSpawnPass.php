@@ -48,10 +48,10 @@ final class WorldSpawnPass{
 	public const MIN_PLAYER_DISTANCE = 24;
 
 	/** Outer spawn ring radius, matching the simulation-distance-4 shell (24-44). */
-	public const MAX_PLAYER_DISTANCE = 44;
+	private const MAX_PLAYER_DISTANCE = 44;
 
 	/** Cave positions tried per column (vanilla scans every spawnable block; we sample). */
-	public const CAVE_ATTEMPTS_PER_COLUMN = 2;
+	private const CAVE_ATTEMPTS_PER_COLUMN = 2;
 
 	private readonly SpawnPlacement $placement;
 
@@ -92,7 +92,7 @@ final class WorldSpawnPass{
 	 *
 	 * @phpstan-return array{float, float}
 	 */
-	public static function getRingOffset(Random $random) : array{
+	private static function getRingOffset(Random $random) : array{
 		$minSquared = self::MIN_PLAYER_DISTANCE ** 2;
 		$radius = sqrt($minSquared + (self::MAX_PLAYER_DISTANCE ** 2 - $minSquared) * $random->nextFloat());
 		$theta = 2.0 * M_PI * $random->nextFloat();
@@ -117,7 +117,7 @@ final class WorldSpawnPass{
 	 * Drops the ground and population memos. Called whenever code we don't control (a
 	 * factory) may have changed the world.
 	 */
-	public function invalidateWorldMemos() : void{
+	private function invalidateWorldMemos() : void{
 		$this->placement->clear();
 		$this->census->clear();
 	}

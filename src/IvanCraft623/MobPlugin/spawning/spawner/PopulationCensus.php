@@ -34,7 +34,7 @@ use function floor;
  * chunk from the live world.
  */
 final class PopulationCensus{
-	public const REGION_RADIUS = 4;
+	private const REGION_RADIUS = 4;
 
 	/** @phpstan-var array<int, array{array<int, array<string, int>>, array<int, array<string, int>>}> chunk hash => [category counts, identifier counts], by band value */
 	private array $chunks = [];

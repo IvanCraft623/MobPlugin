@@ -28,10 +28,6 @@ final class Not implements SpawnCondition{
 		private readonly SpawnCondition $condition
 	){}
 
-	public function getChild() : SpawnCondition{
-		return $this->condition;
-	}
-
 	public function isCacheable() : bool{
 		return $this->condition->isCacheable();
 	}

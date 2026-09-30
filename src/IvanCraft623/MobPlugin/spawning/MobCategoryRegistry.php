@@ -25,12 +25,9 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use pocketmine\utils\SingletonTrait;
 
-use function array_keys;
-
 final class MobCategoryRegistry{
 	use SingletonTrait;
 
-	public const CREATURE = "creature";
 	public const MONSTER = "monster";
 	public const ANIMAL = "animal";
 	public const AMBIENT = "ambient";
@@ -41,7 +38,6 @@ final class MobCategoryRegistry{
 	private array $categories = [];
 
 	private function __construct(){
-		$this->register(new MobCategory(self::CREATURE, 0, 0, 64));
 		$this->register(new MobCategory(self::MONSTER, 8, 16, 64));
 		$this->register(new MobCategory(self::ANIMAL, 4, 0, 64));
 		$this->register(new MobCategory(self::AMBIENT, 0, 2, 32));
@@ -61,19 +57,6 @@ final class MobCategoryRegistry{
 	}
 
 	/**
-	 * Returns a category that must exist (e.g. the registered sentinel), throwing
-	 * otherwise.
-	 */
-	public function getRequired(string $id) : MobCategory{
-		$category = $this->categories[$id] ?? null;
-		if($category === null){
-			throw new \InvalidArgumentException("Mob category \"$id\" is not registered.");
-		}
-
-		return $category;
-	}
-
-	/**
 	 * Removes a previously registered category. No-op when the id is not registered.
 	 */
 	public function unregister(string $id) : void{
@@ -82,12 +65,5 @@ final class MobCategoryRegistry{
 
 	public function has(string $id) : bool{
 		return isset($this->categories[$id]);
-	}
-
-	/**
-	 * @phpstan-return list<string>
-	 */
-	public function getIds() : array{
-		return array_keys($this->categories);
 	}
 }

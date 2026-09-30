@@ -37,7 +37,7 @@ use function spl_object_id;
  * conditions the key decides are applied once, the rest stay as residuals.
  */
 final class CandidateCache{
-	public const DEFAULT_MAX_KEYS = 4096;
+	private const DEFAULT_MAX_KEYS = 4096;
 
 	/** @phpstan-var array<int, list<CandidateRule>> */
 	private array $entries = [];

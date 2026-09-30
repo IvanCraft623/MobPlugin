@@ -65,10 +65,6 @@ final class NaturalSpawner{
 		$this->herdSpawner = new HerdSpawner($registry, $random);
 	}
 
-	public function getRegistry() : SpawnRuleRegistry{
-		return $this->registry;
-	}
-
 	public function tick() : void{
 		if($this->attemptsPerTick < 1 || count($this->registry->getAll()) === 0){
 			return;
