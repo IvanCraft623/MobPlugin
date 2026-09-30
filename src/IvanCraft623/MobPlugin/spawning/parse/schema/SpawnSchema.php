@@ -46,12 +46,6 @@ final class SpawnSchema{
 	/** Highest difficulty name declared by the schema (difficulty_filter max default). */
 	public const DIFFICULTY_MAX = self::DIFFICULTY_CASES[3];
 
-	/**
-	 * Light-level bounds vanilla brightness_filter accepts, as declared by the schema.
-	 */
-	public const BRIGHTNESS_MIN = 0;
-	public const BRIGHTNESS_MAX = 15;
-
 	/** Envelope key "conditions" the loader uses to navigate spawn-rule documents (declared by Spawn Rules.json). */
 	public const KEY_CONDITIONS = "conditions";
 

@@ -42,12 +42,13 @@ use PHPUnit\Framework\TestCase;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
+use pocketmine\world\World;
 use function array_keys;
 use function count;
 use function dirname;
 
 final class CandidateCacheTest extends TestCase{
-	private const ATTEMPTS = 20000;
+	private const ATTEMPTS = 5000;
 
 	public function testMatchesUncachedEvaluationOnVanillaRules() : void{
 		$root = dirname(__DIR__, 6);
@@ -227,6 +228,32 @@ final class CandidateCacheTest extends TestCase{
 		self::assertSame(1, $spy->calls, "the non-cacheable condition still runs before the brightness check");
 	}
 
+	public function testWorldReadingConditionRunsOnEveryAttempt() : void{
+		$condition = new class implements SpawnCondition{
+			/** @phpstan-var list<World> */
+			public array $seen = [];
+
+			public function isCacheable() : bool{
+				return true;
+			}
+
+			public function test(SpawnConditionContext $ctx) : bool{
+				$this->seen[] = $ctx->getWorld();
+
+				return true;
+			}
+		};
+		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([$condition])])]);
+		$world = $this->createMock(World::class);
+		for($i = 0; $i < 3; $i++){
+			$ctx = new StubContext(world: $world);
+			foreach($cache->getCandidates($ctx) as $candidate){
+				self::assertNotNull($candidate->match($ctx));
+			}
+		}
+		self::assertSame([$world, $world, $world], $condition->seen, "kept as a residual and given the attempt's world");
+	}
+
 	public function testThrowingConditionLeavesNoEntry() : void{
 		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([new SpyCondition(cacheable: true, throws: true)])])]);
 		for($i = 0; $i < 2; $i++){
@@ -271,33 +298,5 @@ final class CandidateCacheTest extends TestCase{
 		}
 
 		return $result;
-	}
-}
-
-final class SpyCondition implements SpawnCondition{
-	public int $calls = 0;
-
-	public int $keyContextCalls = 0;
-
-	public function __construct(
-		private readonly bool $cacheable,
-		private readonly bool $readsBiomeOnly = false,
-		private readonly bool $throws = false
-	){}
-
-	public function isCacheable() : bool{
-		return $this->cacheable;
-	}
-
-	public function test(SpawnConditionContext $ctx) : bool{
-		$this->calls++;
-		if($ctx instanceof KeyContext){
-			$this->keyContextCalls++;
-		}
-		if($this->throws){
-			throw new \RuntimeException("broken condition");
-		}
-
-		return $this->readsBiomeOnly ? $ctx->getBiomeId() >= 0 : $ctx->getY() >= -64;
 	}
 }

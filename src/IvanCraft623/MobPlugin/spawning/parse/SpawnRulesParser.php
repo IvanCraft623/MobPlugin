@@ -275,6 +275,7 @@ final class SpawnRulesParser{
 			$builder->setWeight($ctx->map(WeightData::class)->default);
 		});
 		$this->registerComponent(VanillaSpawnConditions::HERD, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
+			//TODO: a list holds one herd per spawn event (e.g. horse coat colours); only the first is used until spawn events are supported
 			$data = $ctx->mapList(HerdData::class)[0];
 			$min = max(1, $data->min_size ?? 1);
 			$builder->setHerd($min, max($min, $data->max_size ?? $min));

@@ -23,8 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
+use Composer\InstalledVersions;
 use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
 use function implode;
@@ -48,9 +49,9 @@ final class VanillaSpawnConditionsCoverageTest extends TestCase{
 		self::assertSame([], $missing, "Spawn conditions not registered by SpawnRulesParser::createVanilla(new BiomeTagMap([])): " . implode(", ", $missing));
 	}
 
-	public function testSchemaVersionIsPinned() : void{
-		// The artifact pins the official schema version it was generated from; keep it
-		// explicit so a schema change forces a conscious version bump.
-		self::assertSame("1.21.50", SpawnSchema::SCHEMA_VERSION);
+	public function testSchemaVersionMatchesComposer() : void{
+		// composer.json declares the pinned schema version as the bedrock-samples package
+		// version; the generated artifacts must come from that same version.
+		self::assertSame(InstalledVersions::getPrettyVersion("mojang/bedrock-samples"), SpawnSchema::SCHEMA_VERSION, "regenerate with php tools/spawn-rules/generate-schema.php");
 	}
 }

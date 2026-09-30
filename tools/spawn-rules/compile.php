@@ -40,7 +40,7 @@ declare(strict_types=1);
  * (src/IvanCraft623/MobPlugin/spawning/parse/SpawnRulesParser.php).
  *
  * The merge doubles as the schema-compatibility gate: every merged body is validated
- * against the official Mojang spawn schemas pinned by --schema-version, and every
+ * against the official Mojang spawn schemas of the pinned version, and every
  * condition component and structural key must be declared by the pinned schema
  * inventory. A failure means the vanilla data drifted beyond what the plugin was built
  * against — update the loader / component registry (and, if intended, the pinned schema
@@ -49,20 +49,70 @@ declare(strict_types=1);
  *   php tools/spawn-rules/generate-schema.php
  *
  * Usage:
- *   php tools/spawn-rules/compile.php --schema-version=<version> [--samples-dir=<path>] [--out=<path>] [--source-commit=<sha>]
+ *   php tools/spawn-rules/compile.php [--check] [--samples-dir=<path>] [--out=<path>] [--source-commit=<sha>] [--schema-version=<version>]
  *
- * --schema-version is required (single-sourced from tools/spawn-rules/SCHEMA_VERSION).
+ * The samples directory, commit and schema version default to the mojang/bedrock-samples
+ * package pinned in composer.json. --check compares instead of writing, for CI.
  *
- * Exit codes: 0 = success, 1 = failure (no partial output is ever written).
+ * Exit codes: 0 = success / in sync, 1 = failure or drift (no partial output is ever written).
  */
 
+namespace IvanCraft623\MobPlugin\tools\spawnrules\compile;
+
 require __DIR__ . "/../../vendor/autoload.php";
-require __DIR__ . "/SpawnRuleSchemaValidator.php";
+require_once __DIR__ . "/SpawnRuleSchemaValidator.php";
+require_once __DIR__ . "/BedrockSamples.php";
 
-use IvanCraft623\MobPlugin\spawning\SchemaSetupException;
-use IvanCraft623\MobPlugin\spawning\SpawnRuleSchemaValidator;
+use Exception;
+use FilesystemIterator;
+use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
+use IvanCraft623\MobPlugin\tools\spawnrules\SchemaSetupException;
+use IvanCraft623\MobPlugin\tools\spawnrules\SpawnRuleSchemaValidator;
+use JsonException;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use stdClass;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function basename;
+use function count;
+use function dirname;
+use function escapeshellarg;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function fwrite;
+use function get_object_vars;
+use function getopt;
+use function implode;
+use function is_array;
+use function is_dir;
+use function is_file;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function json_last_error_msg;
+use function ksort;
+use function mkdir;
+use function printf;
+use function shell_exec;
+use function sort;
+use function sprintf;
+use function str_starts_with;
+use function strlen;
+use function strtolower;
+use function substr;
+use function trim;
+use const JSON_PRESERVE_ZERO_FRACTION;
+use const JSON_PRETTY_PRINT;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_SLASHES;
+use const JSON_UNESCAPED_UNICODE;
+use const SORT_STRING;
+use const STDERR;
 
-const TOOL_VERSION = "1.2.0";
+const TOOL_VERSION = "1.3.0";
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
 const SOURCE_PATH = "behavior_pack/spawn_rules";
 const SCHEMA_PATH = "metadata/json_schemas/server/spawn";
@@ -72,17 +122,20 @@ const CONDITION_PREFIX = "minecraft:";
  * @param list<string> $argv
  */
 function main(array $argv) : int{
-	$opts = getopt("", ["samples-dir::", "out::", "source-commit::", "schema-version::"]);
+	$opts = getopt("", ["samples-dir::", "out::", "source-commit::", "schema-version::", "check"]);
 	if(!is_array($opts)){
 		return fail("Unable to parse command line options.");
 	}
-	$schemaVersion = readStringOption($opts, "schema-version");
-	if($schemaVersion === null){
-		return fail("Missing required --schema-version=<version> (see tools/spawn-rules/SCHEMA_VERSION).");
+	$customSamplesDir = readStringOption($opts, "samples-dir");
+	try{
+		$schemaVersion = readStringOption($opts, "schema-version") ?? BedrockSamples::getSchemaVersion();
+		$samplesDir = $customSamplesDir ?? BedrockSamples::getInstallPath();
+	}catch(\RuntimeException $e){
+		return fail($e->getMessage());
 	}
-	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/.cache/bedrock-samples";
 	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/resources/spawning";
 	$commitOverride = readStringOption($opts, "source-commit");
+	$check = isset($opts["check"]);
 
 	if(!is_dir($samplesDir)){
 		return fail("Samples directory does not exist: $samplesDir");
@@ -147,13 +200,12 @@ function main(array $argv) : int{
 
 	ksort($merged, SORT_STRING);
 
-	$commit = $commitOverride ?? resolveGitValue($samplesDir, "rev-parse HEAD");
-	$commitDate = resolveGitValue($samplesDir, "show -s --format=%cI HEAD");
+	// Only ask git about a checkout that is itself a repository: git would otherwise walk
+	// up and report the enclosing repository's commit.
+	$commit = $commitOverride ?? ($customSamplesDir === null
+		? BedrockSamples::getReference()
+		: (file_exists($samplesDir . "/.git") ? resolveGitValue($samplesDir, "rev-parse HEAD") : null));
 	$gameVersion = readGameVersion($samplesDir);
-
-	if(!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)){
-		return fail("Unable to create output directory: $outDir");
-	}
 
 	$json = json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 	if($json === false){
@@ -161,11 +213,18 @@ function main(array $argv) : int{
 	}
 	$json .= "\n";
 
-	$notice = buildNotice($sources, $merged, $commit, $commitDate, $gameVersion, $schemaVersion);
+	$notice = buildNotice($merged, $commit, $gameVersion, $schemaVersion);
 
-	// Both outputs are written only after every source file merged successfully.
 	$rulesPath = $outDir . "/spawn_rules.json";
 	$noticePath = $outDir . "/NOTICE.md";
+	if($check){
+		return checkOutputs([$rulesPath => $json, $noticePath => $notice]);
+	}
+	if(!is_dir($outDir) && !mkdir($outDir, 0777, true) && !is_dir($outDir)){
+		return fail("Unable to create output directory: $outDir");
+	}
+
+	// Both outputs are written only after every source file merged successfully.
 	if(file_put_contents($rulesPath, $json) === false){
 		return fail("Failed to write: $rulesPath");
 	}
@@ -175,7 +234,7 @@ function main(array $argv) : int{
 
 	printf("Merged %d spawn rule file(s) from %s\n", count($merged), $samplesDir);
 	printf("Game version: %s\n", $gameVersion);
-	printf("Source commit: %s\n", $commit);
+	printf("Source commit: %s\n", $commit ?? "unknown");
 	printf("Schema validation: %d entr%s valid against schema version %s\n", count($merged), count($merged) === 1 ? "y" : "ies", $schemaVersion);
 	printf("Wrote %s (%d bytes)\n", $rulesPath, strlen($json));
 	printf("Wrote %s (%d bytes)\n", $noticePath, strlen($notice));
@@ -399,10 +458,32 @@ function readGameVersion(string $samplesDir) : string{
 }
 
 /**
- * @param array<string, string> $sources identifier -> source file
- * @param array<string, mixed>  $merged  identifier -> spawn rule body
+ * @param array<string, string> $outputs path -> expected content
  */
-function buildNotice(array $sources, array $merged, ?string $commit, ?string $commitDate, string $gameVersion, string $schemaVersion) : string{
+function checkOutputs(array $outputs) : int{
+	$drifted = false;
+	foreach($outputs as $path => $expected){
+		$actual = is_file($path) ? file_get_contents($path) : false;
+		if($actual === $expected){
+			printf("In sync: %s\n", $path);
+			continue;
+		}
+		$drifted = true;
+		fwrite(STDERR, "DRIFT: $path does not match a merge of the pinned samples.\n");
+	}
+	if($drifted){
+		fwrite(STDERR, "\nRegenerate with: php tools/spawn-rules/compile.php\n");
+
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+ * @param array<string, mixed> $merged identifier -> spawn rule body
+ */
+function buildNotice(array $merged, ?string $commit, string $gameVersion, string $schemaVersion) : string{
 	$lines = [
 		"# NOTICE — vanilla spawn rules data",
 		"",
@@ -416,15 +497,11 @@ function buildNotice(array $sources, array $merged, ?string $commit, ?string $co
 		"| Source repository | " . SOURCE_REPO . " |",
 		"| Source path | `" . SOURCE_PATH . "` |",
 		"| Source commit | `" . ($commit ?? "unknown") . "` |",
-		"| Source commit date | " . ($commitDate ?? "unknown") . " |",
 		"| Game version | " . $gameVersion . " |",
 		"| Schema validation | `" . SCHEMA_PATH . "/" . $schemaVersion . "` |",
 		"| Merged entities | " . count($merged) . " |",
 		"| Merged by | `tools/spawn-rules/compile.php` v" . TOOL_VERSION . " |",
 	];
-	if($commitDate !== null){
-		$lines[] = "| Merge date | " . date("Y-m-d", strtotime($commitDate) ?: time()) . " |";
-	}
 	$lines = array_merge($lines, [
 		"",
 		"The merger strips comments (some vanilla files are not strict JSON), keys every entry by its",
@@ -439,12 +516,12 @@ function buildNotice(array $sources, array $merged, ?string $commit, ?string $co
 		"sponsored by Mojang AB or Microsoft. The generated schema artifacts derived from the same",
 		"checkout (src/IvanCraft623/MobPlugin/spawning/parse/schema/) carry the same rationale.",
 		"",
-		"To regenerate these files from a fresh checkout of the source:",
+		"The source commit is pinned by the `" . BedrockSamples::PACKAGE . "` dev dependency in",
+		"`composer.json`. To regenerate these files after `composer install`:",
 		"",
 		"```",
-		"git clone --depth 1 " . SOURCE_REPO . " .cache/bedrock-samples",
-		"php tools/spawn-rules/compile.php --samples-dir=.cache/bedrock-samples",
-		"php tools/spawn-rules/generate-schema.php --samples-dir=.cache/bedrock-samples",
+		"php tools/spawn-rules/compile.php",
+		"php tools/spawn-rules/generate-schema.php",
 		"```",
 		"",
 	]);

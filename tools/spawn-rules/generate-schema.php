@@ -36,19 +36,71 @@ declare(strict_types=1);
  *
  *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/SpawnSchema.php
  *     Schema facts as typed constants: the schema version, the difficulty names
- *     accepted by difficulty_filter, and the light-level bounds of brightness_filter.
+ *     accepted by difficulty_filter, and the envelope keys the loader navigates with.
+ *
+ *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/model/*Data.php
+ *     One JsonMapper payload model per payload-bearing component schema.
  *
  * Output is deterministic (sorted cases, fixed formatting), so `--check` can verify in
  * CI that the committed artifacts still match the official schemas — a stale artifact
  * means Mojang changed something and the plugin needs a conscious update.
  *
  * Usage:
- *   php tools/spawn-rules/generate-schema.php --schema-version=<version> [--samples-dir=<path>] [--out=<dir>] [--check]
+ *   php tools/spawn-rules/generate-schema.php [--check] [--samples-dir=<path>] [--out=<dir>] [--schema-version=<version>]
  *
- * --schema-version is required (single-sourced from tools/spawn-rules/SCHEMA_VERSION).
+ * The samples directory and schema version default to the mojang/bedrock-samples package
+ * pinned in composer.json.
  *
  * Exit codes: 0 = success / in sync, 1 = failure or drift detected.
  */
+
+namespace IvanCraft623\MobPlugin\tools\spawnrules\generate;
+
+require __DIR__ . "/../../vendor/autoload.php";
+require_once __DIR__ . "/BedrockSamples.php";
+
+use Exception;
+use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
+use stdClass;
+use function array_fill;
+use function array_key_first;
+use function array_keys;
+use function array_map;
+use function array_merge;
+use function basename;
+use function count;
+use function dirname;
+use function explode;
+use function file_get_contents;
+use function file_put_contents;
+use function fwrite;
+use function get_object_vars;
+use function getopt;
+use function implode;
+use function is_array;
+use function is_dir;
+use function is_file;
+use function is_string;
+use function json_decode;
+use function json_encode;
+use function ksort;
+use function max;
+use function mkdir;
+use function preg_replace;
+use function printf;
+use function rawurldecode;
+use function rtrim;
+use function scandir;
+use function sort;
+use function sprintf;
+use function str_ends_with;
+use function str_starts_with;
+use function strlen;
+use function strtoupper;
+use function substr;
+use function var_export;
+use const SORT_STRING;
+use const STDERR;
 
 const TOOL_VERSION = "1.0.0";
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
@@ -79,18 +131,19 @@ function main(array $argv) : int{
 	if(!is_array($opts)){
 		return fail("Unable to parse command line options.");
 	}
-	$schemaVersion = readStringOption($opts, "schema-version");
-	if($schemaVersion === null){
-		return fail("Missing required --schema-version=<version> (see tools/spawn-rules/SCHEMA_VERSION).");
+	try{
+		$schemaVersion = readStringOption($opts, "schema-version") ?? BedrockSamples::getSchemaVersion();
+		$samplesDir = readStringOption($opts, "samples-dir") ?? BedrockSamples::getInstallPath();
+	}catch(\RuntimeException $e){
+		return fail($e->getMessage());
 	}
-	$samplesDir = readStringOption($opts, "samples-dir") ?? dirname(__DIR__, 2) . "/vendor/mojang/bedrock-samples";
 	$outDir = readStringOption($opts, "out") ?? dirname(__DIR__, 2) . "/src/IvanCraft623/MobPlugin/spawning/parse/schema";
 	$check = isset($opts["check"]);
 
 	$schemaDir = $samplesDir . "/" . SCHEMA_REPO_PATH . "/" . $schemaVersion;
 	if(!is_dir($schemaDir)){
 		return fail(sprintf(
-			"Spawn schema directory does not exist: %s\nClone %s (the same commit the spawn-rules data was merged from) or pass --samples-dir.",
+			"Spawn schema directory does not exist: %s\nRun composer install, or pass --samples-dir with a checkout of %s.",
 			$schemaDir,
 			SOURCE_REPO
 		));
@@ -99,7 +152,6 @@ function main(array $argv) : int{
 	try{
 		[$declaredVersion, $conditions] = readConditionsInventory($schemaDir);
 		$difficulties = readDifficultyCases($schemaDir);
-		[$brightnessMin, $brightnessMax] = readBrightnessBounds($schemaDir);
 		$envelopeKeys = readEnvelopeKeys($schemaDir);
 		$models = readConditionsModels($schemaDir);
 	}catch(SchemaParseException $e){
@@ -107,7 +159,7 @@ function main(array $argv) : int{
 	}
 	if($declaredVersion !== $schemaVersion){
 		return fail(sprintf(
-			"Schemas declare x-format-version \"%s\" but version \"%s\" was requested; pass --schema-version=%s (or pin the requested one).",
+			"Schemas declare x-format-version \"%s\" but version \"%s\" was requested; set the mojang/bedrock-samples package version in composer.json to %s.",
 			$declaredVersion,
 			$schemaVersion,
 			$declaredVersion
@@ -115,7 +167,7 @@ function main(array $argv) : int{
 	}
 
 	$conditionsPhp = buildConditionsArtifact($schemaVersion, $conditions);
-	$schemaPhp = buildSchemaArtifact($schemaVersion, $difficulties, $brightnessMin, $brightnessMax, $envelopeKeys);
+	$schemaPhp = buildSchemaArtifact($schemaVersion, $difficulties, $envelopeKeys);
 	$modelPhp = buildConditionsModelsArtifact($schemaVersion, $models);
 
 	if($check){
@@ -279,25 +331,6 @@ function readDifficultyCases(string $schemaDir) : array{
 }
 
 /**
- * @return array{0: int, 1: int}
- * @phpstan-throws SchemaParseException
- */
-function readBrightnessBounds(string $schemaDir) : array{
-	$doc = loadSchemaFile($schemaDir . "/Spawn BrightnessFilter.json");
-	$properties = $doc->properties ?? null;
-	if(!$properties instanceof stdClass || !isset($properties->min, $properties->max)){
-		throw new SchemaParseException("Spawn BrightnessFilter.json has no min/max properties.");
-	}
-	$min = $properties->min->minimum ?? null;
-	$max = $properties->max->maximum ?? null;
-	if(!is_int($min) || !is_int($max)){
-		throw new SchemaParseException("Spawn BrightnessFilter.json does not declare integer minimum/maximum bounds.");
-	}
-
-	return [$min, $max];
-}
-
-/**
  * Derives the XxxData models for every payload-bearing component schema in the spawn
  * schema dir. A schema becomes a model iff its filename is not a NON_MODEL_SCHEMAS
  * envelope/enum file AND it declares at least one property (empty marker schemas carry no
@@ -309,13 +342,17 @@ function readBrightnessBounds(string $schemaDir) : array{
  * artifact matches.
  *
  * @return array<string, list<array{string, string, string}>> model class -> field
- *     descriptors, each [fieldName, phpType, "required"/"nullable"]
+ *     descriptors in schema order, each [fieldName, phpType, "required"/"nullable"]
  * @phpstan-throws SchemaParseException
  */
 function readConditionsModels(string $schemaDir) : array{
+	$entries = scandir($schemaDir);
+	if($entries === false){
+		throw new SchemaParseException("Cannot list schema directory: $schemaDir");
+	}
 	$models = [];
-	foreach(scandir($schemaDir) as $entry){
-		if(!is_string($entry) || !str_ends_with($entry, ".json")){
+	foreach($entries as $entry){
+		if(!str_ends_with($entry, ".json")){
 			continue;
 		}
 		$schemaFile = $entry;
@@ -345,7 +382,6 @@ function readConditionsModels(string $schemaDir) : array{
 			}
 			$fields[] = describeField($rawName, $prop, isset($required[$rawName]));
 		}
-		ksort($fields, SORT_STRING);
 		$className = modelClassName($schemaFile);
 		$models[$className] = $fields;
 	}
@@ -358,7 +394,7 @@ function readConditionsModels(string $schemaDir) : array{
  * "Spawn X.json" -> "X", "SpawnAboveBlockFilter" etc. (the marker-free basename).
  */
 function modelClassName(string $schemaFile) : string{
-	$base = substr($schemaFile, 0, strpos($schemaFile, ".json"));
+	$base = basename($schemaFile, ".json");
 	$base = str_starts_with($base, "Spawn ") ? substr($base, strlen("Spawn ")) : $base;
 
 	return $base . "Data";
@@ -371,7 +407,7 @@ function modelClassName(string $schemaFile) : string{
  * absent optional field as null (no restriction), so generated fields are nullable and
  * the condition mapping applies the real default exactly as the hand-written parser did.
  *
- * @return array{0: string, 1: string, 2: string, 3: bool}
+ * @return array{string, string, string} [fieldName, phpType, "required"/"nullable"]
  * @phpstan-throws SchemaParseException
  */
 function describeField(string $rawName, stdClass $prop, bool $isRequired) : array{
@@ -396,7 +432,7 @@ function describeField(string $rawName, stdClass $prop, bool $isRequired) : arra
 		$phpType = "array";
 	}
 	if($phpType === null){
-		throw new SchemaParseException("Unsupported schema property type \"{$propType}\" for \"$rawName\"");
+		throw new SchemaParseException("Unsupported schema property type " . var_export($propType, true) . " for \"$rawName\"");
 	}
 
 	return [$rawName, $phpType, $isRequired ? "required" : "nullable"];
@@ -507,7 +543,7 @@ PHP, $schemaVersion, implode("\n", $members)) . "\n";
  * @param list<string>                $difficulties
  * @param array<string, list<string>> $envelopeKeys schema file basename -> property names
  */
-function buildSchemaArtifact(string $schemaVersion, array $difficulties, int $brightnessMin, int $brightnessMax, array $envelopeKeys) : string{
+function buildSchemaArtifact(string $schemaVersion, array $difficulties, array $envelopeKeys) : string{
 	$difficultyCases = sprintf(
 		"[%s]",
 		implode(", ", array_map(static fn(string $case) : string => jsonEncodeString($case), $difficulties))
@@ -576,15 +612,9 @@ final class SpawnSchema{
 	/** Highest difficulty name declared by the schema (difficulty_filter max default). */
 	public const DIFFICULTY_MAX = self::DIFFICULTY_CASES[%d];
 
-	/**
-	 * Light-level bounds vanilla brightness_filter accepts, as declared by the schema.
-	 */
-	public const BRIGHTNESS_MIN = %s;
-	public const BRIGHTNESS_MAX = %s;
-
 %s
 }
-PHP, $schemaVersion, $difficultyCases, count($difficulties) - 1, var_export($brightnessMin, true), var_export($brightnessMax, true), rtrim($envelopeBlock)) . "\n";
+PHP, $schemaVersion, $difficultyCases, count($difficulties) - 1, rtrim($envelopeBlock)) . "\n";
 }
 
 function toConstant(string $rawName) : string{
@@ -596,8 +626,8 @@ function toConstant(string $rawName) : string{
  * filename -> file content. Each class is plain public data (nullable optional fields,
  * @required non-null required fields) that JsonMapper populates at runtime.
  *
- * @param array<string, list<array{string, string, string, bool}>> $models
- *     model class -> field descriptors [name, phpType, "required"/"nullable", isRequired]
+ * @param array<string, list<array{string, string, string}>> $models
+ *                                                                   model class -> field descriptors [name, phpType, "required"/"nullable"]
  *
  * @phpstan-return array<string, string>
  */
@@ -691,7 +721,7 @@ function checkArtifacts(string $outDir, array $artifacts) : int{
 		}
 	}
 	if($drifted){
-		fwrite(STDERR, "\nThe official spawn schemas changed; regenerate the artifacts and review the diff:\n  php tools/spawn-rules/generate-schema.php\n");
+		fwrite(STDERR, "\nThe pinned spawn schemas changed; regenerate the artifacts and review the diff:\n  php tools/spawn-rules/generate-schema.php\n");
 
 		return 1;
 	}

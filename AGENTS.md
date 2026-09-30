@@ -33,8 +33,16 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
     - `brain/` (as `entity/ai/Brain.php`), `memory/`, `behavior/`, `sensing/`, `control/`,
       `navigation/`, `targeting/`, `schedule/`.
   - `data/bedrock/` — hand-managed Bedrock type-id maps / enums.
-- `resources/` — bundled config (e.g. `global-settings.yml`).
-- `.github/workflows/` — CI (build/phar, PHPStan, release).
+- `spawning/` — natural spawning from vanilla Bedrock spawn rules: the rule model,
+  `condition/`, the main-thread runtime in `spawner/`, and the strict loader in `parse/`
+  (`parse/schema/` is generated). See `docs/spawning.md`.
+- `resources/` — bundled config (`global-settings.yml`) and the merged vanilla
+  `spawning/spawn_rules.json` (generated, with its `NOTICE.md`).
+- `tools/spawn-rules/` — dev tools that merge the spawn rules and generate
+  `parse/schema/` from the pinned `mojang/bedrock-samples` dev dependency.
+- `docs/` — architecture guides (`spawning.md`, `navigation.md`).
+- `.github/workflows/` — CI (`ci.yml`: PHPStan, PHPUnit, spawn data drift), nightly
+  build and release.
 
 ## Build & tooling
 
@@ -47,10 +55,12 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
   (`vendor/bin/phpstan.phar analyze --no-progress`, config in `phpstan.neon.dist`).
   CI runs it on every push/PR. Code must pass level 9.
 - **Code style**: enforced by `php-cs-fixer` (`.php-cs-fixer.php`). Style is non-negotiable;
-  run it before committin
+  run it before committing.
 
   After adding/editing files, run `php-cs-fixer fix` — it will insert the required header
-  and apply formatting. Don't leave the header out.
+  and apply formatting. Don't leave the header out. The config only covers `src/`; run it
+  on new files under `tests/` and `tools/` explicitly
+  (`php-cs-fixer fix --config=.php-cs-fixer.php <path>`).
 
 ## Conventions & architecture rules
 
@@ -67,9 +77,14 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
 
 ## Testing & quality gate
 
-- A PHPUnit suite lives in `tests/phpunit` (run with `composer test`); it currently guards
-  the spawn-rules data ⇔ `MobCategory` enum contract. Correctness is otherwise verified via
+- A PHPUnit suite lives in `tests/phpunit` (run with `composer test`). It covers natural
+  spawning: the strict loader against the bundled data, the categories it uses, the
+  generated schema artifacts, the slime-chunk algorithm, the candidate cache and the
+  spawn selector. Everything else (including the per-tick runtime) is verified via
   PHPStan, php-cs-fixer, building the phar, and manual in-server testing.
+- Spawn data: after changing the `mojang/bedrock-samples` pin, regenerate with
+  `composer generate-spawn-schema` and `composer compile-spawn-rules` (see
+  `docs/spawning.md`).
 - The build workflow produces a nightly phar via
   `composer build` → `vendor/bin/pharynx -i=. -c -p=MobPlugin.phar`.
 - Before finishing: run **php-cs-fixer**, **PHPStan level 9** and **PHPUnit**
@@ -78,10 +93,10 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
 ## Workflows / CI
 
 - `.github/workflows/build.yml` — nightly phar on pushes to `main`.
-- `.github/workflows/phpstan.yml` — static analysis on push/PR (skipped if the commit
-  message contains `[ci skip]`).
-- `.github/workflows/phpunit.yml` — PHPUnit tests on push/PR (skipped if the commit
-  message contains `[ci skip]`).
+- `.github/workflows/ci.yml` — on pull requests and pushes to `main`: PHPStan, PHPUnit
+  (`composer test`) and the spawn data drift checks (`generate-schema.php --check`,
+  `compile.php --check`), after a single `composer install`. Skip it with `[skip ci]`
+  in the commit message.
 - `.github/workflows/release.yml` — tagged release builds (`v1.2.3` or `1.2.3`, with
   optional `-pre.0` suffixes).
 - `.github/dependabot.yml` — daily Composer updates.

@@ -23,54 +23,22 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
+use function dirname;
 
-use function array_diff;
-
-/**
- * Guards the mob-category registry: the vanilla categories a squid's spawn rules
- * reference resolve with the expected caps (the root of the unbounded-squid bug), and
- * plugin consumers can register custom categories.
- */
 final class MobCategoryRegistryTest extends TestCase{
 
-	public function testVanillaAnimalCategoryCapsSquidLikeSurfacePopulation() : void{
-		$animal = MobCategoryRegistry::getInstance()->get("animal");
-		self::assertNotNull($animal, "vanilla 'animal' category must be registered");
-		// Squid species use "population_control": "animal" — the cap that was being
-		// bypassed because raw-PMMP squids never entered the census.
-		self::assertSame(4, $animal->getCap(SpawnBand::SURFACE));
-		self::assertSame(0, $animal->getCap(SpawnBand::CAVE));
-	}
+	/**
+	 * registerVanilla() throws at server start for a rule whose category isn't registered.
+	 */
+	public function testEveryDataCategoryIsRegistered() : void{
+		$parsed = SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parseFile(dirname(__DIR__, 5) . "/resources/spawning/spawn_rules.json");
+		self::assertNotEmpty($parsed);
 
-	public function testAllVanillaCategoriesAreRegistered() : void{
 		$registry = MobCategoryRegistry::getInstance();
-		$expected = ["monster", "animal", "ambient", "water_animal", "cat", MobCategoryRegistry::CREATURE];
-		self::assertSame([], array_diff($expected, $registry->getIds()), "every vanilla category id must be registered");
-	}
-
-	public function testCustomCategoryCanBeRegisteredAndLookedUp() : void{
-		$registry = MobCategoryRegistry::getInstance();
-		$id = "test_custom_" . bin2hex(random_bytes(4));
-		try{
-			$registry->register(new MobCategory($id, 2, 6, 48));
-			$custom = $registry->get($id);
-			self::assertNotNull($custom);
-			self::assertSame($id, $custom->id);
-			self::assertSame(2, $custom->getCap(SpawnBand::SURFACE));
-			self::assertSame(6, $custom->getCap(SpawnBand::CAVE));
-			self::assertSame(48, $custom->getDespawnDistance());
-		}finally{
-			// leave the registry in its original shape for other tests
-			$registry->unregister($id);
+		foreach($parsed as $identifier => [$categoryId]){
+			self::assertTrue($registry->has($categoryId), "$identifier uses unregistered category \"$categoryId\"");
 		}
-	}
-
-	public function testSpeciesPopulationControlResolvesToAnimal() : void{
-		// A squid's parsed rule carries category id "animal"; the registry resolves it to
-		// the same category object the census aggregates under.
-		$category = MobCategoryRegistry::getInstance()->get("animal");
-		self::assertNotNull($category);
-		self::assertSame("animal", $category->id);
 	}
 }

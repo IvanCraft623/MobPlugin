@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use pocketmine\world\World;
 
 /**
  * Knows only the cache key; every per-attempt getter throws PointInputRequired.
@@ -96,5 +97,9 @@ final class KeyContext implements SpawnConditionContext{
 
 	public function getPopulation() : RegionPopulation{
 		throw PointInputRequired::population();
+	}
+
+	public function getWorld() : World{
+		throw PointInputRequired::point();
 	}
 }

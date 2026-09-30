@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning;
+namespace IvanCraft623\MobPlugin\tools\spawnrules;
 
 use JsonSchema\Constraints\Factory;
 use JsonSchema\SchemaStorage;
@@ -29,6 +29,7 @@ use JsonSchema\Uri\Retrievers\FileGetContents;
 use JsonSchema\Uri\UriRetriever;
 use JsonSchema\Validator;
 use function array_map;
+use function array_pop;
 use function array_slice;
 use function dirname;
 use function file_get_contents;
@@ -53,8 +54,7 @@ use const DIRECTORY_SEPARATOR;
  * rewritten to absolute file:// URIs because the schemas' own `$id` paths are not real
  * URLs.
  *
- * Both the merge tool (tools/spawn-rules/compile.php) and the PHPUnit suite use this
- * class, so offline validation of the committed resource runs against the same schemas.
+ * Used by the merge tool (tools/spawn-rules/compile.php) as its schema gate.
  */
 final class SpawnRuleSchemaValidator{
 	private readonly Factory $factory;

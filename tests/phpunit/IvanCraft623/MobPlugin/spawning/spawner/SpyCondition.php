@@ -23,19 +23,33 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use pocketmine\entity\Entity;
-use pocketmine\entity\EntitySizeInfo;
+use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
+use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 
-abstract class CensusTestEntity extends Entity{
-	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.0, 1.0);
+final class SpyCondition implements SpawnCondition{
+	public int $calls = 0;
+
+	public int $keyContextCalls = 0;
+
+	public function __construct(
+		private readonly bool $cacheable,
+		private readonly bool $readsBiomeOnly = false,
+		private readonly bool $throws = false
+	){}
+
+	public function isCacheable() : bool{
+		return $this->cacheable;
 	}
 
-	protected function getInitialDragMultiplier() : float{
-		return 0.0;
-	}
+	public function test(SpawnConditionContext $ctx) : bool{
+		$this->calls++;
+		if($ctx instanceof KeyContext){
+			$this->keyContextCalls++;
+		}
+		if($this->throws){
+			throw new \RuntimeException("broken condition");
+		}
 
-	protected function getInitialGravity() : float{
-		return 0.0;
+		return $this->readsBiomeOnly ? $ctx->getBiomeId() >= 0 : $ctx->getY() >= -64;
 	}
 }

@@ -162,9 +162,8 @@ final class Settings{
 	}
 
 	/**
-	 * Chunk evaluations per world per tick for the natural spawner. Clamped into
-	 * [MIN_ATTEMPTS_PER_TICK, MAX_ATTEMPTS_PER_TICK]; lower is cheaper on the main
-	 * thread, higher spawns mobs faster at linear collection cost.
+	 * Columns sampled per tick, shared round-robin between every player in every world.
+	 * Only the global value is used: it is one budget for the whole server.
 	 */
 	public function getMobNaturalSpawningAttemptsPerTick() : int{
 		return $this->mobNaturalSpawningAttemptsPerTick;

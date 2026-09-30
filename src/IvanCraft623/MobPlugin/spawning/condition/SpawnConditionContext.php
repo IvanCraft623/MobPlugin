@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\condition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use pocketmine\world\World;
 
 interface SpawnConditionContext{
 	public function getBiomeId() : int;
@@ -55,4 +56,10 @@ interface SpawnConditionContext{
 	public function getTime() : int;
 
 	public function getPopulation() : RegionPopulation;
+
+	/**
+	 * The world of the attempt, for conditions that need more than the values above. It is
+	 * a per-attempt value, so a condition reading it is evaluated on every attempt.
+	 */
+	public function getWorld() : World;
 }

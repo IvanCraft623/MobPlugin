@@ -28,7 +28,12 @@
                 "name": "mojang/bedrock-samples",
                 "version": "1.21.50",
                 "type": "metadata",
-                "description": "Mojang bedrock-samples spawn-rule JSON schemas (dev-only).",
+                "description": "Mojang bedrock-samples spawn rules and JSON schemas (dev-only). The version is the pinned spawn schema version.",
+                "dist": {
+                    "url": "https://github.com/Mojang/bedrock-samples/archive/46ba6ea985fb5a92d79a9419198f10dda14c199d.zip",
+                    "type": "zip",
+                    "reference": "46ba6ea985fb5a92d79a9419198f10dda14c199d"
+                },
                 "source": {
                     "url": "https://github.com/Mojang/bedrock-samples.git",
                     "type": "git",
@@ -49,7 +54,8 @@
     },
     "scripts": {
         "build": "php -dphar.readonly=0 vendor/bin/pharynx -i=. -c -p=MobPlugin.phar",
-        "compile-spawn-rules": "php tools/spawn-rules/compile.php --schema-version=$(cat tools/spawn-rules/SCHEMA_VERSION)",
+        "compile-spawn-rules": "php tools/spawn-rules/compile.php",
+        "generate-spawn-schema": "php tools/spawn-rules/generate-schema.php",
         "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit"
     }
 }

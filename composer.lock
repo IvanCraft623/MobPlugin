@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "68b79dac5f24a153b7e3ab9c608c0fb1",
+    "content-hash": "e67c2751be0f8b9dae564f47461cfaf0",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -1951,8 +1951,13 @@
                 "url": "https://github.com/Mojang/bedrock-samples.git",
                 "reference": "46ba6ea985fb5a92d79a9419198f10dda14c199d"
             },
+            "dist": {
+                "type": "zip",
+                "url": "https://github.com/Mojang/bedrock-samples/archive/46ba6ea985fb5a92d79a9419198f10dda14c199d.zip",
+                "reference": "46ba6ea985fb5a92d79a9419198f10dda14c199d"
+            },
             "type": "metadata",
-            "description": "Mojang bedrock-samples spawn-rule JSON schemas (dev-only)."
+            "description": "Mojang bedrock-samples spawn rules and JSON schemas (dev-only). The version is the pinned spawn schema version."
         },
         {
             "name": "myclabs/deep-copy",

@@ -109,4 +109,8 @@ final class AttemptContext implements SpawnConditionContext{
 	public function getPopulation() : RegionPopulation{
 		return $this->population ??= $this->census->getRegionPopulation($this->x >> 4, $this->z >> 4);
 	}
+
+	public function getWorld() : World{
+		return $this->world;
+	}
 }

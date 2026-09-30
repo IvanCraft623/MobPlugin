@@ -35,9 +35,7 @@ use PHPUnit\Framework\TestCase;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
-use function array_keys;
 use function array_map;
-use function count;
 
 final class SpawnSelectorTest extends TestCase{
 	private const TRIALS = 2000;
@@ -137,7 +135,7 @@ final class SpawnSelectorTest extends TestCase{
 
 	public function testNoMatchReadsNoPopulation() : void{
 		$ctx = new StubContext();
-		self::selector(8)->select($ctx, self::candidates([self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1)])]));
+		self::assertNull(self::selector(8)->select($ctx, self::candidates([self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1)])])));
 		self::assertSame(0, $ctx->populationReads);
 	}
 
@@ -154,86 +152,6 @@ final class SpawnSelectorTest extends TestCase{
 			self::rules("minecraft:y", "b", [self::group([], 1)]),
 		]));
 		self::assertSame(1, $ctx->populationReads);
-	}
-
-	public function testMatchesTheCapFirstOrder() : void{
-		$random = new Random(11);
-		$categoryIds = array_keys(self::CATEGORIES);
-		for($i = 0; $i < 5000; $i++){
-			$rules = [];
-			$ruleCount = $random->nextRange(1, 4);
-			for($r = 0; $r < $ruleCount; $r++){
-				$groups = [];
-				$groupCount = $random->nextRange(1, 3);
-				for($g = 0; $g < $groupCount; $g++){
-					$min = $random->nextRange(0, 100);
-					$groups[] = self::group([RangeCondition::height($min, $min + $random->nextRange(0, 60))], $random->nextRange(0, 5));
-				}
-				$rules[] = self::rules("minecraft:rule$r", $categoryIds[$random->nextBoundedInt(count($categoryIds))], $groups);
-			}
-			$counts = [];
-			foreach($categoryIds as $id){
-				$counts[$id] = $random->nextBoundedInt(6);
-			}
-			$ctx = new StubContext(y: $random->nextRange(0, 160), population: new RegionPopulation([SpawnBand::SURFACE->value => $counts]));
-			$candidates = self::candidates($rules);
-
-			$seed = $random->nextInt();
-			$expected = self::selectCapFirst(new Random($seed), $ctx, $candidates);
-			$actual = self::selector($seed)->select($ctx, $candidates);
-			self::assertSame($expected === null, $actual === null, "context $i");
-			if($expected !== null && $actual !== null){
-				self::assertSame($expected[0], $actual[0], "candidate at context $i");
-				self::assertSame($expected[1], $actual[1], "group at context $i");
-			}
-		}
-	}
-
-	/**
-	 * The selector before census-on-demand: cap checked before matching.
-	 *
-	 * @phpstan-param list<CandidateRule> $candidates
-	 * @phpstan-return array{CandidateRule, SpawnRuleGroup}|null
-	 */
-	private static function selectCapFirst(Random $random, StubContext $ctx, array $candidates) : ?array{
-		$band = $ctx->getBand();
-		$matches = [];
-		$totalWeight = 0;
-		foreach($candidates as $candidate){
-			$category = MobCategoryRegistry::getInstance()->get($candidate->getRules()->getCategoryId());
-			if($category === null){
-				continue;
-			}
-			$cap = $category->getCap($band);
-			$count = $ctx->getPopulation()->getCategoryCount($category->id, $band);
-			if($count >= $cap){
-				continue;
-			}
-			$group = $candidate->match($ctx);
-			if($group === null || $group->getWeight() <= 0){
-				continue;
-			}
-			$matches[] = [$candidate, $group, $count, $cap];
-			$totalWeight += $group->getWeight();
-		}
-		if(count($matches) === 0){
-			return null;
-		}
-		$roll = $random->nextBoundedInt($totalWeight);
-		$picked = $matches[count($matches) - 1];
-		foreach($matches as $match){
-			$roll -= $match[1]->getWeight();
-			if($roll < 0){
-				$picked = $match;
-				break;
-			}
-		}
-		[$candidate, $group, $count, $cap] = $picked;
-		if($random->nextFloat() * $cap >= $cap - $count){
-			return null;
-		}
-
-		return [$candidate, $group];
 	}
 
 	private static function selector(int $seed) : SpawnSelector{

@@ -46,7 +46,8 @@ final class StubContext implements SpawnConditionContext{
 		public readonly int $belowTypeId = BlockTypeIds::GRASS,
 		public readonly float $nearestPlayerDistance = 30.0,
 		public readonly int $time = 0,
-		public readonly RegionPopulation $population = new RegionPopulation()
+		public readonly RegionPopulation $population = new RegionPopulation(),
+		public readonly ?World $world = null
 	){}
 
 	public function getBiomeId() : int{
@@ -105,5 +106,9 @@ final class StubContext implements SpawnConditionContext{
 		$this->populationReads++;
 
 		return $this->population;
+	}
+
+	public function getWorld() : World{
+		return $this->world ?? throw new \LogicException("This StubContext has no world; pass one to the constructor");
 	}
 }

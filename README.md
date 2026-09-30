@@ -29,14 +29,14 @@ Pathfinding is computed off the main thread using [Pathfinder](https://github.co
 Each mob has a set of **goals** with priorities — things like attacking, fleeing, wandering, or looking at players. Every tick, the mob evaluates which goals are applicable and runs the highest-priority one, switching seamlessly when conditions change. This mirrors how vanilla Minecraft handles mob AI, producing natural and predictable behavior.
 
 ### Natural Spawning
-MobPlugin also spawns mobs from the vanilla Bedrock [spawn rules](https://github.com/Mojang/bedrock-samples) — the real data-driven spawn conditions Mojang ships, merged once at build time and evaluated through a compact planner index on the main thread. See **[`docs/spawning.md`](docs/spawning.md)** for the full architecture (data/schema validation, the collect → evaluate → apply pipeline, conditions, the planner, and the registration API for third-party mobs).
+MobPlugin also spawns mobs from the vanilla Bedrock [spawn rules](https://github.com/Mojang/bedrock-samples): the real data-driven spawn conditions Mojang ships, merged once at build time and evaluated on the main thread through a cache that decides most conditions once per biome, band, difficulty and liquid. See **[`docs/spawning.md`](docs/spawning.md)** for the full architecture (data and schema validation, the per-attempt pipeline, conditions, the candidate cache, and the registration API for third-party mobs).
 
 ---
 
 ## 📚 Documentation
 
 - **Natural spawning** — [`docs/spawning.md`](docs/spawning.md)
-- **Mob navigation** — the AI pathfinding → move/look/jump pipeline is explained in `Navigation.md` (repo root)
+- **Mob navigation** — [`docs/navigation.md`](docs/navigation.md): the AI pathfinding → move/look/jump pipeline
 
 ---
 

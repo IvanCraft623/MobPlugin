@@ -51,10 +51,14 @@ final class NaturalSpawner{
 
 	private readonly HerdSpawner $herdSpawner;
 
+	/**
+	 * @phpstan-param \Closure(World) : bool $isWorldEnabled whether the world takes part in spawning
+	 */
 	public function __construct(
 		private readonly SpawnRuleRegistry $registry,
 		private readonly int $attemptsPerTick,
 		private readonly WorldManager $worldManager,
+		private readonly \Closure $isWorldEnabled,
 		private readonly Random $random = new Random()
 	){
 		$this->selector = new SpawnSelector($random, MobCategoryRegistry::getInstance());
@@ -73,6 +77,9 @@ final class NaturalSpawner{
 		/** @phpstan-var list<array{World, Player}> $anchors */
 		$anchors = [];
 		foreach($this->worldManager->getWorlds() as $world){
+			if(!($this->isWorldEnabled)($world)){
+				continue;
+			}
 			foreach($world->getPlayers() as $player){
 				$anchors[] = [$world, $player];
 			}

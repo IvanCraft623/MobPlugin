@@ -25,32 +25,138 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
+use function array_diff_key;
+use function array_is_list;
 use function array_keys;
+use function array_map;
 use function dirname;
-use function is_string;
+use function file_get_contents;
+use function json_decode;
+use function sort;
+use function str_starts_with;
+use function strlen;
+use function substr;
+use const JSON_THROW_ON_ERROR;
 
 /**
- * The loader is strict: the bundled resource must compile with zero unhandled
- * degradations — a parser regression or PM block removal fails loudly here.
+ * The strict loader accepts the bundled data, applying exactly its by-design
+ * degradations. Expectations are derived from the raw JSON, not written by hand.
  */
 final class SpawnRulesParseableTest extends TestCase{
-	/**
-	 * Entries skipped by design: vanilla spawns these populations through events
-	 * (patrols/raids), not natural spawning, so their rule sets are never compiled.
-	 */
-	private const BY_DESIGN_SKIPPED_ENTRIES = [
-		"minecraft:pillager" => true,
-		"minecraft:pillager_patrol" => true,
-	];
+	private const DATA_PATH = "/resources/spawning/spawn_rules.json";
 
-	public function testBundledResourceCompilesStrictly() : void{
-		$rules = SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parseFile(dirname(__DIR__, 5) . "/resources/spawning/spawn_rules.json");
+	/** population_control values vanilla spawns through events, never naturally. */
+	private const SKIPPED_CATEGORIES = ["pillager" => true, "pillager_patrol" => true];
 
-		self::assertNotEmpty($rules);
-		foreach(array_keys($rules) as $identifier){
-			self::assertStringStartsWith("minecraft:", is_string($identifier) ? $identifier : (string) $identifier);
-			self::assertArrayNotHasKey($identifier, self::BY_DESIGN_SKIPPED_ENTRIES);
+	/** @phpstan-var array<string, array{string, list<array<string, mixed>>}> identifier => [population_control, raw groups] */
+	private static array $raw;
+
+	/** @phpstan-var array<string, array{string, list<SpawnRuleGroup>}> */
+	private static array $parsed;
+
+	public static function setUpBeforeClass() : void{
+		$path = dirname(__DIR__, 5) . self::DATA_PATH;
+		$contents = file_get_contents($path);
+		self::assertIsString($contents);
+		$decoded = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+		self::assertIsArray($decoded);
+
+		self::$raw = [];
+		foreach($decoded as $identifier => $entry){
+			self::assertIsString($identifier);
+			self::assertIsArray($entry);
+			$spawnRules = $entry["minecraft:spawn_rules"] ?? null;
+			self::assertIsArray($spawnRules);
+			$categoryId = $spawnRules["description"]["population_control"] ?? null;
+			self::assertIsString($categoryId, "$identifier has no population_control");
+			$conditions = $spawnRules["conditions"] ?? [];
+			self::assertIsArray($conditions);
+			$groups = [];
+			foreach(array_is_list($conditions) ? $conditions : [$conditions] as $group){
+				self::assertIsArray($group);
+				$groups[] = $group;
+			}
+			self::$raw[$identifier] = [$categoryId, $groups];
 		}
-		self::assertArrayHasKey("minecraft:goat", $rules, "goat must load — its only missing block name (powder_snow) is a documented, by-design drop");
+
+		// Throws on anything the strict loader can't compile.
+		self::$parsed = SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parseFile($path);
+	}
+
+	public function testOnlyEventDrivenPopulationsAreSkipped() : void{
+		$skipped = array_keys(array_diff_key(self::$raw, self::$parsed));
+		$expected = [];
+		foreach(self::$raw as $identifier => [$categoryId]){
+			if(isset(self::SKIPPED_CATEGORIES[$categoryId])){
+				$expected[] = $identifier;
+			}
+		}
+		sort($skipped);
+		sort($expected);
+
+		self::assertNotEmpty($expected, "the data no longer has event-driven populations; update SKIPPED_CATEGORIES");
+		self::assertSame($expected, $skipped);
+	}
+
+	public function testCategoryIsThePopulationControl() : void{
+		foreach(self::$parsed as $identifier => [$categoryId]){
+			self::assertSame(self::$raw[$identifier][0], $categoryId, $identifier);
+		}
+	}
+
+	/**
+	 * Vanilla data uses unsupported components only in skipped entries, so every parsed
+	 * group count must match its raw count unless future data says otherwise.
+	 */
+	public function testOnlyGroupsWithUnsupportedComponentsAreDropped() : void{
+		$unsupported = [];
+		foreach(SpawnRulesParser::UNSUPPORTED_VANILLA as $component){
+			$unsupported[$component] = true;
+		}
+
+		foreach(self::$parsed as $identifier => [, $groups]){
+			$kept = 0;
+			foreach(self::$raw[$identifier][1] as $group){
+				if(!self::usesAny($group, $unsupported)){
+					$kept++;
+				}
+			}
+			self::assertCount($kept, $groups, $identifier);
+		}
+	}
+
+	public function testGroupWithUnsupportedComponentIsDropped() : void{
+		$json = <<<'JSON'
+		{
+			"minecraft:test": {
+				"format_version": "1.8.0",
+				"minecraft:spawn_rules": {
+					"description": {"identifier": "minecraft:test", "population_control": "monster"},
+					"conditions": [
+						{"minecraft:spawns_on_surface": {}, "minecraft:delay_filter": {"min": 1, "max": 2, "identifier": "x", "spawn_chance": 50}},
+						{"minecraft:spawns_on_surface": {}}
+					]
+				}
+			}
+		}
+		JSON;
+		$parsed = SpawnRulesParser::createVanilla(new BiomeTagMap([]))->parse($json);
+
+		self::assertCount(1, $parsed["minecraft:test"][1]);
+	}
+
+	/**
+	 * @phpstan-param array<string, mixed> $group
+	 * @phpstan-param array<string, true>  $components unprefixed component names
+	 */
+	private static function usesAny(array $group, array $components) : bool{
+		foreach(array_map(static fn(int|string $key) : string => (string) $key, array_keys($group)) as $key){
+			$name = str_starts_with($key, "minecraft:") ? substr($key, strlen("minecraft:")) : $key;
+			if(isset($components[$name])){
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
