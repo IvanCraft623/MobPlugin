@@ -24,8 +24,10 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
-use pocketmine\block\Block;
+use pocketmine\block\utils\SupportType;
+use pocketmine\math\Facing;
 use pocketmine\world\World;
+use function count;
 
 /**
  * Where the ground is and whether a mob fits, for one world during one pass. Sampling,
@@ -39,19 +41,12 @@ final class SpawnPlacement{
 		private readonly World $world
 	){}
 
-	/**
-	 * Solid, full cube and opaque: leaves, glass, slabs, fences and liquids are not.
-	 */
-	public static function isSpawnableGround(Block $block) : bool{
-		return $block->isSolid() && $block->isFullCube() && !$block->isTransparent();
-	}
-
 	public function getWorld() : World{
 		return $this->world;
 	}
 
 	/**
-	 * The highest spawnable-ground block scanning down from the column top, so air,
+	 * The highest block with a full top surface scanning down from the column top, so air,
 	 * liquids and canopies are skipped. Falls back to the column top when there is none.
 	 */
 	public function getGroundY(int $x, int $z) : int{
@@ -64,7 +59,7 @@ final class SpawnPlacement{
 		$topY = $this->world->getHighestBlockAt($x, $z) ?? $minY;
 		$groundY = $topY;
 		for($y = $topY; $y >= $minY; $y--){
-			if(self::isSpawnableGround($this->world->getBlockAt($x, $y, $z, false))){
+			if($this->world->getBlockAt($x, $y, $z, addToCache: false)->getSupportType(Facing::UP) === SupportType::FULL){
 				$groundY = $y;
 				break;
 			}
@@ -74,11 +69,12 @@ final class SpawnPlacement{
 	}
 
 	/**
-	 * Land mobs need passable, non-liquid feet and head cells over spawnable ground.
-	 * Aquatic mobs need the liquid at the feet and a passable head cell, but no ground.
+	 * The head goes in a block with no collision boxes. Land mobs need the same of their
+	 * non-liquid feet, over a block with a full top surface. Aquatic mobs need the liquid
+	 * at the feet, but no ground.
 	 */
 	public function hasRoom(int $x, int $y, int $z, SpawnLiquid $requiredLiquid = SpawnLiquid::NONE) : bool{
-		if($this->world->getBlockAt($x, $y + 1, $z)->isSolid()){
+		if(count($this->world->getBlockAt($x, $y + 1, $z)->getCollisionBoxes()) !== 0){
 			return false;
 		}
 		$feet = $this->world->getBlockAt($x, $y, $z);
@@ -86,11 +82,11 @@ final class SpawnPlacement{
 		if($requiredLiquid !== SpawnLiquid::NONE){
 			return $feetLiquid === $requiredLiquid;
 		}
-		if($feet->isSolid() || $feetLiquid !== SpawnLiquid::NONE){
+		if(count($feet->getCollisionBoxes()) !== 0 || $feetLiquid !== SpawnLiquid::NONE){
 			return false;
 		}
 
-		return self::isSpawnableGround($this->world->getBlockAt($x, $y - 1, $z));
+		return $this->world->getBlockAt($x, $y - 1, $z)->getSupportType(Facing::UP) === SupportType::FULL;
 	}
 
 	public function clear() : void{

@@ -27,10 +27,13 @@ use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
+use pocketmine\block\utils\SupportType;
+use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use function cos;
+use function count;
 use function floor;
 use function min;
 use function sin;
@@ -48,9 +51,6 @@ final class WorldSpawnPass{
 
 	/** Outer spawn ring radius, matching the simulation-distance-4 shell (24-44). */
 	private const MAX_PLAYER_DISTANCE = 44;
-
-	/** Cave positions tried per column (vanilla scans every spawnable block; we sample). */
-	private const CAVE_ATTEMPTS_PER_COLUMN = 2;
 
 	private readonly SpawnPlacement $placement;
 
@@ -97,8 +97,8 @@ final class WorldSpawnPass{
 	}
 
 	/**
-	 * One column in the ring around the anchor: a surface position on its ground, then a
-	 * few cave positions at random depths below it.
+	 * One column in the ring around the anchor: the surface position on its ground, then
+	 * every cave position below it down to the world bottom, as vanilla does.
 	 */
 	public function attempt(Vector3 $anchor) : void{
 		CustomTimings::$naturalSpawningSample->startTiming();
@@ -134,27 +134,27 @@ final class WorldSpawnPass{
 			$this->tryPosition($x, $groundY + 1, $z, $groundY);
 		}
 
-		// Strictly below the ground, so genuinely underground.
+		// Strictly below the ground, so genuinely underground. The scan doesn't stop when a
+		// herd spawns.
 		$minY = $this->world->getMinY();
-		if($groundY - 1 <= $minY){
-			return;
-		}
-		for($i = 0; $i < self::CAVE_ATTEMPTS_PER_COLUMN; $i++){
-			$this->tryPosition($x, $this->random->nextRange($minY + 1, $groundY - 1), $z, $groundY);
+		for($y = $groundY - 1; $y > $minY; $y--){
+			$this->tryPosition($x, $y, $z, $groundY);
 		}
 	}
 
 	/**
-	 * Non-solid feet and head over spawnable ground, far enough from every player.
+	 * Feet and head in blocks with no collision boxes, over a block with a full top surface,
+	 * far enough from every player. Blocks stay out of the world's block cache: a column
+	 * scan reads far more of them than anything else will reuse.
 	 */
 	private function tryPosition(int $x, int $y, int $z, int $groundY) : void{
-		// Feet first: most uniform-depth cave samples land in rock.
-		$feet = $this->world->getBlockAt($x, $y, $z);
-		if($feet->isSolid() || $this->world->getBlockAt($x, $y + 1, $z)->isSolid()){
+		// Feet first: most of a column is rock, which costs this one read.
+		$feet = $this->world->getBlockAt($x, $y, $z, addToCache: false);
+		if(count($feet->getCollisionBoxes()) !== 0 || count($this->world->getBlockAt($x, $y + 1, $z, addToCache: false)->getCollisionBoxes()) !== 0){
 			return;
 		}
-		$below = $this->world->getBlockAt($x, $y - 1, $z);
-		if(!SpawnPlacement::isSpawnableGround($below)){
+		$below = $this->world->getBlockAt($x, $y - 1, $z, addToCache: false);
+		if($below->getSupportType(Facing::UP) !== SupportType::FULL){
 			return;
 		}
 		$nearestSquared = PHP_FLOAT_MAX;

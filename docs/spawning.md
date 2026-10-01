@@ -94,9 +94,10 @@ next tick.
 Each attempt runs from start to finish before the next one begins:
 
 1. **Sample.** Pick a column in the 24–44 block ring around the anchor (uniform over the
-   ring's area): one surface position on its ground plus two cave positions at random
-   depths below it. A position is dropped if its chunk isn't light populated, it is within
-   24 blocks of any player, or its feet or head cell is solid.
+   ring's area): the surface position on its ground, then every position below it down
+   to the world bottom, as vanilla does. A position is dropped if its chunk isn't light
+   populated, it is within 24 blocks of any player, or it fails the placement rules
+   below.
 2. **Candidates.** Build an `AttemptContext` and ask the `CandidateCache` which rules could
    still spawn there. An empty list ends the position.
 3. **Select.** `SpawnSelector` skips candidates whose category is unregistered or has a
@@ -115,10 +116,18 @@ cheaper checks never trigger a census.
 
 ### Placement and census
 
-`SpawnPlacement` defines the ground (the highest solid, full, opaque block, so air,
-liquids and canopies are skipped) and whether a mob fits (land mobs: passable, non-liquid
-feet and head over spawnable ground; aquatic mobs: the required liquid at the feet and a
-passable head). The pass, census and herd spawner share one instance, which memoizes
+Every position must pass two block checks, whatever the mob:
+
+- **Ground** is a block with a full top surface, `getSupportType(Facing::UP) === FULL`:
+  stone, ice, upper slabs and soul sand qualify; leaves, lower slabs, carpets and fences
+  don't. A column's ground is its highest such block, so air, liquids and canopies are
+  skipped, and everything below it is a cave.
+- **Feet and head** go in blocks with no collision boxes,
+  `count(getCollisionBoxes()) === 0`: air, liquids, grass, flowers, and also torches,
+  rails and buttons.
+
+Land mobs need non-liquid feet over ground; aquatic mobs need their liquid at the feet
+and no ground. The pass, census and herd spawner share one instance, which memoizes
 ground Y per column.
 
 `PopulationCensus` counts mobs per chunk from `World::getChunkEntities()` by band,
@@ -302,7 +311,9 @@ is read from the global file only, since it is one budget for the whole server.
 
 Deliberate deviations from vanilla:
 
-- Cave positions are sampled (two per column) instead of scanning every spawnable block.
+- Ground is any block with a full top surface, so glass, barriers and upside-down stairs
+  count although vanilla doesn't spawn on them.
+- Every position is checked as a 1×2 block column, not with the mob's bounding box.
 - A counted mob's band comes from its current position, not where it spawned.
 - `permute_type` event suffixes are stripped at parse time: permuted types spawn in base
   form.
