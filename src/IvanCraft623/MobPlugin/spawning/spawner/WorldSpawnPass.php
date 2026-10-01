@@ -27,7 +27,6 @@ use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
-use pocketmine\block\Block;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
@@ -64,8 +63,6 @@ final class WorldSpawnPass{
 
 	private readonly int $time;
 
-	private readonly int $weatherLightPenalty;
-
 	public function __construct(
 		private readonly World $world,
 		private readonly CandidateCache $candidateCache,
@@ -84,7 +81,6 @@ final class WorldSpawnPass{
 		$this->players = $players;
 		$this->difficulty = $world->getDifficulty();
 		$this->time = $world->getTime();
-		$this->weatherLightPenalty = 0; //TODO: weather (not implemented in PocketMine-MP)
 	}
 
 	/**
@@ -134,9 +130,8 @@ final class WorldSpawnPass{
 		$z = ($chunkZ << 4) + $this->random->nextBoundedInt(16);
 
 		$groundY = $this->placement->getGroundY($x, $z);
-		$ground = $this->world->getBlockAt($x, $groundY, $z);
-		if(SpawnPlacement::isSpawnableGround($ground) && $groundY + 2 < $this->world->getMaxY()){
-			$this->tryPosition($x, $groundY + 1, $z, $groundY, $ground);
+		if($groundY + 2 < $this->world->getMaxY()){
+			$this->tryPosition($x, $groundY + 1, $z, $groundY);
 		}
 
 		// Strictly below the ground, so genuinely underground.
@@ -145,18 +140,23 @@ final class WorldSpawnPass{
 			return;
 		}
 		for($i = 0; $i < self::CAVE_ATTEMPTS_PER_COLUMN; $i++){
-			$y = $this->random->nextRange($minY + 1, $groundY - 1);
-			if($this->world->getBlockAt($x, $y, $z)->isSolid()){
-				continue; // most uniform-depth samples land in rock
-			}
-			$below = $this->world->getBlockAt($x, $y - 1, $z);
-			if(SpawnPlacement::isSpawnableGround($below)){
-				$this->tryPosition($x, $y, $z, $groundY, $below);
-			}
+			$this->tryPosition($x, $this->random->nextRange($minY + 1, $groundY - 1), $z, $groundY);
 		}
 	}
 
-	private function tryPosition(int $x, int $y, int $z, int $groundY, Block $below) : void{
+	/**
+	 * Non-solid feet and head over spawnable ground, far enough from every player.
+	 */
+	private function tryPosition(int $x, int $y, int $z, int $groundY) : void{
+		// Feet first: most uniform-depth cave samples land in rock.
+		$feet = $this->world->getBlockAt($x, $y, $z);
+		if($feet->isSolid() || $this->world->getBlockAt($x, $y + 1, $z)->isSolid()){
+			return;
+		}
+		$below = $this->world->getBlockAt($x, $y - 1, $z);
+		if(!SpawnPlacement::isSpawnableGround($below)){
+			return;
+		}
 		$nearestSquared = PHP_FLOAT_MAX;
 		foreach($this->players as [$px, $py, $pz]){
 			$distanceSquared = ($px - $x - 0.5) ** 2 + ($py - $y) ** 2 + ($pz - $z - 0.5) ** 2;
@@ -164,10 +164,6 @@ final class WorldSpawnPass{
 				return;
 			}
 			$nearestSquared = min($nearestSquared, $distanceSquared);
-		}
-		$feet = $this->world->getBlockAt($x, $y, $z);
-		if($feet->isSolid() || $this->world->getBlockAt($x, $y + 1, $z)->isSolid()){
-			return;
 		}
 
 		$ctx = new AttemptContext(
@@ -183,8 +179,7 @@ final class WorldSpawnPass{
 			$below->getTypeId(),
 			$this->difficulty,
 			sqrt($nearestSquared),
-			$this->time,
-			$this->weatherLightPenalty
+			$this->time
 		);
 		$candidates = $this->candidateCache->getCandidates($ctx);
 		if($candidates === []){
@@ -217,9 +212,8 @@ final class WorldSpawnPass{
 		[$candidate, $group] = $selected;
 		CustomTimings::$naturalSpawningSpawn->startTiming();
 		try{
-			if($this->herdSpawner->spawn($this->placement, $ctx, $candidate->getRules(), $group, $this->players)){
-				$this->invalidateWorldMemos();
-			}
+			$this->herdSpawner->spawn($this->placement, $ctx, $candidate->getRules(), $group, $this->players);
+			$this->invalidateWorldMemos();
 		}finally{
 			CustomTimings::$naturalSpawningSpawn->stopTiming();
 		}

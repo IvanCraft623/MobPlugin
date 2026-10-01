@@ -42,7 +42,6 @@ final class StubContext implements SpawnConditionContext{
 		public readonly int $z = 0,
 		public readonly int $groundY = 64,
 		public readonly int $light = 15,
-		public readonly int $weatherLightPenalty = 0,
 		public readonly int $belowTypeId = BlockTypeIds::GRASS,
 		public readonly float $nearestPlayerDistance = 30.0,
 		public readonly int $time = 0,
@@ -84,10 +83,6 @@ final class StubContext implements SpawnConditionContext{
 
 	public function getLight() : int{
 		return $this->light;
-	}
-
-	public function getWeatherLightPenalty() : int{
-		return $this->weatherLightPenalty;
 	}
 
 	public function getBelowTypeId() : int{

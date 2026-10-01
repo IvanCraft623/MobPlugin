@@ -130,9 +130,9 @@ the sum over the 9×9 chunk grid around its chunk.
 
 Memos keyed by location (ground Y, chunk and region counts, an attempt's light and
 population) live only as long as one `WorldSpawnPass`, so world edits between ticks can't
-make them stale. Within a pass only factories can edit the world, so after a herd whose
-factories ran the pass calls `invalidateWorldMemos()` and the next attempt recounts from
-the world, new entities included.
+make them stale. Within a pass only factories can edit the world, so after every herd
+(its lead always spawns) the pass calls `invalidateWorldMemos()` and the next attempt
+recounts from the world, new entities included.
 
 The only long-lived cache, `CandidateCache`, is keyed by values, never by location: every
 attempt reads its key fresh from the world, so no world edit (`setChunk()`,
@@ -310,8 +310,7 @@ Deliberate deviations from vanilla:
   first entry is used.
 - Herd members are placed by room only; the rule's conditions aren't re-checked at their
   offsets.
-- PocketMine has no weather, so the weather light penalty is always 0
-  (`WorldSpawnPass` holds the placeholder).
+- PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
 - A herd can overshoot its category's cap: the cap is checked once, then the whole herd
   spawns (vanilla pack spawning).
 - The global mob cap (200) is not enforced.

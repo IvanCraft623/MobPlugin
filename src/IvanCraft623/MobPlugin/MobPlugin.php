@@ -60,7 +60,6 @@ use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\ClosureTask;
-use pocketmine\scheduler\TaskHandler;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
@@ -106,11 +105,6 @@ class MobPlugin extends PluginBase {
 	/** @var array<string, array<string, int>> */
 	private array $entitiesStats = [];
 
-	private ?NaturalSpawner $naturalSpawner = null;
-
-	/** @var TaskHandler<ClosureTask>|null */
-	private ?TaskHandler $spawningTaskHandler = null;
-
 	public function onLoad() : void {
 		self::setInstance($this);
 	}
@@ -132,10 +126,6 @@ class MobPlugin extends PluginBase {
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 	}
 
-	public function onDisable() : void {
-		$this->spawningTaskHandler?->cancel();
-	}
-
 	private function registerNaturalSpawning() : void{
 		$settings = Settings::getGlobalSettings();
 
@@ -143,13 +133,13 @@ class MobPlugin extends PluginBase {
 			return;
 		}
 
-		$this->naturalSpawner = new NaturalSpawner(
+		$spawner = new NaturalSpawner(
 			SpawnRuleRegistry::getInstance(),
 			$settings->getMobNaturalSpawningAttemptsPerTick(),
 			$this->getServer()->getWorldManager(),
 			static fn(World $world) : bool => Settings::getSettings($world->getFolderName())->isMobNaturalSpawningEnabled()
 		);
-		$this->spawningTaskHandler = $this->getScheduler()->scheduleRepeatingTask(new ClosureTask($this->naturalSpawner->tick(...)), 1);
+		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask($spawner->tick(...)), 1);
 	}
 
 	public function getRandom() : Random {

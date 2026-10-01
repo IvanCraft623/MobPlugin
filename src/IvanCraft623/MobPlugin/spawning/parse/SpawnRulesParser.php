@@ -231,7 +231,8 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::BRIGHTNESS_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(BrightnessFilterData::class);
-			$builder->addCondition(RangeCondition::brightness($m->min ?? 0, $m->max ?? 15, $m->adjust_for_weather ?? false));
+			// adjust_for_weather is ignored: PocketMine-MP has no weather to darken the light.
+			$builder->addCondition(RangeCondition::brightness($m->min ?? 0, $m->max ?? 15));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DIFFICULTY_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DifficultyFilterData::class);

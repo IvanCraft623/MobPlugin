@@ -28,10 +28,9 @@ use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
+use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
-use function array_key_last;
-use function count;
 
 /**
  * Places a whole herd before any factory runs, so plugin code editing the world can't
@@ -48,36 +47,28 @@ final class HerdSpawner{
 
 	/**
 	 * The whole herd spawns even if it overshoots the cap slightly (vanilla pack spawning).
+	 * The lead's position was checked by the pass, so it always spawns.
 	 *
 	 * @phpstan-param list<array{float, float, float}> $players x, y, z of every player in the world
-	 *
-	 * @return bool whether any factory ran
 	 */
-	public function spawn(SpawnPlacement $placement, AttemptContext $lead, SpawnRules $rules, SpawnRuleGroup $group, array $players) : bool{
+	public function spawn(SpawnPlacement $placement, AttemptContext $lead, SpawnRules $rules, SpawnRuleGroup $group, array $players) : void{
 		$herdSize = $this->random->nextRange($group->getHerdMin(), $group->getHerdMax());
-		$members = [];
-		for($i = 0; $i < $herdSize; $i++){
-			$position = $i === 0
-				? new Vector3($lead->getX() + 0.5, $lead->getY(), $lead->getZ() + 0.5)
-				: $this->getMemberPosition($placement, $group, $lead);
+		$members = [new Vector3($lead->getX() + 0.5, $lead->getY(), $lead->getZ() + 0.5)];
+		for($i = 1; $i < $herdSize; $i++){
+			$position = $this->getMemberPosition($placement, $group, $lead);
 			if($position !== null && self::isFarEnoughFromPlayers($position, $players)){
 				$members[] = $position;
 			}
 		}
-		if(count($members) === 0){
-			return false;
-		}
 
 		// permute_type targets without rules fall back to the base rules.
-		$permutation = $this->pickPermutation($group);
+		$permutation = Utils::pickWeighted($this->random, $group->getPermutations());
 		$spawnRules = $permutation !== null ? ($this->registry->get($permutation) ?? $rules) : $rules;
 		$factory = $spawnRules->getFactory();
 		$world = $placement->getWorld();
 		foreach($members as $position){
 			$factory($world, $position, $group)->spawnToAll();
 		}
-
-		return true;
 	}
 
 	/**
@@ -109,25 +100,5 @@ final class HerdSpawner{
 		}
 
 		return true;
-	}
-
-	private function pickPermutation(SpawnRuleGroup $group) : ?string{
-		$permutations = $group->getPermutations();
-		$total = 0;
-		foreach($permutations as $weight){
-			$total += $weight;
-		}
-		if($total <= 0){
-			return null;
-		}
-		$roll = $this->random->nextBoundedInt($total);
-		foreach($permutations as $identifier => $weight){
-			$roll -= $weight;
-			if($roll < 0){
-				return $identifier;
-			}
-		}
-
-		return array_key_last($permutations);
 	}
 }

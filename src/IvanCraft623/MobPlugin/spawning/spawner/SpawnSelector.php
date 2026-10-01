@@ -26,8 +26,8 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
+use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\utils\Random;
-use function count;
 
 /**
  * Filter, then pick: every candidate under its category cap contributes its first
@@ -48,7 +48,7 @@ final class SpawnSelector{
 		$band = $ctx->getBand();
 		/** @phpstan-var list<array{CandidateRule, SpawnRuleGroup, int, int}> $matches candidate, group, category count, cap */
 		$matches = [];
-		$totalWeight = 0;
+		$weights = [];
 		$population = null;
 		foreach($candidates as $candidate){
 			$category = $this->categories->get($candidate->getRules()->getCategoryId());
@@ -69,13 +69,13 @@ final class SpawnSelector{
 				continue;
 			}
 			$matches[] = [$candidate, $group, $count, $cap];
-			$totalWeight += $group->getWeight();
+			$weights[] = $group->getWeight();
 		}
-		if(count($matches) === 0){
+		$index = Utils::pickWeighted($this->random, $weights);
+		if($index === null){
 			return null;
 		}
-
-		[$candidate, $group, $count, $cap] = $this->pick($matches, $totalWeight);
+		[$candidate, $group, $count, $cap] = $matches[$index];
 
 		// The fuller the category's region, the likelier the attempt is dropped.
 		if($this->random->nextFloat() * $cap >= $cap - $count){
@@ -83,21 +83,5 @@ final class SpawnSelector{
 		}
 
 		return [$candidate, $group];
-	}
-
-	/**
-	 * @phpstan-param non-empty-list<array{CandidateRule, SpawnRuleGroup, int, int}> $matches
-	 * @phpstan-return array{CandidateRule, SpawnRuleGroup, int, int}
-	 */
-	private function pick(array $matches, int $totalWeight) : array{
-		$roll = $this->random->nextBoundedInt($totalWeight);
-		foreach($matches as $match){
-			$roll -= $match[1]->getWeight();
-			if($roll < 0){
-				return $match;
-			}
-		}
-
-		return $matches[count($matches) - 1];
 	}
 }

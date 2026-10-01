@@ -24,16 +24,14 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use function max;
 
 final class RangeCondition implements SpawnCondition{
 	private const KIND_BRIGHTNESS = 0;
-	private const KIND_BRIGHTNESS_WEATHER = 1;
-	private const KIND_DIFFICULTY = 2;
-	private const KIND_HEIGHT = 3;
-	private const KIND_DISTANCE = 4;
-	private const KIND_WORLD_AGE = 5;
-	private const KIND_BAND = 6;
+	private const KIND_DIFFICULTY = 1;
+	private const KIND_HEIGHT = 2;
+	private const KIND_DISTANCE = 3;
+	private const KIND_WORLD_AGE = 4;
+	private const KIND_BAND = 5;
 
 	private function __construct(
 		private readonly int $kind,
@@ -45,8 +43,8 @@ final class RangeCondition implements SpawnCondition{
 		}
 	}
 
-	public static function brightness(int $min, int $max, bool $adjustForWeather = false) : self{
-		return new self($adjustForWeather ? self::KIND_BRIGHTNESS_WEATHER : self::KIND_BRIGHTNESS, $min, $max);
+	public static function brightness(int $min, int $max) : self{
+		return new self(self::KIND_BRIGHTNESS, $min, $max);
 	}
 
 	public static function difficulty(int $min, int $max) : self{
@@ -76,7 +74,6 @@ final class RangeCondition implements SpawnCondition{
 	public function test(SpawnConditionContext $ctx) : bool{
 		$value = match($this->kind){
 			self::KIND_BRIGHTNESS => $ctx->getLight(),
-			self::KIND_BRIGHTNESS_WEATHER => max(0, $ctx->getLight() - $ctx->getWeatherLightPenalty()),
 			self::KIND_DIFFICULTY => $ctx->getDifficulty(),
 			self::KIND_HEIGHT => $ctx->getY(),
 			self::KIND_DISTANCE => $ctx->getNearestPlayerDistance(),

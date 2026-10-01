@@ -94,7 +94,6 @@ final class CandidateCacheTest extends TestCase{
 				y: $random->nextRange(-64, 200),
 				z: $random->nextRange(-5000, 5000),
 				light: $random->nextBoundedInt(16),
-				weatherLightPenalty: $random->nextBoundedInt(4),
 				belowTypeId: $belowTypeIds[$random->nextBoundedInt(count($belowTypeIds))],
 				nearestPlayerDistance: $random->nextFloat() * 128,
 				time: $random->nextBoundedInt(2000000),

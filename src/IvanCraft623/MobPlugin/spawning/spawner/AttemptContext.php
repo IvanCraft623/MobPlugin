@@ -50,8 +50,7 @@ final class AttemptContext implements SpawnConditionContext{
 		private readonly int $belowTypeId,
 		private readonly int $difficulty,
 		private readonly float $nearestPlayerDistance,
-		private readonly int $time,
-		private readonly int $weatherLightPenalty
+		private readonly int $time
 	){}
 
 	public function getBiomeId() : int{
@@ -88,10 +87,6 @@ final class AttemptContext implements SpawnConditionContext{
 
 	public function getLight() : int{
 		return $this->light ??= $this->world->getFullLightAt($this->x, $this->y, $this->z);
-	}
-
-	public function getWeatherLightPenalty() : int{
-		return $this->weatherLightPenalty;
 	}
 
 	public function getBelowTypeId() : int{

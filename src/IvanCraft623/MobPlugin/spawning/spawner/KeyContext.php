@@ -79,10 +79,6 @@ final class KeyContext implements SpawnConditionContext{
 		throw PointInputRequired::point();
 	}
 
-	public function getWeatherLightPenalty() : int{
-		throw PointInputRequired::point();
-	}
-
 	public function getBelowTypeId() : int{
 		throw PointInputRequired::point();
 	}

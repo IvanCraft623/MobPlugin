@@ -47,8 +47,6 @@ interface SpawnConditionContext{
 
 	public function getLight() : int;
 
-	public function getWeatherLightPenalty() : int;
-
 	public function getBelowTypeId() : int;
 
 	public function getNearestPlayerDistance() : float;
