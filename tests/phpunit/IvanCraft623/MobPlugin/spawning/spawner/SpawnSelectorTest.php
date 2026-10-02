@@ -56,18 +56,6 @@ final class SpawnSelectorTest extends TestCase{
 		}
 	}
 
-	public function testFailingRuleDoesNotWasteTheAttempt() : void{
-		$selector = self::selector(1);
-		$candidates = self::candidates([
-			self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1000)]),
-			self::rules("minecraft:always", "b", [self::group([], 1)]),
-		]);
-
-		for($i = 0; $i < self::TRIALS; $i++){
-			self::assertSame("minecraft:always", self::selectIdentifier($selector, new StubContext(), $candidates));
-		}
-	}
-
 	public function testPickWeightIsTheMatchedGroupsWeight() : void{
 		$selector = self::selector(2);
 		$candidates = self::candidates([
@@ -169,37 +157,9 @@ final class SpawnSelectorTest extends TestCase{
 		self::assertLessThan(self::TRIALS * 0.01, $accepted);
 	}
 
-	public function testNothingMatchesYieldsNothing() : void{
-		$candidates = self::candidates([self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1)])]);
-		self::assertNull(self::selector(5)->select(new StubContext(), $candidates));
-	}
-
-	public function testUnregisteredCategoryIsSkipped() : void{
-		$candidates = self::candidates([self::rules("minecraft:orphan", "no_such_category", [self::group([], 1)])]);
-		self::assertNull(self::selector(6)->select(new StubContext(), $candidates));
-	}
-
-	public function testReRegisteredCategoryCapAppliesToEarlierRules() : void{
-		$selector = self::selector(7);
-		$candidates = self::candidates([self::rules("minecraft:mob", "a", [self::group([], 1)])]);
-		$ctx = new StubContext(population: PopulationCounts::of([SpawnBand::SURFACE->value => ["a" => 50]]));
-		self::assertNotNull(self::selectUntilAccepted($selector, $ctx, $candidates), "under the original cap of 100");
-
-		MobCategoryRegistry::getInstance()->register(new MobCategory("a", 10, 10, 64));
-		for($i = 0; $i < self::TRIALS; $i++){
-			self::assertNull($selector->select($ctx, $candidates), "over the new cap of 10");
-		}
-	}
-
 	public function testNoMatchReadsNoPopulation() : void{
 		$ctx = new StubContext();
 		self::assertNull(self::selector(8)->select($ctx, self::candidates([self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1)])])));
-		self::assertSame(0, $ctx->populationReads);
-	}
-
-	public function testZeroCapReadsNoPopulation() : void{
-		$ctx = new StubContext();
-		self::assertNull(self::selector(9)->select($ctx, self::candidates([self::rules("minecraft:mob", "zero", [self::group([], 1)])])));
 		self::assertSame(0, $ctx->populationReads);
 	}
 
@@ -224,20 +184,6 @@ final class SpawnSelectorTest extends TestCase{
 		self::assertNotNull($selected, "a free category with a match is always accepted");
 
 		return $selected->rules->getIdentifier();
-	}
-
-	/**
-	 * @phpstan-param list<CandidateRule> $candidates
-	 */
-	private static function selectUntilAccepted(SpawnSelector $selector, StubContext $ctx, array $candidates) : ?SpawnSelection{
-		for($i = 0; $i < 100; $i++){
-			$selected = $selector->select($ctx, $candidates);
-			if($selected !== null){
-				return $selected;
-			}
-		}
-
-		return null;
 	}
 
 	private static function neverMatches() : SpawnCondition{

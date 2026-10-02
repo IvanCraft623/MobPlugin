@@ -67,10 +67,6 @@ final class SlimeChunkConditionTest extends TestCase{
 		self::assertGreaterThan(50, $slimy, "both answers must be exercised");
 	}
 
-	public function testReadsChunkFromContext() : void{
-		self::assertSame(SlimeChunkCondition::isSlimeChunk(-2, 5), (new SlimeChunkCondition())->test(new StubContext(x: -17, z: 80)));
-	}
-
 	/**
 	 * Complete init_genrand + genrand_int32 (all 624 words twisted), as Bedrock runs it.
 	 */

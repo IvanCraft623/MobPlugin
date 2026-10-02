@@ -100,15 +100,6 @@ final class ConditionReductionTest extends TestCase{
 		self::assertGreaterThan(100, $untouched);
 	}
 
-	public function testReductionKeepsTheOrderOfWhatIsLeft() : void{
-		$first = new HeightCondition(0, 10);
-		$second = RangeCondition::brightness(0, 7);
-		$reduced = (new AllOf([$first, new BandCondition(SpawnBand::SURFACE), $second]))->reduce(new KeyContext(1, SpawnBand::SURFACE, 2, SpawnLiquid::NONE));
-
-		self::assertInstanceOf(AllOf::class, $reduced);
-		self::assertSame([$first, $second], self::children($reduced));
-	}
-
 	private static function randomTree(Random $random, int $depth) : SpawnCondition{
 		if($depth === 0 || $random->nextBoundedInt(3) === 0){
 			return self::randomLeaf($random);

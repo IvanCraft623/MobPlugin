@@ -85,6 +85,8 @@ final class SpawnRulesParserStrictnessTest extends TestCase{
 		yield "empty any_of" => [["minecraft:biome_filter" => ["any_of" => []]], "any_of"];
 		yield "snow test on a non-boolean" => [["minecraft:biome_filter" => ["test" => "is_snow_covered", "value" => "yes"]], "value"];
 		yield "unknown component" => [["minecraft:made_up" => []], "made_up"];
+		yield "empty biome filter node" => [["minecraft:biome_filter" => ["any_of" => [["test" => "has_biome_tag", "value" => "warm"], []]]], "any_of"];
+		yield "two liquids" => [["minecraft:spawns_underwater" => [], "minecraft:spawns_lava" => []], "both"];
 	}
 
 	/**

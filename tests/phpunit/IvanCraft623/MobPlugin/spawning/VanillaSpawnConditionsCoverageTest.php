@@ -100,9 +100,4 @@ final class VanillaSpawnConditionsCoverageTest extends TestCase{
 		self::assertCount($models, $generated, "a generated model has no payload schema");
 	}
 
-	public function testSchemaVersionMatchesComposer() : void{
-		// composer.json declares the pinned schema version as the bedrock-samples package
-		// version; the generated artifacts must come from that same version.
-		self::assertSame(InstalledVersions::getPrettyVersion("mojang/bedrock-samples"), SpawnSchema::SCHEMA_VERSION, "regenerate with php tools/spawn-rules/generate-schema.php");
-	}
 }

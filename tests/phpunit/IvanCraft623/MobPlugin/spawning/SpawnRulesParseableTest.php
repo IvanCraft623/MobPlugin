@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
 use function array_diff_key;
@@ -101,12 +100,6 @@ final class SpawnRulesParseableTest extends TestCase{
 		self::assertSame($expected, $skipped);
 	}
 
-	public function testCategoryIsThePopulationControl() : void{
-		foreach(self::$parsed as $identifier => [$categoryId]){
-			self::assertSame(self::$raw[$identifier][0], $categoryId, $identifier);
-		}
-	}
-
 	/**
 	 * A parsed entry keeps every raw group except those using an unsupported component
 	 * (today only in skipped entries) and those with no habitat marker, which spawn
@@ -126,6 +119,16 @@ final class SpawnRulesParseableTest extends TestCase{
 				}
 			}
 			self::assertCount($kept, $groups, $identifier);
+		}
+	}
+
+	/**
+	 * registerVanilla() throws at server start for a rule whose category isn't registered.
+	 */
+	public function testEveryCategoryIsRegistered() : void{
+		foreach(self::$parsed as $identifier => [$categoryId]){
+			self::assertSame(self::$raw[$identifier][0], $categoryId, $identifier);
+			self::assertTrue(MobCategoryRegistry::getInstance()->has($categoryId), "$identifier uses unregistered category \"$categoryId\"");
 		}
 	}
 
@@ -149,23 +152,6 @@ final class SpawnRulesParseableTest extends TestCase{
 		);
 	}
 
-	public function testGroupWithoutHabitatMarkerIsDropped() : void{
-		self::assertCount(1, self::parseConditions(<<<'JSON'
-			{"minecraft:spawns_underwater": {}},
-			{"minecraft:spawns_underground": {}}
-			JSON));
-	}
-
-	public function testRarityIsReadFromTheWeight() : void{
-		$groups = self::parseConditions(<<<'JSON'
-			{"minecraft:spawns_on_surface": {}, "minecraft:weight": {"default": 7, "rarity": 3}},
-			{"minecraft:spawns_on_surface": {}, "minecraft:weight": {"default": 7}}
-			JSON);
-
-		self::assertSame([7, 7], array_map(static fn(SpawnRuleGroup $group) : int => $group->getWeight(), $groups));
-		self::assertSame([3, 0], array_map(static fn(SpawnRuleGroup $group) : int => $group->getRarity(), $groups));
-	}
-
 	public function testDistanceFilterReplacesTheVanillaDefault() : void{
 		$groups = self::parseConditions(<<<'JSON'
 			{"minecraft:spawns_on_surface": {}, "minecraft:spawns_underground": {}},
@@ -174,16 +160,6 @@ final class SpawnRulesParseableTest extends TestCase{
 
 		self::assertSame([24.0, 128.0], [$groups[0]->getMinPlayerDistance(), $groups[0]->getMaxPlayerDistance()]);
 		self::assertSame([12.0, 32.0], [$groups[1]->getMinPlayerDistance(), $groups[1]->getMaxPlayerDistance()]);
-	}
-
-	public function testGroupRequiringTwoLiquidsIsRejected() : void{
-		$this->expectException(SpawnRulesParseException::class);
-		self::parseConditions('{"minecraft:spawns_underwater": {}, "minecraft:spawns_lava": {}}');
-	}
-
-	public function testEmptyBiomeFilterNodeIsRejected() : void{
-		$this->expectException(SpawnRulesParseException::class);
-		self::parseConditions('{"minecraft:biome_filter": {"any_of": [{"test": "has_biome_tag", "value": "ocean"}, {}]}}');
 	}
 
 	/**

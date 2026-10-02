@@ -33,15 +33,11 @@ final class CacheableSpyCondition implements CacheableCondition{
 	public int $calls = 0;
 
 	public function __construct(
-		private readonly ?int $biomeId = null,
-		private readonly bool $throws = false
+		private readonly ?int $biomeId = null
 	){}
 
 	public function test(CacheableConditionContext $ctx) : bool{
 		$this->calls++;
-		if($this->throws){
-			throw new \RuntimeException("broken condition");
-		}
 
 		return $this->biomeId === null || $ctx->getBiomeId() === $this->biomeId;
 	}

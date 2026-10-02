@@ -45,9 +45,8 @@ CI regenerates it and fails on any diff.
 | Check | Where | Catches |
 |---|---|---|
 | Regenerate, then `git diff --exit-code` | CI (`ci.yml`) | `spawn_rules.json`, `NOTICE.md` or `parse/schema/` edited by hand, not regenerated after a pin change, or holding a stale model |
-| `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile; entries or groups skipped or dropped beyond the by-design cases |
-| `MobCategoryRegistryTest` | `composer test` | a rule whose `population_control` has no registered category |
-| `VanillaSpawnConditionsCoverageTest` | `composer test` | a component without a parser; artifacts generated from another version |
+| `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile; entries or groups skipped or dropped beyond the by-design cases; a rule whose `population_control` has no registered category |
+| `VanillaSpawnConditionsCoverageTest` | `composer test` | a component without a parser; a payload schema without its generated model |
 
 The Mojang schemas are permissive (draft-07 allows extra properties), so schema
 validation is a coarse shape check. The strict loader is the authority on semantics.
