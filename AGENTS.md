@@ -80,7 +80,7 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
 - A PHPUnit suite lives in `tests/phpunit` (run with `composer test`). It covers natural
   spawning: the strict loader against the bundled data, the categories it uses, the
   generated schema artifacts, the slime-chunk algorithm, the candidate cache, the spawn
-  selector and the population census. Everything else
+  selector, the population census and which blocks a mob can stand in. Everything else
   (including the per-tick runtime) is verified via PHPStan, php-cs-fixer, building the
   phar, and manual in-server testing.
 - Spawn data: after changing the `mojang/bedrock-samples` pin, regenerate with

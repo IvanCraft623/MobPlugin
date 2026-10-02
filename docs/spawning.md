@@ -139,9 +139,10 @@ Every position must pass two block checks, whatever the mob:
   stone, ice, upper slabs and soul sand qualify; leaves, lower slabs, carpets and fences
   don't. A column's ground is its highest such block, so air, liquids and canopies are
   skipped, and everything below it is a cave.
-- **Feet and head** go in blocks with no collision boxes,
-  `count(getCollisionBoxes()) === 0`: air, liquids, grass, flowers, and also torches,
-  rails and buttons.
+- **Feet and head** go in blocks with nothing to collide with: air, liquids, grass,
+  flowers, and also torches, rails and buttons. A flat collision box doesn't count, so a
+  single snow layer (which PocketMine gives a zero-height box) is fine; thicker snow
+  isn't.
 
 Aquatic mobs spawn in the liquid block right above the ground (the sea floor), as in
 vanilla. The pass and the census share one `GroundLevelCache`, which memoizes ground Y

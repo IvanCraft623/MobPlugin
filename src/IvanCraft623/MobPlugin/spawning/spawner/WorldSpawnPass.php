@@ -29,13 +29,13 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCensus;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
+use pocketmine\block\Block;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use function array_flip;
 use function ceil;
-use function count;
 use function floor;
 use function max;
 use function min;
@@ -180,7 +180,21 @@ final class WorldSpawnPass{
 	}
 
 	/**
-	 * Feet and head in blocks with no collision boxes, over a block with a full top surface.
+	 * Whether a mob can stand in the block: nothing in it to collide with. A flat collision
+	 * box doesn't count, which is how PocketMine models a single snow layer.
+	 */
+	public static function isPassable(Block $block) : bool{
+		foreach($block->getCollisionBoxes() as $box){
+			if($box->maxY > $box->minY){
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Feet and head in passable blocks, over a block with a full top surface.
 	 * Blocks stay out of the world's block cache: a column scan reads far more of them than
 	 * anything else will reuse.
 	 *
@@ -189,7 +203,7 @@ final class WorldSpawnPass{
 	private function tryPosition(int $x, int $y, int $z, SpawnBand $band, array $nearby) : void{
 		// Feet first: most of a column is rock, which costs this one read.
 		$feet = $this->world->getBlockAt($x, $y, $z, addToCache: false);
-		if(count($feet->getCollisionBoxes()) !== 0 || count($this->world->getBlockAt($x, $y + 1, $z, addToCache: false)->getCollisionBoxes()) !== 0){
+		if(!self::isPassable($feet) || !self::isPassable($this->world->getBlockAt($x, $y + 1, $z, addToCache: false))){
 			return;
 		}
 		$below = $this->world->getBlockAt($x, $y - 1, $z, addToCache: false);
