@@ -21,25 +21,30 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\spawner;
+namespace IvanCraft623\MobPlugin\spawning\population;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use pocketmine\entity\Entity;
 
-final class RegionPopulation{
-	/**
-	 * @phpstan-param array<int, array<string, int>> $categoryCounts   band value => category id => count
-	 * @phpstan-param array<int, array<string, int>> $identifierCounts band value => entity identifier => count
-	 */
-	public function __construct(
-		private readonly array $categoryCounts = [],
-		private readonly array $identifierCounts = []
-	){}
+/**
+ * The band each entity counts in, kept here so entities need not know about spawning.
+ * Natural spawning sets it when it places a mob; for any other entity the census sets it
+ * from where the entity stands the first time it is counted. Entries last as long as
+ * the entity object: one that is unloaded and loaded again is unknown.
+ */
+final class EntitySpawnBands{
+	/** @phpstan-var \WeakMap<Entity, SpawnBand> */
+	private \WeakMap $bands;
 
-	public function getCategoryCount(string $categoryId, SpawnBand $band) : int{
-		return $this->categoryCounts[$band->value][$categoryId] ?? 0;
+	public function __construct(){
+		$this->bands = new \WeakMap();
 	}
 
-	public function getIdentifierCount(string $identifier, SpawnBand $band) : int{
-		return $this->identifierCounts[$band->value][$identifier] ?? 0;
+	public function set(Entity $entity, SpawnBand $band) : void{
+		$this->bands[$entity] = $band;
+	}
+
+	public function get(Entity $entity) : ?SpawnBand{
+		return $this->bands[$entity] ?? null;
 	}
 }

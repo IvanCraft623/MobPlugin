@@ -23,15 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
+use IvanCraft623\MobPlugin\spawning\population\EntitySpawnBands;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
-use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use IvanCraft623\MobPlugin\utils\Utils;
+use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
-use pocketmine\world\World;
 use function min;
 use function round;
 
@@ -39,30 +36,36 @@ use function round;
  * Spawns every member on the lead's block, as vanilla does.
  */
 final class HerdSpawner{
-
 	public function __construct(
 		private readonly SpawnRuleRegistry $registry,
-		private readonly Random $random
+		private readonly Random $random,
+		private readonly EntitySpawnBands $spawnBands
 	){}
 
 	/**
-	 * @param int $room mobs the category can still take, at least 1
+	 * @phpstan-return list<Entity> the members that spawned
 	 */
-	public function spawn(World $world, AttemptContext $lead, SpawnRules $rules, SpawnRuleGroup $group, int $room) : void{
+	public function spawn(AttemptContext $lead, SpawnSelection $selection) : array{
+		$rules = $selection->rules;
+		$group = $selection->group;
 		$herdMin = $group->getHerdMin();
-		$herdSize = min($room, $herdMin + (int) round($this->random->nextFloat() ** 2 * ($group->getHerdMax() - $herdMin)));
-		$onSurface = $lead->getBand() === SpawnBand::SURFACE;
+		$herdSize = min($selection->room, $herdMin + (int) round($this->random->nextFloat() ** 2 * ($group->getHerdMax() - $herdMin)));
+		$band = $lead->getBand();
+		$world = $lead->getWorld();
+		$position = new Vector3($lead->getX() + 0.5, $lead->getY(), $lead->getZ() + 0.5);
+		$spawned = [];
 
 		for($i = 0; $i < $herdSize; $i++){
 			// permute_type targets without rules fall back to the base rules.
 			$permutation = Utils::pickWeighted($this->random, $group->getPermutations());
 			$spawnRules = $permutation !== null ? ($this->registry->get($permutation) ?? $rules) : $rules;
 
-			$entity = ($spawnRules->getFactory())($world, new Vector3($lead->getX() + 0.5, $lead->getY(), $lead->getZ() + 0.5), $group);
-			if($entity instanceof Mob){
-				$entity->setSpawnedOnSurface($onSurface);
-			}
+			$entity = ($spawnRules->getFactory())($world, $position, $group);
+			$this->spawnBands->set($entity, $band);
 			$entity->spawnToAll();
+			$spawned[] = $entity;
 		}
+
+		return $spawned;
 	}
 }

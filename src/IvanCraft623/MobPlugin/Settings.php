@@ -36,6 +36,8 @@ use function yaml_parse_file;
 use const DIRECTORY_SEPARATOR;
 
 final class Settings{
+	private const MAX_ATTEMPTS_PER_TICK_FLOOR = 1;
+	private const MAX_ATTEMPTS_PER_TICK_CEILING = 100;
 
 	private static Settings $globalSettings;
 
@@ -105,12 +107,12 @@ final class Settings{
 		$this->mobNaturalSpawningMaxAttemptsPerTick = self::clampMaxAttemptsPerTick($this->getSpawningSubProperty($data, "max-attempts-per-tick", 8));
 	}
 
-	private const LOWEST_MAX_ATTEMPTS_PER_TICK = 1;
-
-	private const HIGHEST_MAX_ATTEMPTS_PER_TICK = 100;
-
+	/**
+	 * Keeps max-attempts-per-tick in a sane range: 0 would turn spawning off, and every
+	 * attempt is a column scan on the main thread.
+	 */
 	private static function clampMaxAttemptsPerTick(bool|int $value) : int{
-		return max(self::LOWEST_MAX_ATTEMPTS_PER_TICK, min(self::HIGHEST_MAX_ATTEMPTS_PER_TICK, (int) $value));
+		return max(self::MAX_ATTEMPTS_PER_TICK_FLOOR, min(self::MAX_ATTEMPTS_PER_TICK_CEILING, (int) $value));
 	}
 
 	/**

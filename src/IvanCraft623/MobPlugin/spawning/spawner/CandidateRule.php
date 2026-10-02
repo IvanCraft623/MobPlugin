@@ -50,7 +50,11 @@ final class CandidateRule{
 	 */
 	public function match(SpawnConditionContext $ctx) : array{
 		$matches = [];
+		$distance = $ctx->getNearestPlayerDistance();
 		foreach($this->groups as [$group, $residuals]){
+			if(!$group->admitsPlayerDistance($distance)){
+				continue;
+			}
 			foreach($residuals as $condition){
 				if(!$condition->test($ctx)){
 					continue 2;

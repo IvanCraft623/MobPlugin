@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\world\World;
 
@@ -43,8 +43,6 @@ interface SpawnConditionContext{
 
 	public function getZ() : int;
 
-	public function getGroundY() : int;
-
 	public function getLight() : int;
 
 	public function getBelowTypeId() : int;
@@ -53,7 +51,7 @@ interface SpawnConditionContext{
 
 	public function getTime() : int;
 
-	public function getPopulation() : RegionPopulation;
+	public function getPopulation() : PopulationCounts;
 
 	/**
 	 * The world of the attempt, for conditions that need more than the values above. It is

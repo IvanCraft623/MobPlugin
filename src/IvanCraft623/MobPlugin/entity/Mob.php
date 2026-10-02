@@ -94,7 +94,6 @@ abstract class Mob extends Living {
 	//TODO!
 
 	private const TAG_PERSISTENT = "Persistent"; //TAG_Byte
-	private const TAG_SPAWNED_ON_SURFACE = "SpawnedOnSurface"; //TAG_Byte
 
 	/**
 	 * The O(players) nearest-player scan in checkDespawn() is only worth doing periodically; the
@@ -134,8 +133,6 @@ abstract class Mob extends Living {
 
 	protected bool $isPersistent = false;
 
-	/** Null when natural spawning didn't place this mob. */
-	protected ?bool $spawnedOnSurface = null;
 	protected bool $hasAi = true;
 
 	protected Attribute $attackDamageAttr;
@@ -179,8 +176,7 @@ abstract class Mob extends Living {
 		MobPlugin::getInstance()->trackEntity($this);
 
 		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
-		$spawnedOnSurface = $nbt->getByte(self::TAG_SPAWNED_ON_SURFACE, -1);
-		$this->spawnedOnSurface = $spawnedOnSurface === -1 ? null : $spawnedOnSurface !== 0;
+
 		$this->goalSelector = new GoalSelector();
 		$this->targetSelector = new GoalSelector();
 		$this->lookControl = new LookControl($this);
@@ -196,9 +192,7 @@ abstract class Mob extends Living {
 		$nbt = parent::saveNBT();
 
 		$nbt->setByte(self::TAG_PERSISTENT, $this->isPersistent ? 1 : 0);
-		if ($this->spawnedOnSurface !== null) {
-			$nbt->setByte(self::TAG_SPAWNED_ON_SURFACE, $this->spawnedOnSurface ? 1 : 0);
-		}
+
 		return $nbt;
 	}
 
@@ -387,19 +381,6 @@ abstract class Mob extends Living {
 	 */
 	public function isPersistent() : bool{
 		return $this->isPersistent;
-	}
-
-	/**
-	 * @return $this
-	 */
-	public function setSpawnedOnSurface(?bool $value) : self{
-		$this->spawnedOnSurface = $value;
-
-		return $this;
-	}
-
-	public function isSpawnedOnSurface() : ?bool{
-		return $this->spawnedOnSurface;
 	}
 
 	/**

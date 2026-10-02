@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
 use IvanCraft623\MobPlugin\spawning\MobCategory;
 use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
+use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
@@ -90,7 +91,7 @@ final class SpawnSelectorTest extends TestCase{
 			self::rules("minecraft:capped", "full", [self::group([], 1000)]),
 			self::rules("minecraft:free", "free", [self::group([], 1)]),
 		]);
-		$ctx = new StubContext(population: new RegionPopulation([SpawnBand::SURFACE->value => ["full" => 2]]));
+		$ctx = new StubContext(population: PopulationCounts::of([SpawnBand::SURFACE->value => ["full" => 2]]));
 
 		for($i = 0; $i < self::TRIALS; $i++){
 			self::assertSame("minecraft:free", self::selectIdentifier($selector, $ctx, $candidates));
@@ -100,13 +101,25 @@ final class SpawnSelectorTest extends TestCase{
 	public function testCategoryUnderItsCapIsAlwaysAcceptedWithItsRoom() : void{
 		$selector = self::selector(4);
 		$candidates = self::candidates([self::rules("minecraft:mob", "m", [self::group([], 1)])]);
-		$ctx = new StubContext(population: new RegionPopulation([SpawnBand::SURFACE->value => ["m" => 3]]));
+		$ctx = new StubContext(population: PopulationCounts::of([SpawnBand::SURFACE->value => ["m" => 3]]));
 
 		for($i = 0; $i < self::TRIALS; $i++){
 			$selected = $selector->select($ctx, $candidates);
 			self::assertNotNull($selected, "vanilla has no cap roll");
-			self::assertSame(1, $selected[2]); // 4 - 3
+			self::assertSame(1, $selected->room); // 4 - 3
 		}
+	}
+
+	public function testDensityLimitTrimsTheRoom() : void{
+		$selector = self::selector(14);
+		$candidates = self::candidates([self::rules("minecraft:mob", "free", [new SpawnRuleGroup([], surfaceDensityLimit: 5)])]);
+
+		$selected = $selector->select(new StubContext(population: PopulationCounts::of([], [SpawnBand::SURFACE->value => ["minecraft:mob" => 3]])), $candidates);
+		self::assertNotNull($selected);
+		self::assertSame(2, $selected->room); // 5 - 3, well under the category's 100
+
+		$atLimit = new StubContext(population: PopulationCounts::of([], [SpawnBand::SURFACE->value => ["minecraft:mob" => 5]]));
+		self::assertNull($selector->select($atLimit, $candidates));
 	}
 
 	public function testEveryMatchingGroupOfARuleCompetes() : void{
@@ -119,7 +132,7 @@ final class SpawnSelectorTest extends TestCase{
 		for($i = 0; $i < self::TRIALS; $i++){
 			$selected = $selector->select(new StubContext(), $candidates);
 			self::assertNotNull($selected);
-			if($selected[1] === $light){
+			if($selected->group === $light){
 				$lightPicks++;
 			}
 		}
@@ -169,7 +182,7 @@ final class SpawnSelectorTest extends TestCase{
 	public function testReRegisteredCategoryCapAppliesToEarlierRules() : void{
 		$selector = self::selector(7);
 		$candidates = self::candidates([self::rules("minecraft:mob", "a", [self::group([], 1)])]);
-		$ctx = new StubContext(population: new RegionPopulation([SpawnBand::SURFACE->value => ["a" => 50]]));
+		$ctx = new StubContext(population: PopulationCounts::of([SpawnBand::SURFACE->value => ["a" => 50]]));
 		self::assertNotNull(self::selectUntilAccepted($selector, $ctx, $candidates), "under the original cap of 100");
 
 		MobCategoryRegistry::getInstance()->register(new MobCategory("a", 10, 10, 64));
@@ -210,14 +223,13 @@ final class SpawnSelectorTest extends TestCase{
 		$selected = $selector->select($ctx, $candidates);
 		self::assertNotNull($selected, "a free category with a match is always accepted");
 
-		return $selected[0]->getRules()->getIdentifier();
+		return $selected->rules->getIdentifier();
 	}
 
 	/**
 	 * @phpstan-param list<CandidateRule> $candidates
-	 * @phpstan-return array{CandidateRule, SpawnRuleGroup, int}|null
 	 */
-	private static function selectUntilAccepted(SpawnSelector $selector, StubContext $ctx, array $candidates) : ?array{
+	private static function selectUntilAccepted(SpawnSelector $selector, StubContext $ctx, array $candidates) : ?SpawnSelection{
 		for($i = 0; $i < 100; $i++){
 			$selected = $selector->select($ctx, $candidates);
 			if($selected !== null){

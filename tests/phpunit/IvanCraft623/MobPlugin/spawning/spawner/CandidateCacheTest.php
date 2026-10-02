@@ -27,13 +27,14 @@ use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
 use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
-use IvanCraft623\MobPlugin\spawning\condition\DensityLimitCondition;
+use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
+use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
@@ -59,7 +60,7 @@ final class CandidateCacheTest extends TestCase{
 		}
 		// The registry's slime workaround: a combinator mixing key and point reads.
 		$rules[] = self::rules("minecraft:slime_like", [new SpawnRuleGroup([new AnyOf([
-			new AllOf([RangeCondition::height(null, 39), new SlimeChunkCondition()]),
+			new AllOf([new HeightCondition(null, 39), new SlimeChunkCondition()]),
 			new BiomeTagCondition($tags, "spawns_slimes_on_surface"),
 		])])]);
 
@@ -97,7 +98,7 @@ final class CandidateCacheTest extends TestCase{
 				belowTypeId: $belowTypeIds[$random->nextBoundedInt(count($belowTypeIds))],
 				nearestPlayerDistance: 12 + $random->nextFloat() * 116,
 				time: $random->nextBoundedInt(2000000),
-				population: new RegionPopulation([], [$band->value => $counts])
+				population: PopulationCounts::of([], [$band->value => $counts])
 			);
 
 			$actual = [];
@@ -143,7 +144,7 @@ final class CandidateCacheTest extends TestCase{
 			foreach([1, 2] as $biomeId){
 				$ctx = new StubContext(biomeId: $biomeId, y: $i);
 				foreach($cache->getCandidates($ctx) as $candidate){
-					self::assertNotNull($candidate->match($ctx));
+					self::assertNotSame([], $candidate->match($ctx));
 				}
 			}
 		}
@@ -175,7 +176,7 @@ final class CandidateCacheTest extends TestCase{
 	}
 
 	public function testIdenticalOutcomesShareOneList() : void{
-		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([RangeCondition::height(0, 10)])])]);
+		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([new HeightCondition(0, 10)])])]);
 		$easy = $cache->getCandidates(new StubContext(difficulty: 1));
 		$hard = $cache->getCandidates(new StubContext(difficulty: 3));
 		self::assertSame($easy, $hard);
@@ -203,26 +204,7 @@ final class CandidateCacheTest extends TestCase{
 		}
 	}
 
-	public function testPopulationReadersRunLast() : void{
-		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([
-			new DensityLimitCondition("minecraft:a", 5, null),
-			RangeCondition::brightness(0, 7),
-		])])]);
-
-		$bright = new StubContext(light: 15);
-		foreach($cache->getCandidates($bright) as $candidate){
-			self::assertSame([], $candidate->match($bright));
-		}
-		self::assertSame(0, $bright->populationReads, "a failing light check spares the census");
-
-		$dark = new StubContext(light: 3);
-		foreach($cache->getCandidates($dark) as $candidate){
-			self::assertNotNull($candidate->match($dark));
-		}
-		self::assertSame(1, $dark->populationReads);
-	}
-
-	public function testUnclassifiedResidualsKeepDataOrder() : void{
+	public function testResidualsKeepDataOrder() : void{
 		$spy = new SpyCondition(cacheable: false);
 		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([$spy, RangeCondition::brightness(0, 7)])])]);
 		$ctx = new StubContext(light: 15);
@@ -252,7 +234,7 @@ final class CandidateCacheTest extends TestCase{
 		for($i = 0; $i < 3; $i++){
 			$ctx = new StubContext(world: $world);
 			foreach($cache->getCandidates($ctx) as $candidate){
-				self::assertNotNull($candidate->match($ctx));
+				self::assertNotSame([], $candidate->match($ctx));
 			}
 		}
 		self::assertSame([$world, $world, $world], $condition->seen, "kept as a residual and given the attempt's world");

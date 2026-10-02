@@ -28,7 +28,7 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
 use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use pocketmine\entity\Entity;
@@ -97,7 +97,7 @@ final class SpawnRuleRegistry{
 		foreach($groups as $group){
 			$result[] = $group->withConditions([new AnyOf([
 				new AllOf([
-					RangeCondition::height(null, 39), // the block stood on: feet at Y 40 or below
+					new HeightCondition(null, 39), // feet at Y 40 or below
 					new SlimeChunkCondition(),
 				]),
 				new BiomeTagCondition($tags, "spawns_slimes_on_surface"),

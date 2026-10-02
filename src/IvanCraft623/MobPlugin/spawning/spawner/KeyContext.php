@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
+use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\world\World;
@@ -71,10 +72,6 @@ final class KeyContext implements SpawnConditionContext{
 		throw PointInputRequired::point();
 	}
 
-	public function getGroundY() : int{
-		throw PointInputRequired::point();
-	}
-
 	public function getLight() : int{
 		throw PointInputRequired::point();
 	}
@@ -91,8 +88,8 @@ final class KeyContext implements SpawnConditionContext{
 		throw PointInputRequired::point();
 	}
 
-	public function getPopulation() : RegionPopulation{
-		throw PointInputRequired::population();
+	public function getPopulation() : PopulationCounts{
+		throw PointInputRequired::point();
 	}
 
 	public function getWorld() : World{

@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
+use IvanCraft623\MobPlugin\spawning\population\PopulationCensus;
+use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\world\World;
@@ -35,7 +37,7 @@ use pocketmine\world\World;
 final class AttemptContext implements SpawnConditionContext{
 	private ?int $light = null;
 
-	private ?RegionPopulation $population = null;
+	private ?PopulationCounts $population = null;
 
 	public function __construct(
 		private readonly World $world,
@@ -43,7 +45,6 @@ final class AttemptContext implements SpawnConditionContext{
 		private readonly int $x,
 		private readonly int $y,
 		private readonly int $z,
-		private readonly int $groundY,
 		private readonly SpawnBand $band,
 		private readonly int $biomeId,
 		private readonly SpawnLiquid $feetLiquid,
@@ -81,10 +82,6 @@ final class AttemptContext implements SpawnConditionContext{
 		return $this->z;
 	}
 
-	public function getGroundY() : int{
-		return $this->groundY;
-	}
-
 	public function getLight() : int{
 		return $this->light ??= $this->world->getFullLightAt($this->x, $this->y, $this->z);
 	}
@@ -101,7 +98,7 @@ final class AttemptContext implements SpawnConditionContext{
 		return $this->time;
 	}
 
-	public function getPopulation() : RegionPopulation{
+	public function getPopulation() : PopulationCounts{
 		return $this->population ??= $this->census->getRegionPopulation($this->x >> 4, $this->z >> 4);
 	}
 

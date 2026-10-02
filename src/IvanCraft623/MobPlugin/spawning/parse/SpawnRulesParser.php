@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
-use IvanCraft623\MobPlugin\spawning\condition\DensityLimitCondition;
+use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnsOnBlock;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\BrightnessFilterData;
@@ -240,11 +240,11 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::HEIGHT_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(HeightFilterData::class);
-			$builder->addCondition(RangeCondition::height($m->min, $m->max));
+			$builder->addCondition(new HeightCondition($m->min, $m->max));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DISTANCE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DistanceFilterData::class);
-			$builder->setDistance($m->min, $m->max);
+			$builder->setPlayerDistance($m->min, $m->max);
 		});
 		$this->registerComponent(VanillaSpawnConditions::WORLD_AGE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(WorldAgeFilterData::class);
@@ -258,7 +258,7 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::DENSITY_LIMIT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DensityLimitData::class);
-			$builder->addCondition(new DensityLimitCondition($builder->getIdentifier(), $m->surface, $m->underground));
+			$builder->setDensityLimit($m->surface, $m->underground);
 		});
 		$this->registerComponent(VanillaSpawnConditions::WEIGHT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(WeightData::class);

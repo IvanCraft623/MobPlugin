@@ -30,24 +30,7 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 final class PointInputRequired extends \Error{
 	private static ?self $point = null;
 
-	private static ?self $population = null;
-
-	private function __construct(
-		string $message,
-		private readonly bool $isPopulation
-	){
-		parent::__construct($message);
-	}
-
 	public static function point() : self{
-		return self::$point ??= new self("Condition reads a per-attempt value", false);
-	}
-
-	public static function population() : self{
-		return self::$population ??= new self("Condition reads the region population", true);
-	}
-
-	public function isPopulation() : bool{
-		return $this->isPopulation;
+		return self::$point ??= new self("Condition reads a per-attempt value");
 	}
 }

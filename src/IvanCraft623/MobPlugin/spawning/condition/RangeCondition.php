@@ -24,20 +24,17 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 
 final class RangeCondition implements SpawnCondition{
 	private const KIND_BRIGHTNESS = 0;
 	private const KIND_DIFFICULTY = 1;
-	private const KIND_HEIGHT = 2;
-	private const KIND_DISTANCE = 3;
-	private const KIND_WORLD_AGE = 4;
-	private const KIND_BAND = 5;
+	private const KIND_WORLD_AGE = 2;
+	private const KIND_BAND = 3;
 
 	private function __construct(
 		private readonly int $kind,
-		private readonly ?float $min,
-		private readonly ?float $max
+		private readonly ?int $min,
+		private readonly ?int $max
 	){
 		if($min !== null && $max !== null && $min > $max){
 			throw new \InvalidArgumentException("Range minimum ($min) must not exceed maximum ($max)");
@@ -50,17 +47,6 @@ final class RangeCondition implements SpawnCondition{
 
 	public static function difficulty(int $min, int $max) : self{
 		return new self(self::KIND_DIFFICULTY, $min, $max);
-	}
-
-	/**
-	 * Vanilla tests the block the mob stands on, and also the feet when they are in a liquid.
-	 */
-	public static function height(?int $min, ?int $max) : self{
-		return new self(self::KIND_HEIGHT, $min, $max);
-	}
-
-	public static function distance(?float $min, ?float $max) : self{
-		return new self(self::KIND_DISTANCE, $min, $max);
 	}
 
 	public static function worldAge(?int $min, ?int $max) : self{
@@ -76,25 +62,14 @@ final class RangeCondition implements SpawnCondition{
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
-		if($this->kind === self::KIND_HEIGHT){
-			$y = $ctx->getY();
-
-			return $this->contains($y - 1) && ($ctx->getFeetLiquid() === SpawnLiquid::NONE || $this->contains($y));
-		}
-
 		$value = match($this->kind){
 			self::KIND_BRIGHTNESS => $ctx->getLight(),
 			self::KIND_DIFFICULTY => $ctx->getDifficulty(),
-			self::KIND_DISTANCE => $ctx->getNearestPlayerDistance(),
 			self::KIND_WORLD_AGE => $ctx->getTime(),
 			self::KIND_BAND => $ctx->getBand()->value,
 			default => throw new \LogicException("Unknown range kind $this->kind"),
 		};
 
-		return $this->contains($value);
-	}
-
-	private function contains(int|float $value) : bool{
 		return ($this->min === null || $value >= $this->min) && ($this->max === null || $value <= $this->max);
 	}
 }

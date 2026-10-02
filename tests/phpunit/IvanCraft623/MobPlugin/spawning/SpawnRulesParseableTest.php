@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
@@ -173,8 +172,8 @@ final class SpawnRulesParseableTest extends TestCase{
 			{"minecraft:spawns_on_surface": {}, "minecraft:spawns_underground": {}, "minecraft:distance_filter": {"min": 12, "max": 32}}
 			JSON);
 
-		self::assertEquals([RangeCondition::distance(24, 128)], $groups[0]->getConditions());
-		self::assertEquals([RangeCondition::distance(12, 32)], $groups[1]->getConditions());
+		self::assertSame([24.0, 128.0], [$groups[0]->getMinPlayerDistance(), $groups[0]->getMaxPlayerDistance()]);
+		self::assertSame([12.0, 32.0], [$groups[1]->getMinPlayerDistance(), $groups[1]->getMaxPlayerDistance()]);
 	}
 
 	public function testGroupRequiringTwoLiquidsIsRejected() : void{

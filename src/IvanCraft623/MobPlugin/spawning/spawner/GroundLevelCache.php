@@ -28,20 +28,16 @@ use pocketmine\math\Facing;
 use pocketmine\world\World;
 
 /**
- * Where the ground is, for one world during one pass. Sampling and band classification
+ * Ground Y per column, for one world during one pass. Sampling and band classification
  * share it, so they always agree.
  */
-final class SpawnPlacement{
+final class GroundLevelCache{
 	/** @phpstan-var array<int, int> column key => ground Y */
 	private array $groundY = [];
 
 	public function __construct(
 		private readonly World $world
 	){}
-
-	public function getWorld() : World{
-		return $this->world;
-	}
 
 	/**
 	 * The highest block with a full top surface scanning down from the column top, so air,

@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\CustomTimings;
+use IvanCraft623\MobPlugin\spawning\population\MobPopulation;
+use IvanCraft623\MobPlugin\spawning\population\PopulationCensus;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
@@ -32,9 +34,13 @@ use pocketmine\math\Facing;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use function array_flip;
+use function ceil;
 use function count;
+use function floor;
+use function max;
 use function min;
 use function sqrt;
+use const INF;
 use const PHP_FLOAT_MAX;
 
 /**
@@ -42,11 +48,11 @@ use const PHP_FLOAT_MAX;
  * the next one starts; every location-keyed memo lives only as long as the pass.
  */
 final class WorldSpawnPass{
-	/** Up to this tick radius vanilla clamps every rule's maximum player distance to 44. */
-	private const CLAMPED_TICK_RADIUS = 4;
-	private const CLAMPED_PLAYER_DISTANCE = 44;
+	/** At a tick radius this low, vanilla spawns nothing farther than this from a player. */
+	private const LOW_TICK_RADIUS = 4;
+	private const LOW_TICK_RADIUS_MAX_PLAYER_DISTANCE = 44;
 
-	private readonly SpawnPlacement $placement;
+	private readonly GroundLevelCache $groundLevels;
 
 	private readonly PopulationCensus $census;
 
@@ -57,21 +63,31 @@ final class WorldSpawnPass{
 
 	private readonly int $time;
 
-	private readonly bool $clampDistance;
+	private readonly bool $lowTickRadius;
 
-	/** @phpstan-var array<int, int>|null chunk hash => index, read on first use */
-	private ?array $tickingChunks = null;
+	/** No position farther than this from every player can spawn anything; INF for no limit. */
+	private readonly float $reach;
 
+	/** @phpstan-var array<int, int>|null chunk hash => index, built on first use */
+	private ?array $tickingChunkIndex = null;
+
+	/**
+	 * @phpstan-param list<int> $tickingChunks     the world's ticking chunk hashes this tick
+	 * @phpstan-param float     $maxPlayerDistance the largest maximum player distance of any group; INF for no limit
+	 */
 	public function __construct(
 		private readonly World $world,
+		private readonly array $tickingChunks,
 		private readonly CandidateCache $candidateCache,
 		private readonly SpawnSelector $selector,
 		private readonly HerdSpawner $herdSpawner,
+		MobPopulation $population,
 		SpawnRuleRegistry $registry,
-		private readonly Random $random
+		private readonly Random $random,
+		float $maxPlayerDistance
 	){
-		$this->placement = new SpawnPlacement($world);
-		$this->census = new PopulationCensus($this->placement, $registry, CustomTimings::$naturalSpawningCensus);
+		$this->groundLevels = new GroundLevelCache($world);
+		$this->census = $population->createCensus($world, $this->groundLevels, $registry, CustomTimings::$naturalSpawningCensus);
 		$players = [];
 		foreach($world->getPlayers() as $player){
 			$pos = $player->getPosition();
@@ -80,7 +96,8 @@ final class WorldSpawnPass{
 		$this->players = $players;
 		$this->difficulty = $world->getDifficulty();
 		$this->time = $world->getTime();
-		$this->clampDistance = $world->getChunkTickRadius() <= self::CLAMPED_TICK_RADIUS;
+		$this->lowTickRadius = $world->getChunkTickRadius() <= self::LOW_TICK_RADIUS;
+		$this->reach = $this->lowTickRadius ? min(self::LOW_TICK_RADIUS_MAX_PLAYER_DISTANCE, $maxPlayerDistance) : $maxPlayerDistance;
 	}
 
 	/**
@@ -88,8 +105,8 @@ final class WorldSpawnPass{
 	 * every cave position below it down to the world bottom, as vanilla does.
 	 */
 	public function attempt(int $chunkX, int $chunkZ) : void{
-		// Past the clamped radius vanilla instead needs the chunks around to be ticking.
-		if(!$this->clampDistance && !$this->isSurroundedByTickingChunks($chunkX, $chunkZ)){
+		// Above the low radius vanilla instead needs the chunks around to be ticking.
+		if(!$this->lowTickRadius && !$this->isSurroundedByTickingChunks($chunkX, $chunkZ)){
 			return;
 		}
 		CustomTimings::$naturalSpawningSample->startTiming();
@@ -101,10 +118,10 @@ final class WorldSpawnPass{
 	}
 
 	private function isSurroundedByTickingChunks(int $chunkX, int $chunkZ) : bool{
-		$this->tickingChunks ??= array_flip($this->world->getTickingChunks());
+		$this->tickingChunkIndex ??= array_flip($this->tickingChunks);
 		for($x = $chunkX - 1; $x <= $chunkX + 1; $x++){
 			for($z = $chunkZ - 1; $z <= $chunkZ + 1; $z++){
-				if(!isset($this->tickingChunks[World::chunkHash($x, $z)])){
+				if(!isset($this->tickingChunkIndex[World::chunkHash($x, $z)])){
 					return false;
 				}
 			}
@@ -113,29 +130,49 @@ final class WorldSpawnPass{
 		return true;
 	}
 
-	/**
-	 * Drops the ground and population memos. Called whenever code we don't control (a
-	 * factory) may have changed the world.
-	 */
-	private function invalidateWorldMemos() : void{
-		$this->placement->clear();
-		$this->census->clear();
-	}
-
 	private function sampleColumn(int $chunkX, int $chunkZ) : void{
 		$x = ($chunkX << 4) + $this->random->nextBoundedInt(16);
 		$z = ($chunkZ << 4) + $this->random->nextBoundedInt(16);
 
-		$groundY = $this->placement->getGroundY($x, $z);
-		if($groundY + 2 < $this->world->getMaxY()){
-			$this->tryPosition($x, $groundY + 1, $z, $groundY);
+		// Only the players in horizontal reach matter to this column, and they bound the Y
+		// range worth scanning.
+		$reachSquared = $this->reach ** 2;
+		$nearby = [];
+		$lowestY = -INF;
+		$highestY = INF;
+		if($this->reach !== INF){
+			$lowestY = INF;
+			$highestY = -INF;
+			foreach($this->players as [$px, $py, $pz]){
+				$horizontalSquared = ($px - $x) ** 2 + ($pz - $z) ** 2;
+				if($horizontalSquared > $reachSquared){
+					continue;
+				}
+				$nearby[] = [$horizontalSquared, $py];
+				$verticalReach = sqrt($reachSquared - $horizontalSquared);
+				$lowestY = min($lowestY, $py - $verticalReach);
+				$highestY = max($highestY, $py + $verticalReach);
+			}
+			if($nearby === []){
+				return;
+			}
+		}else{
+			foreach($this->players as [$px, $py, $pz]){
+				$nearby[] = [($px - $x) ** 2 + ($pz - $z) ** 2, $py];
+			}
+		}
+
+		$groundY = $this->groundLevels->getGroundY($x, $z);
+		$surfaceY = $groundY + 1;
+		if($surfaceY + 1 < $this->world->getMaxY() && $surfaceY >= $lowestY && $surfaceY <= $highestY){
+			$this->tryPosition($x, $surfaceY, $z, SpawnBand::SURFACE, $nearby);
 		}
 
 		// Strictly below the ground, so genuinely underground. The scan doesn't stop when a
 		// herd spawns.
-		$minY = $this->world->getMinY();
-		for($y = $groundY - 1; $y > $minY; $y--){
-			$this->tryPosition($x, $y, $z, $groundY);
+		$bottomY = (int) max($this->world->getMinY() + 1, ceil($lowestY));
+		for($y = (int) min($groundY - 1, floor($highestY)); $y >= $bottomY; $y--){
+			$this->tryPosition($x, $y, $z, SpawnBand::CAVE, $nearby);
 		}
 	}
 
@@ -143,8 +180,10 @@ final class WorldSpawnPass{
 	 * Feet and head in blocks with no collision boxes, over a block with a full top surface.
 	 * Blocks stay out of the world's block cache: a column scan reads far more of them than
 	 * anything else will reuse.
+	 *
+	 * @phpstan-param list<array{float, float}> $nearby squared horizontal distance and Y of every player that can reach the column
 	 */
-	private function tryPosition(int $x, int $y, int $z, int $groundY) : void{
+	private function tryPosition(int $x, int $y, int $z, SpawnBand $band, array $nearby) : void{
 		// Feet first: most of a column is rock, which costs this one read.
 		$feet = $this->world->getBlockAt($x, $y, $z, addToCache: false);
 		if(count($feet->getCollisionBoxes()) !== 0 || count($this->world->getBlockAt($x, $y + 1, $z, addToCache: false)->getCollisionBoxes()) !== 0){
@@ -156,10 +195,10 @@ final class WorldSpawnPass{
 		}
 		// From the block's own coordinates, as vanilla measures it.
 		$nearestSquared = PHP_FLOAT_MAX;
-		foreach($this->players as [$px, $py, $pz]){
-			$nearestSquared = min($nearestSquared, ($px - $x) ** 2 + ($py - $y) ** 2 + ($pz - $z) ** 2);
+		foreach($nearby as [$horizontalSquared, $py]){
+			$nearestSquared = min($nearestSquared, $horizontalSquared + ($py - $y) ** 2);
 		}
-		if($this->clampDistance && $nearestSquared > self::CLAMPED_PLAYER_DISTANCE ** 2){
+		if($nearestSquared > $this->reach ** 2){
 			return;
 		}
 
@@ -169,8 +208,7 @@ final class WorldSpawnPass{
 			$x,
 			$y,
 			$z,
-			$groundY,
-			SpawnBand::fromPosition($y, $groundY),
+			$band,
 			$this->world->getBiomeId($x, $y, $z),
 			SpawnLiquid::fromBlockTypeId($feet->getTypeId()),
 			$below->getTypeId(),
@@ -198,19 +236,21 @@ final class WorldSpawnPass{
 	private function selectAndSpawn(AttemptContext $ctx, array $candidates) : void{
 		CustomTimings::$naturalSpawningSelect->startTiming();
 		try{
-			$selected = $this->selector->select($ctx, $candidates);
+			$selection = $this->selector->select($ctx, $candidates);
 		}finally{
 			CustomTimings::$naturalSpawningSelect->stopTiming();
 		}
-		if($selected === null){
+		if($selection === null){
 			return;
 		}
 
-		[$candidate, $group, $room] = $selected;
 		CustomTimings::$naturalSpawningSpawn->startTiming();
 		try{
-			$this->herdSpawner->spawn($this->world, $ctx, $candidate->getRules(), $group, $room);
-			$this->invalidateWorldMemos();
+			foreach($this->herdSpawner->spawn($ctx, $selection) as $entity){
+				$this->census->add($entity);
+			}
+			// A factory is code we don't control: it may have changed blocks.
+			$this->groundLevels->clear();
 		}finally{
 			CustomTimings::$naturalSpawningSpawn->stopTiming();
 		}

@@ -21,26 +21,23 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\condition;
+namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
+use IvanCraft623\MobPlugin\spawning\SpawnRules;
 
-final class DensityLimitCondition implements SpawnCondition{
+/**
+ * What an attempt spawns: the picked group of a rule set, and how many mobs its herd may
+ * have under the category cap and the group's density limit.
+ */
+final class SpawnSelection{
 	public function __construct(
-		private readonly string $identifier,
-		private readonly ?int $surfaceLimit,
-		private readonly ?int $caveLimit
-	){}
-
-	public function isCacheable() : bool{
-		return true;
-	}
-
-	public function test(SpawnConditionContext $ctx) : bool{
-		$band = $ctx->getBand();
-		$limit = $band === SpawnBand::SURFACE ? $this->surfaceLimit : $this->caveLimit;
-
-		// A missing or negative limit is no limit, decided without reading the population.
-		return $limit === null || $limit < 0 || $ctx->getPopulation()->getIdentifierCount($this->identifier, $band) < $limit;
+		public readonly SpawnRules $rules,
+		public readonly SpawnRuleGroup $group,
+		public readonly int $room
+	){
+		if($room < 1){
+			throw new \InvalidArgumentException("Room must be at least 1, got $room");
+		}
 	}
 }

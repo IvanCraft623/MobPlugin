@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\spawner\RegionPopulation;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\world\World;
@@ -40,12 +40,11 @@ final class StubContext implements SpawnConditionContext{
 		public readonly int $x = 0,
 		public readonly int $y = 65,
 		public readonly int $z = 0,
-		public readonly int $groundY = 64,
 		public readonly int $light = 15,
 		public readonly int $belowTypeId = BlockTypeIds::GRASS,
 		public readonly float $nearestPlayerDistance = 30.0,
 		public readonly int $time = 0,
-		public readonly RegionPopulation $population = new RegionPopulation(),
+		public readonly PopulationCounts $population = new PopulationCounts(),
 		public readonly ?World $world = null
 	){}
 
@@ -77,10 +76,6 @@ final class StubContext implements SpawnConditionContext{
 		return $this->z;
 	}
 
-	public function getGroundY() : int{
-		return $this->groundY;
-	}
-
 	public function getLight() : int{
 		return $this->light;
 	}
@@ -97,7 +92,7 @@ final class StubContext implements SpawnConditionContext{
 		return $this->time;
 	}
 
-	public function getPopulation() : RegionPopulation{
+	public function getPopulation() : PopulationCounts{
 		$this->populationReads++;
 
 		return $this->population;

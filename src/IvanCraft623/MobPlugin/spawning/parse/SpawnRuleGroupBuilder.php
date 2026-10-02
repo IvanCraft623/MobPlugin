@@ -36,10 +36,6 @@ use function count;
  * last-write, conditions accumulate, liquids must agree.
  */
 final class SpawnRuleGroupBuilder{
-	/** Vanilla's player distance range without a distance_filter. */
-	private const DEFAULT_MIN_DISTANCE = 24;
-	private const DEFAULT_MAX_DISTANCE = 128;
-
 	/** @phpstan-var list<SpawnCondition> */
 	private array $conditions = [];
 
@@ -47,9 +43,14 @@ final class SpawnRuleGroupBuilder{
 
 	private int $rarity = 0;
 
-	private int $minDistance = self::DEFAULT_MIN_DISTANCE;
+	private float $minPlayerDistance = SpawnRuleGroup::DEFAULT_MIN_PLAYER_DISTANCE;
 
-	private int $maxDistance = self::DEFAULT_MAX_DISTANCE;
+	private float $maxPlayerDistance = SpawnRuleGroup::DEFAULT_MAX_PLAYER_DISTANCE;
+
+	private ?int $surfaceDensityLimit = null;
+
+	private ?int $caveDensityLimit = null;
+
 	private int $herdMin = 1;
 
 	private int $herdMax = 1;
@@ -105,9 +106,20 @@ final class SpawnRuleGroupBuilder{
 		$this->rarity = $rarity;
 	}
 
-	public function setDistance(?int $min, ?int $max) : void{
-		$this->minDistance = $min ?? self::DEFAULT_MIN_DISTANCE;
-		$this->maxDistance = $max ?? self::DEFAULT_MAX_DISTANCE;
+	/**
+	 * A missing bound keeps vanilla's default.
+	 */
+	public function setPlayerDistance(?float $min, ?float $max) : void{
+		$this->minPlayerDistance = $min ?? SpawnRuleGroup::DEFAULT_MIN_PLAYER_DISTANCE;
+		$this->maxPlayerDistance = $max ?? SpawnRuleGroup::DEFAULT_MAX_PLAYER_DISTANCE;
+	}
+
+	/**
+	 * A missing or negative limit is no limit, as in vanilla.
+	 */
+	public function setDensityLimit(?int $surface, ?int $underground) : void{
+		$this->surfaceDensityLimit = $surface !== null && $surface >= 0 ? $surface : null;
+		$this->caveDensityLimit = $underground !== null && $underground >= 0 ? $underground : null;
 	}
 
 	public function setHerd(int $min, int $max) : void{
@@ -131,12 +143,23 @@ final class SpawnRuleGroupBuilder{
 		}
 
 		$conditions = $this->conditions;
-		$conditions[] = RangeCondition::distance($this->minDistance, $this->maxDistance);
 		if(count($this->habitatBands) === 1){
 			// A single marker pins the band; both markers allow any band.
 			$conditions[] = RangeCondition::band(array_values($this->habitatBands)[0]);
 		}
 
-		return new SpawnRuleGroup($conditions, $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->liquid, $this->rarity);
+		return new SpawnRuleGroup(
+			conditions: $conditions,
+			weight: $this->weight,
+			herdMin: $this->herdMin,
+			herdMax: $this->herdMax,
+			permutations: $this->permutations,
+			requiredLiquid: $this->liquid,
+			rarity: $this->rarity,
+			minPlayerDistance: $this->minPlayerDistance,
+			maxPlayerDistance: $this->maxPlayerDistance,
+			surfaceDensityLimit: $this->surfaceDensityLimit,
+			caveDensityLimit: $this->caveDensityLimit
+		);
 	}
 }

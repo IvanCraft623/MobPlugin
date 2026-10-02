@@ -25,14 +25,15 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
-use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\utils\Random;
+use function min;
 
 /**
- * Filter, then pick: every candidate under its category cap contributes all its matching
- * groups, one is picked by group weight, then its rarity roll decides. The population is
- * read only once some group has matched.
+ * Filter, then pick: every candidate under its category cap contributes its matching
+ * groups that are under their density limit, one is picked by group weight, then its
+ * rarity roll decides. The pick comes with the room left for its herd under both. The
+ * population is read only once some group has matched.
  */
 final class SpawnSelector{
 	public function __construct(
@@ -42,11 +43,10 @@ final class SpawnSelector{
 
 	/**
 	 * @phpstan-param list<CandidateRule> $candidates
-	 * @phpstan-return array{CandidateRule, SpawnRuleGroup, int}|null the pick and the room left under its category cap
 	 */
-	public function select(SpawnConditionContext $ctx, array $candidates) : ?array{
+	public function select(SpawnConditionContext $ctx, array $candidates) : ?SpawnSelection{
 		$band = $ctx->getBand();
-		/** @phpstan-var list<array{CandidateRule, SpawnRuleGroup, int}> $matches candidate, group, room under the cap */
+		/** @phpstan-var list<SpawnSelection> $matches */
 		$matches = [];
 		$weights = [];
 		$population = null;
@@ -68,11 +68,21 @@ final class SpawnSelector{
 			if($room <= 0){
 				continue;
 			}
+			$identifier = $candidate->getRules()->getIdentifier();
 			foreach($groups as $group){
-				if($group->getWeight() > 0){
-					$matches[] = [$candidate, $group, $room];
-					$weights[] = $group->getWeight();
+				if($group->getWeight() <= 0){
+					continue;
 				}
+				$groupRoom = $room;
+				$densityLimit = $group->getDensityLimit($band);
+				if($densityLimit !== null){
+					$groupRoom = min($room, $densityLimit - $population->getIdentifierCount($identifier, $band));
+					if($groupRoom <= 0){
+						continue;
+					}
+				}
+				$matches[] = new SpawnSelection($candidate->getRules(), $group, $groupRoom);
+				$weights[] = $group->getWeight();
 			}
 		}
 		$index = Utils::pickWeighted($this->random, $weights);
@@ -81,7 +91,7 @@ final class SpawnSelector{
 		}
 
 		// Rolled after the pick: losing it wastes the attempt, as in vanilla.
-		$rarity = $matches[$index][1]->getRarity();
+		$rarity = $matches[$index]->group->getRarity();
 		if($rarity > 0 && $this->random->nextBoundedInt($rarity) !== 0){
 			return null;
 		}
