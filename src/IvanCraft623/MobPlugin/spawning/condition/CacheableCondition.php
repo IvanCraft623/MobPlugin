@@ -23,16 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-final class SpawnsOnBlock implements SpawnCondition{
-	/**
-	 * @phpstan-param array<int, true> $typeIds block type ids checked against the block under the feet
-	 */
-	public function __construct(
-		private readonly array $typeIds,
-		private readonly bool $prevent
-	){}
-
-	public function test(SpawnConditionContext $ctx) : bool{
-		return isset($this->typeIds[$ctx->getBelowTypeId()]) !== $this->prevent;
-	}
+/**
+ * A condition decided once per cache key instead of on every attempt. It is given only
+ * the cached-by values, and must be a pure function of them and of its own immutable
+ * state. If it reads anything that can change (a config), SpawnRuleRegistry::invalidateCache()
+ * must be called when that changes.
+ */
+interface CacheableCondition extends SpawnCondition{
+	public function test(CacheableConditionContext $ctx) : bool;
 }

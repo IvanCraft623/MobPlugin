@@ -23,14 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
-
 final class RangeCondition implements SpawnCondition{
 	private const KIND_BRIGHTNESS = 0;
-	private const KIND_DIFFICULTY = 1;
 	private const KIND_BLOCK_LIGHT = 2;
 	private const KIND_WORLD_AGE = 3;
-	private const KIND_BAND = 4;
 
 	private function __construct(
 		private readonly int $kind,
@@ -53,29 +49,15 @@ final class RangeCondition implements SpawnCondition{
 		return new self(self::KIND_BLOCK_LIGHT, $min, $max);
 	}
 
-	public static function difficulty(int $min, int $max) : self{
-		return new self(self::KIND_DIFFICULTY, $min, $max);
-	}
-
 	public static function worldAge(?int $min, ?int $max) : self{
 		return new self(self::KIND_WORLD_AGE, $min, $max);
-	}
-
-	public static function band(SpawnBand $band) : self{
-		return new self(self::KIND_BAND, $band->value, $band->value);
-	}
-
-	public function isCacheable() : bool{
-		return true;
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
 		$value = match($this->kind){
 			self::KIND_BRIGHTNESS => $ctx->getLight(),
-			self::KIND_DIFFICULTY => $ctx->getDifficulty(),
 			self::KIND_BLOCK_LIGHT => $ctx->getBlockLight(),
 			self::KIND_WORLD_AGE => $ctx->getTime(),
-			self::KIND_BAND => $ctx->getBand()->value,
 			default => throw new \LogicException("Unknown range kind $this->kind"),
 		};
 

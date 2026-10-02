@@ -23,22 +23,59 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+use function count;
+use function is_bool;
+
 /**
- * A condition over child conditions; cacheable only when every child is.
+ * A condition over child conditions, reduced by deciding each child it can.
  */
-abstract class CompositeCondition implements SpawnCondition{
+abstract class CompositeCondition implements ReducibleCondition{
 	/** @phpstan-param list<SpawnCondition> $conditions */
-	public function __construct(
+	final public function __construct(
 		protected readonly array $conditions
 	){}
 
-	public function isCacheable() : bool{
-		foreach($this->conditions as $condition){
-			if(!$condition->isCacheable()){
-				return false;
-			}
+	/**
+	 * Reduces any condition: a cacheable one to its outcome, a reducible one to what is
+	 * left of it, and any other to itself.
+	 */
+	public static function reduceCondition(SpawnCondition $condition, CacheableConditionContext $ctx) : SpawnCondition|bool{
+		if($condition instanceof CacheableCondition){
+			return $condition->test($ctx);
 		}
 
-		return true;
+		return $condition instanceof ReducibleCondition ? $condition->reduce($ctx) : $condition;
+	}
+
+	/**
+	 * Drops the children whose outcome is the neutral one, and is decided by the first
+	 * child with the other outcome.
+	 *
+	 * @param bool $decisive the child outcome that decides the whole condition
+	 */
+	protected function reduceChildren(CacheableConditionContext $ctx, bool $decisive) : SpawnCondition|bool{
+		$remaining = [];
+		$changed = false;
+		foreach($this->conditions as $condition){
+			$reduced = self::reduceCondition($condition, $ctx);
+			if(is_bool($reduced)){
+				if($reduced === $decisive){
+					return $decisive;
+				}
+				$changed = true;
+				continue;
+			}
+			$changed = $changed || $reduced !== $condition;
+			$remaining[] = $reduced;
+		}
+		if(!$changed){
+			return $this;
+		}
+
+		return match(count($remaining)){
+			0 => !$decisive,
+			1 => $remaining[0],
+			default => new static($remaining),
+		};
 	}
 }

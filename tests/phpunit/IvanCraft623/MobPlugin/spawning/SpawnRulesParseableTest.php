@@ -108,9 +108,9 @@ final class SpawnRulesParseableTest extends TestCase{
 	}
 
 	/**
-	 * Vanilla data uses unsupported components only in skipped entries, so every parsed
-	 * group count must match its raw count unless future data says otherwise. A group with
-	 * no habitat marker spawns nowhere in vanilla either.
+	 * A parsed entry keeps every raw group except those using an unsupported component
+	 * (today only in skipped entries) and those with no habitat marker, which spawn
+	 * nowhere in vanilla either (guardian).
 	 */
 	public function testOnlyGroupsWithUnsupportedComponentsOrNoHabitatAreDropped() : void{
 		$unsupported = [];

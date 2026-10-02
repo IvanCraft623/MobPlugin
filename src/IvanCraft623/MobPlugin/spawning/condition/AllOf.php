@@ -33,4 +33,8 @@ final class AllOf extends CompositeCondition{
 
 		return true;
 	}
+
+	public function reduce(CacheableConditionContext $ctx) : SpawnCondition|bool{
+		return $this->reduceChildren($ctx, false);
+	}
 }

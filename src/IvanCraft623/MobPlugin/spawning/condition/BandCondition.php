@@ -21,16 +21,16 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\spawner;
+namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * Thrown by KeyContext when a condition reads a per-attempt value. Extends \Error so a
- * condition's catch(\Exception) can't swallow it.
- */
-final class PointInputRequired extends \Error{
-	private static ?self $point = null;
+use IvanCraft623\MobPlugin\spawning\SpawnBand;
 
-	public static function point() : self{
-		return self::$point ??= new self("Condition reads a per-attempt value");
+final class BandCondition implements CacheableCondition{
+	public function __construct(
+		private readonly SpawnBand $band
+	){}
+
+	public function test(CacheableConditionContext $ctx) : bool{
+		return $ctx->getBand() === $this->band;
 	}
 }

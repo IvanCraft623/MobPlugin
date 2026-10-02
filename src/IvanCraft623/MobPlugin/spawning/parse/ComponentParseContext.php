@@ -25,8 +25,15 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use function array_is_list;
 use function array_map;
+use function floor;
+use function get_debug_type;
 use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_numeric;
 use function is_string;
+use function property_exists;
 
 final class ComponentParseContext{
 
@@ -144,12 +151,53 @@ final class ComponentParseContext{
 		$mapper = new \JsonMapper();
 		$mapper->bEnforceMapType = false;
 		$mapper->bExceptionOnMissingData = true;
+		$mapper->bExceptionOnUndefinedProperty = true;
 		$mapper->bStrictObjectTypeChecking = true;
 
 		try{
-			return $mapper->map($node->data, new $model());
+			return $mapper->map(self::withoutLossyScalars($node, $model), new $model());
 		}catch(\JsonMapper_Exception $e){
 			throw new SpawnRulesParseException("'{$node->path}' " . $e->getMessage(), 0, $e);
 		}
+	}
+
+	/**
+	 * JsonMapper casts scalars to the property type, turning "abc" or 2.9 into an int
+	 * without a word. Lossless spellings (1.0, "3") are normalized, the rest rejected.
+	 *
+	 * @phpstan-param class-string $model
+	 * @phpstan-return array<array-key, mixed>
+	 * @phpstan-throws SpawnRulesParseException
+	 */
+	private static function withoutLossyScalars(SpawnData $node, string $model) : array{
+		$data = $node->data;
+		foreach($data as $key => $value){
+			if(!is_string($key) || $value === null || !property_exists($model, $key)){
+				continue; // unknown keys are the mapper's to reject
+			}
+			$type = (new \ReflectionProperty($model, $key))->getType();
+			$expected = $type instanceof \ReflectionNamedType ? $type->getName() : null;
+			if($expected === "int"){
+				if(is_string($value) && is_numeric($value)){
+					$value += 0;
+				}
+				if(is_float($value) && floor($value) === $value){
+					$value = (int) $value;
+				}
+				$valid = is_int($value);
+				$data[$key] = $value;
+			}else{
+				$valid = match($expected){
+					"bool" => is_bool($value),
+					"string" => is_string($value),
+					default => true,
+				};
+			}
+			if(!$valid){
+				throw new SpawnRulesParseException("'{$node->at($key)}' must be of type $expected, got " . get_debug_type($value));
+			}
+		}
+
+		return $data;
 	}
 }

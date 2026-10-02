@@ -24,20 +24,14 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 
-interface SpawnConditionContext{
-	public function getBiomeId() : int;
-
-	public function getBand() : SpawnBand;
-
-	public function getDifficulty() : int;
-
-	public function getFeetLiquid() : SpawnLiquid;
-
+/**
+ * Everything a condition may read about one attempt: the cached-by values plus the ones
+ * that change from attempt to attempt.
+ */
+interface SpawnConditionContext extends CacheableConditionContext{
 	public function getX() : int;
 
 	public function getY() : int;
@@ -57,8 +51,8 @@ interface SpawnConditionContext{
 	public function getPopulation() : PopulationCounts;
 
 	/**
-	 * The spawner's random source, for conditions that roll a chance. Such a condition is
-	 * not cacheable.
+	 * The spawner's random source, for conditions that roll a chance. A plain
+	 * SpawnCondition runs on every attempt, so it may use it freely.
 	 */
 	public function getRandom() : Random;
 

@@ -35,9 +35,5 @@ final class SpawnSelection{
 		public readonly SpawnRules $rules,
 		public readonly SpawnRuleGroup $group,
 		public readonly int $room
-	){
-		if($room < 1){
-			throw new \InvalidArgumentException("Room must be at least 1, got $room");
-		}
-	}
+	){}
 }

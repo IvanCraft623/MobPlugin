@@ -18,8 +18,7 @@ vanilla **Minecraft: Bedrock Edition** entity spawn rules published by Mojang in
 The merger strips comments (some vanilla files are not strict JSON), keys every entry by its
 `description.identifier`, sorts identifiers and pretty-prints. **No other transformation is
 applied** — keys, values and structure are byte-faithful to the source data. Every merged
-entry is validated against the pinned spawn schemas and its condition components are checked
-against the pinned schema inventory; the merge fails closed on any drift.
+entry is validated against the pinned spawn schemas; the merge fails closed on any drift.
 
 The source material is © Mojang AB and subject to the [Minecraft End User License
 Agreement](https://www.minecraft.net/en-us/eula). This merged file is redistributed solely

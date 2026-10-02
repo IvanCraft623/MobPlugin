@@ -34,15 +34,26 @@ final class SlimeChunkCondition implements SpawnCondition{
 	private const MT_UPPER_MASK = 0x80000000;
 	private const MT_LOWER_MASK = 0x7fffffff;
 
-	public function isCacheable() : bool{
-		return true;
-	}
-
 	public function test(SpawnConditionContext $ctx) : bool{
 		return self::isSlimeChunk($ctx->getX() >> 4, $ctx->getZ() >> 4);
 	}
 
+	/** A column attempt tests many positions of one chunk: the last answer is kept. */
+	private static int $lastChunkX = 0;
+	private static int $lastChunkZ = 0;
+	private static ?bool $lastResult = null;
+
 	public static function isSlimeChunk(int $chunkX, int $chunkZ) : bool{
+		if(self::$lastResult === null || $chunkX !== self::$lastChunkX || $chunkZ !== self::$lastChunkZ){
+			self::$lastChunkX = $chunkX;
+			self::$lastChunkZ = $chunkZ;
+			self::$lastResult = self::compute($chunkX, $chunkZ);
+		}
+
+		return self::$lastResult;
+	}
+
+	private static function compute(int $chunkX, int $chunkZ) : bool{
 		return self::getFirstOutput((($chunkX & 0xFFFFFFFF) * 0x1f1f1f1f & 0xFFFFFFFF) ^ ($chunkZ & 0xFFFFFFFF)) % 10 === 0;
 	}
 

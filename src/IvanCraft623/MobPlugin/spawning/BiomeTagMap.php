@@ -34,12 +34,21 @@ use function is_string;
 use function json_decode;
 
 final class BiomeTagMap{
+	/** @phpstan-var array<string, true> */
+	private readonly array $knownTags;
+
 	/**
 	 * @phpstan-param array<int, array<string, true>> $tagsByBiomeId biome id => set of tags
 	 */
 	public function __construct(
 		private readonly array $tagsByBiomeId
-	){}
+	){
+		$known = [];
+		foreach($tagsByBiomeId as $tags){
+			$known += $tags;
+		}
+		$this->knownTags = $known;
+	}
 
 	public static function fromBedrockData() : self{
 		return self::fromFiles(BedrockDataFiles::BIOME_ID_MAP_JSON, BedrockDataFiles::BIOME_DEFINITIONS_JSON);
@@ -74,6 +83,13 @@ final class BiomeTagMap{
 
 	public function hasTag(int $biomeId, string $tag) : bool{
 		return isset($this->tagsByBiomeId[$biomeId][$tag]);
+	}
+
+	/**
+	 * Whether any biome carries the tag; a test on a tag none has can never match.
+	 */
+	public function isKnownTag(string $tag) : bool{
+		return isset($this->knownTags[$tag]);
 	}
 
 	/**

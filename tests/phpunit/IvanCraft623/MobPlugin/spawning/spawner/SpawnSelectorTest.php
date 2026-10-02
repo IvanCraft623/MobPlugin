@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
 use IvanCraft623\MobPlugin\spawning\MobCategory;
@@ -241,7 +241,7 @@ final class SpawnSelectorTest extends TestCase{
 	}
 
 	private static function neverMatches() : SpawnCondition{
-		return RangeCondition::difficulty(World::DIFFICULTY_HARD, World::DIFFICULTY_HARD);
+		return new DifficultyCondition(World::DIFFICULTY_HARD, World::DIFFICULTY_HARD);
 	}
 
 	/**

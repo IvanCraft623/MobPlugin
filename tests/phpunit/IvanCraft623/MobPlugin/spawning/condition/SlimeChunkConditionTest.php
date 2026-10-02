@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use PHPUnit\Framework\TestCase;
+use pocketmine\utils\Random;
 
 final class SlimeChunkConditionTest extends TestCase{
 
@@ -39,6 +40,31 @@ final class SlimeChunkConditionTest extends TestCase{
 		foreach([[2 ** 27, -(2 ** 27)], [-(2 ** 31), 2 ** 31 - 1], [123456, -654321]] as [$chunkX, $chunkZ]){
 			self::assertSame(self::reference($chunkX, $chunkZ), SlimeChunkCondition::isSlimeChunk($chunkX, $chunkZ));
 		}
+	}
+
+	/**
+	 * The last chunk's answer is kept: asking for others in between, the same one twice,
+	 * or ones differing in a single coordinate must never return a stale answer.
+	 */
+	public function testRememberedChunkIsNeverStale() : void{
+		$random = new Random(555);
+		$chunks = [[0, 0], [0, 0], [0, 1], [1, 0], [0, 0], [-1, 0], [0, -1]];
+		for($i = 0; $i < 400; $i++){
+			$chunk = [$random->nextRange(-60, 60), $random->nextRange(-60, 60)];
+			$chunks[] = $chunk;
+			if($random->nextBoolean()){
+				$chunks[] = $chunk;
+			}
+			$chunks[] = [$chunk[0], $chunk[1] + 1];
+			$chunks[] = [$chunk[0] + 1, $chunk[1] + 1];
+		}
+		$slimy = 0;
+		foreach($chunks as $index => [$chunkX, $chunkZ]){
+			$expected = self::reference($chunkX, $chunkZ);
+			self::assertSame($expected, SlimeChunkCondition::isSlimeChunk($chunkX, $chunkZ), "step $index, chunk ($chunkX, $chunkZ)");
+			$slimy += $expected ? 1 : 0;
+		}
+		self::assertGreaterThan(50, $slimy, "both answers must be exercised");
 	}
 
 	public function testReadsChunkFromContext() : void{

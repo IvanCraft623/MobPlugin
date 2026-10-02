@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\spawning\condition\LightChanceCondition;
 use IvanCraft623\MobPlugin\spawning\condition\MoonPhaseChanceCondition;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
@@ -51,6 +52,8 @@ use function is_a;
  */
 final class SpawnRuleRegistry{
 	use SingletonTrait;
+
+	private const SLIME_SURFACE_BIOME_TAG = "spawns_slimes_on_surface";
 
 	/** @phpstan-var array<string, SpawnRules> */
 	private array $rules = [];
@@ -73,9 +76,23 @@ final class SpawnRuleRegistry{
 		$this->revision++;
 	}
 
-	public function registerVanilla(string $spawnRulesPath) : void{
+	/**
+	 * @phpstan-return list<string> non-fatal problems found in the rules, for the caller to log
+	 * @phpstan-throws SpawnRulesParseException
+	 * @phpstan-throws PluginException
+	 */
+	public function registerVanilla(string $spawnRulesPath) : array{
 		$parser = SpawnRulesParser::createVanilla();
 		$parsed = $parser->parseFile($spawnRulesPath);
+
+		$unknownTags = $parser->getUnknownBiomeTags();
+		if(!$parser->getBiomeTags()->isKnownTag(self::SLIME_SURFACE_BIOME_TAG)){
+			$unknownTags[] = self::SLIME_SURFACE_BIOME_TAG;
+		}
+		$warnings = array_map(
+			static fn(string $tag) : string => "Spawn rules test the biome tag \"$tag\", which no biome has: those tests never match",
+			$unknownTags
+		);
 
 		$entityClasses = MobPlugin::ALL_ENTITIES;
 		$entityClasses[] = Squid::class; // implemented by PocketMine-MP
@@ -96,7 +113,7 @@ final class SpawnRuleRegistry{
 					]),
 					new AllOf([
 						new HeightCondition(50, 68),
-						new BiomeTagCondition($parser->getBiomeTags(), "spawns_slimes_on_surface"),
+						new BiomeTagCondition($parser->getBiomeTags(), self::SLIME_SURFACE_BIOME_TAG),
 						new LightChanceCondition(8, inverted: true),
 						new MoonPhaseChanceCondition(),
 					]),
@@ -110,6 +127,8 @@ final class SpawnRuleRegistry{
 
 			$this->register(new SpawnRules($identifier, $categoryId, $groups, self::createFactory($entityClass)));
 		}
+
+		return $warnings;
 	}
 
 	/**
@@ -139,8 +158,8 @@ final class SpawnRuleRegistry{
 	}
 
 	/**
-	 * Drops every cached rule evaluation. Call it when outside state read by cacheable
-	 * conditions changes.
+	 * Drops every cached rule evaluation. Call it when state read by a
+	 * CacheableCondition changes.
 	 */
 	public function invalidateCache() : void{
 		$this->revision++;

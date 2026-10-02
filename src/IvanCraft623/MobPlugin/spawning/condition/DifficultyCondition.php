@@ -21,36 +21,21 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\spawner;
+namespace IvanCraft623\MobPlugin\spawning\condition;
 
-use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
-
-/**
- * One cache key, as cacheable conditions see it.
- */
-final class KeyContext implements CacheableConditionContext{
+final class DifficultyCondition implements CacheableCondition{
 	public function __construct(
-		private readonly int $biomeId,
-		private readonly SpawnBand $band,
-		private readonly int $difficulty,
-		private readonly SpawnLiquid $feetLiquid
-	){}
-
-	public function getBiomeId() : int{
-		return $this->biomeId;
+		private readonly int $min,
+		private readonly int $max
+	){
+		if($min > $max){
+			throw new \InvalidArgumentException("Difficulty minimum ($min) must not exceed maximum ($max)");
+		}
 	}
 
-	public function getBand() : SpawnBand{
-		return $this->band;
-	}
+	public function test(CacheableConditionContext $ctx) : bool{
+		$difficulty = $ctx->getDifficulty();
 
-	public function getDifficulty() : int{
-		return $this->difficulty;
-	}
-
-	public function getFeetLiquid() : SpawnLiquid{
-		return $this->feetLiquid;
+		return $difficulty >= $this->min && $difficulty <= $this->max;
 	}
 }

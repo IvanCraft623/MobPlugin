@@ -36,7 +36,6 @@ use function array_values;
 use function count;
 use function log;
 use function max;
-use const INF;
 use const PHP_FLOAT_EPSILON;
 
 /**
@@ -49,7 +48,7 @@ final class NaturalSpawner{
 
 	private ?CandidateCache $candidateCache = null;
 
-	/** The largest maximum player distance of any registered group; INF when one has none. */
+	/** The largest maximum player distance of any registered group; INF when one has no limit. */
 	private float $maxPlayerDistance = 0.0;
 
 	private int $cacheRevision = -1;
@@ -73,6 +72,9 @@ final class NaturalSpawner{
 		private readonly Random $random = new Random(),
 		?MobPopulation $population = null
 	){
+		if($maxAttemptsPerTick < 1){
+			throw new \InvalidArgumentException("maxAttemptsPerTick must be at least 1, got $maxAttemptsPerTick");
+		}
 		$this->population = $population ?? MobPopulation::getInstance();
 		$this->selector = new SpawnSelector($random, MobCategoryRegistry::getInstance());
 		$this->herdSpawner = new HerdSpawner($registry, $random, $this->population->getBands());
@@ -80,25 +82,31 @@ final class NaturalSpawner{
 	}
 
 	public function tick() : void{
-		if($this->maxAttemptsPerTick < 1 || count($this->registry->getAll()) === 0){
+		if(count($this->registry->getAll()) === 0){
 			return;
 		}
 
-		/** @phpstan-var list<array{World, int}> $hits world and chunk hash */
+		// The revision is read once: rules registered mid-tick apply from the next tick.
+		$candidateCache = $this->refreshRuleCaches();
+		/** @phpstan-var list<array{WorldSpawnPass, int, int}> $hits pass and chunk coordinates */
 		$hits = [];
-		/** @phpstan-var array<int, list<int>> $tickingChunks world id => chunk hashes */
-		$tickingChunks = [];
 		foreach($this->worldManager->getWorlds() as $world){
 			// The ticking list is only kept up to date while chunk ticking is on.
 			if($world->getChunkTickRadius() <= 0 || !($this->isWorldEnabled)($world)){
 				continue;
 			}
-			$chunks = $tickingChunks[$world->getId()] = $world->getTickingChunks();
+			$chunks = $world->getTickingChunks();
 			$chunkCount = count($chunks);
+			$pass = null;
 			// Every chunk rolls independently, so jumping from one hit to the next costs a
 			// random number per hit instead of one per chunk.
 			for($i = $this->nextChunkGap(); $i < $chunkCount; $i += 1 + $this->nextChunkGap()){
-				$hits[] = [$world, $chunks[$i]];
+				$pass ??= new WorldSpawnPass($world, $chunks, $candidateCache, $this->selector, $this->herdSpawner, $this->population, $this->registry, $this->random, $this->maxPlayerDistance);
+				World::getXZ($chunks[$i], $chunkX, $chunkZ);
+				// Decided here so a chunk that can't spawn takes none of the tick's budget.
+				if($pass->canAttempt($chunkX, $chunkZ)){
+					$hits[] = [$pass, $chunkX, $chunkZ];
+				}
 			}
 		}
 		$hitCount = count($hits);
@@ -114,16 +122,10 @@ final class NaturalSpawner{
 			$hitCount = $this->maxAttemptsPerTick;
 		}
 
-		// The revision is read once: rules registered mid-tick apply from the next tick.
-		$candidateCache = $this->refreshRuleCaches();
-		/** @phpstan-var array<int, WorldSpawnPass> $passes */
-		$passes = [];
 		CustomTimings::$naturalSpawning->startTiming();
 		try{
 			for($i = 0; $i < $hitCount; $i++){
-				[$world, $chunkHash] = $hits[$i];
-				$pass = $passes[$world->getId()] ??= new WorldSpawnPass($world, $tickingChunks[$world->getId()], $candidateCache, $this->selector, $this->herdSpawner, $this->population, $this->registry, $this->random, $this->maxPlayerDistance);
-				World::getXZ($chunkHash, $chunkX, $chunkZ);
+				[$pass, $chunkX, $chunkZ] = $hits[$i];
 				$pass->attempt($chunkX, $chunkZ);
 			}
 		}finally{
@@ -151,7 +153,7 @@ final class NaturalSpawner{
 			$this->maxPlayerDistance = 0.0;
 			foreach($rules as $spawnRules){
 				foreach($spawnRules->getGroups() as $group){
-					$this->maxPlayerDistance = max($this->maxPlayerDistance, $group->getMaxPlayerDistance() ?? INF);
+					$this->maxPlayerDistance = max($this->maxPlayerDistance, $group->getMaxPlayerDistance());
 				}
 			}
 			$this->cacheRevision = $revision;

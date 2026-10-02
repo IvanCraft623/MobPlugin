@@ -23,16 +23,23 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-final class Not implements SpawnCondition{
+use function is_bool;
+
+final class Not implements ReducibleCondition{
 	public function __construct(
 		private readonly SpawnCondition $condition
 	){}
 
-	public function isCacheable() : bool{
-		return $this->condition->isCacheable();
-	}
-
 	public function test(SpawnConditionContext $ctx) : bool{
 		return !$this->condition->test($ctx);
+	}
+
+	public function reduce(CacheableConditionContext $ctx) : SpawnCondition|bool{
+		$reduced = CompositeCondition::reduceCondition($this->condition, $ctx);
+		if(is_bool($reduced)){
+			return !$reduced;
+		}
+
+		return $reduced === $this->condition ? $this : new self($reduced);
 	}
 }

@@ -41,8 +41,7 @@ declare(strict_types=1);
  *
  * The merge doubles as the schema-compatibility gate: every merged body is validated
  * against the official Mojang spawn schemas of the pinned version, and every
- * condition component and structural key must be declared by the pinned schema
- * inventory. A failure means the vanilla data drifted beyond what the plugin was built
+ * structural key must be a known one. A failure means the vanilla data drifted beyond what the plugin was built
  * against — update the loader / component registry (and, if intended, the pinned schema
  * version and the generated artifacts) before recompiling:
  *
@@ -90,10 +89,8 @@ use function ksort;
 use function printf;
 use function sort;
 use function sprintf;
-use function str_starts_with;
 use function strlen;
 use function strtolower;
-use function substr;
 use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_PRETTY_PRINT;
 use const JSON_THROW_ON_ERROR;
@@ -106,7 +103,6 @@ const TOOL_VERSION = "1.3.0";
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
 const SOURCE_PATH = "behavior_pack/spawn_rules";
 const SCHEMA_PATH = "metadata/json_schemas/server/spawn";
-const CONDITION_PREFIX = "minecraft:";
 
 function main() : int{
 	try{
@@ -114,7 +110,6 @@ function main() : int{
 		$samplesDir = BedrockSamples::getInstallPath();
 		$schemaDir = $samplesDir . "/" . SCHEMA_PATH . "/" . $schemaVersion;
 		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($schemaDir . "/Spawn Rules.json", $schemaVersion);
-		$inventory = readSchemaConditionsInventory($schemaDir);
 		$files = listRuleFiles($samplesDir . "/" . SOURCE_PATH);
 	}catch(\RuntimeException $e){
 		return fail($e->getMessage());
@@ -138,7 +133,7 @@ function main() : int{
 				$errors[] = sprintf("\"%s\" (%s): unknown structural key \"%s\" at the file root", $identifier, basename($file), $rootKey);
 			}
 		}
-		foreach(validateSpawnRules($spawnRules, $schemaValidator, $inventory, $schemaVersion) as $schemaError){
+		foreach(validateSpawnRules($spawnRules, $schemaValidator) as $schemaError){
 			$errors[] = sprintf("\"%s\" (%s): %s", $identifier, basename($file), $schemaError);
 		}
 		if(isset($sources[$identifier])){
@@ -292,43 +287,18 @@ function listRuleFiles(string $rulesDir) : array{
 }
 
 /**
- * Component inventory of the pinned schema (the properties of Spawn BiomeConditions.json),
- * normalized to unprefixed names.
- *
- * @phpstan-return array<string, true>
- */
-function readSchemaConditionsInventory(string $schemaDir) : array{
-	$file = $schemaDir . "/Spawn BiomeConditions.json";
-	$decoded = json_decode((string) file_get_contents($file));
-	$properties = $decoded instanceof stdClass ? ($decoded->properties ?? null) : null;
-	if(!$properties instanceof stdClass){
-		throw new \RuntimeException("Spawn BiomeConditions.json has no \"properties\" object: $file");
-	}
-	$inventory = [];
-	foreach(array_keys(get_object_vars($properties)) as $rawName){
-		$inventory[str_starts_with($rawName, CONDITION_PREFIX) ? substr($rawName, strlen(CONDITION_PREFIX)) : $rawName] = true;
-	}
-	if(count($inventory) === 0){
-		throw new \RuntimeException("Spawn BiomeConditions.json declares no components: $file");
-	}
-
-	return $inventory;
-}
-
-/**
- * Schema-compatibility gate for one merged body. Three checks, in order of value:
+ * Schema-compatibility gate for one merged body. Two checks, in order of value:
  *
  *  1. Shape — the body validates against the official draft-07 schema (patched unions).
  *  2. Structure — unknown keys at the structural levels would be silently ignored by the
  *     runtime loader, so they fail here instead.
- *  3. Inventory — every condition component must be declared by the pinned schema; an
- *     unknown component means vanilla drifted beyond this schema version.
  *
- * @param array<string, true> $inventory pinned component inventory (unprefixed names)
+ * A component the plugin doesn't know is the runtime loader's to reject: its parse test
+ * runs on the merged file.
  *
  * @phpstan-return list<string>
  */
-function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $schemaValidator, array $inventory, string $schemaVersion) : array{
+function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $schemaValidator) : array{
 	$errors = $schemaValidator->validate($spawnRules);
 	if($errors !== []){
 		return array_map(static fn(string $error) => "schema: $error", $errors);
@@ -338,26 +308,6 @@ function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $sche
 	foreach(array_keys(get_object_vars($spawnRules)) as $key){
 		if($key !== "description" && $key !== "conditions"){
 			$errors[] = "unknown structural key \"$key\" in \"minecraft:spawn_rules\"";
-		}
-	}
-
-	// 3. Component inventory.
-	$conditions = $spawnRules->conditions ?? null;
-	$conditions = is_array($conditions) ? $conditions : [$conditions];
-	$seen = [];
-	foreach($conditions as $index => $condition){
-		if(!$condition instanceof stdClass){
-			continue; // already reported by the shape validation
-		}
-		foreach(array_keys(get_object_vars($condition)) as $rawKey){
-			$component = str_starts_with($rawKey, CONDITION_PREFIX) ? substr($rawKey, strlen(CONDITION_PREFIX)) : $rawKey;
-			if(isset($seen[$component])){
-				continue;
-			}
-			$seen[$component] = true;
-			if(!isset($inventory[$component])){
-				$errors[] = sprintf("conditions[%d]: component \"%s\" is not declared by schema version %s", $index, $rawKey, $schemaVersion);
-			}
 		}
 	}
 
@@ -410,8 +360,7 @@ function buildNotice(array $merged, ?string $commit, string $gameVersion, string
 		"The merger strips comments (some vanilla files are not strict JSON), keys every entry by its",
 		"`description.identifier`, sorts identifiers and pretty-prints. **No other transformation is",
 		"applied** — keys, values and structure are byte-faithful to the source data. Every merged",
-		"entry is validated against the pinned spawn schemas and its condition components are checked",
-		"against the pinned schema inventory; the merge fails closed on any drift.",
+		"entry is validated against the pinned spawn schemas; the merge fails closed on any drift.",
 		"",
 		"The source material is © Mojang AB and subject to the [Minecraft End User License",
 		"Agreement](https://www.minecraft.net/en-us/eula). This merged file is redistributed solely",

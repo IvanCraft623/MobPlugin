@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
+use IvanCraft623\MobPlugin\spawning\condition\BandCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
@@ -98,7 +98,13 @@ final class SpawnRuleGroupBuilder{
 		$this->neverSpawns = true;
 	}
 
+	/**
+	 * @phpstan-throws SpawnRulesParseException
+	 */
 	public function setWeight(int $weight) : void{
+		if($weight < 0){
+			throw new SpawnRulesParseException("a group's weight can't be negative, got $weight");
+		}
 		$this->weight = $weight;
 	}
 
@@ -145,7 +151,7 @@ final class SpawnRuleGroupBuilder{
 		$conditions = $this->conditions;
 		if(count($this->habitatBands) === 1){
 			// A single marker pins the band; both markers allow any band.
-			$conditions[] = RangeCondition::band(array_values($this->habitatBands)[0]);
+			$conditions[] = new BandCondition(array_values($this->habitatBands)[0]);
 		}
 
 		return new SpawnRuleGroup(

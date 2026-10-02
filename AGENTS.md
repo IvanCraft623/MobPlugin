@@ -53,14 +53,13 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
   Keep usage aligned with that library's API.
 - **Static analysis**: PHPStan at **level 9**
   (`vendor/bin/phpstan.phar analyze --no-progress`, config in `phpstan.neon.dist`).
-  CI runs it on every push/PR. Code must pass level 9.
+  CI runs it on pull requests and pushes to `main`. Code must pass level 9.
 - **Code style**: enforced by `php-cs-fixer` (`.php-cs-fixer.php`). Style is non-negotiable;
   run it before committing.
 
   After adding/editing files, run `php-cs-fixer fix` — it will insert the required header
-  and apply formatting. Don't leave the header out. The config only covers `src/`; run it
-  on new files under `tests/` and `tools/` explicitly
-  (`php-cs-fixer fix --config=.php-cs-fixer.php <path>`).
+  and apply formatting. Don't leave the header out. The config covers `src/`, `tests/`
+  and `tools/`.
 
 ## Conventions & architecture rules
 
@@ -78,7 +77,7 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
 ## Testing & quality gate
 
 - A PHPUnit suite lives in `tests/phpunit` (run with `composer test`). It covers natural
-  spawning: the strict loader against the bundled data, the categories it uses, the
+  spawning: the strict loader against the bundled data and what it rejects, the categories it uses, the
   generated schema artifacts, the slime-chunk algorithm, the candidate cache, the spawn
   selector, the population census and which blocks a mob can stand in. Everything else
   (including the per-tick runtime) is verified via PHPStan, php-cs-fixer, building the

@@ -23,26 +23,26 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
+use IvanCraft623\MobPlugin\spawning\condition\CacheableCondition;
 use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
-use PHPUnit\Framework\TestCase;
-use function array_map;
-use function sort;
 
-final class KeyContextTest extends TestCase{
-	/**
-	 * Adding a getter changes what a cache key means: the cache's hash must cover it.
-	 * Update this list deliberately.
-	 */
-	private const KEY_GETTERS = ["getBand", "getBiomeId", "getDifficulty", "getFeetLiquid"];
+/**
+ * A cacheable condition counting its calls; it passes in the given biome, or in all.
+ */
+final class CacheableSpyCondition implements CacheableCondition{
+	public int $calls = 0;
 
-	public function testTheCachedByValuesAreExactlyTheHashedOnes() : void{
-		$getters = array_map(
-			static fn(\ReflectionMethod $method) : string => $method->getName(),
-			(new \ReflectionClass(CacheableConditionContext::class))->getMethods()
-		);
-		sort($getters);
+	public function __construct(
+		private readonly ?int $biomeId = null,
+		private readonly bool $throws = false
+	){}
 
-		self::assertSame(self::KEY_GETTERS, $getters);
+	public function test(CacheableConditionContext $ctx) : bool{
+		$this->calls++;
+		if($this->throws){
+			throw new \RuntimeException("broken condition");
+		}
+
+		return $this->biomeId === null || $ctx->getBiomeId() === $this->biomeId;
 	}
-
 }

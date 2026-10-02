@@ -23,12 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+/**
+ * Tested on every attempt. Implement CacheableCondition instead when the result depends
+ * only on the values candidates are cached by.
+ */
 interface SpawnCondition{
-	/**
-	 * Whether test() depends only on the context. Return false when it also reads
-	 * outside state (configs, services, randomness), so the result is never cached.
-	 */
-	public function isCacheable() : bool;
-
 	public function test(SpawnConditionContext $ctx) : bool;
 }

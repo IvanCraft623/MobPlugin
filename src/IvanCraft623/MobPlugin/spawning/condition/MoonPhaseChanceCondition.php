@@ -33,10 +33,6 @@ final class MoonPhaseChanceCondition implements SpawnCondition{
 	/** Chance by moon phase, from full moon. */
 	private const MOON_BRIGHTNESS = [1.0, 0.75, 0.5, 0.25, 0.0, 0.25, 0.5, 0.75];
 
-	public function isCacheable() : bool{
-		return false;
-	}
-
 	public function test(SpawnConditionContext $ctx) : bool{
 		return self::MOON_BRIGHTNESS[intdiv($ctx->getTime(), World::TIME_FULL) & 7] > $ctx->getRandom()->nextFloat();
 	}

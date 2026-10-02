@@ -31,9 +31,8 @@ CI regenerates it and fails on any diff.
 - **`compile.php`** merges the spawn rules into `spawn_rules.json` and writes `NOTICE.md`.
   It only strips JSON comments (some vanilla files aren't strict JSON), keys entries by
   `description.identifier`, sorts and pretty-prints; all semantics belong to the runtime
-  loader. Every entry must validate against the pinned schemas, use only components they
-  declare, and use no unknown structural keys. Nothing is written unless every file
-  passes.
+  loader. Every entry must validate against the pinned schemas and use no unknown
+  structural keys. Nothing is written unless every file passes.
 - **`generate-schema.php`** generates `parse/schema/`: `VanillaSpawnConditions` (one
   constant per component), `SpawnSchema` (schema version, difficulty names and the
   envelope keys the loader navigates with) and one JsonMapper payload model
@@ -188,10 +187,11 @@ attempt reads its key fresh from the world, so no world edit (`setChunk()`,
 `CandidateCache` partially evaluates every rule once per key
 `(biome id, band, difficulty, feet liquid)`:
 
-- a cacheable condition that returns false against the key drops its group;
+- a `CacheableCondition` that returns false against the key drops its group;
 - one that returns true is removed from the group;
-- one that reads a per-attempt value (so `KeyContext` throws `PointInputRequired`), or
-  that isn't cacheable, stays as a residual and runs on every attempt.
+- a combinator (`AllOf`, `AnyOf`, `Not`) is reduced: its cacheable children are decided,
+  and only what the key leaves undecided is kept;
+- any other condition stays as a residual and runs on every attempt.
 
 A key only admits groups whose required liquid is its feet liquid: aquatic groups spawn
 only in their liquid, and land groups, which carry no "not in water" condition, only out
@@ -199,9 +199,10 @@ of any liquid (`SpawnRuleGroup::admitsLiquid()`, which `SpawnRuleGroup::matches(
 too). Surviving groups keep their order, and a group's residuals keep the order of its
 conditions: list the costly ones, such as a read of the population, last.
 
-The key packs into one int; out-of-range values throw instead of colliding. Results are
-interned, so the whole vanilla key space takes about 300 KB. The cache holds at most 4096
-keys, is cleared when full, and is rebuilt when the registry revision changes.
+The key packs into one int; out-of-range values throw instead of colliding. Keys with
+equal results share them, so the whole vanilla key space takes a few hundred KB. The key
+space is bounded (biomes × 2 bands × 4 difficulties × 3 liquids), so the cache never
+evicts; it is rebuilt when the registry revision changes.
 
 ## Conditions
 
@@ -212,15 +213,26 @@ range, density limits and required liquid (`spawns_underwater`, `spawns_lava`; a
 can't require both). Conditions implement:
 
 ```php
+// Tested on every attempt, with everything about it.
 interface SpawnCondition{
-	public function isCacheable() : bool;
 	public function test(SpawnConditionContext $ctx) : bool;
+}
+
+// Decided once per cache key: it is given only the values candidates are cached by.
+interface CacheableCondition extends SpawnCondition{
+	public function test(CacheableConditionContext $ctx) : bool;
 }
 ```
 
-Built-ins live in `spawning/condition/`: `RangeCondition` (brightness, block light,
-difficulty, world age, band), `HeightCondition` (tests the block stood on, and the feet
-too in a liquid, as vanilla does), `BiomeTagCondition`, `SpawnsOnBlock`,
+`CacheableConditionContext` has the biome id, band, difficulty and feet liquid;
+`SpawnConditionContext` extends it with the per-attempt values (coordinates, light, the
+block below, time, population, the random source, the world). Which interface a condition
+implements is the whole declaration: a cacheable one can't reach a per-attempt value.
+
+Built-ins live in `spawning/condition/`. Cacheable: `BiomeTagCondition`,
+`DifficultyCondition`, `BandCondition`. Per attempt: `RangeCondition` (brightness, block
+light, world age), `HeightCondition` (tests the block stood on, and the feet
+too in a liquid, as vanilla does), `SpawnsOnBlock`,
 `SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition`, and the
 `AllOf`, `AnyOf`, `Not` combinators.
 
@@ -236,29 +248,30 @@ nowhere else.
 
 ### Condition contract
 
-The candidate cache relies on these four rules. The cache can't check them, so custom
-conditions must follow them:
+The candidate cache relies on these rules, which it can't check:
 
 1. **Immutable.** Every property is `readonly` and set in the constructor, with no mutable
    objects captured.
-2. **Pure when cacheable.** If `isCacheable()` returns `true`, `test()` reads only the
-   context: no statics, singletons, configs, services, randomness or clocks. Return
-   `false` for anything else, or call `SpawnRuleRegistry::invalidateCache()` whenever that
-   outside state changes. A condition that rolls a chance takes its randomness from
-   `$ctx->getRandom()`, the spawner's own source, and returns `false`.
+2. **A `CacheableCondition` is pure.** Its result depends only on the context it is given
+   and on its own state: no statics, singletons, services, randomness or clocks. If it
+   reads something that can change, such as a config, call
+   `SpawnRuleRegistry::invalidateCache()` whenever that changes. A condition that can't
+   promise this implements plain `SpawnCondition`: it runs on every attempt, so it may
+   read anything, and takes its randomness from `$ctx->getRandom()`, the spawner's own
+   source.
 3. **No side effects.** `test()` never changes the world or any other state. The cache
    removes the conditions a key already decides and runs the rest in their listed order,
    so `test()` must not depend on which other conditions ran before it.
-4. **Let `PointInputRequired` propagate.** It extends `\Error`, so `catch(\Exception)`
-   won't swallow it; don't catch `\Throwable` or `\Error` inside a condition.
 
-`AllOf`, `AnyOf` and `Not` are cacheable only when all their children are; a custom
-combinator can extend `CompositeCondition` to get the same rule.
+A custom combinator implements `ReducibleCondition`, whose `reduce()` returns the outcome
+when the key decides it, or otherwise what is left of the condition; extending
+`CompositeCondition` gives it `reduceChildren()`. A combinator that doesn't is simply run
+whole on every attempt.
 
 A condition that needs more than the context's values can read the attempt's world
 through `getWorld()`. Like the coordinates it is a per-attempt value, so such a condition
-always runs on every attempt against the live world. It may read the world, never change
-it (rule 3).
+is a plain `SpawnCondition` and runs on every attempt against the live world. It may read the world,
+never change it (rule 3).
 
 ## Loading
 
@@ -269,7 +282,16 @@ squid), and adds the two hardcoded vanilla rules described under Conditions.
 
 The loader is **strict**: any value it can't compile aborts the load with
 `SpawnRulesParseException`, carrying the JSON path. Payloads are mapped into the
-generated `XxxData` models with JsonMapper. By-design exceptions:
+generated `XxxData` models with JsonMapper: a key the model doesn't declare is rejected,
+and so is a value that would lose information on the way to the model's type (text or a
+fractional number for an integer); lossless spellings such as `8.0` are accepted. A
+failed load is logged with the file path and disables the plugin before anything else is
+registered.
+
+A biome tag that no biome carries is not an error: `registerVanilla()` returns a warning
+for each, which the plugin logs. Tests on such a tag never match.
+
+By-design exceptions:
 
 - `population_control` values vanilla spawns through events (`pillager`,
   `pillager_patrol`) skip their rule set;
@@ -280,7 +302,7 @@ generated `XxxData` models with JsonMapper. By-design exceptions:
 - a group with neither `spawns_on_surface` nor `spawns_underground` is dropped: vanilla
   spawns it nowhere (only guardian, which spawns through structures);
 - components with no runtime effect (`disallow_spawns_in_bubble`, `is_persistent`,
-  `is_experimental`) are accepted and ignored.
+  `is_experimental`) are accepted and ignored; `spawn_event` is validated and ignored.
 
 `distance_filter` sets the group's player distance range (a group without one keeps
 `SpawnRuleGroup`'s 24 to 128 block default), and `weight.rarity` becomes the group's
@@ -295,7 +317,7 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 	[
 		new SpawnRuleGroup([
 			RangeCondition::brightness(0, 7),
-			RangeCondition::difficulty(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
+			new DifficultyCondition(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
 			new SpawnsOnBlock([BlockTypeIds::STONE => true], false),
 		], weight: 100),
 	],
@@ -411,6 +433,11 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviati
 - Structure spawn areas (ocean monuments, fortresses...) are not implemented.
 - At a tick radius of 5 or more, rules may spawn up to 128 blocks out, past the 64 block
   despawn distance of most categories.
+- A biome id missing from the bundled biome definitions (a custom biome) has no tags, so
+  it fails every positive biome test and passes every negated one.
+- PocketMine has one terracotta block for every colour, so a block filter naming a
+  coloured terracotta (armadillo) matches all of them.
+- `is_snow_covered` is approximated by the `frozen` biome tag.
 - PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
 - The global mob cap (200) is not enforced.
 - Monsters apply the Overworld darkness rule everywhere; the Nether's own rule and

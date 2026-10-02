@@ -104,14 +104,18 @@ final class WorldSpawnPass{
 	}
 
 	/**
+	 * Whether the chunk may be attempted at all: above the low radius vanilla needs the
+	 * chunks around it to be ticking too.
+	 */
+	public function canAttempt(int $chunkX, int $chunkZ) : bool{
+		return $this->lowTickRadius || $this->isSurroundedByTickingChunks($chunkX, $chunkZ);
+	}
+
+	/**
 	 * One random column of a ticking chunk: the surface position on its ground, then
 	 * every cave position below it down to the world bottom, as vanilla does.
 	 */
 	public function attempt(int $chunkX, int $chunkZ) : void{
-		// Above the low radius vanilla instead needs the chunks around to be ticking.
-		if(!$this->lowTickRadius && !$this->isSurroundedByTickingChunks($chunkX, $chunkZ)){
-			return;
-		}
 		CustomTimings::$naturalSpawningSample->startTiming();
 		try{
 			$this->sampleColumn($chunkX, $chunkZ);

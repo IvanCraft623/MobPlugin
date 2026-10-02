@@ -263,8 +263,8 @@ Representative goal→navigation users:
   `WitherAttackGoal` (flies, `FlightMoveControl`).
 
 **Destination picking** uses the `entity/ai/utils/PositionGenerator` family
-(`DefaultPositionGenerator`, `LandPositionGenerator`, `WaterPositionGenerator` via
-`AirAndWaterPositionGenerator`, `HoverPositionGenerator`, `AirPositionGenerator`) —
+(`DefaultPositionGenerator`, `LandPositionGenerator`, `AirAndWaterPositionGenerator`,
+`HoverPositionGenerator`, `AirPositionGenerator`) —
 Java's `RandomPos`/`LandRandomPos` equivalents. They sample candidate positions around
 the mob and score them with `PathfinderMob::getWalkTargetValue()`.
 

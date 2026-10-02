@@ -23,16 +23,14 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-final class SpawnsOnBlock implements SpawnCondition{
+/**
+ * A condition built from others, which can decide part of itself once per cache key.
+ */
+interface ReducibleCondition extends SpawnCondition{
 	/**
-	 * @phpstan-param array<int, true> $typeIds block type ids checked against the block under the feet
+	 * What is left of the condition under the given cached-by values: its outcome when
+	 * they decide it, otherwise a condition equivalent to it for every attempt sharing
+	 * them, without the parts already decided.
 	 */
-	public function __construct(
-		private readonly array $typeIds,
-		private readonly bool $prevent
-	){}
-
-	public function test(SpawnConditionContext $ctx) : bool{
-		return isset($this->typeIds[$ctx->getBelowTypeId()]) !== $this->prevent;
-	}
+	public function reduce(CacheableConditionContext $ctx) : SpawnCondition|bool;
 }

@@ -42,10 +42,6 @@ final class LightChanceCondition implements SpawnCondition{
 		}
 	}
 
-	public function isCacheable() : bool{
-		return false;
-	}
-
 	public function test(SpawnConditionContext $ctx) : bool{
 		return ($ctx->getLight() > $ctx->getRandom()->nextBoundedInt($this->bound)) !== $this->inverted;
 	}

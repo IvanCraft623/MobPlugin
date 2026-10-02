@@ -29,17 +29,13 @@ use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
  * Whether the position's biome has a tag. BiomeFilterParser composes these into the
  * biome_filter tree (a "!=" test is a Not around one).
  */
-final class BiomeTagCondition implements SpawnCondition{
+final class BiomeTagCondition implements CacheableCondition{
 	public function __construct(
 		private readonly BiomeTagMap $tags,
 		private readonly string $tag
 	){}
 
-	public function isCacheable() : bool{
-		return true;
-	}
-
-	public function test(SpawnConditionContext $ctx) : bool{
+	public function test(CacheableConditionContext $ctx) : bool{
 		return $this->tags->hasTag($ctx->getBiomeId(), $this->tag);
 	}
 }

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
+use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnsOnBlock;
@@ -99,10 +100,13 @@ final class SpawnRulesParser{
 
 	private readonly BlockNameResolver $blocks;
 
+	private readonly BiomeFilterParser $biomeFilter;
+
 	public function __construct(
 		private readonly BiomeTagMap $biomeTags
 	){
 		$this->blocks = new BlockNameResolver();
+		$this->biomeFilter = new BiomeFilterParser($biomeTags);
 	}
 
 	public static function createVanilla(?BiomeTagMap $biomeTags = null) : self{
@@ -114,6 +118,15 @@ final class SpawnRulesParser{
 
 	public function getBiomeTags() : BiomeTagMap{
 		return $this->biomeTags;
+	}
+
+	/**
+	 * Biome tags the parsed filters test that no biome carries.
+	 *
+	 * @phpstan-return list<string>
+	 */
+	public function getUnknownBiomeTags() : array{
+		return $this->biomeFilter->getUnknownTags();
 	}
 
 	/**
@@ -236,7 +249,7 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::DIFFICULTY_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DifficultyFilterData::class);
-			$builder->addCondition(RangeCondition::difficulty(self::parseDifficulty($m->min ?? SpawnSchema::DIFFICULTY_MIN), self::parseDifficulty($m->max ?? SpawnSchema::DIFFICULTY_MAX)));
+			$builder->addCondition(new DifficultyCondition(self::parseDifficulty($m->min ?? SpawnSchema::DIFFICULTY_MIN), self::parseDifficulty($m->max ?? SpawnSchema::DIFFICULTY_MAX)));
 		});
 		$this->registerComponent(VanillaSpawnConditions::HEIGHT_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(HeightFilterData::class);
@@ -267,7 +280,7 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::HERD, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			//TODO: a list holds one herd per spawn event (e.g. horse coat colours); only the first is used until spawn events are supported
-			$data = $ctx->mapList(HerdData::class)[0];
+			$data = $ctx->mapList(HerdData::class)[0] ?? throw new SpawnRulesParseException("'{$ctx->getPath()}' must not be empty");
 			$min = max(1, $data->min_size ?? 1);
 			$builder->setHerd($min, max($min, $data->max_size ?? $min));
 		});
@@ -287,7 +300,7 @@ final class SpawnRulesParser{
 		$this->registerComponent(VanillaSpawnConditions::SPAWN_EVENT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$ctx->map(MobEventFilterData::class); // validated only: nothing consumes spawn events
 		});
-		$biomeFilter = new BiomeFilterParser($this->biomeTags);
+		$biomeFilter = $this->biomeFilter;
 		$this->registerComponent(VanillaSpawnConditions::BIOME_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) use ($biomeFilter) : void{
 			$builder->addCondition($biomeFilter->parse($ctx));
 		});

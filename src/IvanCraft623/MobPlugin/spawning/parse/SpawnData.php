@@ -123,14 +123,15 @@ final class SpawnData{
 	}
 
 	/**
-	 * A list of objects, or a single object promoted to a one-element list.
+	 * A list of objects, or a single object promoted to a one-element list. Decoded
+	 * JSON can't tell {} from [], so an empty value is an empty list.
 	 *
 	 * @phpstan-return list<self>
 	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function objectOrList(string $key) : array{
 		$value = $this->raw($key);
-		if(is_array($value) && (!array_is_list($value) || count($value) === 0)){
+		if(is_array($value) && !array_is_list($value)){
 			return [new self($value, $this->at($key))];
 		}
 		if(!is_array($value)){

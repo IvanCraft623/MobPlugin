@@ -50,6 +50,7 @@ use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -58,7 +59,9 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper as Helper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\plugin\DisablePluginException;
 use pocketmine\plugin\PluginBase;
+use pocketmine\plugin\PluginException;
 use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
@@ -113,9 +116,9 @@ class MobPlugin extends PluginBase {
 		Settings::init();
 		CustomTimings::init();
 
+		$this->registerSpawnRules();
 		$this->registerAttributes();
 		$this->registerEntities();
-		SpawnRuleRegistry::getInstance()->registerVanilla(Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json"));
 		$this->registerMetrics();
 		$this->registerNaturalSpawning();
 
@@ -124,6 +127,22 @@ class MobPlugin extends PluginBase {
 		BossBarAPI::load($this);
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
+	}
+
+	/**
+	 * Runs before anything else is registered, so a failure leaves nothing half set up.
+	 */
+	private function registerSpawnRules() : void{
+		$path = Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json");
+		try{
+			$warnings = SpawnRuleRegistry::getInstance()->registerVanilla($path);
+		}catch(SpawnRulesParseException | PluginException $e){
+			$this->getLogger()->critical("Could not load the spawn rules from $path: " . $e->getMessage());
+			throw new DisablePluginException();
+		}
+		foreach($warnings as $warning){
+			$this->getLogger()->warning($warning);
+		}
 	}
 
 	private function registerNaturalSpawning() : void{

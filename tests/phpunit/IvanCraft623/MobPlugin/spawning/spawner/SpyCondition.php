@@ -26,30 +26,19 @@ namespace IvanCraft623\MobPlugin\spawning\spawner;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 
+/**
+ * A per-attempt condition counting its calls.
+ */
 final class SpyCondition implements SpawnCondition{
 	public int $calls = 0;
 
-	public int $keyContextCalls = 0;
-
 	public function __construct(
-		private readonly bool $cacheable,
-		private readonly bool $readsBiomeOnly = false,
-		private readonly bool $throws = false
+		private readonly bool $result = true
 	){}
-
-	public function isCacheable() : bool{
-		return $this->cacheable;
-	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
 		$this->calls++;
-		if($ctx instanceof KeyContext){
-			$this->keyContextCalls++;
-		}
-		if($this->throws){
-			throw new \RuntimeException("broken condition");
-		}
 
-		return $this->readsBiomeOnly ? $ctx->getBiomeId() >= 0 : $ctx->getY() >= -64;
+		return $this->result;
 	}
 }

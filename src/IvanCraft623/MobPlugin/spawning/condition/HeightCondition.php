@@ -39,10 +39,6 @@ final class HeightCondition implements SpawnCondition{
 		}
 	}
 
-	public function isCacheable() : bool{
-		return true;
-	}
-
 	public function test(SpawnConditionContext $ctx) : bool{
 		$y = $ctx->getY();
 

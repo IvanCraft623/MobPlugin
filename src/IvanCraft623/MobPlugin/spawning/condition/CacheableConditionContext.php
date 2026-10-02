@@ -21,36 +21,21 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\spawning\spawner;
+namespace IvanCraft623\MobPlugin\spawning\condition;
 
-use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 
 /**
- * One cache key, as cacheable conditions see it.
+ * The values candidates are cached by. A CacheableCondition sees nothing else, so its
+ * result holds for every attempt sharing them.
  */
-final class KeyContext implements CacheableConditionContext{
-	public function __construct(
-		private readonly int $biomeId,
-		private readonly SpawnBand $band,
-		private readonly int $difficulty,
-		private readonly SpawnLiquid $feetLiquid
-	){}
+interface CacheableConditionContext{
+	public function getBiomeId() : int;
 
-	public function getBiomeId() : int{
-		return $this->biomeId;
-	}
+	public function getBand() : SpawnBand;
 
-	public function getBand() : SpawnBand{
-		return $this->band;
-	}
+	public function getDifficulty() : int;
 
-	public function getDifficulty() : int{
-		return $this->difficulty;
-	}
-
-	public function getFeetLiquid() : SpawnLiquid{
-		return $this->feetLiquid;
-	}
+	public function getFeetLiquid() : SpawnLiquid;
 }

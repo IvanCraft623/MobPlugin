@@ -30,17 +30,33 @@ use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
 use IvanCraft623\MobPlugin\spawning\condition\Not;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 
+use function array_keys;
 use function array_map;
 use function count;
+use function get_debug_type;
+use function is_bool;
 
 /**
  * Compiles a biome_filter value into a SpawnCondition tree; unknown tests, operators or
  * value types throw SpawnRulesParseException with the JSON path.
  */
 final class BiomeFilterParser{
+	/** @phpstan-var array<string, true> */
+	private array $unknownTags = [];
+
 	public function __construct(
 		private readonly BiomeTagMap $tags
 	){}
+
+	/**
+	 * Tags tested so far that no biome carries. Not an error: vanilla references tags
+	 * of biomes the bundled bedrock-data doesn't have yet.
+	 *
+	 * @phpstan-return list<string>
+	 */
+	public function getUnknownTags() : array{
+		return array_keys($this->unknownTags);
+	}
 
 	/**
 	 * A single filter node, or a bare list of nodes (AND shorthand).
@@ -50,7 +66,11 @@ final class BiomeFilterParser{
 	public function parse(ComponentParseContext $ctx) : SpawnCondition{
 		$nodes = array_map($this->fromNode(...), $ctx->objectOrList());
 
-		return count($nodes) === 1 ? $nodes[0] : new AllOf($nodes);
+		return match(count($nodes)){
+			0 => throw new SpawnRulesParseException("'{$ctx->getPath()}' must not be empty"),
+			1 => $nodes[0],
+			default => new AllOf($nodes),
+		};
 	}
 
 	/**
@@ -66,6 +86,9 @@ final class BiomeFilterParser{
 				continue;
 			}
 			$children = array_map($this->fromNode(...), $node->objectOrList($group));
+			if(count($children) === 0){
+				throw new SpawnRulesParseException("'{$node->at($group)}' must not be empty");
+			}
 			$conditions[] = match($group){
 				"all_of" => new AllOf($children),
 				"any_of" => new AnyOf($children),
@@ -85,27 +108,37 @@ final class BiomeFilterParser{
 	 */
 	private function fromLeaf(SpawnData $node) : SpawnCondition{
 		$test = $node->string("test");
-		if($test === "is_snow_covered"){
-			return new BiomeTagCondition($this->tags, "frozen");
-		}
-		if($test !== "has_biome_tag"){
-			throw new SpawnRulesParseException("'{$node->at("test")}' must be 'has_biome_tag' or 'is_snow_covered', got '$test'");
-		}
-
-		$value = $node->string("value");
-		if($value === ""){
-			throw new SpawnRulesParseException("'{$node->at("value")}' must not be empty");
-		}
 		$operator = null;
 		if($node->has("operator") && $node->raw("operator") !== null){
 			$operator = $node->string("operator");
 		}
-		$condition = new BiomeTagCondition($this->tags, $value);
-
-		return match($operator){
-			null, "==" => $condition,
-			"!=", "not" => new Not($condition),
+		$negated = match($operator){
+			null, "==" => false,
+			"!=", "not" => true,
 			default => throw new SpawnRulesParseException("'{$node->at("operator")}' must be one of '==', '!=', 'not', got '$operator'"),
 		};
+
+		if($test === "is_snow_covered"){
+			// A boolean test: value defaults to true, and false flips the comparison.
+			$expected = $node->has("value") ? $node->raw("value") : true;
+			if(!is_bool($expected)){
+				throw new SpawnRulesParseException("'{$node->at("value")}' must be a boolean, got " . get_debug_type($expected));
+			}
+			$tag = "frozen";
+			$negated = $negated === $expected;
+		}elseif($test === "has_biome_tag"){
+			$tag = $node->string("value");
+			if($tag === ""){
+				throw new SpawnRulesParseException("'{$node->at("value")}' must not be empty");
+			}
+		}else{
+			throw new SpawnRulesParseException("'{$node->at("test")}' must be 'has_biome_tag' or 'is_snow_covered', got '$test'");
+		}
+		if(!$this->tags->isKnownTag($tag)){
+			$this->unknownTags[$tag] = true;
+		}
+		$condition = new BiomeTagCondition($this->tags, $tag);
+
+		return $negated ? new Not($condition) : $condition;
 	}
 }

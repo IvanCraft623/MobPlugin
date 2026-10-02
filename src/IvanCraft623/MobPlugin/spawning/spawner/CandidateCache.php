@@ -23,7 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
+use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
+use IvanCraft623\MobPlugin\spawning\condition\CompositeCondition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
@@ -37,12 +38,16 @@ use function spl_object_id;
  * conditions the key decides are applied once, the rest stay as residuals.
  */
 final class CandidateCache{
-	private const DEFAULT_MAX_KEYS = 4096;
-
 	/** @phpstan-var array<int, list<CandidateRule>> */
 	private array $entries = [];
 
-	/** @phpstan-var array<array-key, CandidateRule> */
+	/**
+	 * Most keys resolve to the same outcome as another one, so equal results are shared
+	 * instead of copied. Signatures are object ids, which stay unique while the pools
+	 * hold the objects.
+	 *
+	 * @phpstan-var array<array-key, CandidateRule>
+	 */
 	private array $rulePool = [];
 
 	/** @phpstan-var array<array-key, list<CandidateRule>> */
@@ -53,31 +58,20 @@ final class CandidateCache{
 	 */
 	public function __construct(
 		private readonly array $rules,
-		private readonly int $maxKeys = self::DEFAULT_MAX_KEYS,
 		private readonly ?TimingsHandler $resolveTimings = null
-	){
-		if($maxKeys < 1){
-			throw new \InvalidArgumentException("maxKeys must be at least 1");
-		}
-	}
+	){}
 
 	/**
 	 * @phpstan-return list<CandidateRule>
 	 */
-	public function getCandidates(SpawnConditionContext $ctx) : array{
-		$key = self::hash($ctx->getBiomeId(), $ctx->getBand(), $ctx->getDifficulty(), $ctx->getFeetLiquid());
+	public function getCandidates(CacheableConditionContext $ctx) : array{
+		$biomeId = $ctx->getBiomeId();
+		$band = $ctx->getBand();
+		$difficulty = $ctx->getDifficulty();
+		$liquid = $ctx->getFeetLiquid();
+		$key = self::hash($biomeId, $band, $difficulty, $liquid);
 
-		return $this->entries[$key] ?? $this->resolve($key, KeyContext::from($ctx));
-	}
-
-	public function clear() : void{
-		$this->entries = [];
-		$this->rulePool = [];
-		$this->listPool = [];
-	}
-
-	public function getSize() : int{
-		return count($this->entries);
+		return $this->entries[$key] ?? $this->resolve($key, new KeyContext($biomeId, $band, $difficulty, $liquid));
 	}
 
 	private static function hash(int $biomeId, SpawnBand $band, int $difficulty, SpawnLiquid $liquid) : int{
@@ -94,9 +88,6 @@ final class CandidateCache{
 	private function resolve(int $key, KeyContext $keyContext) : array{
 		$this->resolveTimings?->startTiming();
 		try{
-			if(count($this->entries) >= $this->maxKeys){
-				$this->clear();
-			}
 			$candidates = [];
 			foreach($this->rules as $rules){
 				$candidate = $this->resolveRule($rules, $keyContext);
@@ -106,7 +97,7 @@ final class CandidateCache{
 			}
 
 			// Written last: a throwing condition leaves no partial entry behind.
-			return $this->entries[$key] = $this->internList($candidates);
+			return $this->entries[$key] = $this->shareList($candidates);
 		}finally{
 			$this->resolveTimings?->stopTiming();
 		}
@@ -122,37 +113,29 @@ final class CandidateCache{
 			}
 			$residuals = [];
 			foreach($group->getConditions() as $condition){
-				if($condition->isCacheable()){
-					try{
-						if(!$condition->test($keyContext)){
-							continue 2;
-						}
-						continue;
-					}catch(PointInputRequired){
-						// Reads a per-attempt value: decided on each attempt.
-					}
+				$reduced = CompositeCondition::reduceCondition($condition, $keyContext);
+				if($reduced === false){
+					continue 2;
 				}
-				$residuals[] = $condition;
-			}
-			$groupSignature = ":" . spl_object_id($group);
-			foreach($residuals as $condition){
-				$groupSignature .= "," . spl_object_id($condition);
+				if($reduced !== true){
+					$residuals[] = $reduced;
+				}
 			}
 			$groups[] = [$group, $residuals];
-			$signature .= $groupSignature;
-		}
-		if(count($groups) === 0){
-			return null;
+			$signature .= ":" . spl_object_id($group);
+			foreach($residuals as $condition){
+				$signature .= "," . spl_object_id($condition);
+			}
 		}
 
-		return $this->rulePool[$signature] ??= new CandidateRule($rules, $groups);
+		return count($groups) === 0 ? null : $this->rulePool[$signature] ??= new CandidateRule($rules, $groups);
 	}
 
 	/**
 	 * @phpstan-param list<CandidateRule> $candidates
 	 * @phpstan-return list<CandidateRule>
 	 */
-	private function internList(array $candidates) : array{
+	private function shareList(array $candidates) : array{
 		$ids = [];
 		foreach($candidates as $candidate){
 			$ids[] = spl_object_id($candidate);
