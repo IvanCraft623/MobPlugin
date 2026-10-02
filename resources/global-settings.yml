@@ -17,16 +17,15 @@ debug-mode: false
 
 ## Spawning Behavior
 # Enables natural spawning of mobs using vanilla Bedrock spawn rules.
-# Mobs spawn in herds 24-44 blocks away from players, at positions
-# where their vanilla spawn rule conditions are met (light, blocks, biome, difficulty...).
+# Mobs spawn in herds in the chunks ticked around players (pocketmine.yml
+# chunk-ticking.tick-radius), at the vanilla rate.
 mob-natural-spawning:
   # Master switch for the natural spawner. A world settings file can set it to false to
   # turn spawning off in that world only.
   enabled: true
-  # Random columns sampled per tick, shared round-robin between every player in every world
-  # (vanilla runs the algorithm per chunk with an 11/2000 chance per tick, roughly 1-3
-  # evaluations per tick). Global only: world settings files can't change it.
-  attempts-per-tick: 3
+  # Ceiling on the spawn attempts of one tick, over every world. It caps the cost on
+  # crowded servers; it doesn't raise the spawn rate. Global only.
+  max-attempts-per-tick: 8
 
 # Enables natural despawning of mobs
 # Note: Persistent mobs are unaffected by this setting

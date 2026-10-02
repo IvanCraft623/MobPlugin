@@ -65,13 +65,17 @@ final class SpawnRules{
 		return $this->factory;
 	}
 
-	public function check(SpawnConditionContext $ctx) : ?SpawnRuleGroup{
+	/**
+	 * @phpstan-return list<SpawnRuleGroup> every matching group, in rule order
+	 */
+	public function check(SpawnConditionContext $ctx) : array{
+		$matches = [];
 		foreach($this->groups as $group){
 			if($group->matches($ctx)){
-				return $group;
+				$matches[] = $group;
 			}
 		}
 
-		return null;
+		return $matches;
 	}
 }

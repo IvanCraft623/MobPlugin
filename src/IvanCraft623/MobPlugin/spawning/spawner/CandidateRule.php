@@ -45,17 +45,20 @@ final class CandidateRule{
 		return $this->rules;
 	}
 
-	public function match(SpawnConditionContext $ctx) : ?SpawnRuleGroup{
+	/**
+	 * @phpstan-return list<SpawnRuleGroup> every matching group, in rule order
+	 */
+	public function match(SpawnConditionContext $ctx) : array{
+		$matches = [];
 		foreach($this->groups as [$group, $residuals]){
 			foreach($residuals as $condition){
 				if(!$condition->test($ctx)){
 					continue 2;
 				}
 			}
-
-			return $group;
+			$matches[] = $group;
 		}
 
-		return null;
+		return $matches;
 	}
 }

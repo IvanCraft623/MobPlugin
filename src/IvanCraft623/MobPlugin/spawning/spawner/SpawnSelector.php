@@ -30,9 +30,9 @@ use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\utils\Random;
 
 /**
- * Filter, then pick: every candidate under its category cap contributes its first
- * matching group, one is picked by group weight, then the cap roll decides. The
- * population is read only once some group has matched.
+ * Filter, then pick: every candidate under its category cap contributes all its matching
+ * groups, one is picked by group weight, then its rarity roll decides. The population is
+ * read only once some group has matched.
  */
 final class SpawnSelector{
 	public function __construct(
@@ -42,11 +42,11 @@ final class SpawnSelector{
 
 	/**
 	 * @phpstan-param list<CandidateRule> $candidates
-	 * @phpstan-return array{CandidateRule, SpawnRuleGroup}|null
+	 * @phpstan-return array{CandidateRule, SpawnRuleGroup, int}|null the pick and the room left under its category cap
 	 */
 	public function select(SpawnConditionContext $ctx, array $candidates) : ?array{
 		$band = $ctx->getBand();
-		/** @phpstan-var list<array{CandidateRule, SpawnRuleGroup, int, int}> $matches candidate, group, category count, cap */
+		/** @phpstan-var list<array{CandidateRule, SpawnRuleGroup, int}> $matches candidate, group, room under the cap */
 		$matches = [];
 		$weights = [];
 		$population = null;
@@ -59,29 +59,33 @@ final class SpawnSelector{
 			if($cap <= 0){
 				continue; // full without counting
 			}
-			$group = $candidate->match($ctx);
-			if($group === null || $group->getWeight() <= 0){
+			$groups = $candidate->match($ctx);
+			if($groups === []){
 				continue;
 			}
 			$population ??= $ctx->getPopulation();
-			$count = $population->getCategoryCount($category->id, $band);
-			if($count >= $cap){
+			$room = $cap - $population->getCategoryCount($category->id, $band);
+			if($room <= 0){
 				continue;
 			}
-			$matches[] = [$candidate, $group, $count, $cap];
-			$weights[] = $group->getWeight();
+			foreach($groups as $group){
+				if($group->getWeight() > 0){
+					$matches[] = [$candidate, $group, $room];
+					$weights[] = $group->getWeight();
+				}
+			}
 		}
 		$index = Utils::pickWeighted($this->random, $weights);
 		if($index === null){
 			return null;
 		}
-		[$candidate, $group, $count, $cap] = $matches[$index];
 
-		// The fuller the category's region, the likelier the attempt is dropped.
-		if($this->random->nextFloat() * $cap >= $cap - $count){
+		// Rolled after the pick: losing it wastes the attempt, as in vanilla.
+		$rarity = $matches[$index][1]->getRarity();
+		if($rarity > 0 && $this->random->nextBoundedInt($rarity) !== 0){
 			return null;
 		}
 
-		return [$candidate, $group];
+		return $matches[$index];
 	}
 }

@@ -28,7 +28,6 @@ use IvanCraft623\MobPlugin\spawning\spawner\CandidateCache;
 use IvanCraft623\MobPlugin\spawning\spawner\HerdSpawner;
 use IvanCraft623\MobPlugin\spawning\spawner\SpawnSelector;
 use IvanCraft623\MobPlugin\spawning\spawner\WorldSpawnPass;
-use pocketmine\player\Player;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
@@ -36,16 +35,17 @@ use function array_values;
 use function count;
 
 /**
- * Runs every tick on the main thread. Each tick spends attempts-per-tick attempts on the
- * players of every world, round-robin, so every player gets the same share over time.
+ * Runs every tick on the main thread: each ticking chunk rolls vanilla's chance for one
+ * column attempt.
  */
 final class NaturalSpawner{
+	/** Vanilla attempts a chunk when nextInt(2000) <= 10. */
+	private const CHUNK_ROLL_BOUND = 2000;
+	private const CHUNK_ROLL_MAX = 10;
+
 	private ?CandidateCache $candidateCache = null;
 
 	private int $cacheRevision = -1;
-
-	/** Index of the next anchor player, kept across ticks. */
-	private int $cursor = 0;
 
 	private readonly SpawnSelector $selector;
 
@@ -56,7 +56,7 @@ final class NaturalSpawner{
 	 */
 	public function __construct(
 		private readonly SpawnRuleRegistry $registry,
-		private readonly int $attemptsPerTick,
+		private readonly int $maxAttemptsPerTick,
 		private readonly WorldManager $worldManager,
 		private readonly \Closure $isWorldEnabled,
 		private readonly Random $random = new Random()
@@ -66,43 +66,47 @@ final class NaturalSpawner{
 	}
 
 	public function tick() : void{
-		if($this->attemptsPerTick < 1 || count($this->registry->getAll()) === 0){
+		if($this->maxAttemptsPerTick < 1 || count($this->registry->getAll()) === 0){
 			return;
 		}
 
-		/** @phpstan-var list<array{World, Player}> $anchors */
-		$anchors = [];
+		/** @phpstan-var list<array{World, int}> $hits world and chunk hash */
+		$hits = [];
 		foreach($this->worldManager->getWorlds() as $world){
-			if(!($this->isWorldEnabled)($world)){
+			// The ticking list is only kept up to date while chunk ticking is on.
+			if($world->getChunkTickRadius() <= 0 || !($this->isWorldEnabled)($world)){
 				continue;
 			}
-			foreach($world->getPlayers() as $player){
-				$anchors[] = [$world, $player];
+			foreach($world->getTickingChunks() as $chunkHash){
+				if($this->random->nextBoundedInt(self::CHUNK_ROLL_BOUND) <= self::CHUNK_ROLL_MAX){
+					$hits[] = [$world, $chunkHash];
+				}
 			}
 		}
-		$anchorCount = count($anchors);
-		if($anchorCount === 0){
+		$hitCount = count($hits);
+		if($hitCount === 0){
 			return;
 		}
-
-		/** @phpstan-var array<int, array{World, list<Player>}> $byWorld */
-		$byWorld = [];
-		for($i = 0; $i < $this->attemptsPerTick; $i++){
-			[$world, $player] = $anchors[($this->cursor + $i) % $anchorCount];
-			$byWorld[$world->getId()] ??= [$world, []];
-			$byWorld[$world->getId()][1][] = $player;
+		if($hitCount > $this->maxAttemptsPerTick){
+			// Keep a random subset.
+			for($i = 0; $i < $this->maxAttemptsPerTick; $i++){
+				$j = $i + $this->random->nextBoundedInt($hitCount - $i);
+				[$hits[$i], $hits[$j]] = [$hits[$j], $hits[$i]];
+			}
+			$hitCount = $this->maxAttemptsPerTick;
 		}
-		$this->cursor = ($this->cursor + $this->attemptsPerTick) % $anchorCount;
 
 		// The revision is read once: rules registered mid-tick apply from the next tick.
 		$candidateCache = $this->getCandidateCache();
+		/** @phpstan-var array<int, WorldSpawnPass> $passes */
+		$passes = [];
 		CustomTimings::$naturalSpawning->startTiming();
 		try{
-			foreach($byWorld as [$world, $players]){
-				$pass = new WorldSpawnPass($world, $candidateCache, $this->selector, $this->herdSpawner, $this->registry, $this->random);
-				foreach($players as $player){
-					$pass->attempt($player->getPosition());
-				}
+			for($i = 0; $i < $hitCount; $i++){
+				[$world, $chunkHash] = $hits[$i];
+				$pass = $passes[$world->getId()] ??= new WorldSpawnPass($world, $candidateCache, $this->selector, $this->herdSpawner, $this->registry, $this->random);
+				World::getXZ($chunkHash, $chunkX, $chunkZ);
+				$pass->attempt($chunkX, $chunkZ);
 			}
 		}finally{
 			CustomTimings::$naturalSpawning->stopTiming();

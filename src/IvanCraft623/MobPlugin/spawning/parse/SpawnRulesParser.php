@@ -244,10 +244,7 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::DISTANCE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DistanceFilterData::class);
-			$builder->addCondition(RangeCondition::distance(
-				$m->min === null ? null : (float) $m->min,
-				$m->max === null ? null : (float) $m->max
-			));
+			$builder->setDistance($m->min, $m->max);
 		});
 		$this->registerComponent(VanillaSpawnConditions::WORLD_AGE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(WorldAgeFilterData::class);
@@ -264,8 +261,9 @@ final class SpawnRulesParser{
 			$builder->addCondition(new DensityLimitCondition($builder->getIdentifier(), $m->surface, $m->underground));
 		});
 		$this->registerComponent(VanillaSpawnConditions::WEIGHT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			// The vanilla "rarity" field is not consumed.
-			$builder->setWeight($ctx->map(WeightData::class)->default);
+			$m = $ctx->map(WeightData::class);
+			$builder->setWeight($m->default);
+			$builder->setRarity($m->rarity ?? 0);
 		});
 		$this->registerComponent(VanillaSpawnConditions::HERD, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			//TODO: a list holds one herd per spawn event (e.g. horse coat colours); only the first is used until spawn events are supported

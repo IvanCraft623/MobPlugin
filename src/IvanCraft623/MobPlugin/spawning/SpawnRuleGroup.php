@@ -32,6 +32,7 @@ final class SpawnRuleGroup{
 	 * @phpstan-param list<SpawnCondition> $conditions
 	 * @phpstan-param array<string, int>   $permutations   entity identifier => weight
 	 * @phpstan-param SpawnLiquid          $requiredLiquid the liquid the feet must be in; NONE for land mobs
+	 * @phpstan-param int                  $rarity         once picked, the group spawns 1 time in this many; 0 for always
 	 */
 	public function __construct(
 		private readonly array $conditions,
@@ -39,10 +40,14 @@ final class SpawnRuleGroup{
 		private readonly int $herdMin = 1,
 		private readonly int $herdMax = 1,
 		private readonly array $permutations = [],
-		private readonly SpawnLiquid $requiredLiquid = SpawnLiquid::NONE
+		private readonly SpawnLiquid $requiredLiquid = SpawnLiquid::NONE,
+		private readonly int $rarity = 0
 	){
 		if($herdMin < 1 || $herdMax < $herdMin){
 			throw new \InvalidArgumentException("Invalid herd size range [$herdMin, $herdMax]");
+		}
+		if($rarity < 0){
+			throw new \InvalidArgumentException("Rarity must not be negative, got $rarity");
 		}
 	}
 
@@ -76,6 +81,10 @@ final class SpawnRuleGroup{
 		return $this->requiredLiquid;
 	}
 
+	public function getRarity() : int{
+		return $this->rarity;
+	}
+
 	/**
 	 * @phpstan-param list<SpawnCondition> $extra
 	 */
@@ -84,7 +93,7 @@ final class SpawnRuleGroup{
 			return $this;
 		}
 
-		return new self([...$this->conditions, ...$extra], $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->requiredLiquid);
+		return new self([...$this->conditions, ...$extra], $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->requiredLiquid, $this->rarity);
 	}
 
 	/**

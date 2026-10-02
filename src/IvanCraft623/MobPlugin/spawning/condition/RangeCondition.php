@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 
 final class RangeCondition implements SpawnCondition{
 	private const KIND_BRIGHTNESS = 0;
@@ -51,6 +52,9 @@ final class RangeCondition implements SpawnCondition{
 		return new self(self::KIND_DIFFICULTY, $min, $max);
 	}
 
+	/**
+	 * Vanilla tests the block the mob stands on, and also the feet when they are in a liquid.
+	 */
 	public static function height(?int $min, ?int $max) : self{
 		return new self(self::KIND_HEIGHT, $min, $max);
 	}
@@ -72,16 +76,25 @@ final class RangeCondition implements SpawnCondition{
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
+		if($this->kind === self::KIND_HEIGHT){
+			$y = $ctx->getY();
+
+			return $this->contains($y - 1) && ($ctx->getFeetLiquid() === SpawnLiquid::NONE || $this->contains($y));
+		}
+
 		$value = match($this->kind){
 			self::KIND_BRIGHTNESS => $ctx->getLight(),
 			self::KIND_DIFFICULTY => $ctx->getDifficulty(),
-			self::KIND_HEIGHT => $ctx->getY(),
 			self::KIND_DISTANCE => $ctx->getNearestPlayerDistance(),
 			self::KIND_WORLD_AGE => $ctx->getTime(),
 			self::KIND_BAND => $ctx->getBand()->value,
 			default => throw new \LogicException("Unknown range kind $this->kind"),
 		};
 
+		return $this->contains($value);
+	}
+
+	private function contains(int|float $value) : bool{
 		return ($this->min === null || $value >= $this->min) && ($this->max === null || $value <= $this->max);
 	}
 }

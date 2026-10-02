@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use pocketmine\timings\TimingsHandler;
@@ -113,9 +114,15 @@ final class PopulationCensus{
 			if($rules === null){
 				continue;
 			}
-			$pos = $entity->getPosition();
-			// Aquatic mobs above the sea floor count as surface: the ground scan skips water.
-			$band = SpawnBand::fromPosition($pos->y, $this->placement->getGroundY((int) floor($pos->x), (int) floor($pos->z)))->value;
+			// Counted where it was spawned; otherwise where it stands (aquatic mobs above the
+			// sea floor as surface: the ground scan skips water).
+			$onSurface = $entity instanceof Mob ? $entity->isSpawnedOnSurface() : null;
+			if($onSurface !== null){
+				$band = ($onSurface ? SpawnBand::SURFACE : SpawnBand::CAVE)->value;
+			}else{
+				$pos = $entity->getPosition();
+				$band = SpawnBand::fromPosition($pos->y, $this->placement->getGroundY((int) floor($pos->x), (int) floor($pos->z)))->value;
+			}
 			$categoryId = $rules->getCategoryId();
 			$categoryCounts[$band][$categoryId] = ($categoryCounts[$band][$categoryId] ?? 0) + 1;
 			$identifierCounts[$band][$identifier] = ($identifierCounts[$band][$identifier] ?? 0) + 1;

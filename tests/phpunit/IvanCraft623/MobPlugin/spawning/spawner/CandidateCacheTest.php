@@ -59,7 +59,7 @@ final class CandidateCacheTest extends TestCase{
 		}
 		// The registry's slime workaround: a combinator mixing key and point reads.
 		$rules[] = self::rules("minecraft:slime_like", [new SpawnRuleGroup([new AnyOf([
-			new AllOf([RangeCondition::height(null, 40), new SlimeChunkCondition()]),
+			new AllOf([RangeCondition::height(null, 39), new SlimeChunkCondition()]),
 			new BiomeTagCondition($tags, "spawns_slimes_on_surface"),
 		])])]);
 
@@ -95,28 +95,28 @@ final class CandidateCacheTest extends TestCase{
 				z: $random->nextRange(-5000, 5000),
 				light: $random->nextBoundedInt(16),
 				belowTypeId: $belowTypeIds[$random->nextBoundedInt(count($belowTypeIds))],
-				nearestPlayerDistance: $random->nextFloat() * 128,
+				nearestPlayerDistance: 12 + $random->nextFloat() * 116,
 				time: $random->nextBoundedInt(2000000),
 				population: new RegionPopulation([], [$band->value => $counts])
 			);
 
 			$actual = [];
 			foreach($cache->getCandidates($ctx) as $candidate){
-				$group = $candidate->match($ctx);
-				if($group !== null){
-					$actual[$candidate->getRules()->getIdentifier()] = $group;
+				$groups = $candidate->match($ctx);
+				if($groups !== []){
+					$actual[$candidate->getRules()->getIdentifier()] = $groups;
 				}
 			}
 			$expected = [];
 			foreach($rules as $r){
-				$group = $r->check($ctx);
-				if($group !== null){
-					$expected[$r->getIdentifier()] = $group;
+				$groups = $r->check($ctx);
+				if($groups !== []){
+					$expected[$r->getIdentifier()] = $groups;
 				}
 			}
 			self::assertSame(array_keys($expected), array_keys($actual), "attempt $i");
-			foreach($expected as $identifier => $group){
-				self::assertSame($group, $actual[$identifier], "$identifier at attempt $i");
+			foreach($expected as $identifier => $groups){
+				self::assertSame($groups, $actual[$identifier], "$identifier at attempt $i");
 			}
 			$matched += count($expected);
 		}
@@ -161,9 +161,9 @@ final class CandidateCacheTest extends TestCase{
 		self::assertSame(["minecraft:land"], self::identifiers($cache->getCandidates(new StubContext())));
 
 		// The uncached reference applies the same gate.
-		self::assertNull($land->check(new StubContext(feetLiquid: SpawnLiquid::WATER)));
-		self::assertNotNull($fish->check(new StubContext(feetLiquid: SpawnLiquid::WATER)));
-		self::assertNull($fish->check(new StubContext()));
+		self::assertSame([], $land->check(new StubContext(feetLiquid: SpawnLiquid::WATER)));
+		self::assertNotSame([], $fish->check(new StubContext(feetLiquid: SpawnLiquid::WATER)));
+		self::assertSame([], $fish->check(new StubContext()));
 	}
 
 	public function testSizeStaysWithinMaxKeys() : void{
@@ -211,7 +211,7 @@ final class CandidateCacheTest extends TestCase{
 
 		$bright = new StubContext(light: 15);
 		foreach($cache->getCandidates($bright) as $candidate){
-			self::assertNull($candidate->match($bright));
+			self::assertSame([], $candidate->match($bright));
 		}
 		self::assertSame(0, $bright->populationReads, "a failing light check spares the census");
 
@@ -227,7 +227,7 @@ final class CandidateCacheTest extends TestCase{
 		$cache = new CandidateCache([self::rules("minecraft:a", [new SpawnRuleGroup([$spy, RangeCondition::brightness(0, 7)])])]);
 		$ctx = new StubContext(light: 15);
 		foreach($cache->getCandidates($ctx) as $candidate){
-			self::assertNull($candidate->match($ctx));
+			self::assertSame([], $candidate->match($ctx));
 		}
 		self::assertSame(1, $spy->calls, "the non-cacheable condition still runs before the brightness check");
 	}

@@ -91,7 +91,7 @@ final class Settings{
 
 	private bool $mobNaturalSpawning;
 
-	private int $mobNaturalSpawningAttemptsPerTick;
+	private int $mobNaturalSpawningMaxAttemptsPerTick;
 
 	/**
 	 * @param mixed[] $data
@@ -102,19 +102,15 @@ final class Settings{
 		$this->mobNaturalDespawning = $this->getPropertyBool($data, "mob-natural-despawning", true);
 		$this->mobGriefing = $this->getPropertyBool($data, "mob-griefing", true);
 		$this->mobNaturalSpawning = $this->getSpawningSubProperty($data, "enabled", true) !== false;
-		$this->mobNaturalSpawningAttemptsPerTick = self::clampAttemptsPerTick($this->getSpawningSubProperty($data, "attempts-per-tick", 3));
+		$this->mobNaturalSpawningMaxAttemptsPerTick = self::clampMaxAttemptsPerTick($this->getSpawningSubProperty($data, "max-attempts-per-tick", 8));
 	}
 
-	private const MIN_ATTEMPTS_PER_TICK = 1;
+	private const LOWEST_MAX_ATTEMPTS_PER_TICK = 1;
 
-	private const MAX_ATTEMPTS_PER_TICK = 20;
+	private const HIGHEST_MAX_ATTEMPTS_PER_TICK = 100;
 
-	/**
-	 * Clamps attempts-per-tick to a sane range: too low disables spawning entirely, too
-	 * high multiplies the per-tick collection cost (the main-thread stage) linearly.
-	 */
-	private static function clampAttemptsPerTick(bool|int $value) : int{
-		return max(self::MIN_ATTEMPTS_PER_TICK, min(self::MAX_ATTEMPTS_PER_TICK, (int) $value));
+	private static function clampMaxAttemptsPerTick(bool|int $value) : int{
+		return max(self::LOWEST_MAX_ATTEMPTS_PER_TICK, min(self::HIGHEST_MAX_ATTEMPTS_PER_TICK, (int) $value));
 	}
 
 	/**
@@ -162,10 +158,9 @@ final class Settings{
 	}
 
 	/**
-	 * Columns sampled per tick, shared round-robin between every player in every world.
 	 * Only the global value is used: it is one budget for the whole server.
 	 */
-	public function getMobNaturalSpawningAttemptsPerTick() : int{
-		return $this->mobNaturalSpawningAttemptsPerTick;
+	public function getMobNaturalSpawningMaxAttemptsPerTick() : int{
+		return $this->mobNaturalSpawningMaxAttemptsPerTick;
 	}
 }

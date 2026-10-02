@@ -39,10 +39,10 @@ final class MobCategoryRegistry{
 
 	private function __construct(){
 		$this->register(new MobCategory(self::MONSTER, 8, 16, 64));
-		$this->register(new MobCategory(self::ANIMAL, 4, 0, 64));
+		$this->register(new MobCategory(self::ANIMAL, 4, 4, 64));
 		$this->register(new MobCategory(self::AMBIENT, 0, 2, 32));
-		$this->register(new MobCategory(self::WATER_ANIMAL, 36, 0, 64));
-		$this->register(new MobCategory(self::CAT, 0, 0, 64)); //Cats are not cluster-spawned on Bedrock
+		$this->register(new MobCategory(self::WATER_ANIMAL, 36, 36, 64));
+		$this->register(new MobCategory(self::CAT, 4, 0, 64));
 	}
 
 	/**

@@ -135,7 +135,7 @@ class MobPlugin extends PluginBase {
 
 		$spawner = new NaturalSpawner(
 			SpawnRuleRegistry::getInstance(),
-			$settings->getMobNaturalSpawningAttemptsPerTick(),
+			$settings->getMobNaturalSpawningMaxAttemptsPerTick(),
 			$this->getServer()->getWorldManager(),
 			static fn(World $world) : bool => Settings::getSettings($world->getFolderName())->isMobNaturalSpawningEnabled()
 		);

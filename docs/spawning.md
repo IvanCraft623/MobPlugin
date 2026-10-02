@@ -81,10 +81,14 @@ Everything runs on the main thread, once per tick, inside `NaturalSpawner::tick(
 
 ### Budget
 
-Each tick lists one anchor per player in every world with spawning enabled (peaceful
-worlds included: the data decides what spawns there). A cursor kept across ticks takes
-the next `attempts-per-tick` anchors, wrapping around, so every player gets the same share
-over time. Each world with selected anchors gets one `WorldSpawnPass` for the tick.
+Each tick, every chunk in `World::getTickingChunks()` of every world with spawning
+enabled (peaceful worlds included: the data decides what spawns there) rolls vanilla's
+chance, `nextInt(2000) <= 10`, for one attempt. That list is PocketMine's ticking set:
+the chunks within `chunk-ticking.tick-radius` of a player, each counted once however many
+players share it. A world with a tick radius of 0 never spawns.
+
+If more chunks roll an attempt than `max-attempts-per-tick`, a random subset of that size
+is kept. Each world with attempts gets one `WorldSpawnPass` for the tick.
 
 The registry revision is read once per tick, so rules registered mid-tick apply from the
 next tick.
@@ -93,21 +97,24 @@ next tick.
 
 Each attempt runs from start to finish before the next one begins:
 
-1. **Sample.** Pick a column in the 24–44 block ring around the anchor (uniform over the
-   ring's area): the surface position on its ground, then every position below it down
-   to the world bottom, as vanilla does. A position is dropped if its chunk isn't light
-   populated, it is within 24 blocks of any player, or it fails the placement rules
-   below.
+1. **Sample.** Pick a random column of the chunk: the surface position on its ground,
+   then every position below it down to the world bottom, as vanilla does. A position is
+   dropped if it fails the placement rules below or is out of reach of every player: at a
+   tick radius of 4 or less vanilla clamps every rule's maximum distance to 44 blocks; at
+   5 or more the attempt needs the 3×3 chunks around its chunk to be ticking instead.
 2. **Candidates.** Build an `AttemptContext` and ask the `CandidateCache` which rules could
    still spawn there. An empty list ends the position.
-3. **Select.** `SpawnSelector` skips candidates whose category is unregistered or has a
-   cap of 0 in the band. Each remaining candidate contributes its first matching group
-   unless its category is at its cap. One match is picked by group weight, then the cap
-   roll `(cap - count) / cap` decides.
-4. **Spawn.** `HerdSpawner` computes every member position, then picks the `permute_type`
-   and calls the factories and `spawnToAll()`. Surface members stand on their own
-   column's ground; cave and aquatic members keep the lead's depth. Members within 24
-   blocks of a player are skipped.
+3. **Select.** `SpawnSelector` skips candidates whose category is unregistered, has a cap
+   of 0 in the band or is at its cap. Each remaining candidate contributes every matching
+   group. One is picked by group weight; if it has a `rarity`, it then spawns one time in
+   that many.
+4. **Spawn.** `HerdSpawner` rolls the herd size, `min + round(rand² × (max − min))`,
+   trims it to the room left under the category cap, and spawns every member on the
+   lead's block. Each member picks its own `permute_type`; the factory builds it and
+   `spawnToAll()` is called.
+
+How close to a player a mob may spawn is a rule condition: 24 to 128 blocks unless the
+rule's `distance_filter` says otherwise (fish use 12 to 32).
 
 `AttemptContext` reads light (`World::getFullLightAt()`) and the population lazily, at
 most once. The population is only read by a density limit, after its group's other
@@ -126,21 +133,22 @@ Every position must pass two block checks, whatever the mob:
   `count(getCollisionBoxes()) === 0`: air, liquids, grass, flowers, and also torches,
   rails and buttons.
 
-Land mobs need non-liquid feet over ground; aquatic mobs need their liquid at the feet
-and no ground. The pass, census and herd spawner share one instance, which memoizes
-ground Y per column.
+Aquatic mobs spawn in the liquid block right above the ground (the sea floor), as in
+vanilla. The pass and the census share one instance, which memoizes ground Y per column.
 
 `PopulationCensus` counts mobs per chunk from `World::getChunkEntities()` by band,
 category and identifier, the first time a chunk is needed. Any entity whose identifier has
-registered spawn rules counts, including PocketMine's squid. A position's population is
-the sum over the 9×9 chunk grid around its chunk.
+registered spawn rules counts, including PocketMine's squid. A mob counts in the band it
+was spawned in (`Mob::isSpawnedOnSurface()`, saved with the entity); one that wasn't
+spawned naturally, or isn't a `Mob`, counts in the band it currently stands in. A
+position's population is the sum over the 9×9 chunk grid around its chunk.
 
 ### Memo validity
 
 Memos keyed by location (ground Y, chunk and region counts, an attempt's light and
 population) live only as long as one `WorldSpawnPass`, so world edits between ticks can't
 make them stale. Within a pass only factories can edit the world, so after every herd
-(its lead always spawns) the pass calls `invalidateWorldMemos()` and the next attempt
+(at least one member always spawns) the pass calls `invalidateWorldMemos()` and the next attempt
 recounts from the world, new entities included.
 
 The only long-lived cache, `CandidateCache`, is keyed by values, never by location: every
@@ -160,8 +168,8 @@ attempt reads its key fresh from the world, so no world edit (`setChunk()`,
 A key only admits groups whose required liquid is its feet liquid: aquatic groups spawn
 only in their liquid, and land groups, which carry no "not in water" condition, only out
 of any liquid (`SpawnRuleGroup::admitsLiquid()`, which `SpawnRuleGroup::matches()` applies
-too). Surviving groups keep their order, so "first match wins" is unchanged. Within a group, residuals that read the population (such as
-`density_limit`) run last.
+too). Surviving groups keep their order. Within a group, residuals that read the
+population (such as `density_limit`) run last.
 
 The key packs into one int; out-of-range values throw instead of colliding. Results are
 interned, so the whole vanilla key space takes about 300 KB. The cache holds at most 4096
@@ -169,10 +177,10 @@ keys, is cleared when full, and is rebuilt when the registry revision changes.
 
 ## Conditions
 
-A rule set (`SpawnRules`) is an ordered list of `SpawnRuleGroup`s; the **first matching
-group wins**. A group carries its conditions plus its weight, herd size, `permute_type`
-weights and required liquid (`spawns_underwater`, `spawns_lava`; a group can't require
-both). Conditions implement:
+A rule set (`SpawnRules`) is a list of `SpawnRuleGroup`s; **every matching group
+competes** in the weighted pick, as each is its own entry in vanilla. A group carries its
+conditions plus its weight, rarity, herd size, `permute_type` weights and required liquid
+(`spawns_underwater`, `spawns_lava`; a group can't require both). Conditions implement:
 
 ```php
 interface SpawnCondition{
@@ -182,7 +190,8 @@ interface SpawnCondition{
 ```
 
 Built-ins live in `spawning/condition/`: `RangeCondition` (brightness, difficulty,
-height, distance, world age, band), `BiomeTagCondition`, `SpawnsOnBlock`,
+height, distance, world age, band; height tests the block stood on, and the feet too in a
+liquid, as vanilla does), `BiomeTagCondition`, `SpawnsOnBlock`,
 `DensityLimitCondition`, `SlimeChunkCondition`, and the `AllOf`, `AnyOf`, `Not`
 combinators.
 
@@ -228,8 +237,13 @@ generated `XxxData` models with JsonMapper. By-design exceptions:
 - components PocketMine can't implement (`mob_event_filter`, `delay_filter`,
   `player_in_village_filter`, `spawns_above_block_filter`) drop their group through
   `SpawnRuleGroupBuilder::markNeverSpawns()`;
+- a group with neither `spawns_on_surface` nor `spawns_underground` is dropped: vanilla
+  spawns it nowhere (only guardian, which spawns through structures);
 - components with no runtime effect (`disallow_spawns_in_bubble`, `is_persistent`,
   `is_experimental`) are accepted and ignored.
+
+The loader also applies vanilla's defaults: a group without a `distance_filter` gets the
+24 to 128 block player distance, and `weight.rarity` becomes the group's rarity.
 
 ## Registration API
 
@@ -239,6 +253,7 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 	MobCategoryRegistry::MONSTER,
 	[
 		new SpawnRuleGroup([
+			RangeCondition::distance(24, 128),
 			RangeCondition::brightness(0, 7),
 			RangeCondition::difficulty(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
 			new SpawnsOnBlock([BlockTypeIds::STONE => true], false),
@@ -253,11 +268,13 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 - Rules store only the category id; every consumer looks the category up when it needs
   it, so re-registering a category (for example to raise a cap) applies to rules
   registered before it.
+- Nothing but a group's conditions keeps its mobs away from players: give it a
+  `RangeCondition::distance()`, as the loader does for vanilla rules.
 - Factories construct the entity but never spawn it: `HerdSpawner` calls `spawnToAll()`.
 - An aquatic group passes its liquid to the group, not as a condition:
   `new SpawnRuleGroup([...], weight: 10, requiredLiquid: SpawnLiquid::WATER)`.
 - `SpawnRules::check($ctx)` is the uncached reference evaluation: the cache returns the
-  same group for every context (`CandidateCacheTest`).
+  same groups for every context (`CandidateCacheTest`).
 
 ### Custom components
 
@@ -288,12 +305,14 @@ captures `$parser->getBiomeTags()`.
 ```yaml
 mob-natural-spawning:
   enabled: true
-  attempts-per-tick: 3   # columns sampled per tick, round-robin over every player in every world
+  max-attempts-per-tick: 8   # ceiling on the columns tried in one tick, over every world
 ```
 
 `enabled` in a world settings file (`worlds-settings/<world>.yml`) turns spawning off for
-that world only; the global switch must be on for any world to spawn. `attempts-per-tick`
-is read from the global file only, since it is one budget for the whole server.
+that world only; the global switch must be on for any world to spawn.
+`max-attempts-per-tick` is read from the global file only, since it is one budget for the
+whole server. It only caps the cost of a crowded tick: the spawn rate is vanilla's 11 in
+2000 per ticking chunk, so it follows PocketMine's `chunk-ticking.tick-radius`.
 
 ## Timings
 
@@ -309,21 +328,28 @@ is read from the global file only, since it is one budget for the whole server.
 
 ## Approximations
 
-Deliberate deviations from vanilla:
+The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviations:
 
+- A rule that fails a block filter, its liquid, its distance, its density limit or its
+  category cap is left out of the weighted pick. Vanilla picks first and checks those
+  after, wasting the attempt, so where several rules match vanilla spawns a little less.
+- `density_limit` passes or fails the whole herd; vanilla trims the herd to the room left
+  under the limit, so a herd here can pass it by up to its size minus one.
+- The ticking set is PocketMine's (a circle around each player), not vanilla's diamond.
 - Ground is any block with a full top surface, so glass, barriers and upside-down stairs
   count although vanilla doesn't spawn on them.
 - Every position is checked as a 1×2 block column, not with the mob's bounding box.
-- A counted mob's band comes from its current position, not where it spawned.
+- A liquid position needs one block of its liquid; vanilla's surface needs two.
 - `permute_type` event suffixes are stripped at parse time: permuted types spawn in base
-  form.
+  form. Every member rolls from the base type; vanilla keeps the last rolled type for an
+  entry without `entity_type`, which looks like a bug. `min_guaranteed` is ignored (no
+  bundled rule uses it).
 - When `herd` is a list (one herd per spawn event, such as horse coat colours), only the
-  first entry is used.
-- Herd members are placed by room only; the rule's conditions aren't re-checked at their
-  offsets.
+  first entry is used; the bundled lists differ only by event.
+- Structure spawn areas (ocean monuments, fortresses...) are not implemented.
+- At a tick radius of 5 or more, rules may spawn up to 128 blocks out, past the 64 block
+  despawn distance of most categories.
 - PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
-- A herd can overshoot its category's cap: the cap is checked once, then the whole herd
-  spawns (vanilla pack spawning).
 - The global mob cap (200) is not enforced.
 - Slimes: vanilla conditions must hold AND (Y ≤ 40 in a slime chunk OR biome tag
   `spawns_slimes_on_surface`). The slime-chunk check is Bedrock's real algorithm (a

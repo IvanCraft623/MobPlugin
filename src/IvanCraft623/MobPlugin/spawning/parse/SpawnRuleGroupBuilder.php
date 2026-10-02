@@ -36,11 +36,20 @@ use function count;
  * last-write, conditions accumulate, liquids must agree.
  */
 final class SpawnRuleGroupBuilder{
+	/** Vanilla's player distance range without a distance_filter. */
+	private const DEFAULT_MIN_DISTANCE = 24;
+	private const DEFAULT_MAX_DISTANCE = 128;
+
 	/** @phpstan-var list<SpawnCondition> */
 	private array $conditions = [];
 
 	private int $weight = 1;
 
+	private int $rarity = 0;
+
+	private int $minDistance = self::DEFAULT_MIN_DISTANCE;
+
+	private int $maxDistance = self::DEFAULT_MAX_DISTANCE;
 	private int $herdMin = 1;
 
 	private int $herdMax = 1;
@@ -92,6 +101,15 @@ final class SpawnRuleGroupBuilder{
 		$this->weight = $weight;
 	}
 
+	public function setRarity(int $rarity) : void{
+		$this->rarity = $rarity;
+	}
+
+	public function setDistance(?int $min, ?int $max) : void{
+		$this->minDistance = $min ?? self::DEFAULT_MIN_DISTANCE;
+		$this->maxDistance = $max ?? self::DEFAULT_MAX_DISTANCE;
+	}
+
 	public function setHerd(int $min, int $max) : void{
 		$this->herdMin = $min;
 		$this->herdMax = $max;
@@ -108,12 +126,17 @@ final class SpawnRuleGroupBuilder{
 		if($this->neverSpawns){
 			return null;
 		}
+		if(count($this->habitatBands) === 0){
+			return null; // every position is surface or underground
+		}
+
 		$conditions = $this->conditions;
+		$conditions[] = RangeCondition::distance($this->minDistance, $this->maxDistance);
 		if(count($this->habitatBands) === 1){
 			// A single marker pins the band; both markers allow any band.
 			$conditions[] = RangeCondition::band(array_values($this->habitatBands)[0]);
 		}
 
-		return new SpawnRuleGroup($conditions, $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->liquid);
+		return new SpawnRuleGroup($conditions, $this->weight, $this->herdMin, $this->herdMax, $this->permutations, $this->liquid, $this->rarity);
 	}
 }

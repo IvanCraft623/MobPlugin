@@ -23,15 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
 use pocketmine\world\World;
-use function count;
 
 /**
- * Where the ground is and whether a mob fits, for one world during one pass. Sampling,
- * band classification and herd placement all share it, so they always agree.
+ * Where the ground is, for one world during one pass. Sampling and band classification
+ * share it, so they always agree.
  */
 final class SpawnPlacement{
 	/** @phpstan-var array<int, int> column key => ground Y */
@@ -66,27 +64,6 @@ final class SpawnPlacement{
 		}
 
 		return $this->groundY[$key] = $groundY;
-	}
-
-	/**
-	 * The head goes in a block with no collision boxes. Land mobs need the same of their
-	 * non-liquid feet, over a block with a full top surface. Aquatic mobs need the liquid
-	 * at the feet, but no ground.
-	 */
-	public function hasRoom(int $x, int $y, int $z, SpawnLiquid $requiredLiquid = SpawnLiquid::NONE) : bool{
-		if(count($this->world->getBlockAt($x, $y + 1, $z)->getCollisionBoxes()) !== 0){
-			return false;
-		}
-		$feet = $this->world->getBlockAt($x, $y, $z);
-		$feetLiquid = SpawnLiquid::fromBlockTypeId($feet->getTypeId());
-		if($requiredLiquid !== SpawnLiquid::NONE){
-			return $feetLiquid === $requiredLiquid;
-		}
-		if(count($feet->getCollisionBoxes()) !== 0 || $feetLiquid !== SpawnLiquid::NONE){
-			return false;
-		}
-
-		return $this->world->getBlockAt($x, $y - 1, $z)->getSupportType(Facing::UP) === SupportType::FULL;
 	}
 
 	public function clear() : void{

@@ -97,18 +97,63 @@ final class SpawnSelectorTest extends TestCase{
 		}
 	}
 
-	public function testCapRollScalesWithFreeRoom() : void{
+	public function testCategoryUnderItsCapIsAlwaysAcceptedWithItsRoom() : void{
 		$selector = self::selector(4);
 		$candidates = self::candidates([self::rules("minecraft:mob", "m", [self::group([], 1)])]);
 		$ctx = new StubContext(population: new RegionPopulation([SpawnBand::SURFACE->value => ["m" => 3]]));
 
+		for($i = 0; $i < self::TRIALS; $i++){
+			$selected = $selector->select($ctx, $candidates);
+			self::assertNotNull($selected, "vanilla has no cap roll");
+			self::assertSame(1, $selected[2]); // 4 - 3
+		}
+	}
+
+	public function testEveryMatchingGroupOfARuleCompetes() : void{
+		$selector = self::selector(11);
+		$heavy = self::group([], 3);
+		$light = self::group([], 1);
+		$candidates = self::candidates([self::rules("minecraft:mob", "a", [$heavy, $light])]);
+
+		$lightPicks = 0;
+		for($i = 0; $i < self::TRIALS; $i++){
+			$selected = $selector->select(new StubContext(), $candidates);
+			self::assertNotNull($selected);
+			if($selected[1] === $light){
+				$lightPicks++;
+			}
+		}
+		self::assertEqualsWithDelta(0.25, $lightPicks / self::TRIALS, 0.04);
+	}
+
+	public function testRarityAcceptsOneInThatMany() : void{
+		$selector = self::selector(12);
+		$candidates = self::candidates([self::rules("minecraft:rare", "a", [self::group([], 1, 4)])]);
+
 		$accepted = 0;
 		for($i = 0; $i < self::TRIALS * 2; $i++){
-			if($selector->select($ctx, $candidates) !== null){
+			if($selector->select(new StubContext(), $candidates) !== null){
 				$accepted++;
 			}
 		}
-		self::assertEqualsWithDelta(0.25, $accepted / (self::TRIALS * 2), 0.04); // (4 - 3) / 4
+		self::assertEqualsWithDelta(0.25, $accepted / (self::TRIALS * 2), 0.04);
+	}
+
+	public function testLosingTheRarityRollWastesTheAttempt() : void{
+		$selector = self::selector(13);
+		$candidates = self::candidates([
+			self::rules("minecraft:rare", "a", [self::group([], 1000, 1000000)]),
+			self::rules("minecraft:plain", "b", [self::group([], 1)]),
+		]);
+
+		$accepted = 0;
+		for($i = 0; $i < self::TRIALS; $i++){
+			if($selector->select(new StubContext(), $candidates) !== null){
+				$accepted++;
+			}
+		}
+		// The plain rule only spawns when it wins the pick, not when the rare one loses its roll.
+		self::assertLessThan(self::TRIALS * 0.01, $accepted);
 	}
 
 	public function testNothingMatchesYieldsNothing() : void{
@@ -170,7 +215,7 @@ final class SpawnSelectorTest extends TestCase{
 
 	/**
 	 * @phpstan-param list<CandidateRule> $candidates
-	 * @phpstan-return array{CandidateRule, SpawnRuleGroup}|null
+	 * @phpstan-return array{CandidateRule, SpawnRuleGroup, int}|null
 	 */
 	private static function selectUntilAccepted(SpawnSelector $selector, StubContext $ctx, array $candidates) : ?array{
 		for($i = 0; $i < 100; $i++){
@@ -190,8 +235,8 @@ final class SpawnSelectorTest extends TestCase{
 	/**
 	 * @phpstan-param list<SpawnCondition> $conditions
 	 */
-	private static function group(array $conditions, int $weight) : SpawnRuleGroup{
-		return new SpawnRuleGroup($conditions, $weight);
+	private static function group(array $conditions, int $weight, int $rarity = 0) : SpawnRuleGroup{
+		return new SpawnRuleGroup($conditions, $weight, rarity: $rarity);
 	}
 
 	/**

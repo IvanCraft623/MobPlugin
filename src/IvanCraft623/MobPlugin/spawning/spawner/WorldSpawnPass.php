@@ -29,16 +29,12 @@ use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
-use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
-use function cos;
+use function array_flip;
 use function count;
-use function floor;
 use function min;
-use function sin;
 use function sqrt;
-use const M_PI;
 use const PHP_FLOAT_MAX;
 
 /**
@@ -46,11 +42,9 @@ use const PHP_FLOAT_MAX;
  * the next one starts; every location-keyed memo lives only as long as the pass.
  */
 final class WorldSpawnPass{
-	/** Mobs never spawn closer than this to a player (vanilla despawns them immediately). */
-	public const MIN_PLAYER_DISTANCE = 24;
-
-	/** Outer spawn ring radius, matching the simulation-distance-4 shell (24-44). */
-	private const MAX_PLAYER_DISTANCE = 44;
+	/** Up to this tick radius vanilla clamps every rule's maximum player distance to 44. */
+	private const CLAMPED_TICK_RADIUS = 4;
+	private const CLAMPED_PLAYER_DISTANCE = 44;
 
 	private readonly SpawnPlacement $placement;
 
@@ -62,6 +56,11 @@ final class WorldSpawnPass{
 	private readonly int $difficulty;
 
 	private readonly int $time;
+
+	private readonly bool $clampDistance;
+
+	/** @phpstan-var array<int, int>|null chunk hash => index, read on first use */
+	private ?array $tickingChunks = null;
 
 	public function __construct(
 		private readonly World $world,
@@ -81,32 +80,37 @@ final class WorldSpawnPass{
 		$this->players = $players;
 		$this->difficulty = $world->getDifficulty();
 		$this->time = $world->getTime();
+		$this->clampDistance = $world->getChunkTickRadius() <= self::CLAMPED_TICK_RADIUS;
 	}
 
 	/**
-	 * Horizontal offset from a player, uniform over the area of the MIN..MAX ring.
-	 *
-	 * @phpstan-return array{float, float}
-	 */
-	private static function getRingOffset(Random $random) : array{
-		$minSquared = self::MIN_PLAYER_DISTANCE ** 2;
-		$radius = sqrt($minSquared + (self::MAX_PLAYER_DISTANCE ** 2 - $minSquared) * $random->nextFloat());
-		$theta = 2.0 * M_PI * $random->nextFloat();
-
-		return [cos($theta) * $radius, sin($theta) * $radius];
-	}
-
-	/**
-	 * One column in the ring around the anchor: the surface position on its ground, then
+	 * One random column of a ticking chunk: the surface position on its ground, then
 	 * every cave position below it down to the world bottom, as vanilla does.
 	 */
-	public function attempt(Vector3 $anchor) : void{
+	public function attempt(int $chunkX, int $chunkZ) : void{
+		// Past the clamped radius vanilla instead needs the chunks around to be ticking.
+		if(!$this->clampDistance && !$this->isSurroundedByTickingChunks($chunkX, $chunkZ)){
+			return;
+		}
 		CustomTimings::$naturalSpawningSample->startTiming();
 		try{
-			$this->sampleColumn($anchor);
+			$this->sampleColumn($chunkX, $chunkZ);
 		}finally{
 			CustomTimings::$naturalSpawningSample->stopTiming();
 		}
+	}
+
+	private function isSurroundedByTickingChunks(int $chunkX, int $chunkZ) : bool{
+		$this->tickingChunks ??= array_flip($this->world->getTickingChunks());
+		for($x = $chunkX - 1; $x <= $chunkX + 1; $x++){
+			for($z = $chunkZ - 1; $z <= $chunkZ + 1; $z++){
+				if(!isset($this->tickingChunks[World::chunkHash($x, $z)])){
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -118,14 +122,7 @@ final class WorldSpawnPass{
 		$this->census->clear();
 	}
 
-	private function sampleColumn(Vector3 $anchor) : void{
-		[$dx, $dz] = self::getRingOffset($this->random);
-		$chunkX = ((int) floor($anchor->x + $dx)) >> 4;
-		$chunkZ = ((int) floor($anchor->z + $dz)) >> 4;
-		$chunk = $this->world->getChunk($chunkX, $chunkZ);
-		if($chunk === null || $chunk->isLightPopulated() !== true){
-			return; // getFullLightAt() would read dark before light is calculated
-		}
+	private function sampleColumn(int $chunkX, int $chunkZ) : void{
 		$x = ($chunkX << 4) + $this->random->nextBoundedInt(16);
 		$z = ($chunkZ << 4) + $this->random->nextBoundedInt(16);
 
@@ -143,9 +140,9 @@ final class WorldSpawnPass{
 	}
 
 	/**
-	 * Feet and head in blocks with no collision boxes, over a block with a full top surface,
-	 * far enough from every player. Blocks stay out of the world's block cache: a column
-	 * scan reads far more of them than anything else will reuse.
+	 * Feet and head in blocks with no collision boxes, over a block with a full top surface.
+	 * Blocks stay out of the world's block cache: a column scan reads far more of them than
+	 * anything else will reuse.
 	 */
 	private function tryPosition(int $x, int $y, int $z, int $groundY) : void{
 		// Feet first: most of a column is rock, which costs this one read.
@@ -157,13 +154,13 @@ final class WorldSpawnPass{
 		if($below->getSupportType(Facing::UP) !== SupportType::FULL){
 			return;
 		}
+		// From the block's own coordinates, as vanilla measures it.
 		$nearestSquared = PHP_FLOAT_MAX;
 		foreach($this->players as [$px, $py, $pz]){
-			$distanceSquared = ($px - $x - 0.5) ** 2 + ($py - $y) ** 2 + ($pz - $z - 0.5) ** 2;
-			if($distanceSquared < self::MIN_PLAYER_DISTANCE ** 2){
-				return;
-			}
-			$nearestSquared = min($nearestSquared, $distanceSquared);
+			$nearestSquared = min($nearestSquared, ($px - $x) ** 2 + ($py - $y) ** 2 + ($pz - $z) ** 2);
+		}
+		if($this->clampDistance && $nearestSquared > self::CLAMPED_PLAYER_DISTANCE ** 2){
+			return;
 		}
 
 		$ctx = new AttemptContext(
@@ -209,10 +206,10 @@ final class WorldSpawnPass{
 			return;
 		}
 
-		[$candidate, $group] = $selected;
+		[$candidate, $group, $room] = $selected;
 		CustomTimings::$naturalSpawningSpawn->startTiming();
 		try{
-			$this->herdSpawner->spawn($this->placement, $ctx, $candidate->getRules(), $group, $this->players);
+			$this->herdSpawner->spawn($this->world, $ctx, $candidate->getRules(), $group, $room);
 			$this->invalidateWorldMemos();
 		}finally{
 			CustomTimings::$naturalSpawningSpawn->stopTiming();

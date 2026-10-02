@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
@@ -48,6 +49,8 @@ final class SpawnRulesParseableTest extends TestCase{
 
 	/** population_control values vanilla spawns through events, never naturally. */
 	private const SKIPPED_CATEGORIES = ["pillager" => true, "pillager_patrol" => true];
+
+	private const HABITAT_MARKERS = ["spawns_on_surface" => true, "spawns_underground" => true];
 
 	/** @phpstan-var array<string, array{string, list<array<string, mixed>>}> identifier => [population_control, raw groups] */
 	private static array $raw;
@@ -107,9 +110,10 @@ final class SpawnRulesParseableTest extends TestCase{
 
 	/**
 	 * Vanilla data uses unsupported components only in skipped entries, so every parsed
-	 * group count must match its raw count unless future data says otherwise.
+	 * group count must match its raw count unless future data says otherwise. A group with
+	 * no habitat marker spawns nowhere in vanilla either.
 	 */
-	public function testOnlyGroupsWithUnsupportedComponentsAreDropped() : void{
+	public function testOnlyGroupsWithUnsupportedComponentsOrNoHabitatAreDropped() : void{
 		$unsupported = [];
 		foreach(SpawnRulesParser::UNSUPPORTED_VANILLA as $component){
 			$unsupported[$component] = true;
@@ -118,7 +122,7 @@ final class SpawnRulesParseableTest extends TestCase{
 		foreach(self::$parsed as $identifier => [, $groups]){
 			$kept = 0;
 			foreach(self::$raw[$identifier][1] as $group){
-				if(!self::usesAny($group, $unsupported)){
+				if(!self::usesAny($group, $unsupported) && self::usesAny($group, self::HABITAT_MARKERS)){
 					$kept++;
 				}
 			}
@@ -135,8 +139,8 @@ final class SpawnRulesParseableTest extends TestCase{
 
 	public function testLiquidMarkersSetTheGroupLiquid() : void{
 		$groups = self::parseConditions(<<<'JSON'
-			{"minecraft:spawns_underwater": {}},
-			{"minecraft:spawns_lava": {}},
+			{"minecraft:spawns_on_surface": {}, "minecraft:spawns_underwater": {}},
+			{"minecraft:spawns_on_surface": {}, "minecraft:spawns_lava": {}},
 			{"minecraft:spawns_on_surface": {}}
 			JSON);
 
@@ -144,6 +148,33 @@ final class SpawnRulesParseableTest extends TestCase{
 			[SpawnLiquid::WATER, SpawnLiquid::LAVA, SpawnLiquid::NONE],
 			array_map(static fn(SpawnRuleGroup $group) : SpawnLiquid => $group->getRequiredLiquid(), $groups)
 		);
+	}
+
+	public function testGroupWithoutHabitatMarkerIsDropped() : void{
+		self::assertCount(1, self::parseConditions(<<<'JSON'
+			{"minecraft:spawns_underwater": {}},
+			{"minecraft:spawns_underground": {}}
+			JSON));
+	}
+
+	public function testRarityIsReadFromTheWeight() : void{
+		$groups = self::parseConditions(<<<'JSON'
+			{"minecraft:spawns_on_surface": {}, "minecraft:weight": {"default": 7, "rarity": 3}},
+			{"minecraft:spawns_on_surface": {}, "minecraft:weight": {"default": 7}}
+			JSON);
+
+		self::assertSame([7, 7], array_map(static fn(SpawnRuleGroup $group) : int => $group->getWeight(), $groups));
+		self::assertSame([3, 0], array_map(static fn(SpawnRuleGroup $group) : int => $group->getRarity(), $groups));
+	}
+
+	public function testDistanceFilterReplacesTheVanillaDefault() : void{
+		$groups = self::parseConditions(<<<'JSON'
+			{"minecraft:spawns_on_surface": {}, "minecraft:spawns_underground": {}},
+			{"minecraft:spawns_on_surface": {}, "minecraft:spawns_underground": {}, "minecraft:distance_filter": {"min": 12, "max": 32}}
+			JSON);
+
+		self::assertEquals([RangeCondition::distance(24, 128)], $groups[0]->getConditions());
+		self::assertEquals([RangeCondition::distance(12, 32)], $groups[1]->getConditions());
 	}
 
 	public function testGroupRequiringTwoLiquidsIsRejected() : void{
