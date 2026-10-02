@@ -23,12 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
 use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
+use IvanCraft623\MobPlugin\spawning\condition\LightChanceCondition;
+use IvanCraft623\MobPlugin\spawning\condition\MoonPhaseChanceCondition;
+use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use pocketmine\entity\Entity;
@@ -39,6 +43,8 @@ use pocketmine\plugin\PluginException;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use pocketmine\world\World;
+use function array_map;
+use function is_a;
 
 /**
  * @phpstan-import-type SpawnFactory from SpawnRules
@@ -79,32 +85,31 @@ final class SpawnRuleRegistry{
 				continue; // no natural spawns (constructed mobs, bosses)
 			}
 			[$categoryId, $groups] = $parsed[$identifier];
+
+			// WORKAROUND: vanilla hardcodes these rules in the engine instead of the rules file.
+			$hardcoded = [];
 			if($entityClass === Slime::class){
-				$groups = self::applySlimeChunkRule($groups, $parser->getBiomeTags());
+				$hardcoded[] = new AnyOf([
+					new AllOf([
+						new HeightCondition(null, 38),
+						new SlimeChunkCondition(),
+					]),
+					new AllOf([
+						new HeightCondition(50, 68),
+						new BiomeTagCondition($parser->getBiomeTags(), "spawns_slimes_on_surface"),
+						new LightChanceCondition(8, inverted: true),
+						new MoonPhaseChanceCondition(),
+					]),
+				]);
 			}
+			if(is_a($entityClass, Monster::class, true)){
+				//TODO: the Nether has its own rule, and thunderstorms darken the sky
+				$hardcoded[] = RangeCondition::blockLight(0, 0);
+			}
+			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
+
 			$this->register(new SpawnRules($identifier, $categoryId, $groups, self::createFactory($entityClass)));
 		}
-	}
-
-	/**
-	 * WORKAROUND: vanilla hardcodes slime chunks in the engine instead of the rules file.
-	 *
-	 * @phpstan-param list<SpawnRuleGroup> $groups
-	 * @phpstan-return list<SpawnRuleGroup>
-	 */
-	private static function applySlimeChunkRule(array $groups, BiomeTagMap $tags) : array{
-		$result = [];
-		foreach($groups as $group){
-			$result[] = $group->withConditions([new AnyOf([
-				new AllOf([
-					new HeightCondition(null, 39), // feet at Y 40 or below
-					new SlimeChunkCondition(),
-				]),
-				new BiomeTagCondition($tags, "spawns_slimes_on_surface"),
-			])]);
-		}
-
-		return $result;
 	}
 
 	/**

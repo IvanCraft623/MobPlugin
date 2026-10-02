@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use pocketmine\utils\Random;
 use pocketmine\world\World;
 
 /**
@@ -76,6 +77,10 @@ final class KeyContext implements SpawnConditionContext{
 		throw PointInputRequired::point();
 	}
 
+	public function getBlockLight() : int{
+		throw PointInputRequired::point();
+	}
+
 	public function getBelowTypeId() : int{
 		throw PointInputRequired::point();
 	}
@@ -89,6 +94,10 @@ final class KeyContext implements SpawnConditionContext{
 	}
 
 	public function getPopulation() : PopulationCounts{
+		throw PointInputRequired::point();
+	}
+
+	public function getRandom() : Random{
 		throw PointInputRequired::point();
 	}
 

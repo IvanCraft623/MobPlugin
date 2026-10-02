@@ -122,10 +122,12 @@ Each attempt runs from start to finish before the next one begins:
    the factory builds it and `spawnToAll()` is called.
 
 How close to a player a mob may spawn belongs to the group: 24 to 128 blocks unless the
-rule's `distance_filter` says otherwise (fish use 12 to 32).
+rule's `distance_filter` says otherwise (fish use 12 to 32). Only players that can be
+collided with count (`Player::canBeCollidedWith()`), so spectators and dead players
+neither allow nor block spawns.
 
-`AttemptContext` reads light (`World::getFullLightAt()`) and the population lazily, at
-most once. The population is only read by the selector's cap and density
+`AttemptContext` reads light (`World::getFullLightAt()`), block light and the population
+lazily, at most once. The population is only read by the selector's cap and density
 checks, after a group matched, or by a custom condition, after its group's other
 conditions passed; positions that fail cheaper checks never trigger a census.
 
@@ -215,10 +217,21 @@ interface SpawnCondition{
 }
 ```
 
-Built-ins live in `spawning/condition/`: `RangeCondition` (brightness, difficulty,
-world age, band), `HeightCondition` (tests the block stood on, and the feet
+Built-ins live in `spawning/condition/`: `RangeCondition` (brightness, block light,
+difficulty, world age, band), `HeightCondition` (tests the block stood on, and the feet
 too in a liquid, as vanilla does), `BiomeTagCondition`, `SpawnsOnBlock`,
-`SlimeChunkCondition`, and the `AllOf`, `AnyOf`, `Not` combinators.
+`SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition`, and the
+`AllOf`, `AnyOf`, `Not` combinators.
+
+Two vanilla rules are hardcoded in the engine instead of the rules file, so the registry
+adds them to the groups it loads. Every `Monster` subclass gets
+`RangeCondition::blockLight(0, 0)`: monsters need no block light at all, on top of their
+brightness filter. Slimes get a condition composed from the built-ins. On the Y of the
+block stood on: at 38 or below, slime chunks only
+(Bedrock's real algorithm, a coordinate-seeded MT19937 with no world seed, reverse
+engineered by @protolambda and @jocopa3); from 50 to 68, biomes tagged
+`spawns_slimes_on_surface` at light 7 or less, with a light roll and a moon-phase roll;
+nowhere else.
 
 ### Condition contract
 
@@ -230,7 +243,8 @@ conditions must follow them:
 2. **Pure when cacheable.** If `isCacheable()` returns `true`, `test()` reads only the
    context: no statics, singletons, configs, services, randomness or clocks. Return
    `false` for anything else, or call `SpawnRuleRegistry::invalidateCache()` whenever that
-   outside state changes.
+   outside state changes. A condition that rolls a chance takes its randomness from
+   `$ctx->getRandom()`, the spawner's own source, and returns `false`.
 3. **No side effects.** `test()` never changes the world or any other state. The cache
    removes the conditions a key already decides and runs the rest in their listed order,
    so `test()` must not depend on which other conditions ran before it.
@@ -250,7 +264,7 @@ it (rule 3).
 The vanilla rules load in `MobPlugin::onEnable()` through
 `SpawnRuleRegistry::registerVanilla($path)`, which parses the resource with
 `SpawnRulesParser::createVanilla()`, binds every implemented mob (plus PocketMine's
-squid), and applies the slime-chunk workaround.
+squid), and adds the two hardcoded vanilla rules described under Conditions.
 
 The loader is **strict**: any value it can't compile aborts the load with
 `SpawnRulesParseException`, carrying the JSON path. Payloads are mapped into the
@@ -398,10 +412,11 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviati
   despawn distance of most categories.
 - PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
 - The global mob cap (200) is not enforced.
-- Slimes: vanilla conditions must hold AND (Y ≤ 40 in a slime chunk OR biome tag
-  `spawns_slimes_on_surface`). The slime-chunk check is Bedrock's real algorithm (a
-  coordinate-seeded MT19937, no world seed), reverse engineered by @protolambda and
-  @jocopa3.
+- Monsters apply the Overworld darkness rule everywhere; the Nether's own rule and
+  thunderstorm darkening are not implemented. It is checked before the weighted pick;
+  vanilla checks it on the built mob and wastes the attempt.
+- The slime light and moon-phase rolls are drawn once per attempt. Vanilla runs its slime
+  rule again after the pick, drawing them twice, so swamp slimes spawn a little more here.
 - The band a mob was spawned in is not saved. A mob loaded from disk, or spawned another
   way, takes the band of where it stands when first counted and keeps it while loaded.
   Vanilla saves the band and counts mobs that didn't spawn naturally as underground.

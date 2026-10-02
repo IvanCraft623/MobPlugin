@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\condition;
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use pocketmine\utils\Random;
 use pocketmine\world\World;
 
 interface SpawnConditionContext{
@@ -45,6 +46,8 @@ interface SpawnConditionContext{
 
 	public function getLight() : int;
 
+	public function getBlockLight() : int;
+
 	public function getBelowTypeId() : int;
 
 	public function getNearestPlayerDistance() : float;
@@ -52,6 +55,12 @@ interface SpawnConditionContext{
 	public function getTime() : int;
 
 	public function getPopulation() : PopulationCounts;
+
+	/**
+	 * The spawner's random source, for conditions that roll a chance. Such a condition is
+	 * not cacheable.
+	 */
+	public function getRandom() : Random;
 
 	/**
 	 * The world of the attempt, for conditions that need more than the values above. It is

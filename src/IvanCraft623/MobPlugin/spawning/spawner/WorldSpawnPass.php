@@ -90,6 +90,9 @@ final class WorldSpawnPass{
 		$this->census = $population->createCensus($world, $this->groundLevels, $registry, CustomTimings::$naturalSpawningCensus);
 		$players = [];
 		foreach($world->getPlayers() as $player){
+			if(!$player->canBeCollidedWith()){
+				continue; // spectators and the dead neither allow nor block spawns
+			}
 			$pos = $player->getPosition();
 			$players[] = [$pos->x, $pos->y, $pos->z];
 		}
@@ -214,7 +217,8 @@ final class WorldSpawnPass{
 			$below->getTypeId(),
 			$this->difficulty,
 			sqrt($nearestSquared),
-			$this->time
+			$this->time,
+			$this->random
 		);
 		$candidates = $this->candidateCache->getCandidates($ctx);
 		if($candidates === []){

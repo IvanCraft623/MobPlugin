@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCensus;
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use pocketmine\utils\Random;
 use pocketmine\world\World;
 
 /**
@@ -36,6 +37,8 @@ use pocketmine\world\World;
  */
 final class AttemptContext implements SpawnConditionContext{
 	private ?int $light = null;
+
+	private ?int $blockLight = null;
 
 	private ?PopulationCounts $population = null;
 
@@ -51,7 +54,8 @@ final class AttemptContext implements SpawnConditionContext{
 		private readonly int $belowTypeId,
 		private readonly int $difficulty,
 		private readonly float $nearestPlayerDistance,
-		private readonly int $time
+		private readonly int $time,
+		private readonly Random $random
 	){}
 
 	public function getBiomeId() : int{
@@ -86,6 +90,10 @@ final class AttemptContext implements SpawnConditionContext{
 		return $this->light ??= $this->world->getFullLightAt($this->x, $this->y, $this->z);
 	}
 
+	public function getBlockLight() : int{
+		return $this->blockLight ??= $this->world->getBlockLightAt($this->x, $this->y, $this->z);
+	}
+
 	public function getBelowTypeId() : int{
 		return $this->belowTypeId;
 	}
@@ -100,6 +108,10 @@ final class AttemptContext implements SpawnConditionContext{
 
 	public function getPopulation() : PopulationCounts{
 		return $this->population ??= $this->census->getRegionPopulation($this->x >> 4, $this->z >> 4);
+	}
+
+	public function getRandom() : Random{
+		return $this->random;
 	}
 
 	public function getWorld() : World{

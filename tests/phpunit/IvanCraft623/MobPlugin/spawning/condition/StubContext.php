@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\utils\Random;
 use pocketmine\world\World;
 
 final class StubContext implements SpawnConditionContext{
@@ -45,7 +46,9 @@ final class StubContext implements SpawnConditionContext{
 		public readonly float $nearestPlayerDistance = 30.0,
 		public readonly int $time = 0,
 		public readonly PopulationCounts $population = new PopulationCounts(),
-		public readonly ?World $world = null
+		public readonly ?World $world = null,
+		public readonly int $blockLight = 0,
+		public readonly Random $random = new Random(0)
 	){}
 
 	public function getBiomeId() : int{
@@ -80,6 +83,10 @@ final class StubContext implements SpawnConditionContext{
 		return $this->light;
 	}
 
+	public function getBlockLight() : int{
+		return $this->blockLight;
+	}
+
 	public function getBelowTypeId() : int{
 		return $this->belowTypeId;
 	}
@@ -96,6 +103,10 @@ final class StubContext implements SpawnConditionContext{
 		$this->populationReads++;
 
 		return $this->population;
+	}
+
+	public function getRandom() : Random{
+		return $this->random;
 	}
 
 	public function getWorld() : World{
