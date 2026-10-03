@@ -39,6 +39,7 @@ use IvanCraft623\MobPlugin\spawning\parse\schema\model\PermuteTypeData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\WeightData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\WorldAgeFilterData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaMobCategories;
 use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
@@ -88,12 +89,12 @@ final class SpawnRulesParser{
 	];
 
 	/**
-	 * population_control values vanilla spawns through events (patrols/raids), not
+	 * population_control values vanilla spawns through events (patrols and raids), not
 	 * natural spawning; their rule sets are skipped.
 	 *
 	 * @var array<string, true>
 	 */
-	private const NON_NATURAL_POPULATION_CONTROL = ["pillager" => true, "pillager_patrol" => true];
+	private const NON_NATURAL_POPULATION_CONTROL = [VanillaMobCategories::PILLAGER => true];
 
 	/** @phpstan-var array<string, ComponentParser> */
 	private array $components = [];

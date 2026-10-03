@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaMobCategories;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use PHPUnit\Framework\TestCase;
 use function array_diff_key;
@@ -46,9 +48,9 @@ final class SpawnRulesParseableTest extends TestCase{
 	private const DATA_PATH = "/resources/spawning/spawn_rules.json";
 
 	/** population_control values vanilla spawns through events, never naturally. */
-	private const SKIPPED_CATEGORIES = ["pillager" => true, "pillager_patrol" => true];
+	private const SKIPPED_CATEGORIES = [VanillaMobCategories::PILLAGER => true];
 
-	private const HABITAT_MARKERS = ["spawns_on_surface" => true, "spawns_underground" => true];
+	private const HABITAT_MARKERS = [VanillaSpawnConditions::SPAWNS_ON_SURFACE => true, VanillaSpawnConditions::SPAWNS_UNDERGROUND => true];
 
 	/** @phpstan-var array<string, array{string, list<array<string, mixed>>}> identifier => [population_control, raw groups] */
 	private static array $raw;

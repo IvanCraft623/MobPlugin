@@ -22,35 +22,10 @@
 declare(strict_types=1);
 
 /**
- * Spawn-schema artifact generator.
- *
- * Reads the official Mojang spawn-rule JSON schemas from the pinned Mojang/bedrock-samples
- * checkout and generates the typed PHP artifacts the plugin's drift detection consumes:
- *
- *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/VanillaSpawnConditions.php
- *     One constant per "minecraft:*" spawn condition the schema declares (a pure
- *     collection of the vanilla component names). SpawnRulesParser registers a
- *     parser for every name (enforced by the PHPUnit suite), so a renamed or removed
- *     component breaks PHPStan instead of silently mis-parsing.
- *
- *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/SpawnSchema.php
- *     Schema facts as typed constants: the schema version, the difficulty names
- *     accepted by difficulty_filter, and the envelope keys the loader navigates with.
- *
- *   - src/IvanCraft623/MobPlugin/spawning/parse/schema/model/*Data.php
- *     One JsonMapper payload model per payload-bearing component schema.
- *
- * Output is deterministic (sorted cases, fixed formatting), so CI regenerates and fails on
- * any diff — a stale artifact means Mojang changed something and the plugin needs a
- * conscious update.
- *
- * Usage:
- *   php tools/spawn-rules/generate-schema.php
- *
- * The samples and the schema version come from the mojang/bedrock-samples package pinned
- * in composer.json.
- *
- * Exit codes: 0 = success, 1 = failure.
+ * Generates src/IvanCraft623/MobPlugin/spawning/parse/schema/ from the pinned
+ * mojang/bedrock-samples package: constants for what the spawn schemas and rule files
+ * declare, and one JsonMapper model per component payload. CI regenerates and fails on
+ * any diff. Usage: php tools/spawn-rules/generate-schema.php
  */
 
 namespace IvanCraft623\MobPlugin\tools\spawnrules\generate;
@@ -76,9 +51,11 @@ use function glob;
 use function implode;
 use function is_array;
 use function is_dir;
+use function is_file;
 use function is_string;
 use function json_decode;
 use function ksort;
+use function preg_match;
 use function preg_replace;
 use function printf;
 use function rawurldecode;
@@ -97,6 +74,7 @@ use const SORT_STRING;
 use const STDERR;
 
 const SCHEMA_REPO_PATH = "metadata/json_schemas/server/spawn";
+const BIOME_FILTER_COMPONENT = "minecraft:biome_filter";
 const CONDITION_PREFIX = "minecraft:";
 const SCHEMA_NAMESPACE = "IvanCraft623\\MobPlugin\\spawning\\parse\\schema";
 
@@ -130,11 +108,7 @@ declare(strict_types=1);
 PHP;
 
 /**
- * Schema files that are NOT per-condition payloads and so never get a XxxData model: the
- * component *envelope* (BiomeConditions lists every component), the document envelope
- * (Rules / Description), and the difficulty enum (SpawnDifficulty Legacy). Everything
- * else in the spawn schema dir that declares properties is generated a model — see
- * readConditionsModels().
+ * Spawn schemas that describe envelopes or enums, not a component payload.
  *
  * @var array<string, true>
  */
@@ -156,6 +130,13 @@ function main() : int{
 		$difficulties = readDifficultyCases($schemaDir);
 		$envelopeKeys = readEnvelopeKeys($schemaDir);
 		$models = readConditionsModels($schemaDir);
+		[$filterTestKeys, $filterGroupKeys] = readFilterKeys($schemaDir, $conditions);
+		[$populationControls, $filterTests, $filterOperators] = readRuleValues();
+		$dataArtifacts = [
+			"VanillaMobCategories" => ["Every mob category they use, as written in a rule's \"population_control\".", namedConstants($populationControls)],
+			"VanillaBiomeFilterTestNames" => ["The name of every test their biome filters use, as written in a filter's \"test\" key.", namedConstants($filterTests)],
+			"VanillaBiomeFilterOperators" => ["Every comparison their biome filters use, as written in a filter's \"operator\" key.", namedConstants($filterOperators)],
+		];
 	}catch(\RuntimeException $e){
 		return fail($e->getMessage());
 	}
@@ -173,13 +154,16 @@ function main() : int{
 	$artifacts = [
 		$outDir . "/VanillaSpawnConditions.php" => buildConditionsArtifact($schemaVersion, $conditions),
 		$outDir . "/SpawnSchema.php" => buildSchemaArtifact($schemaVersion, $difficulties, $envelopeKeys),
+		$outDir . "/VanillaBiomeFilterKeys.php" => buildFilterKeysArtifact($filterTestKeys, $filterGroupKeys),
 	];
+	foreach($dataArtifacts as $className => [$summary, $constants]){
+		$artifacts[$outDir . "/" . $className . ".php"] = buildRuleValuesArtifact($className, $summary, $constants);
+	}
 	foreach(buildConditionsModelsArtifact($models) as $name => $contents){
 		$artifacts[$modelDir . "/" . $name] = $contents;
 	}
 
-	// model/ holds generated classes only: a model regeneration no longer produces (a
-	// component Mojang removed) is stale.
+	// A model no longer generated belongs to a component Mojang removed.
 	foreach(array_values(array_diff(glob($modelDir . "/*.php") ?: [], array_keys($artifacts))) as $path){
 		if(!unlink($path)){
 			return fail("Failed to delete: $path");
@@ -217,10 +201,7 @@ function loadSchemaFile(string $path) : stdClass{
 }
 
 /**
- * Component inventory of the pinned schema: raw "minecraft:*" property name -> the schema
- * file that defines the component's shape ($ref), one entry per declared component.
- *
- * @return array{0: string, 1: array<string, string>} schema version and inventory
+ * @return array{0: string, 1: array<string, string>} schema version, and raw component name -> shape $ref
  */
 function readConditionsInventory(string $schemaDir) : array{
 	$doc = loadSchemaFile($schemaDir . "/Spawn BiomeConditions.json");
@@ -249,9 +230,7 @@ function readConditionsInventory(string $schemaDir) : array{
 }
 
 /**
- * The $ref naming a component's shape file. Direct refs are used as-is; for oneOf-shaped
- * unions (object | list of objects) every branch points at the same shape file, so that
- * ref is used. Anything else is an inline shape.
+ * The shape file a component refers to, directly or through every branch of a oneOf.
  */
 function resolveShapeRef(stdClass $property) : string{
 	$ref = $property->{"\$ref"} ?? null;
@@ -300,17 +279,9 @@ function readDifficultyCases(string $schemaDir) : array{
 }
 
 /**
- * Derives the XxxData models for every payload-bearing component schema in the spawn
- * schema dir. A schema becomes a model iff its filename is not a NON_MODEL_SCHEMAS
- * envelope/enum file AND it declares at least one property (empty marker schemas carry no
- * payload). Each model's class name is the schema filename (without "Spawn " / ".json")
- * plus "Data" — e.g. "Spawn DelayFilter.json" → DelayFilterData.
+ * A model for every schema with properties, except NON_MODEL_SCHEMAS.
  *
- * The set is derived from the directory (not a hand-maintained list), so a component
- * added by Mojang automatically gets a model.
- *
- * @return array<string, list<array{string, string, string}>> model class -> field
- *     descriptors in schema order, each [fieldName, phpType, "required"/"nullable"]
+ * @return array<string, list<array{string, string, string}>> model class -> [field, PHP type, "required"/"nullable"]
  */
 function readConditionsModels(string $schemaDir) : array{
 	$entries = scandir($schemaDir);
@@ -353,7 +324,7 @@ function readConditionsModels(string $schemaDir) : array{
 }
 
 /**
- * "Spawn X.json" -> "X", "SpawnAboveBlockFilter" etc. (the marker-free basename).
+ * "Spawn DelayFilter.json" -> "DelayFilterData".
  */
 function modelClassName(string $schemaFile) : string{
 	$base = basename($schemaFile, ".json");
@@ -363,20 +334,12 @@ function modelClassName(string $schemaFile) : string{
 }
 
 /**
- * Maps one schema property to a POJO field descriptor: the PHP type and (for optional
- * fields) whether it is null-defaulting. Required fields are non-null; the schema's
- * declared `default` is NOT turned into an active field initializer — MobPlugin treats an
- * absent optional field as null (no restriction), so generated fields are nullable and
- * the condition mapping applies the real default exactly as the hand-written parser did.
+ * Optional fields are nullable rather than defaulted: the parser applies the defaults.
  *
- * @return array{string, string, string} [fieldName, phpType, "required"/"nullable"]
+ * @return array{string, string, string} [field, PHP type, "required"/"nullable"]
  */
 function describeField(string $rawName, stdClass $prop, bool $isRequired) : array{
-	// A $ref (e.g. to the difficulty enum, or a legacy Reference string id) names a
-	// string-valued payload; the schema may still expose an ordinal x-underlying-type,
-	// so a present $ref wins over the numeric hint. Otherwise map concrete types. An
-	// array-typed property (default [] — e.g. spawns_above_block_filter.blocks) is a
-	// nullable list of strings.
+	// A $ref (the difficulty enum) is a string even when the schema hints an ordinal type.
 	$propType = $prop->{"x-underlying-type"} ?? $prop->type ?? null;
 	$phpType = match(true){
 		isset($prop->{"\$ref"}) => "string",
@@ -391,11 +354,7 @@ function describeField(string $rawName, stdClass $prop, bool $isRequired) : arra
 }
 
 /**
- * Envelope keys the schema declares on each document level, as property names. These are
- * the structural JSON keys the loader navigates with (as opposed to the per-condition
- * components of Spawn BiomeConditions.json).
- *
- * @return array<string, list<string>> schema file basename -> its top-level property names
+ * @return array<string, list<string>> schema file -> its property names
  */
 function readEnvelopeKeys(string $schemaDir) : array{
 	$keys = [];
@@ -417,8 +376,123 @@ function readEnvelopeKeys(string $schemaDir) : array{
 }
 
 /**
- * A complete generated file: the shared header, the namespace and $body.
+ * @param array<string, string> $conditions raw component name -> shape $ref
+ *
+ * @return array{list<string>, list<string>} the keys of a filter test and of a filter group
  */
+function readFilterKeys(string $schemaDir, array $conditions) : array{
+	$ref = $conditions[BIOME_FILTER_COMPONENT] ?? throw new \RuntimeException("The schema declares no " . BIOME_FILTER_COMPONENT . " component.");
+	$filterDir = dirname($schemaDir . "/" . $ref);
+	$keys = [];
+	foreach(["Filter Test.json", "Filter Group Map.json"] as $fileName){
+		$path = $filterDir . "/" . $fileName;
+		if(!is_file($path)){
+			throw new \RuntimeException("$fileName is not next to the schema " . BIOME_FILTER_COMPONENT . " refers to ($ref).");
+		}
+		$properties = loadSchemaFile($path)->properties ?? null;
+		if(!$properties instanceof stdClass || count(get_object_vars($properties)) === 0){
+			throw new \RuntimeException("$fileName declares no properties.");
+		}
+		$names = array_keys(get_object_vars($properties));
+		sort($names, SORT_STRING);
+		$keys[] = $names;
+	}
+
+	return [$keys[0], $keys[1]];
+}
+
+/**
+ * Values the schemas leave free strings, as the rule files use them.
+ *
+ * @return array{list<string>, list<string>, list<string>} population controls, filter tests, filter operators
+ */
+function readRuleValues() : array{
+	$files = BedrockSamples::listSpawnRuleFiles();
+	if(count($files) === 0){
+		throw new \RuntimeException("No spawn rule files found in " . BedrockSamples::SPAWN_RULES_PATH . ".");
+	}
+	$found = ["population_control" => [], "filter test" => [], "filter operator" => []];
+	foreach($files as $file){
+		[$spawnRules] = BedrockSamples::readSpawnRuleFile($file);
+		$populationControl = ($spawnRules->description ?? null) instanceof stdClass ? ($spawnRules->description->population_control ?? null) : null;
+		if(!is_string($populationControl) || $populationControl === ""){
+			throw new \RuntimeException("No population_control in: $file");
+		}
+		$found["population_control"][$populationControl] = true;
+
+		$conditions = $spawnRules->conditions ?? [];
+		foreach(is_array($conditions) ? $conditions : [$conditions] as $condition){
+			if($condition instanceof stdClass && isset($condition->{BIOME_FILTER_COMPONENT})){
+				$found["filter test"] += collectFilterValues($condition->{BIOME_FILTER_COMPONENT}, "test");
+				$found["filter operator"] += collectFilterValues($condition->{BIOME_FILTER_COMPONENT}, "operator");
+			}
+		}
+	}
+
+	$sorted = [];
+	foreach($found as $what => $values){
+		if(count($values) === 0){
+			throw new \RuntimeException("The pinned spawn rules use no $what at all.");
+		}
+		$names = array_keys($values);
+		sort($names, SORT_STRING);
+		$sorted[] = $names;
+	}
+
+	return [$sorted[0], $sorted[1], $sorted[2]];
+}
+
+/**
+ * @return array<string, true> every string the filter gives the key, at any depth
+ */
+function collectFilterValues(mixed $node, string $key) : array{
+	$found = [];
+	if($node instanceof stdClass){
+		$value = $node->{$key} ?? null;
+		if(is_string($value)){
+			$found[$value] = true;
+		}
+		$node = get_object_vars($node);
+	}
+	if(is_array($node)){
+		foreach($node as $child){
+			$found += collectFilterValues($child, $key);
+		}
+	}
+
+	return $found;
+}
+
+/**
+ * Constant names for values that aren't identifiers.
+ */
+const SYMBOL_NAMES = [
+	"==" => "EQUALS",
+	"!=" => "NOT_EQUALS",
+];
+
+/**
+ * @param list<string> $values
+ *
+ * @return array<string, string> constant name -> value, sorted by name
+ */
+function namedConstants(array $values) : array{
+	$constants = [];
+	foreach($values as $value){
+		$name = SYMBOL_NAMES[$value] ?? (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $value) === 1 ? toConstant($value) : null);
+		if($name === null){
+			throw new \RuntimeException("The spawn rules use \"$value\", which can't name a constant; add it to SYMBOL_NAMES.");
+		}
+		if(isset($constants[$name])){
+			throw new \RuntimeException("\"$value\" and \"{$constants[$name]}\" would both be the constant $name; rename one in SYMBOL_NAMES.");
+		}
+		$constants[$name] = $value;
+	}
+	ksort($constants, SORT_STRING);
+
+	return $constants;
+}
+
 function phpFile(string $namespace, string $body) : string{
 	return FILE_HEADER . "\nnamespace $namespace;\n\n" . $body . "\n";
 }
@@ -509,19 +583,77 @@ final class SpawnSchema{
 PHP, $schemaVersion, $difficultyCases, count($difficulties) - 1, rtrim(implode("\n", $envelopeLines))));
 }
 
+/**
+ * @param list<string> $testKeys
+ * @param list<string> $groupKeys
+ */
+function buildFilterKeysArtifact(array $testKeys, array $groupKeys) : string{
+	$lines = [];
+	foreach(["FIELD" => $testKeys, "GROUP" => $groupKeys] as $prefix => $keys){
+		$constants = [];
+		foreach($keys as $key){
+			// Group aliases come in both cases ("AND", "all"): the name is kept as declared.
+			$constants[$prefix . "_" . (strtoupper($key) === $key ? $key : toConstant($key))] = $key;
+		}
+		ksort($constants, SORT_STRING);
+		foreach($constants as $name => $key){
+			$lines[] = sprintf("\tpublic const %s = \"%s\";", $name, $key);
+		}
+		$lines[] = "";
+	}
+
+	return phpFile(SCHEMA_NAMESPACE, sprintf(<<<'PHP'
+/**
+ * Auto-generated from the Mojang filter schemas biome_filter refers to — do not edit by
+ * hand.
+ *
+ * The keys of a filter node: FIELD_* are the fields of a single test, GROUP_* the keys
+ * that hold a group of nodes.
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
+ */
+final class VanillaBiomeFilterKeys{
+
+%s
+
+	private function __construct(){}
+}
+PHP, rtrim(implode("\n", $lines))));
+}
+
+/**
+ * @param array<string, string> $constants constant name -> value
+ */
+function buildRuleValuesArtifact(string $className, string $summary, array $constants) : string{
+	$lines = [];
+	foreach($constants as $name => $value){
+		$lines[] = sprintf("\tpublic const %s = \"%s\";", $name, $value);
+	}
+
+	return phpFile(SCHEMA_NAMESPACE, sprintf(<<<'PHP'
+/**
+ * Auto-generated from the pinned Mojang spawn rules — do not edit by hand.
+ *
+ * %s
+ * The schema leaves it a free string, so this is the data's own inventory.
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
+ */
+final class %s{
+
+%s
+
+	private function __construct(){}
+}
+PHP, $summary, $className, implode("\n", $lines)));
+}
+
 function toConstant(string $rawName) : string{
 	return strtoupper((string) preg_replace("/(?<!^)[A-Z]/", "_\$0", normalizeConditionName($rawName)));
 }
 
 /**
- * Builds the generated XxxData POJO classes (one per model-backed component) as a map of
- * filename -> file content. Each class is plain public data (nullable optional fields,
- * @required non-null required fields) that JsonMapper populates at runtime.
- *
  * @param array<string, list<array{string, string, string}>> $models
- *                                                                   model class -> field descriptors [name, phpType, "required"/"nullable"]
  *
- * @phpstan-return array<string, string>
+ * @phpstan-return array<string, string> file name -> contents
  */
 function buildConditionsModelsArtifact(array $models) : array{
 	$files = [];

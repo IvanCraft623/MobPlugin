@@ -35,7 +35,11 @@ CI regenerates it and fails on any diff.
   structural keys. Nothing is written unless every file passes.
 - **`generate-schema.php`** generates `parse/schema/`: `VanillaSpawnConditions` (one
   constant per component), `SpawnSchema` (schema version, difficulty names and the
-  envelope keys the loader navigates with) and one JsonMapper payload model
+  envelope keys the loader navigates with), `VanillaBiomeFilterKeys` (the keys of a
+  `biome_filter` node), `VanillaMobCategories`, `VanillaBiomeFilterTestNames` and
+  `VanillaBiomeFilterOperators` (every mob category, as written in `population_control`,
+  and every filter test and operator the pinned rules use; the schemas leave them free
+  strings, so they are read from the rule files) and one JsonMapper payload model
   (`model/*Data`) per payload-bearing component schema, so a renamed payload field breaks
   the build instead of silently spawning with a wrong value. `model/` holds generated
   classes only: regenerating deletes any model the pinned schemas no longer produce.
@@ -287,13 +291,19 @@ fractional number for an integer); lossless spellings such as `8.0` are accepted
 failed load is logged with the file path and disables the plugin before anything else is
 registered.
 
+A `biome_filter` node may only use the test fields the loader reads (`test`, `operator`,
+`value`) and the group keys the filter schema declares (`all_of`, `any_of`, `none_of` and
+their aliases). The schema's `subject` and `domain` are accepted and ignored: they mean
+nothing for a biome. Any other key is rejected, and so is a test field in a node that has
+no `test`.
+
 A biome tag that no biome carries is not an error: `registerVanilla()` returns a warning
 for each, which the plugin logs. Tests on such a tag never match.
 
 By-design exceptions:
 
-- `population_control` values vanilla spawns through events (`pillager`,
-  `pillager_patrol`) skip their rule set;
+- the `population_control` value vanilla spawns through events (`pillager`: patrols and
+  raids) skips its rule set;
 - `powder_snow` (no PocketMine block) is dropped from block filters;
 - components PocketMine can't implement (`mob_event_filter`, `delay_filter`,
   `player_in_village_filter`, `spawns_above_block_filter`) drop their group through
@@ -312,7 +322,7 @@ rarity.
 ```php
 SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 	"minecraft:myboss",
-	MobCategoryRegistry::MONSTER,
+	VanillaMobCategories::MONSTER,
 	[
 		new SpawnRuleGroup([
 			RangeCondition::brightness(0, 7),
@@ -348,7 +358,7 @@ $population = MobPopulation::getInstance();
 
 // Counts over the 9×9 chunks around a chunk, as of now.
 $counts = $population->around($world, $chunkX, $chunkZ);
-$counts->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::CAVE);
+$counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE);
 $counts->getIdentifierCount(EntityIds::ZOMBIE, SpawnBand::SURFACE);
 
 // A plugin that spawns a mob its own way can say which band it counts in.

@@ -22,38 +22,12 @@
 declare(strict_types=1);
 
 /**
- * MobPlugin spawn-rules merger tool.
+ * Merges the vanilla spawn rules of the pinned mojang/bedrock-samples package into
+ * resources/spawning/spawn_rules.json (keyed by identifier) and writes its NOTICE.md.
  *
- * Merges the vanilla entity spawn rules from the pinned Mojang/bedrock-samples checkout into
- * a single deterministic JSON document, keyed by every file's description.identifier.
- *
- * This tool is a PURE MERGER, by design it does NOT:
- *  - rename "minecraft:<name>" keys,
- *  - normalize union shapes (string|list|object),
- *  - alias legacy block ids,
- *  - whitelist / drop components, or
- *  - resolve biome tags.
- *
- * Contents stay byte-faithful to the source data; the only transformations are stripping
- * comments outside strings (some vanilla files are not strict JSON) and reformatting. All
- * parsing semantics belong to the plugin's runtime loader
- * (src/IvanCraft623/MobPlugin/spawning/parse/SpawnRulesParser.php).
- *
- * The merge doubles as the schema-compatibility gate: every merged body is validated
- * against the official Mojang spawn schemas of the pinned version, and every
- * structural key must be a known one. A failure means the vanilla data drifted beyond what the plugin was built
- * against — update the loader / component registry (and, if intended, the pinned schema
- * version and the generated artifacts) before recompiling:
- *
- *   php tools/spawn-rules/generate-schema.php
- *
- * Usage:
- *   php tools/spawn-rules/compile.php
- *
- * The samples, their commit and the schema version all come from the mojang/bedrock-samples
- * package pinned in composer.json. CI regenerates and fails on any diff.
- *
- * Exit codes: 0 = success, 1 = failure (no partial output is ever written).
+ * Values are copied as they are; only comments are stripped. Every file must validate
+ * against the pinned schemas, or nothing is written. CI regenerates and fails on any
+ * diff. Usage: php tools/spawn-rules/compile.php
  */
 
 namespace IvanCraft623\MobPlugin\tools\spawnrules\compile;
@@ -62,12 +36,8 @@ require __DIR__ . "/../../vendor/autoload.php";
 require_once __DIR__ . "/SpawnRuleSchemaValidator.php";
 require_once __DIR__ . "/BedrockSamples.php";
 
-use FilesystemIterator;
 use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
 use IvanCraft623\MobPlugin\tools\spawnrules\SpawnRuleSchemaValidator;
-use JsonException;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
 use stdClass;
 use function array_keys;
 use function array_map;
@@ -87,21 +57,16 @@ use function json_encode;
 use function json_last_error_msg;
 use function ksort;
 use function printf;
-use function sort;
 use function sprintf;
 use function strlen;
-use function strtolower;
 use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_PRETTY_PRINT;
-use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 use const SORT_STRING;
 use const STDERR;
 
-const TOOL_VERSION = "1.3.0";
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
-const SOURCE_PATH = "behavior_pack/spawn_rules";
 const SCHEMA_PATH = "metadata/json_schemas/server/spawn";
 
 function main() : int{
@@ -110,12 +75,12 @@ function main() : int{
 		$samplesDir = BedrockSamples::getInstallPath();
 		$schemaDir = $samplesDir . "/" . SCHEMA_PATH . "/" . $schemaVersion;
 		$schemaValidator = SpawnRuleSchemaValidator::fromSchemaTree($schemaDir . "/Spawn Rules.json", $schemaVersion);
-		$files = listRuleFiles($samplesDir . "/" . SOURCE_PATH);
+		$files = BedrockSamples::listSpawnRuleFiles();
 	}catch(\RuntimeException $e){
 		return fail($e->getMessage());
 	}
 	if(count($files) === 0){
-		return fail("No spawn rule JSON files found in: $samplesDir/" . SOURCE_PATH);
+		return fail("No spawn rule JSON files found in: $samplesDir/" . BedrockSamples::SPAWN_RULES_PATH);
 	}
 
 	$errors = [];
@@ -187,31 +152,13 @@ function fail(string $message) : int{
 }
 
 /**
- * @return array{string, stdClass, stdClass} identifier, the byte-faithful file body and its
- *                                           "minecraft:spawn_rules" object
+ * @return array{string, stdClass, stdClass} identifier, file body, its "minecraft:spawn_rules"
  */
 function parseRuleFile(string $file) : array{
-	$raw = file_get_contents($file);
-	if($raw === false){
-		throw new \RuntimeException("Cannot read file: $file");
-	}
-	// Objects (not assoc arrays) are decoded on purpose: empty JSON objects must survive the
-	// round-trip as {} instead of being mangled into [].
-	try{
-		$decoded = json_decode(stripJsonComments($raw), false, 512, JSON_THROW_ON_ERROR);
-	}catch(JsonException $e){
-		throw new \RuntimeException("Invalid JSON in \"$file\": " . $e->getMessage());
-	}
-	if(!$decoded instanceof stdClass){
-		throw new \RuntimeException("Root of \"$file\" should be a JSON object.");
-	}
+	[$spawnRules, $decoded] = BedrockSamples::readSpawnRuleFile($file);
 	$formatVersion = $decoded->{"format_version"} ?? null;
 	if(!is_string($formatVersion) || $formatVersion === ""){
 		throw new \RuntimeException("Missing or invalid \"format_version\" in \"$file\".");
-	}
-	$spawnRules = $decoded->{"minecraft:spawn_rules"} ?? null;
-	if(!$spawnRules instanceof stdClass){
-		throw new \RuntimeException("Missing or invalid \"minecraft:spawn_rules\" object in \"$file\".");
 	}
 	$description = $spawnRules->{"description"} ?? null;
 	$identifier = $description instanceof stdClass ? ($description->{"identifier"} ?? null) : null;
@@ -223,80 +170,9 @@ function parseRuleFile(string $file) : array{
 }
 
 /**
- * Strips // and slash-star comments from a JSON document, ignoring comment markers inside
- * strings. Vanilla spawn rule files contain comments and are therefore not strict JSON.
- */
-function stripJsonComments(string $json) : string{
-	$out = "";
-	$length = strlen($json);
-	$i = 0;
-	$inString = false;
-	$escaped = false;
-	while($i < $length){
-		$char = $json[$i];
-		if($inString){
-			$out .= $char;
-			if($escaped){
-				$escaped = false;
-			}elseif($char === "\\"){
-				$escaped = true;
-			}elseif($char === "\""){
-				$inString = false;
-			}
-			$i++;
-		}else{
-			if($char === "\""){
-				$inString = true;
-				$out .= $char;
-				$i++;
-			}elseif($char === "/" && $i + 1 < $length && $json[$i + 1] === "/"){
-				while($i < $length && $json[$i] !== "\n"){
-					$i++;
-				}
-			}elseif($char === "/" && $i + 1 < $length && $json[$i + 1] === "*"){
-				$i += 2;
-				while($i + 1 < $length && !($json[$i] === "*" && $json[$i + 1] === "/")){
-					$i++;
-				}
-				$i += 2;
-			}else{
-				$out .= $char;
-				$i++;
-			}
-		}
-	}
-
-	return $out;
-}
-
-/**
- * @return list<string>
- */
-function listRuleFiles(string $rulesDir) : array{
-	$files = [];
-	$iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($rulesDir, FilesystemIterator::SKIP_DOTS));
-	/** @var \SplFileInfo $fileInfo */
-	foreach($iterator as $fileInfo){
-		if($fileInfo->isFile() && strtolower($fileInfo->getExtension()) === "json"){
-			$files[] = $fileInfo->getPathname();
-		}
-	}
-	sort($files, SORT_STRING);
-
-	return $files;
-}
-
-/**
- * Schema-compatibility gate for one merged body. Two checks, in order of value:
+ * Validates against the schema, then rejects structural keys the loader would ignore.
  *
- *  1. Shape — the body validates against the official draft-07 schema (patched unions).
- *  2. Structure — unknown keys at the structural levels would be silently ignored by the
- *     runtime loader, so they fail here instead.
- *
- * A component the plugin doesn't know is the runtime loader's to reject: its parse test
- * runs on the merged file.
- *
- * @phpstan-return list<string>
+ * @phpstan-return list<string> errors
  */
 function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $schemaValidator) : array{
 	$errors = $schemaValidator->validate($spawnRules);
@@ -304,7 +180,6 @@ function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $sche
 		return array_map(static fn(string $error) => "schema: $error", $errors);
 	}
 
-	// 2. Structure.
 	foreach(array_keys(get_object_vars($spawnRules)) as $key){
 		if($key !== "description" && $key !== "conditions"){
 			$errors[] = "unknown structural key \"$key\" in \"minecraft:spawn_rules\"";
@@ -350,12 +225,12 @@ function buildNotice(array $merged, ?string $commit, string $gameVersion, string
 		"| Field | Value |",
 		"|---|---|",
 		"| Source repository | " . SOURCE_REPO . " |",
-		"| Source path | `" . SOURCE_PATH . "` |",
+		"| Source path | `" . BedrockSamples::SPAWN_RULES_PATH . "` |",
 		"| Source commit | `" . ($commit ?? "unknown") . "` |",
 		"| Game version | " . $gameVersion . " |",
 		"| Schema validation | `" . SCHEMA_PATH . "/" . $schemaVersion . "` |",
 		"| Merged entities | " . count($merged) . " |",
-		"| Merged by | `tools/spawn-rules/compile.php` v" . TOOL_VERSION . " |",
+		"| Merged by | `tools/spawn-rules/compile.php` |",
 		"",
 		"The merger strips comments (some vanilla files are not strict JSON), keys every entry by its",
 		"`description.identifier`, sorts identifiers and pretty-prints. **No other transformation is",

@@ -25,9 +25,15 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaBiomeFilterKeys;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use PHPUnit\Framework\TestCase;
+use function array_filter;
+use function array_keys;
+use function array_values;
 use function json_encode;
+use function str_starts_with;
+use const ARRAY_FILTER_USE_KEY;
 use const JSON_THROW_ON_ERROR;
 
 /**
@@ -38,6 +44,7 @@ final class SpawnRulesParserStrictnessTest extends TestCase{
 
 	private const FROZEN_BIOME = 1;
 	private const WARM_BIOME = 2;
+	private const UNTAGGED_BIOME = 3;
 
 	private SpawnRulesParser $parser;
 
@@ -75,18 +82,23 @@ final class SpawnRulesParserStrictnessTest extends TestCase{
 	 * @phpstan-return iterable<string, array{array<string, mixed>, string}>
 	 */
 	public static function rejectedComponents() : iterable{
-		yield "misspelled key" => [["minecraft:brightness_filter" => ["mni" => 0, "max" => 7]], "brightness_filter"];
+		yield "misspelled key" => [["minecraft:brightness_filter" => ["mni" => 0, "max" => 7]], "brightness_filter' "];
 		yield "text for a number" => [["minecraft:weight" => ["default" => "abc"]], "weight.default"];
 		yield "fractional integer" => [["minecraft:herd" => ["min_size" => 2.9, "max_size" => 4]], "herd.min_size"];
 		yield "number for a name" => [["minecraft:difficulty_filter" => ["min" => 1]], "difficulty_filter.min"];
-		yield "negative weight" => [["minecraft:weight" => ["default" => -5]], "weight"];
-		yield "empty herd" => [["minecraft:herd" => []], "herd"];
-		yield "empty biome filter" => [["minecraft:biome_filter" => []], "biome_filter"];
-		yield "empty any_of" => [["minecraft:biome_filter" => ["any_of" => []]], "any_of"];
-		yield "snow test on a non-boolean" => [["minecraft:biome_filter" => ["test" => "is_snow_covered", "value" => "yes"]], "value"];
-		yield "unknown component" => [["minecraft:made_up" => []], "made_up"];
-		yield "empty biome filter node" => [["minecraft:biome_filter" => ["any_of" => [["test" => "has_biome_tag", "value" => "warm"], []]]], "any_of"];
-		yield "two liquids" => [["minecraft:spawns_underwater" => [], "minecraft:spawns_lava" => []], "both"];
+		yield "negative weight" => [["minecraft:weight" => ["default" => -5]], "weight can't be negative"];
+		yield "empty herd" => [["minecraft:herd" => []], "herd' must not be empty"];
+		yield "empty biome filter" => [["minecraft:biome_filter" => []], "biome_filter' must not be empty"];
+		yield "empty any_of" => [["minecraft:biome_filter" => ["any_of" => []]], "biome_filter.any_of' must not be empty"];
+		yield "snow test on a non-boolean" => [["minecraft:biome_filter" => ["test" => "is_snow_covered", "value" => "yes"]], "biome_filter.value' must be a boolean"];
+		yield "unknown component" => [["minecraft:made_up" => []], "made_up' is not a recognized"];
+		yield "empty biome filter node" => [["minecraft:biome_filter" => ["any_of" => [["test" => "has_biome_tag", "value" => "warm"], []]]], "any_of[1]'"];
+		yield "unknown filter group" => [["minecraft:biome_filter" => ["one_of" => [["test" => "has_biome_tag", "value" => "warm"]]]], "biome_filter.one_of' is not a filter key"];
+		yield "misspelled filter field" => [["minecraft:biome_filter" => ["test" => "has_biome_tag", "opertor" => "!=", "value" => "warm"]], "biome_filter.opertor' is not a filter key"];
+		yield "filter field without a test" => [["minecraft:biome_filter" => ["operator" => "!=", "any_of" => [["test" => "has_biome_tag", "value" => "warm"]]]], "biome_filter.operator' needs a test"];
+		yield "unknown filter operator" => [["minecraft:biome_filter" => ["test" => "has_biome_tag", "operator" => "<", "value" => "warm"]], "biome_filter.operator' must be one of"];
+		yield "unknown filter test" => [["minecraft:biome_filter" => ["test" => "is_humid"]], "biome_filter.test' names a test"];
+		yield "two liquids" => [["minecraft:spawns_underwater" => [], "minecraft:spawns_lava" => []], "can't require both"];
 	}
 
 	/**
@@ -136,6 +148,40 @@ final class SpawnRulesParserStrictnessTest extends TestCase{
 
 		self::assertSame($matchesFrozen, $group->matches(new StubContext(biomeId: self::FROZEN_BIOME)));
 		self::assertSame(!$matchesFrozen, $group->matches(new StubContext(biomeId: self::WARM_BIOME)));
+	}
+
+	/**
+	 * The filter schema declares aliases for each group. Every declared key compiles to
+	 * its meaning, told apart by a biome with one of two tags and a biome with neither.
+	 */
+	public function testEveryDeclaredFilterGroupKeyIsUnderstood() : void{
+		// Key => whether it matches [the warm biome, a biome with no tags].
+		$all = [false, false];
+		$any = [true, false];
+		$none = [false, true];
+		$expectations = [
+			VanillaBiomeFilterKeys::GROUP_ALL_OF => $all, VanillaBiomeFilterKeys::GROUP_ALL => $all, VanillaBiomeFilterKeys::GROUP_AND => $all,
+			VanillaBiomeFilterKeys::GROUP_ANY_OF => $any, VanillaBiomeFilterKeys::GROUP_ANY => $any, VanillaBiomeFilterKeys::GROUP_OR => $any,
+			VanillaBiomeFilterKeys::GROUP_NONE_OF => $none, VanillaBiomeFilterKeys::GROUP_NOT => $none,
+		];
+		$declared = array_filter((new \ReflectionClass(VanillaBiomeFilterKeys::class))->getConstants(), static fn(string $name) : bool => str_starts_with($name, "GROUP_"), ARRAY_FILTER_USE_KEY);
+		self::assertEqualsCanonicalizing(array_values($declared), array_keys($expectations), "the schema added or removed a group key");
+
+		foreach($expectations as $key => [$matchesWarm, $matchesUntagged]){
+			$group = $this->parseGroup(["minecraft:biome_filter" => [$key => [
+				["test" => "has_biome_tag", "value" => "warm"],
+				["test" => "has_biome_tag", "value" => "frozen"],
+			]]]);
+			self::assertSame($matchesWarm, $group->matches(new StubContext(biomeId: self::WARM_BIOME)), "$key in the warm biome");
+			self::assertSame($matchesUntagged, $group->matches(new StubContext(biomeId: self::UNTAGGED_BIOME)), "$key in the untagged biome");
+		}
+	}
+
+	public function testSubjectAndDomainAreAcceptedAndIgnored() : void{
+		$group = $this->parseGroup(["minecraft:biome_filter" => ["test" => "has_biome_tag", "subject" => "self", "domain" => "any", "value" => "warm"]]);
+
+		self::assertTrue($group->matches(new StubContext(biomeId: self::WARM_BIOME)));
+		self::assertFalse($group->matches(new StubContext(biomeId: self::FROZEN_BIOME)));
 	}
 
 	public function testUnknownBiomeTagsAreReportedNotRejected() : void{

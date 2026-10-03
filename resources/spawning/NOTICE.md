@@ -13,7 +13,7 @@ vanilla **Minecraft: Bedrock Edition** entity spawn rules published by Mojang in
 | Game version | 1.26.50.4 |
 | Schema validation | `metadata/json_schemas/server/spawn/1.21.50` |
 | Merged entities | 60 |
-| Merged by | `tools/spawn-rules/compile.php` v1.3.0 |
+| Merged by | `tools/spawn-rules/compile.php` |
 
 The merger strips comments (some vanilla files are not strict JSON), keys every entry by its
 `description.identifier`, sorts identifiers and pretty-prints. **No other transformation is

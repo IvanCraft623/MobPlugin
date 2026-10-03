@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\population;
 
-use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaMobCategories;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\spawner\GroundLevelCache;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
@@ -51,7 +51,7 @@ final class PopulationCensusTest extends TestCase{
 
 	protected function setUp() : void{
 		$this->registry = new SpawnRuleRegistry();
-		foreach([[self::FISH, MobCategoryRegistry::WATER_ANIMAL], [self::MONSTER, MobCategoryRegistry::MONSTER]] as [$identifier, $categoryId]){
+		foreach([[self::FISH, VanillaMobCategories::WATER_ANIMAL], [self::MONSTER, VanillaMobCategories::MONSTER]] as [$identifier, $categoryId]){
 			$this->registry->register(new SpawnRules($identifier, $categoryId, [new SpawnRuleGroup([])], static fn(World $world, Vector3 $pos, SpawnRuleGroup $group) : Entity => throw new \LogicException("not spawned in this test")));
 		}
 		$this->bands = new EntitySpawnBands();
@@ -66,10 +66,10 @@ final class PopulationCensusTest extends TestCase{
 
 		$counts = $this->census()->getRegionPopulation(0, 0);
 
-		self::assertSame(1, $counts->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::SURFACE));
-		self::assertSame(2, $counts->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::CAVE));
+		self::assertSame(1, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
+		self::assertSame(2, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE));
 		self::assertSame(2, $counts->getIdentifierCount(self::MONSTER, SpawnBand::CAVE));
-		self::assertSame(1, $counts->getCategoryCount(MobCategoryRegistry::WATER_ANIMAL, SpawnBand::SURFACE));
+		self::assertSame(1, $counts->getCategoryCount(VanillaMobCategories::WATER_ANIMAL, SpawnBand::SURFACE));
 		self::assertSame(0, $counts->getIdentifierCount(self::FISH, SpawnBand::CAVE));
 	}
 
@@ -79,7 +79,7 @@ final class PopulationCensusTest extends TestCase{
 
 		$counts = $this->census()->getRegionPopulation(0, 0);
 
-		self::assertSame(0, $counts->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::SURFACE));
+		self::assertSame(0, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
 		self::assertSame(0, $counts->getIdentifierCount(self::UNCOUNTED, SpawnBand::SURFACE));
 	}
 
@@ -88,7 +88,7 @@ final class PopulationCensusTest extends TestCase{
 		$this->place(self::MONSTER, 5, 0, SpawnBand::SURFACE);
 		$this->place(self::MONSTER, 0, -5, SpawnBand::SURFACE);
 
-		self::assertSame(1, $this->census()->getRegionPopulation(0, 0)->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::SURFACE));
+		self::assertSame(1, $this->census()->getRegionPopulation(0, 0)->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
 	}
 
 	public function testAddUpdatesTheRegionsThatCoverTheChunk() : void{
@@ -99,8 +99,8 @@ final class PopulationCensusTest extends TestCase{
 		$spawned = $this->place(self::MONSTER, 3, 3, SpawnBand::CAVE);
 		$census->add($spawned);
 
-		self::assertSame(1, $near->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::CAVE), "the region already handed out sees it");
-		self::assertSame(0, $far->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::CAVE));
+		self::assertSame(1, $near->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE), "the region already handed out sees it");
+		self::assertSame(0, $far->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE));
 		// A region summed afterwards reuses the chunk's updated counts.
 		self::assertSame(1, $census->getRegionPopulation(1, 1)->getIdentifierCount(self::MONSTER, SpawnBand::CAVE));
 	}
@@ -109,7 +109,7 @@ final class PopulationCensusTest extends TestCase{
 		$census = $this->census();
 		$census->add($this->place(self::MONSTER, 0, 0, SpawnBand::CAVE));
 
-		self::assertSame(1, $census->getRegionPopulation(0, 0)->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::CAVE));
+		self::assertSame(1, $census->getRegionPopulation(0, 0)->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE));
 	}
 
 	public function testUnknownBandIsDerivedFromThePositionOnce() : void{
@@ -122,8 +122,8 @@ final class PopulationCensusTest extends TestCase{
 		$world->method("getMinY")->willReturn(-64);
 
 		$counts = $this->census($world)->getRegionPopulation(0, 0);
-		self::assertSame(1, $counts->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::SURFACE));
-		self::assertSame(1, $counts->getCategoryCount(MobCategoryRegistry::MONSTER, SpawnBand::CAVE));
+		self::assertSame(1, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
+		self::assertSame(1, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE));
 		self::assertSame(SpawnBand::SURFACE, $this->bands->get($above));
 		self::assertSame(SpawnBand::CAVE, $this->bands->get($below));
 

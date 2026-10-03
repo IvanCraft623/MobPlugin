@@ -23,26 +23,21 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaMobCategories;
 use pocketmine\utils\SingletonTrait;
 
 final class MobCategoryRegistry{
 	use SingletonTrait;
 
-	public const MONSTER = "monster";
-	public const ANIMAL = "animal";
-	public const AMBIENT = "ambient";
-	public const WATER_ANIMAL = "water_animal";
-	public const CAT = "cat";
-
 	/** @var array<string, MobCategory> keyed by category id */
 	private array $categories = [];
 
 	private function __construct(){
-		$this->register(new MobCategory(self::MONSTER, 8, 16, 64));
-		$this->register(new MobCategory(self::ANIMAL, 4, 4, 64));
-		$this->register(new MobCategory(self::AMBIENT, 0, 2, 32));
-		$this->register(new MobCategory(self::WATER_ANIMAL, 36, 36, 64));
-		$this->register(new MobCategory(self::CAT, 4, 0, 64));
+		$this->register(new MobCategory(VanillaMobCategories::MONSTER, 8, 16, 64));
+		$this->register(new MobCategory(VanillaMobCategories::ANIMAL, 4, 4, 64));
+		$this->register(new MobCategory(VanillaMobCategories::AMBIENT, 0, 2, 32));
+		$this->register(new MobCategory(VanillaMobCategories::WATER_ANIMAL, 36, 36, 64));
+		$this->register(new MobCategory(VanillaMobCategories::CAT, 4, 0, 64));
 	}
 
 	/**
