@@ -409,14 +409,15 @@ whole server. It only caps the cost of a crowded tick: the spawn rate is vanilla
 
 ## Timings
 
-`Natural Spawning` covers every pass of a tick, with these children:
+`Natural Spawning` covers the whole tick (choosing chunks, setting up each world's pass
+and the attempts), with these children:
 
 | Timing | Covers |
 |---|---|
 | `Sample` | column sampling, position checks and the cache lookup |
 | `Candidate Resolve` | cache misses only (runs inside `Sample`) |
 | `Select` | `SpawnSelector` |
-| `Census` | counting a region the first time a pass needs it (runs inside `Select`) |
+| `Census` | counting a region the first time a pass needs it (runs inside `Select`, or `Sample` when a condition reads the population) |
 | `Spawn` | herd placement and factories |
 
 ## Approximations

@@ -86,6 +86,15 @@ final class NaturalSpawner{
 			return;
 		}
 
+		CustomTimings::$naturalSpawning->startTiming();
+		try{
+			$this->doTick();
+		}finally{
+			CustomTimings::$naturalSpawning->stopTiming();
+		}
+	}
+
+	private function doTick() : void{
 		// The revision is read once: rules registered mid-tick apply from the next tick.
 		$candidateCache = $this->refreshRuleCaches();
 		/** @phpstan-var list<array{WorldSpawnPass, int, int}> $hits pass and chunk coordinates */
@@ -126,14 +135,9 @@ final class NaturalSpawner{
 			$hitCount = $this->maxAttemptsPerTick;
 		}
 
-		CustomTimings::$naturalSpawning->startTiming();
-		try{
-			for($i = 0; $i < $hitCount; $i++){
-				[$pass, $chunkX, $chunkZ] = $hits[$i];
-				$pass->attempt($chunkX, $chunkZ);
-			}
-		}finally{
-			CustomTimings::$naturalSpawning->stopTiming();
+		for($i = 0; $i < $hitCount; $i++){
+			[$pass, $chunkX, $chunkZ] = $hits[$i];
+			$pass->attempt($chunkX, $chunkZ);
 		}
 	}
 
