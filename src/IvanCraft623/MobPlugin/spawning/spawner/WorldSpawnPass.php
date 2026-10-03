@@ -188,8 +188,8 @@ final class WorldSpawnPass{
 	}
 
 	/**
-	 * Feet in a passable block, over a block with a full top surface. Whether the whole mob
-	 * fits is checked once its type is known, by HerdSpawner.
+	 * Feet in a passable block, over a block with a full top surface. Whether a whole mob
+	 * fits depends on its type, so SpawnSelector checks it for each candidate.
 	 * Blocks stay out of the world's block cache: a column scan reads far more of them than
 	 * anything else will reuse.
 	 *

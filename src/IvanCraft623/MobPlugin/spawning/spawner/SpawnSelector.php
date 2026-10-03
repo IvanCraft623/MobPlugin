@@ -63,6 +63,9 @@ final class SpawnSelector{
 			if($groups === []){
 				continue;
 			}
+			if(!$ctx->hasRoomFor($candidate->getRules()->getSize())){
+				continue;
+			}
 			$population ??= $ctx->getPopulation();
 			$room = $cap - $population->getCategoryCount($category->id, $band);
 			if($room <= 0){

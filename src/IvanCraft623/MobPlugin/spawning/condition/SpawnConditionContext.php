@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 
@@ -53,6 +54,11 @@ interface SpawnConditionContext extends CacheableConditionContext{
 	public function getTime() : int;
 
 	public function getPopulation() : PopulationCounts;
+
+	/**
+	 * Whether a mob of this size, standing on the position, collides with no block.
+	 */
+	public function hasRoomFor(EntitySizeInfo $size) : bool;
 
 	/**
 	 * The spawner's random source, for conditions that roll a chance. A plain

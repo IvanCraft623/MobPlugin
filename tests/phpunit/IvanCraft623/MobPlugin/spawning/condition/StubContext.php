@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\block\VanillaBlocks;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 
@@ -99,6 +100,10 @@ final class StubContext implements SpawnConditionContext{
 
 	public function getPopulation() : PopulationCounts{
 		return $this->population;
+	}
+
+	public function hasRoomFor(EntitySizeInfo $size) : bool{
+		return true;
 	}
 
 	public function getRandom() : Random{

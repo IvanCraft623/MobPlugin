@@ -29,8 +29,11 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use pocketmine\block\Block;
+use pocketmine\entity\EntitySizeInfo;
+use pocketmine\math\AxisAlignedBB;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
+use function count;
 
 /**
  * One sampled position. Light and population are read on first use only, so positions
@@ -111,6 +114,22 @@ final class AttemptContext implements SpawnConditionContext{
 
 	public function getPopulation() : PopulationCounts{
 		return $this->population ??= $this->census->getRegionPopulation($this->x >> 4, $this->z >> 4);
+	}
+
+	public function hasRoomFor(EntitySizeInfo $size, float $epsilon = 1e-7) : bool{
+		$halfWidth = $size->getWidth() / 2;
+		$centerX = $this->x + 0.5;
+		$centerZ = $this->z + 0.5;
+		$box = (new AxisAlignedBB(
+			$centerX - $halfWidth,
+			$this->y,
+			$centerZ - $halfWidth,
+			$centerX + $halfWidth,
+			$this->y + $size->getHeight(),
+			$centerZ + $halfWidth
+		))->contract($epsilon, $epsilon, $epsilon);
+
+		return count($this->world->getCollisionBlocks($box, targetFirst: true)) === 0;
 	}
 
 	public function getRandom() : Random{

@@ -125,15 +125,15 @@ Each attempt runs from start to finish before the next one begins:
 2. **Candidates.** Build an `AttemptContext` and ask the `CandidateCache` which rules could
    still spawn there. An empty list ends the position.
 3. **Select.** `SpawnSelector` skips candidates whose category is unregistered, has a cap
-   of 0 in the band or is at its cap. Each remaining candidate contributes every matching
-   group that is under its density limit. One is picked by group weight; if it has a
-   `rarity`, it then spawns one time in that many. The pick carries the room left for
-   its herd under the category cap and the density limit.
+   of 0 in the band or is at its cap, and those whose mob has no room there (see below).
+   Each remaining candidate contributes every matching group that is under its density
+   limit. One is picked by group weight; if it has a `rarity`, it then spawns one time in
+   that many. The pick carries the room left for its herd under the category cap and the
+   density limit.
 4. **Spawn.** `HerdSpawner` rolls the herd size, `min + round(rand² × (max − min))`,
    trims it to the room left under the category cap and the group's `density_limit`, and
-   spawns every member on the lead's block. Each member picks its own `permute_type`,
-   is skipped if its collision box doesn't fit there (see below), and otherwise the
-   factory builds it and `spawnToAll()` is called.
+   spawns every member on the lead's block. Each member picks its own `permute_type`;
+   the factory builds it and `spawnToAll()` is called.
 
 How close to a player a mob may spawn belongs to the group: 24 to 128 blocks unless the
 rule's `distance_filter` says otherwise (fish use 12 to 32). Only players that can be
@@ -157,12 +157,13 @@ Every position must pass two block checks, whatever the mob:
   also torches, rails and buttons. A flat collision box doesn't count, so a single snow
   layer (which PocketMine gives a zero-height box) is fine; thicker snow isn't.
 
-How much room the mob needs depends on its type, so it is checked at spawn time: each
-member's collision box (`SpawnRules::getSize()`, the vanilla `collision_box` for vanilla
-mobs), standing at the block's centre, must collide with no block. A chicken fits under
-a one-block gap, an enderman needs three blocks, and a spider or an iron golem needs room
-in the neighbouring columns too. A member that doesn't fit is skipped; the attempt isn't
-retried elsewhere, as in vanilla.
+How much room a mob needs depends on its type, so the selector checks it per candidate:
+the rule's collision box (`SpawnRules::getSize()`, the vanilla `collision_box` for vanilla
+mobs), standing at the block's centre, must collide with no block
+(`SpawnConditionContext::hasRoomFor()`). A chicken fits under a one-block gap, an
+enderman needs three blocks, and a spider or an iron golem needs room in the neighbouring
+columns too. The box is the rule's own: a `permute_type` target of another size is not
+checked again.
 
 Aquatic mobs spawn in the liquid block right above the ground (the sea floor), as in
 vanilla. The pass and the census share one `GroundLevelCache`, which memoizes ground Y
@@ -247,8 +248,9 @@ interface CacheableCondition extends SpawnCondition{
 
 `CacheableConditionContext` has the biome id, band, difficulty and feet liquid;
 `SpawnConditionContext` extends it with the per-attempt values (coordinates, light, the
-block below, time, population, the random source, the world). Which interface a condition
-implements is the whole declaration: a cacheable one can't reach a per-attempt value.
+block below, time, population, whether a mob of a given size has room, the random source,
+the world). Which interface a condition implements is the whole declaration: a cacheable
+one can't reach a per-attempt value.
 
 Built-ins live in `spawning/condition/`. Cacheable: `BiomeTagCondition`,
 `DifficultyCondition`, `BandCondition`. Per attempt: `RangeCondition` (brightness, block
@@ -445,9 +447,10 @@ and the attempts), with these children:
 
 The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviations:
 
-- A rule that fails a block filter, its liquid, its distance, its density limit or its
-  category cap is left out of the weighted pick. Vanilla picks first and checks those
-  after, wasting the attempt, so where several rules match vanilla spawns a little less.
+- A rule that fails a block filter, its liquid, its distance, its density limit, its
+  category cap or the room its mob needs is left out of the weighted pick. Vanilla picks
+  first and checks those after, wasting the attempt, so where several rules match vanilla
+  spawns a little less.
 - The ticking set is PocketMine's (a circle around each player), not vanilla's diamond.
 - A tick radius below 4 spawns like a radius of 4. Vanilla doesn't spawn below 4, but
   PocketMine's default is 3.
