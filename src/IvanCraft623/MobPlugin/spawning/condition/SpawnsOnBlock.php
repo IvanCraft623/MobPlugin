@@ -25,14 +25,14 @@ namespace IvanCraft623\MobPlugin\spawning\condition;
 
 final class SpawnsOnBlock implements SpawnCondition{
 	/**
-	 * @phpstan-param array<int, true> $typeIds block type ids checked against the block under the feet
+	 * @phpstan-param array<int, true> $itemStateIds item state ids checked against the block under the feet
 	 */
 	public function __construct(
-		private readonly array $typeIds,
+		private readonly array $itemStateIds,
 		private readonly bool $prevent
 	){}
 
 	public function test(SpawnConditionContext $ctx) : bool{
-		return isset($this->typeIds[$ctx->getBelowTypeId()]) !== $this->prevent;
+		return isset($this->itemStateIds[$ctx->getBelowItemStateId()]) !== $this->prevent;
 	}
 }

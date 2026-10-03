@@ -95,13 +95,17 @@ final class NaturalSpawner{
 			if($world->getChunkTickRadius() <= 0 || !($this->isWorldEnabled)($world)){
 				continue;
 			}
+			$players = self::getSpawningPlayers($world);
+			if(count($players) === 0){
+				continue; // nothing spawns without a player
+			}
 			$chunks = $world->getTickingChunks();
 			$chunkCount = count($chunks);
 			$pass = null;
 			// Every chunk rolls independently, so jumping from one hit to the next costs a
 			// random number per hit instead of one per chunk.
 			for($i = $this->nextChunkGap(); $i < $chunkCount; $i += 1 + $this->nextChunkGap()){
-				$pass ??= new WorldSpawnPass($world, $chunks, $candidateCache, $this->selector, $this->herdSpawner, $this->population, $this->registry, $this->random, $this->maxPlayerDistance);
+				$pass ??= new WorldSpawnPass($world, $chunks, $players, $candidateCache, $this->selector, $this->herdSpawner, $this->population, $this->registry, $this->random, $this->maxPlayerDistance);
 				World::getXZ($chunks[$i], $chunkX, $chunkZ);
 				// Decided here so a chunk that can't spawn takes none of the tick's budget.
 				if($pass->canAttempt($chunkX, $chunkZ)){
@@ -131,6 +135,22 @@ final class NaturalSpawner{
 		}finally{
 			CustomTimings::$naturalSpawning->stopTiming();
 		}
+	}
+
+	/**
+	 * @phpstan-return list<array{float, float, float}> the positions of the players that allow spawns
+	 */
+	private static function getSpawningPlayers(World $world) : array{
+		$players = [];
+		foreach($world->getPlayers() as $player){
+			if(!$player->canBeCollidedWith()){
+				continue; // spectators and the dead neither allow nor block spawns
+			}
+			$pos = $player->getPosition();
+			$players[] = [$pos->x, $pos->y, $pos->z];
+		}
+
+		return $players;
 	}
 
 	/**

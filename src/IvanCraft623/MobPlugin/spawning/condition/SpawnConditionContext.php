@@ -42,7 +42,11 @@ interface SpawnConditionContext extends CacheableConditionContext{
 
 	public function getBlockLight() : int;
 
-	public function getBelowTypeId() : int;
+	/**
+	 * The item state id of the block under the feet, which tells block variants apart
+	 * (coarse dirt from dirt) but not placement state (snow layers).
+	 */
+	public function getBelowItemStateId() : int;
 
 	public function getNearestPlayerDistance() : float;
 

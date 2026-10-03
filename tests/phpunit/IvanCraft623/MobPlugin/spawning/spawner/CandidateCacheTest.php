@@ -40,7 +40,8 @@ use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use PHPUnit\Framework\TestCase;
-use pocketmine\block\BlockTypeIds;
+use pocketmine\block\Block;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
 use function array_keys;
@@ -57,7 +58,8 @@ use function spl_object_id;
 final class CandidateCacheTest extends TestCase{
 	private const POINTS_PER_KEY = 8;
 
-	private const BELOW = [BlockTypeIds::GRASS, BlockTypeIds::SAND, BlockTypeIds::STONE, BlockTypeIds::MYCELIUM, BlockTypeIds::SNOW, BlockTypeIds::NETHERRACK, BlockTypeIds::DEEPSLATE];
+	/** @phpstan-var list<int> item state ids of the blocks a position stands on */
+	private static array $below;
 
 	/** @phpstan-var list<SpawnRules> */
 	private static array $rules;
@@ -66,6 +68,10 @@ final class CandidateCacheTest extends TestCase{
 	private static array $keys;
 
 	public static function setUpBeforeClass() : void{
+		self::$below = array_map(
+			static fn(Block $block) : int => $block->asItem()->getStateId(),
+			[VanillaBlocks::GRASS(), VanillaBlocks::SAND(), VanillaBlocks::STONE(), VanillaBlocks::MYCELIUM(), VanillaBlocks::SNOW(), VanillaBlocks::NETHERRACK(), VanillaBlocks::DEEPSLATE()]
+		);
 		$root = dirname(__DIR__, 6);
 		$tags = BiomeTagMap::fromFiles($root . "/vendor/pocketmine/bedrock-data/biome_id_map.json", $root . "/vendor/pocketmine/bedrock-data/biome_definitions.json");
 
@@ -147,7 +153,7 @@ final class CandidateCacheTest extends TestCase{
 					"y" => $random->nextRange(-64, 120),
 					"z" => $random->nextRange(-3000, 3000),
 					"light" => $random->nextBoundedInt(16),
-					"belowTypeId" => self::BELOW[$random->nextBoundedInt(count(self::BELOW))],
+					"belowItemStateId" => self::$below[$random->nextBoundedInt(count(self::$below))],
 					"nearestPlayerDistance" => 10 + $random->nextFloat() * 130,
 					"time" => $random->nextBoundedInt(400000),
 					"blockLight" => $random->nextBoundedInt(4) === 0 ? $random->nextBoundedInt(16) : 0,

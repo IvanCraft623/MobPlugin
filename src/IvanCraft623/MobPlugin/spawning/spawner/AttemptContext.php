@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCensus;
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use pocketmine\block\Block;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 
@@ -42,6 +43,8 @@ final class AttemptContext implements SpawnConditionContext{
 
 	private ?PopulationCounts $population = null;
 
+	private ?int $belowItemStateId = null;
+
 	public function __construct(
 		private readonly World $world,
 		private readonly PopulationCensus $census,
@@ -51,7 +54,7 @@ final class AttemptContext implements SpawnConditionContext{
 		private readonly SpawnBand $band,
 		private readonly int $biomeId,
 		private readonly SpawnLiquid $feetLiquid,
-		private readonly int $belowTypeId,
+		private readonly Block $below,
 		private readonly int $difficulty,
 		private readonly float $nearestPlayerDistance,
 		private readonly int $time,
@@ -94,8 +97,8 @@ final class AttemptContext implements SpawnConditionContext{
 		return $this->blockLight ??= $this->world->getBlockLightAt($this->x, $this->y, $this->z);
 	}
 
-	public function getBelowTypeId() : int{
-		return $this->belowTypeId;
+	public function getBelowItemStateId() : int{
+		return $this->belowItemStateId ??= $this->below->asItem()->getStateId();
 	}
 
 	public function getNearestPlayerDistance() : float{

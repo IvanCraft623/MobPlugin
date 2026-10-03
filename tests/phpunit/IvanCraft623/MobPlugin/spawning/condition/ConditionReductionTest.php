@@ -28,7 +28,7 @@ use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\spawner\KeyContext;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use PHPUnit\Framework\TestCase;
-use pocketmine\block\BlockTypeIds;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\utils\Random;
 use function is_array;
 use function is_bool;
@@ -69,7 +69,7 @@ final class ConditionReductionTest extends TestCase{
 					feetLiquid: SpawnLiquid::from($random->nextBoundedInt(3)),
 					y: $random->nextRange(-20, 80),
 					light: $random->nextBoundedInt(16),
-					belowTypeId: $random->nextBoolean() ? BlockTypeIds::GRASS : BlockTypeIds::STONE
+					belowItemStateId: ($random->nextBoolean() ? VanillaBlocks::GRASS() : VanillaBlocks::STONE())->asItem()->getStateId()
 				);
 				$key = new KeyContext($ctx->getBiomeId(), $ctx->getBand(), $ctx->getDifficulty(), $ctx->getFeetLiquid());
 
@@ -124,7 +124,7 @@ final class ConditionReductionTest extends TestCase{
 			2 => new BandCondition($random->nextBoolean() ? SpawnBand::SURFACE : SpawnBand::CAVE),
 			3 => new HeightCondition($random->nextRange(-20, 30), $random->nextRange(30, 80)),
 			4 => RangeCondition::brightness($min * 3, $min * 3 + $random->nextBoundedInt(8)),
-			default => new SpawnsOnBlock([BlockTypeIds::GRASS => true], $random->nextBoolean()),
+			default => new SpawnsOnBlock([VanillaBlocks::GRASS()->asItem()->getStateId() => true], $random->nextBoolean()),
 		};
 	}
 

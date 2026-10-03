@@ -56,9 +56,6 @@ final class WorldSpawnPass{
 
 	private readonly PopulationCensus $census;
 
-	/** @phpstan-var list<array{float, float, float}> */
-	private readonly array $players;
-
 	private readonly int $difficulty;
 
 	private readonly int $time;
@@ -73,11 +70,13 @@ final class WorldSpawnPass{
 
 	/**
 	 * @phpstan-param list<int> $tickingChunks     the world's ticking chunk hashes this tick
+	 * @phpstan-param non-empty-list<array{float, float, float}> $players the positions of the players that allow spawns
 	 * @phpstan-param float     $maxPlayerDistance the largest maximum player distance of any group; INF for no limit
 	 */
 	public function __construct(
 		private readonly World $world,
 		private readonly array $tickingChunks,
+		private readonly array $players,
 		private readonly CandidateCache $candidateCache,
 		private readonly SpawnSelector $selector,
 		private readonly HerdSpawner $herdSpawner,
@@ -88,15 +87,6 @@ final class WorldSpawnPass{
 	){
 		$this->groundLevels = new GroundLevelCache($world);
 		$this->census = $population->createCensus($world, $this->groundLevels, $registry, CustomTimings::$naturalSpawningCensus);
-		$players = [];
-		foreach($world->getPlayers() as $player){
-			if(!$player->canBeCollidedWith()){
-				continue; // spectators and the dead neither allow nor block spawns
-			}
-			$pos = $player->getPosition();
-			$players[] = [$pos->x, $pos->y, $pos->z];
-		}
-		$this->players = $players;
 		$this->difficulty = $world->getDifficulty();
 		$this->time = $world->getTime();
 		$this->lowTickRadius = $world->getChunkTickRadius() <= self::LOW_TICK_RADIUS;
@@ -232,7 +222,7 @@ final class WorldSpawnPass{
 			$band,
 			$this->world->getBiomeId($x, $y, $z),
 			SpawnLiquid::fromBlockTypeId($feet->getTypeId()),
-			$below->getTypeId(),
+			$below,
 			$this->difficulty,
 			sqrt($nearestSquared),
 			$this->time,

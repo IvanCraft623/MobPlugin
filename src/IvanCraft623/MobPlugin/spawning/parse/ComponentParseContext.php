@@ -97,7 +97,7 @@ final class ComponentParseContext{
 	}
 
 	/**
-	 * @phpstan-return array<int, true>
+	 * @phpstan-return array<int, true> item state ids of the named blocks
 	 * @phpstan-throws SpawnRulesParseException
 	 */
 	public function resolveBlockSet() : array{
@@ -106,11 +106,11 @@ final class ComponentParseContext{
 			if(isset(self::KNOWN_MISSING_BLOCKS[$name])){
 				continue;
 			}
-			$typeId = $this->blocks->resolve($name);
-			if($typeId === null){
+			$itemStateId = $this->blocks->resolve($name);
+			if($itemStateId === null){
 				throw new SpawnRulesParseException("'{$this->getPath()}' block name \"$name\" cannot be resolved");
 			}
-			$set[$typeId] = true;
+			$set[$itemStateId] = true;
 		}
 
 		return $set;

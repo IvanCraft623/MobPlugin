@@ -60,6 +60,7 @@ final class HerdSpawner{
 			$permutation = Utils::pickWeighted($this->random, $group->getPermutations());
 			$spawnRules = $permutation !== null ? ($this->registry->get($permutation) ?? $rules) : $rules;
 
+			//TODO: an exception thrown by a factory escapes the spawn task and crashes the server
 			$entity = ($spawnRules->getFactory())($world, $position, $group);
 			$this->spawnBands->set($entity, $band);
 			$entity->spawnToAll();

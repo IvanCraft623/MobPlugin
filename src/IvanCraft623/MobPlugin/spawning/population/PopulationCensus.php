@@ -83,6 +83,9 @@ final class PopulationCensus{
 	 * A chunk not counted yet will find the mob in the world.
 	 */
 	public function add(Entity $entity) : void{
+		if($entity->isClosed()){
+			return;
+		}
 		$counted = $this->classify($entity);
 		if($counted === null){
 			return;

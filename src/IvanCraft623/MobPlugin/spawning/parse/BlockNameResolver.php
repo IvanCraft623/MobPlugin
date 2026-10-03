@@ -48,19 +48,23 @@ final class BlockNameResolver{
 		"minecraft:yellow_terracotta" => "minecraft:yellow_stained_clay",
 	];
 
+	/**
+	 * The item state id of the named block: its type plus the properties that make it a
+	 * distinct block (dirt type, colour), but not placement state like facing or snow layers.
+	 */
 	public function resolve(string $name) : ?int{
-		$typeId = self::parse($name);
-		if($typeId === null && isset(self::ALIASES[$name])){
-			$typeId = self::parse(self::ALIASES[$name]);
+		$itemStateId = self::parse($name);
+		if($itemStateId === null && isset(self::ALIASES[$name])){
+			$itemStateId = self::parse(self::ALIASES[$name]);
 		}
 
-		return $typeId;
+		return $itemStateId;
 	}
 
 	private static function parse(string $name) : ?int{
 		$localName = str_starts_with($name, self::PREFIX) ? substr($name, strlen(self::PREFIX)) : $name;
 		$parsed = StringToItemParser::getInstance()->parse($localName);
 
-		return $parsed instanceof ItemBlock ? $parsed->getBlock()->getTypeId() : null;
+		return $parsed instanceof ItemBlock ? $parsed->getStateId() : null;
 	}
 }

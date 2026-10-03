@@ -55,6 +55,14 @@ final class SpawnRuleGroup{
 		private readonly ?int $surfaceDensityLimit = null,
 		private readonly ?int $caveDensityLimit = null
 	){
+		if($weight < 0){
+			throw new \InvalidArgumentException("Weight must not be negative, got $weight");
+		}
+		foreach($permutations as $identifier => $permutationWeight){
+			if($permutationWeight < 0){
+				throw new \InvalidArgumentException("Permutation weight of \"$identifier\" must not be negative, got $permutationWeight");
+			}
+		}
 		if($herdMin < 1 || $herdMax < $herdMin){
 			throw new \InvalidArgumentException("Invalid herd size range [$herdMin, $herdMax]");
 		}

@@ -26,7 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\condition;
 use IvanCraft623\MobPlugin\spawning\population\PopulationCounts;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
-use pocketmine\block\BlockTypeIds;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 
@@ -42,7 +42,7 @@ final class StubContext implements SpawnConditionContext{
 		public readonly int $y = 65,
 		public readonly int $z = 0,
 		public readonly int $light = 15,
-		public readonly int $belowTypeId = BlockTypeIds::GRASS,
+		public readonly ?int $belowItemStateId = null,
 		public readonly float $nearestPlayerDistance = 30.0,
 		public readonly int $time = 0,
 		public readonly PopulationCounts $population = new PopulationCounts(),
@@ -87,8 +87,8 @@ final class StubContext implements SpawnConditionContext{
 		return $this->blockLight;
 	}
 
-	public function getBelowTypeId() : int{
-		return $this->belowTypeId;
+	public function getBelowItemStateId() : int{
+		return $this->belowItemStateId ?? VanillaBlocks::GRASS()->asItem()->getStateId();
 	}
 
 	public function getNearestPlayerDistance() : float{

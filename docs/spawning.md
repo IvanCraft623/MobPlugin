@@ -305,6 +305,9 @@ By-design exceptions:
 - the `population_control` value vanilla spawns through events (`pillager`: patrols and
   raids) skips its rule set;
 - `powder_snow` (no PocketMine block) is dropped from block filters;
+- block filters match the block's item variant, so `coarse_dirt` doesn't match dirt and
+  each terracotta colour matches only itself, while placement state (snow layers, facing)
+  is ignored as vanilla does;
 - components PocketMine can't implement (`mob_event_filter`, `delay_filter`,
   `player_in_village_filter`, `spawns_above_block_filter`) drop their group through
   `SpawnRuleGroupBuilder::markNeverSpawns()`;
@@ -444,8 +447,6 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviati
   despawn distance of most categories.
 - A biome id missing from the bundled biome definitions (a custom biome) has no tags, so
   it fails every positive biome test and passes every negated one.
-- PocketMine has one terracotta block for every colour, so a block filter naming a
-  coloured terracotta (armadillo) matches all of them.
 - `is_snow_covered` is approximated by the `frozen` biome tag.
 - PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
 - The global mob cap (200) is not enforced.
