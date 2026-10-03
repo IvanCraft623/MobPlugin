@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\math\Vector3;
 use pocketmine\world\World;
 
@@ -38,12 +39,14 @@ final class SpawnRules{
 	/**
 	 * @phpstan-param list<SpawnRuleGroup> $groups
 	 * @phpstan-param SpawnFactory         $factory
+	 * @phpstan-param EntitySizeInfo       $size    the mob's collision box, which must fit where it spawns
 	 */
 	public function __construct(
 		private readonly string $identifier,
 		private readonly string $categoryId,
 		private readonly array $groups,
-		private readonly \Closure $factory
+		private readonly \Closure $factory,
+		private readonly EntitySizeInfo $size
 	){}
 
 	public function getIdentifier() : string{
@@ -66,6 +69,10 @@ final class SpawnRules{
 	 */
 	public function getFactory() : \Closure{
 		return $this->factory;
+	}
+
+	public function getSize() : EntitySizeInfo{
+		return $this->size;
 	}
 
 	/**

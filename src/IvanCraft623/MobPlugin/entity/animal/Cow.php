@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\animal;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
@@ -51,7 +52,7 @@ class Cow extends Animal {
 	public static function getNetworkTypeId() : string{ return EntityIds::COW; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.3, 0.9, 1.3);
+		return new EntitySizeInfo(VanillaEntitySizes::COW_HEIGHT, VanillaEntitySizes::COW_WIDTH, VanillaEntitySizes::COW_HEIGHT);
 	}
 
 	public function getName() : string{

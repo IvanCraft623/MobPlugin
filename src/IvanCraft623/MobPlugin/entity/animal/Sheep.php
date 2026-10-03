@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\animal;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\EatBlockGoal;
@@ -95,7 +96,7 @@ class Sheep extends Animal implements Shearable, Colored{
 	protected bool $sheared = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.3, 0.9, 1.235);
+		return new EntitySizeInfo(VanillaEntitySizes::SHEEP_HEIGHT, VanillaEntitySizes::SHEEP_WIDTH, VanillaEntitySizes::SHEEP_HEIGHT * 0.95);
 	}
 
 	public function getName() : string{

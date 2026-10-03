@@ -14,8 +14,8 @@ MobPlugin ships for natural spawning; nothing is fetched at runtime.
 The `mojang/bedrock-samples` dev dependency in `composer.json` pins the commit, and its
 package version is the spawn schema version (the `server/spawn/<version>` directory).
 That declaration is the only place both are set: the tools read them through Composer,
-`NOTICE.md` records them, and `SpawnSchema::SCHEMA_VERSION` must match
-(`VanillaSpawnConditionsCoverageTest`). `composer install` extracts the commit into
+`NOTICE.md` records them, and `SpawnSchema::SCHEMA_VERSION` is generated from it.
+`composer install` extracts the commit into
 `vendor/mojang/bedrock-samples`; being a dev dependency, it never ships in the phar.
 
 ### Tools
@@ -23,10 +23,11 @@ That declaration is the only place both are set: the tools read them through Com
 ```sh
 composer compile-spawn-rules     # php tools/spawn-rules/compile.php
 composer generate-spawn-schema   # php tools/spawn-rules/generate-schema.php
+composer generate-entity-data    # php tools/entity-data/generate-entity-data.php
 ```
 
-Both read only the pinned package and take no options. Their output is deterministic, so
-CI regenerates it and fails on any diff.
+All three read only the pinned package and take no options. Their output is
+deterministic, so CI regenerates it and fails on any diff.
 
 - **`compile.php`** merges the spawn rules into `spawn_rules.json` and writes `NOTICE.md`.
   It only strips JSON comments (some vanilla files aren't strict JSON), keys entries by
@@ -43,14 +44,23 @@ CI regenerates it and fails on any diff.
   (`model/*Data`) per payload-bearing component schema, so a renamed payload field breaks
   the build instead of silently spawning with a wrong value. `model/` holds generated
   classes only: regenerating deletes any model the pinned schemas no longer produce.
+- **`generate-entity-data.php`** reads the vanilla entity files and generates
+  `data/bedrock/EntityIds` (one constant per entity of the data, named as PocketMine-MP
+  names its own) and `data/bedrock/VanillaEntitySizes` (each entity's base
+  `collision_box`, the box before scale; component groups only hold variants such as
+  babies or slime sizes, and entities that only declare those are left out). Entity
+  classes size themselves from it, and `registerVanilla()` gives every rule the box of
+  its mob. These ids name the data's entities: an entity's network id
+  (`getNetworkTypeId()`) stays PocketMine-MP's, which follows the protocol it speaks.
+  `registerVanilla()` finds a mob's rules and box by its network id, so if the two ever
+  differ, the mob is skipped like one without natural spawns.
 
 ### Checks
 
 | Check | Where | Catches |
 |---|---|---|
-| Regenerate, then `git diff --exit-code` | CI (`ci.yml`) | `spawn_rules.json`, `NOTICE.md` or `parse/schema/` edited by hand, not regenerated after a pin change, or holding a stale model |
-| `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile; entries or groups skipped or dropped beyond the by-design cases; a rule whose `population_control` has no registered category |
-| `VanillaSpawnConditionsCoverageTest` | `composer test` | a component without a parser; a payload schema without its generated model |
+| Regenerate, then `git diff --exit-code` | CI (`ci.yml`) | `spawn_rules.json`, `NOTICE.md`, `parse/schema/` or the generated `data/bedrock/` classes edited by hand, not regenerated after a pin change, or holding a stale model |
+| `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile, including a component without a parser; a rule whose `population_control` has no registered category |
 
 The Mojang schemas are permissive (draft-07 allows extra properties), so schema
 validation is a coarse shape check. The strict loader is the authority on semantics.
@@ -61,7 +71,8 @@ validation is a coarse shape check. The strict loader is the authority on semant
    `reference`s at the new commit, and set its `version` to the spawn schema version that
    commit ships.
 2. `composer update mojang/bedrock-samples`
-3. `composer generate-spawn-schema`, then `composer compile-spawn-rules`.
+3. `composer generate-spawn-schema`, `composer compile-spawn-rules` and
+   `composer generate-entity-data`.
 4. If a component was added, renamed or removed, update `SpawnRulesParser::createVanilla()`
    so every declared component has a parser (see [Loading](#loading)).
 5. Run `composer test` and review the diff.
@@ -120,8 +131,9 @@ Each attempt runs from start to finish before the next one begins:
    its herd under the category cap and the density limit.
 4. **Spawn.** `HerdSpawner` rolls the herd size, `min + round(rand² × (max − min))`,
    trims it to the room left under the category cap and the group's `density_limit`, and
-   spawns every member on the lead's block. Each member picks its own `permute_type`;
-   the factory builds it and `spawnToAll()` is called.
+   spawns every member on the lead's block. Each member picks its own `permute_type`,
+   is skipped if its collision box doesn't fit there (see below), and otherwise the
+   factory builds it and `spawnToAll()` is called.
 
 How close to a player a mob may spawn belongs to the group: 24 to 128 blocks unless the
 rule's `distance_filter` says otherwise (fish use 12 to 32). Only players that can be
@@ -141,10 +153,16 @@ Every position must pass two block checks, whatever the mob:
   stone, ice, upper slabs and soul sand qualify; leaves, lower slabs, carpets and fences
   don't. A column's ground is its highest such block, so air, liquids and canopies are
   skipped, and everything below it is a cave.
-- **Feet and head** go in blocks with nothing to collide with: air, liquids, grass,
-  flowers, and also torches, rails and buttons. A flat collision box doesn't count, so a
-  single snow layer (which PocketMine gives a zero-height box) is fine; thicker snow
-  isn't.
+- **Feet** go in a block with nothing to collide with: air, liquids, grass, flowers, and
+  also torches, rails and buttons. A flat collision box doesn't count, so a single snow
+  layer (which PocketMine gives a zero-height box) is fine; thicker snow isn't.
+
+How much room the mob needs depends on its type, so it is checked at spawn time: each
+member's collision box (`SpawnRules::getSize()`, the vanilla `collision_box` for vanilla
+mobs), standing at the block's centre, must collide with no block. A chicken fits under
+a one-block gap, an enderman needs three blocks, and a spider or an iron golem needs room
+in the neighbouring columns too. A member that doesn't fit is skipped; the attempt isn't
+retried elsewhere, as in vanilla.
 
 Aquatic mobs spawn in the liquid block right above the ground (the sea floor), as in
 vanilla. The pass and the census share one `GroundLevelCache`, which memoizes ground Y
@@ -327,10 +345,11 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 		new SpawnRuleGroup([
 			RangeCondition::brightness(0, 7),
 			new DifficultyCondition(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
-			new SpawnsOnBlock([BlockTypeIds::STONE => true], false),
+			new SpawnsOnBlock([VanillaBlocks::STONE()->asItem()->getStateId() => true], false),
 		], weight: 100),
 	],
 	fn(World $world, Vector3 $pos, SpawnRuleGroup $group) => new MyBoss(Location::fromObject($pos, $world)),
+	new EntitySizeInfo(2.0, 1.0), // height, width: the room it needs to spawn
 ));
 ```
 
@@ -450,6 +469,8 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviati
 - `is_snow_covered` is approximated by the `frozen` biome tag.
 - PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
 - The global mob cap (200) is not enforced.
+- Slimes are checked with their base collision box, the largest size (2.08 blocks), so a
+  natural slime needs 3×3×3 blocks of room even when it turns out small.
 - Monsters apply the Overworld darkness rule everywhere; the Nether's own rule and
   thunderstorm darkening are not implemented. It is checked before the weighted pick;
   vanilla checks it on the built mob and wastes the attempt.

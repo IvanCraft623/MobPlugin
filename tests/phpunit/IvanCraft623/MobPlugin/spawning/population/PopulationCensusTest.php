@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use PHPUnit\Framework\TestCase;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\math\Vector3;
 use pocketmine\world\Position;
 use pocketmine\world\World;
@@ -53,7 +54,7 @@ final class PopulationCensusTest extends TestCase{
 	protected function setUp() : void{
 		$this->registry = new SpawnRuleRegistry();
 		foreach([[self::FISH, VanillaMobCategories::WATER_ANIMAL], [self::MONSTER, VanillaMobCategories::MONSTER]] as [$identifier, $categoryId]){
-			$this->registry->register(new SpawnRules($identifier, $categoryId, [new SpawnRuleGroup([])], static fn(World $world, Vector3 $pos, SpawnRuleGroup $group) : Entity => throw new \LogicException("not spawned in this test")));
+			$this->registry->register(new SpawnRules($identifier, $categoryId, [new SpawnRuleGroup([])], static fn(World $world, Vector3 $pos, SpawnRuleGroup $group) : Entity => throw new \LogicException("not spawned in this test"), new EntitySizeInfo(1.0, 1.0)));
 		}
 		$this->bands = new EntitySpawnBands();
 		$this->entities = [];

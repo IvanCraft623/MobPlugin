@@ -32,7 +32,9 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
       `slime/`, `wither/`).
     - `brain/` (as `entity/ai/Brain.php`), `memory/`, `behavior/`, `sensing/`, `control/`,
       `navigation/`, `targeting/`, `schedule/`.
-  - `data/bedrock/` — hand-managed Bedrock type-id maps / enums.
+  - `data/bedrock/` — Bedrock type-id maps / enums, hand-managed except the generated
+    `EntityIds` and `VanillaEntitySizes`. Those `EntityIds` name the vanilla data's
+    entities; entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.
 - `spawning/` — natural spawning from vanilla Bedrock spawn rules: the rule model,
   `condition/`, the main-thread runtime in `spawner/`, and the strict loader in `parse/`
   (`parse/schema/` is generated). See `docs/spawning.md`.
@@ -40,9 +42,12 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
   `spawning/spawn_rules.json` (generated, with its `NOTICE.md`).
 - `tools/spawn-rules/` — dev tools that merge the spawn rules and generate
   `parse/schema/` from the pinned `mojang/bedrock-samples` dev dependency.
+- `tools/entity-data/` — generates `data/bedrock/EntityIds` and `VanillaEntitySizes`
+  (the vanilla collision boxes entity classes size themselves from) from the same
+  dependency.
 - `docs/` — architecture guides (`spawning.md`, `navigation.md`).
-- `.github/workflows/` — CI (`ci.yml`: PHPStan, PHPUnit, spawn data drift), nightly
-  build and release.
+- `.github/workflows/` — CI (`ci.yml`: PHPStan, PHPUnit, spawn and entity data
+  drift), nightly build and release.
 
 ## Build & tooling
 
@@ -83,9 +88,9 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
   blocks a mob can stand in. Everything else
   (including the per-tick runtime) is verified via PHPStan, php-cs-fixer, building the
   phar, and manual in-server testing.
-- Spawn data: after changing the `mojang/bedrock-samples` pin, regenerate with
-  `composer generate-spawn-schema` and `composer compile-spawn-rules` (see
-  `docs/spawning.md`).
+- Spawn and entity data: after changing the `mojang/bedrock-samples` pin, regenerate with
+  `composer generate-spawn-schema`, `composer compile-spawn-rules` and
+  `composer generate-entity-data` (see `docs/spawning.md`).
 - The build workflow produces a nightly phar via
   `composer build` → `vendor/bin/pharynx -i=. -c -p=MobPlugin.phar`.
 - Before finishing: run **php-cs-fixer**, **PHPStan level 9** and **PHPUnit**
@@ -95,8 +100,8 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
 
 - `.github/workflows/build.yml` — nightly phar on pushes to `main`.
 - `.github/workflows/ci.yml` — on pull requests and pushes to `main`: PHPStan, PHPUnit
-  (`composer test`) and the spawn data drift check (both spawn tools regenerate, then
-  `git diff --exit-code`), after a single `composer install`. Skip it with `[skip ci]`
+  (`composer test`) and the spawn and entity data drift check (the spawn and entity data
+  tools regenerate, then `git diff --exit-code`), after a single `composer install`. Skip it with `[skip ci]`
   in the commit message.
 - `.github/workflows/release.yml` — tagged release builds (`v1.2.3` or `1.2.3`, with
   optional `-pre.0` suffixes).

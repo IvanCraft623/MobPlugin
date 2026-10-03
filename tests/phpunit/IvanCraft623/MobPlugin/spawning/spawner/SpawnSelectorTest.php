@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use PHPUnit\Framework\TestCase;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\utils\Random;
 use function array_map;
 
@@ -72,7 +73,7 @@ final class SpawnSelectorTest extends TestCase{
 	}
 
 	public function testDensityLimitTrimsTheRoom() : void{
-		$candidates = self::candidates([new SpawnRules("minecraft:mob", "free", [new SpawnRuleGroup([], surfaceDensityLimit: 5)], self::factory())]);
+		$candidates = self::candidates([new SpawnRules("minecraft:mob", "free", [new SpawnRuleGroup([], surfaceDensityLimit: 5)], self::factory(), new EntitySizeInfo(1.0, 1.0))]);
 
 		$under = new StubContext(population: PopulationCounts::of([], [SpawnBand::SURFACE->value => ["minecraft:mob" => 3]]));
 		self::assertSame(2, self::selector()->select($under, $candidates)?->room); // 5 - 3, well under the category's 100
@@ -86,7 +87,7 @@ final class SpawnSelectorTest extends TestCase{
 	}
 
 	private static function rules(string $identifier, string $categoryId, int $weight) : SpawnRules{
-		return new SpawnRules($identifier, $categoryId, [new SpawnRuleGroup([], $weight)], self::factory());
+		return new SpawnRules($identifier, $categoryId, [new SpawnRuleGroup([], $weight)], self::factory(), new EntitySizeInfo(1.0, 1.0));
 	}
 
 	/**

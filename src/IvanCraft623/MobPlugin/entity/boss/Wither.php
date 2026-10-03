@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\boss;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\control\FlightMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
@@ -151,7 +152,7 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	private WrappedGoal $explodeOnHalfLifeWrapped;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(3, 1, 3.6); // what? eye above bounding box...
+		return new EntitySizeInfo(VanillaEntitySizes::WITHER_HEIGHT, VanillaEntitySizes::WITHER_WIDTH, VanillaEntitySizes::WITHER_HEIGHT * 1.2); // what? eye above bounding box...
 	}
 
 	public function getName() : string{

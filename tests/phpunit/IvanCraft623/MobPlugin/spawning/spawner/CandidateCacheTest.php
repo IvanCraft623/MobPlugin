@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
+use IvanCraft623\MobPlugin\data\bedrock\EntityIds;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
@@ -43,6 +44,7 @@ use PHPUnit\Framework\TestCase;
 use pocketmine\block\Block;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\utils\Random;
 use function array_keys;
 use function array_map;
@@ -79,7 +81,7 @@ final class CandidateCacheTest extends TestCase{
 		self::$rules = [];
 		foreach(SpawnRulesParser::createVanilla($tags)->parseFile($root . "/resources/spawning/spawn_rules.json") as $identifier => [$categoryId, $groups]){
 			$hardcoded = [];
-			if($identifier === "minecraft:slime"){
+			if($identifier === EntityIds::SLIME){
 				$hardcoded[] = new AnyOf([
 					new AllOf([new HeightCondition(null, 38), new SlimeChunkCondition()]),
 					new AllOf([
@@ -94,7 +96,7 @@ final class CandidateCacheTest extends TestCase{
 				$hardcoded[] = RangeCondition::blockLight(0, 0);
 			}
 			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
-			self::$rules[] = new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("never spawned"));
+			self::$rules[] = new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("never spawned"), new EntitySizeInfo(1.0, 1.0));
 		}
 
 		self::$keys = [];
@@ -184,7 +186,7 @@ final class CandidateCacheTest extends TestCase{
 				}
 				self::assertSame($plain->random->nextInt(), $cached->random->nextInt(), "both sides drew the same number of rolls (key $index, point $point)");
 				$matched += count($expected);
-				$slimes += isset($expected["minecraft:slime"]) ? 1 : 0;
+				$slimes += isset($expected[EntityIds::SLIME]) ? 1 : 0;
 			}
 		}
 		self::assertGreaterThan(count($keys), $matched, "the contexts must exercise real matches");

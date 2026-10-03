@@ -35,13 +35,14 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: composer test
 
-      # The pinned mojang/bedrock-samples dev dependency drives both the generated PHP
-      # artifacts and the merged spawn data; see docs/spawning.md. Regenerating must not
-      # change, add or delete any committed file.
-      - name: Spawn data and schema artifacts match the pinned samples
+      # The pinned mojang/bedrock-samples dev dependency drives the generated PHP
+      # artifacts, the merged spawn data and the entity data; see docs/spawning.md.
+      # Regenerating must not change, add or delete any committed file.
+      - name: Spawn data, schema and entity data match the pinned samples
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           composer generate-spawn-schema
           composer compile-spawn-rules
-          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema
-          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema
+          composer generate-entity-data
+          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php

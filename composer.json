@@ -55,6 +55,7 @@
     "scripts": {
         "build": "php -dphar.readonly=0 vendor/bin/pharynx -i=. -c -p=MobPlugin.phar",
         "compile-spawn-rules": "php tools/spawn-rules/compile.php",
+        "generate-entity-data": "php tools/entity-data/generate-entity-data.php",
         "generate-spawn-schema": "php tools/spawn-rules/generate-schema.php",
         "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit"
     }

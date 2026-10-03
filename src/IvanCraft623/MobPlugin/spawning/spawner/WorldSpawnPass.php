@@ -161,7 +161,7 @@ final class WorldSpawnPass{
 
 		$groundY = $this->groundLevels->getGroundY($x, $z);
 		$surfaceY = $groundY + 1;
-		if($surfaceY + 1 < $this->world->getMaxY() && $surfaceY >= $lowestY && $surfaceY <= $highestY){
+		if($surfaceY < $this->world->getMaxY() && $surfaceY >= $lowestY && $surfaceY <= $highestY){
 			$this->tryPosition($x, $surfaceY, $z, SpawnBand::SURFACE, $nearby);
 		}
 
@@ -188,7 +188,8 @@ final class WorldSpawnPass{
 	}
 
 	/**
-	 * Feet and head in passable blocks, over a block with a full top surface.
+	 * Feet in a passable block, over a block with a full top surface. Whether the whole mob
+	 * fits is checked once its type is known, by HerdSpawner.
 	 * Blocks stay out of the world's block cache: a column scan reads far more of them than
 	 * anything else will reuse.
 	 *
@@ -197,7 +198,7 @@ final class WorldSpawnPass{
 	private function tryPosition(int $x, int $y, int $z, SpawnBand $band, array $nearby) : void{
 		// Feet first: most of a column is rock, which costs this one read.
 		$feet = $this->world->getBlockAt($x, $y, $z, addToCache: false);
-		if(!self::isPassable($feet) || !self::isPassable($this->world->getBlockAt($x, $y + 1, $z, addToCache: false))){
+		if(!self::isPassable($feet)){
 			return;
 		}
 		$below = $this->world->getBlockAt($x, $y - 1, $z, addToCache: false);

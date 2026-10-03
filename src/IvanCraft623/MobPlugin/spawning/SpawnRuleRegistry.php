@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\MobPlugin;
@@ -125,7 +126,8 @@ final class SpawnRuleRegistry{
 			}
 			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
 
-			$this->register(new SpawnRules($identifier, $categoryId, $groups, self::createFactory($entityClass)));
+			$size = VanillaEntitySizes::get($identifier) ?? throw new PluginException("Spawn rules for \"$identifier\": the vanilla data has no collision box for it");
+			$this->register(new SpawnRules($identifier, $categoryId, $groups, self::createFactory($entityClass), $size));
 		}
 
 		return $warnings;

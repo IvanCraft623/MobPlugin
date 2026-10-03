@@ -27,13 +27,17 @@ use IvanCraft623\MobPlugin\spawning\population\EntitySpawnBands;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
+use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
+use pocketmine\world\World;
+use function count;
 use function min;
 use function round;
 
 /**
- * Spawns every member on the lead's block, as vanilla does.
+ * Spawns every member on the lead's block, as vanilla does, when its collision box fits.
  */
 final class HerdSpawner{
 	public function __construct(
@@ -59,6 +63,9 @@ final class HerdSpawner{
 			// permute_type targets without rules fall back to the base rules.
 			$permutation = Utils::pickWeighted($this->random, $group->getPermutations());
 			$spawnRules = $permutation !== null ? ($this->registry->get($permutation) ?? $rules) : $rules;
+			if(!self::fits($world, $position, $spawnRules->getSize())){
+				continue;
+			}
 
 			$entity = ($spawnRules->getFactory())($world, $position, $group);
 			$this->spawnBands->set($entity, $band);
@@ -67,5 +74,27 @@ final class HerdSpawner{
 		}
 
 		return $spawned;
+	}
+
+	/**
+	 * Whether a box of this size, standing at the position, collides with no block. Each
+	 * member is checked, since a permute_type target may be another size.
+	 *
+	 * The box shrinks by the epsilon on every side: World::getCollisionBlocks() counts a
+	 * full block that only touches a whole-number edge (a width of 1, a height of 2) as a
+	 * collision.
+	 */
+	private static function fits(World $world, Vector3 $position, EntitySizeInfo $size, float $epsilon = 1e-7) : bool{
+		$halfWidth = $size->getWidth() / 2;
+		$box = (new AxisAlignedBB(
+			$position->x - $halfWidth,
+			$position->y,
+			$position->z - $halfWidth,
+			$position->x + $halfWidth,
+			$position->y + $size->getHeight(),
+			$position->z + $halfWidth
+		))->contract($epsilon, $epsilon, $epsilon);
+
+		return count($world->getCollisionBlocks($box, targetFirst: true)) === 0;
 	}
 }

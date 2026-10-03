@@ -47,6 +47,8 @@ final class BedrockSamples{
 
 	public const SPAWN_RULES_PATH = "behavior_pack/spawn_rules";
 
+	public const ENTITIES_PATH = "behavior_pack/entities";
+
 	public static function getSchemaVersion() : string{
 		return InstalledVersions::getPrettyVersion(self::PACKAGE) ?? throw new \RuntimeException(self::PACKAGE . " has no version; run composer install");
 	}

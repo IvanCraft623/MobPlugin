@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
@@ -49,7 +50,7 @@ class CaveSpider extends Spider {
 	public static function getNetworkTypeId() : string{ return EntityIds::CAVE_SPIDER; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(0.5, 0.7, 0.45);
+		return new EntitySizeInfo(VanillaEntitySizes::CAVE_SPIDER_HEIGHT, VanillaEntitySizes::CAVE_SPIDER_WIDTH, VanillaEntitySizes::CAVE_SPIDER_HEIGHT * 0.9);
 	}
 
 	public function getName() : string{
