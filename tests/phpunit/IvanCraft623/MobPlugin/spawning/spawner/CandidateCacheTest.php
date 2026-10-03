@@ -101,7 +101,7 @@ final class CandidateCacheTest extends TestCase{
 
 		self::$keys = [];
 		for($biomeId = 0; $biomeId < 400; $biomeId++){
-			if($tags->getTags($biomeId) === []){
+			if(count($tags->getTags($biomeId)) === 0){
 				continue;
 			}
 			foreach(SpawnBand::cases() as $band){
@@ -168,14 +168,14 @@ final class CandidateCacheTest extends TestCase{
 				$actual = [];
 				foreach($cache->getCandidates($cached) as $candidate){
 					$groups = $candidate->match($cached);
-					if($groups !== []){
+					if(count($groups) !== 0){
 						$actual[$candidate->getRules()->getIdentifier()] = $groups;
 					}
 				}
 				$expected = [];
 				foreach(self::$rules as $rules){
 					$groups = $rules->check($plain);
-					if($groups !== []){
+					if(count($groups) !== 0){
 						$expected[$rules->getIdentifier()] = $groups;
 					}
 				}

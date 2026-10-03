@@ -111,11 +111,7 @@ final class SpawnRuleSchemaValidator{
 	 */
 	public function validate(object $spawnRules) : array{
 		$validator = new Validator($this->factory);
-		try{
-			$validator->validate($spawnRules, $this->rootSchema);
-		}catch(\Throwable $e){
-			return ["schema validation crashed: " . $e->getMessage()];
-		}
+		$validator->validate($spawnRules, $this->rootSchema);
 		if($validator->isValid()){
 			return [];
 		}

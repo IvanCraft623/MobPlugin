@@ -18,12 +18,12 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
   attributes, metrics (bStats), boss-bar API, and the `EventListener`.
 - `Settings.php` — YAML-backed settings (global + per-world overrides).
 - `EventListener.php` — event handlers (e.g. overrides vanilla spawn-egg behavior).
-- `CustomTimings.php`, `CustomAttributes.php`, `utils/`, `sound/`, `particle/`,
-  `pattern/`, `item/`, `inventory/` — shared infrastructure.
+- `CustomTimings.php`, `utils/`, `sound/`, `particle/`, `pattern/`, `item/`,
+  `inventory/` — shared infrastructure.
 - `entity/` — the mob hierarchy:
   - `Mob.php` → `Living`, plus `Animal`, `Monster`, `Golem`, `Ambient`, `PathfinderMob`,
-    `Boss`, etc. Concrete mobs (Chicken, Cow, Zombie, Wither…) live under
-    `entity/{type}/`.
+    `Boss`, etc., with `CustomAttributes.php` and `schedule/` beside them. Concrete mobs
+    (Chicken, Cow, Zombie, Wither…) live under `entity/{type}/`.
   - `entity/ai/` — the AI framework:
     - `goal/` — **Goal-based FSM**: each mob has prioritized goals; the highest-priority
       applicable goal runs each tick and switches seamlessly. Contains `Goal`, `GoalSelector`,
@@ -31,7 +31,7 @@ The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key 
       target goals…). Mob-specific goals are grouped in subfolders (`creeper/`, `enderman/`,
       `slime/`, `wither/`).
     - `brain/` (as `entity/ai/Brain.php`), `memory/`, `behavior/`, `sensing/`, `control/`,
-      `navigation/`, `targeting/`, `schedule/`.
+      `navigation/`, `targeting/`, `utils/` (position generators).
   - `data/bedrock/` — Bedrock type-id maps / enums, hand-managed except the generated
     `EntityIds` and `VanillaEntitySizes`. Those `EntityIds` name the vanilla data's
     entities; entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.

@@ -512,8 +512,6 @@ function buildConditionsArtifact(string $schemaVersion, array $conditions) : str
 	}
 
 	return phpFile(SCHEMA_NAMESPACE, sprintf(<<<'PHP'
-use function array_values;
-
 /**
  * Auto-generated from the Mojang spawn-rule schemas (%s) — do not edit by hand.
  *
@@ -524,18 +522,6 @@ final class VanillaSpawnConditions{
 %s
 
 	private function __construct(){}
-
-	/**
-	 * Every spawn condition name this schema declares, reflected from the constants.
-	 *
-	 * @phpstan-return list<string>
-	 */
-	public static function getAll() : array{
-		/** @var list<string> $names */
-		$names = array_values((new \ReflectionClass(self::class))->getConstants());
-
-		return $names;
-	}
 }
 PHP, $schemaVersion, implode("\n", $members)));
 }
@@ -560,8 +546,8 @@ function buildSchemaArtifact(string $schemaVersion, array $difficulties, array $
 /**
  * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Schema facts the runtime consumes as defaults and the PHPUnit suite uses to pin the
- * artifact version. Regenerate with: php tools/spawn-rules/generate-schema.php
+ * Schema facts the loader consumes: envelope keys, defaults and the difficulty names.
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class SpawnSchema{
 	/** Official spawn-schema version this artifact was generated from. */

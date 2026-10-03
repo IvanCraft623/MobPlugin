@@ -129,7 +129,7 @@ function main() : int{
 	}
 	$json .= "\n";
 
-	$notice = buildNotice($merged, $commit, $gameVersion, $schemaVersion);
+	$notice = buildNotice($commit, $gameVersion, $schemaVersion);
 
 	// Both outputs are written only after every source file merged successfully.
 	$outDir = dirname(__DIR__, 2) . "/resources/spawning";
@@ -179,7 +179,7 @@ function parseRuleFile(string $file) : array{
  */
 function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $schemaValidator) : array{
 	$errors = $schemaValidator->validate($spawnRules);
-	if($errors !== []){
+	if(count($errors) !== 0){
 		return array_map(static fn(string $error) => "schema: $error", $errors);
 	}
 
@@ -213,46 +213,24 @@ function readGameVersion(string $samplesDir) : ?string{
 	return null;
 }
 
-/**
- * @param array<string, mixed> $merged identifier -> spawn rule body
- */
-function buildNotice(array $merged, ?string $commit, string $gameVersion, string $schemaVersion) : string{
+function buildNotice(?string $commit, string $gameVersion, string $schemaVersion) : string{
 	return implode("\n", [
-		"# NOTICE — vanilla spawn rules data",
+		"# Vanilla Bedrock data",
 		"",
-		"`spawn_rules.json` in this directory is a machine-generated, deterministic merge of the",
-		"vanilla **Minecraft: Bedrock Edition** entity spawn rules published by Mojang in the",
-		"[bedrock-samples](https://github.com/Mojang/bedrock-samples) repository, under",
-		"`behavior_pack/spawn_rules`.",
+		"`spawn_rules.json` is the vanilla spawn rules merged into one file: comments stripped, entries",
+		"keyed and sorted by identifier, values unchanged.",
 		"",
-		"| Field | Value |",
+		"| | |",
 		"|---|---|",
-		"| Source repository | " . SOURCE_REPO . " |",
-		"| Source path | `" . BedrockSamples::SPAWN_RULES_PATH . "` |",
-		"| Source commit | `" . ($commit ?? "unknown") . "` |",
 		"| Game version | " . $gameVersion . " |",
-		"| Schema validation | `" . SCHEMA_PATH . "/" . $schemaVersion . "` |",
-		"| Merged entities | " . count($merged) . " |",
-		"| Merged by | `tools/spawn-rules/compile.php` |",
+		"| Spawn schema version | " . $schemaVersion . " |",
+		"| Source | [Mojang/bedrock-samples](" . SOURCE_REPO . ") |",
+		"| Commit | `" . ($commit ?? "unknown") . "` |",
+		"| Path | `" . BedrockSamples::SPAWN_RULES_PATH . "` |",
 		"",
-		"The merger strips comments (some vanilla files are not strict JSON), keys every entry by its",
-		"`description.identifier`, sorts identifiers and pretty-prints. **No other transformation is",
-		"applied** — keys, values and structure are byte-faithful to the source data. Every merged",
-		"entry is validated against the pinned spawn schemas; the merge fails closed on any drift.",
-		"",
-		"The source material is © Mojang AB and subject to the [Minecraft End User License",
-		"Agreement](https://www.minecraft.net/en-us/eula). This merged file is redistributed solely",
-		"for interoperability with MobPlugin; MobPlugin is not affiliated with, endorsed by, or",
-		"sponsored by Mojang AB or Microsoft. The generated schema artifacts derived from the same",
-		"checkout (src/IvanCraft623/MobPlugin/spawning/parse/schema/) carry the same rationale.",
-		"",
-		"The source commit is pinned by the `" . BedrockSamples::PACKAGE . "` dev dependency in",
-		"`composer.json`. To regenerate these files after `composer install`:",
-		"",
-		"```",
-		"php tools/spawn-rules/compile.php",
-		"php tools/spawn-rules/generate-schema.php",
-		"```",
+		"The spawn schema classes (`spawning/parse/schema/`) and the entity data (`EntityIds`,",
+		"`VanillaEntitySizes`) are generated from the same commit. To regenerate, see",
+		"`docs/spawning.md`.",
 		"",
 	]);
 }

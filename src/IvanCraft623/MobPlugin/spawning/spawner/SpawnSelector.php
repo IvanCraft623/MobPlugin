@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\utils\Random;
+use function count;
 use function min;
 
 /**
@@ -59,8 +60,13 @@ final class SpawnSelector{
 			if($cap <= 0){
 				continue; // full without counting
 			}
+			// Once the population is known a full category costs one lookup, not its
+			// candidates' conditions and room checks.
+			if($population !== null && $population->getCategoryCount($category->id, $band) >= $cap){
+				continue;
+			}
 			$groups = $candidate->match($ctx);
-			if($groups === []){
+			if(count($groups) === 0){
 				continue;
 			}
 			if(!$ctx->hasRoomFor($candidate->getRules()->getSize())){

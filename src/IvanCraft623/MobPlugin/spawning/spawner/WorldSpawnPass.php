@@ -36,6 +36,7 @@ use pocketmine\utils\Random;
 use pocketmine\world\World;
 use function array_flip;
 use function ceil;
+use function count;
 use function floor;
 use function max;
 use function min;
@@ -150,7 +151,7 @@ final class WorldSpawnPass{
 				$lowestY = min($lowestY, $py - $verticalReach);
 				$highestY = max($highestY, $py + $verticalReach);
 			}
-			if($nearby === []){
+			if(count($nearby) === 0){
 				return;
 			}
 		}else{
@@ -168,8 +169,10 @@ final class WorldSpawnPass{
 		// Strictly below the ground, so genuinely underground. The scan doesn't stop when a
 		// herd spawns.
 		$bottomY = (int) max($this->world->getMinY() + 1, ceil($lowestY));
+		// The block under one position is the feet of the next.
+		$feet = null;
 		for($y = (int) min($groundY - 1, floor($highestY)); $y >= $bottomY; $y--){
-			$this->tryPosition($x, $y, $z, SpawnBand::CAVE, $nearby);
+			$feet = $this->tryPosition($x, $y, $z, SpawnBand::CAVE, $nearby, $feet);
 		}
 	}
 
@@ -194,16 +197,19 @@ final class WorldSpawnPass{
 	 * anything else will reuse.
 	 *
 	 * @phpstan-param list<array{float, float}> $nearby squared horizontal distance and Y of every player that can reach the column
+	 * @phpstan-param Block|null                $feet   the block at the position, if the caller already read it
+	 *
+	 * @return Block|null the block below the position if it was read and is still current
 	 */
-	private function tryPosition(int $x, int $y, int $z, SpawnBand $band, array $nearby) : void{
+	private function tryPosition(int $x, int $y, int $z, SpawnBand $band, array $nearby, ?Block $feet = null) : ?Block{
 		// Feet first: most of a column is rock, which costs this one read.
-		$feet = $this->world->getBlockAt($x, $y, $z, addToCache: false);
+		$feet ??= $this->world->getBlockAt($x, $y, $z, addToCache: false);
 		if(!self::isPassable($feet)){
-			return;
+			return null;
 		}
 		$below = $this->world->getBlockAt($x, $y - 1, $z, addToCache: false);
 		if($below->getSupportType(Facing::UP) !== SupportType::FULL){
-			return;
+			return $below;
 		}
 		// From the block's own coordinates, as vanilla measures it.
 		$nearestSquared = PHP_FLOAT_MAX;
@@ -211,7 +217,7 @@ final class WorldSpawnPass{
 			$nearestSquared = min($nearestSquared, $horizontalSquared + ($py - $y) ** 2);
 		}
 		if($nearestSquared > $this->reach ** 2){
-			return;
+			return $below;
 		}
 
 		$ctx = new AttemptContext(
@@ -230,8 +236,8 @@ final class WorldSpawnPass{
 			$this->random
 		);
 		$candidates = $this->candidateCache->getCandidates($ctx);
-		if($candidates === []){
-			return;
+		if(count($candidates) === 0){
+			return $below;
 		}
 
 		// Sample stays paused while the rest of the attempt runs under its own timings.
@@ -241,6 +247,9 @@ final class WorldSpawnPass{
 		}finally{
 			CustomTimings::$naturalSpawningSample->startTiming();
 		}
+
+		// A factory may have changed blocks.
+		return null;
 	}
 
 	/**

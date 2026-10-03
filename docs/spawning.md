@@ -361,8 +361,8 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
   it, so re-registering a category (for example to raise a cap) applies to rules
   registered before it.
 - A group keeps its mobs 24 to 128 blocks from the nearest player, as vanilla does by
-  default. Change it with `minPlayerDistance:` / `maxPlayerDistance:` (`null` for no
-  bound).
+  default. Change it with `minPlayerDistance:` / `maxPlayerDistance:` (`0.0` and `INF`
+  for no bound).
 - Factories construct the entity but never spawn it: `HerdSpawner` calls `spawnToAll()`.
   Their exceptions are not caught: like any plugin callback, a factory that throws is a
   bug and stops the server.
@@ -440,7 +440,7 @@ and the attempts), with these children:
 | `Sample` | column sampling, position checks and the cache lookup |
 | `Candidate Resolve` | cache misses only (runs inside `Sample`) |
 | `Select` | `SpawnSelector` |
-| `Census` | counting a region the first time a pass needs it (runs inside `Select`, or `Sample` when a condition reads the population) |
+| `Census` | counting a region the first time a pass needs it (runs inside `Select`) |
 | `Spawn` | herd placement and factories |
 
 ## Approximations
@@ -456,12 +456,12 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviati
   PocketMine's default is 3.
 - Ground is any block with a full top surface, so glass, barriers and upside-down stairs
   count although vanilla doesn't spawn on them.
-- Every position is checked as a 1×2 block column, not with the mob's bounding box.
 - A liquid position needs one block of its liquid; vanilla's surface needs two.
 - `permute_type` event suffixes are stripped at parse time: permuted types spawn in base
-  form. Every member rolls from the base type; vanilla keeps the last rolled type for an
-  entry without `entity_type`, which looks like a bug. `min_guaranteed` is ignored (no
-  bundled rule uses it).
+  form. A target with no registered rules spawns as the group's own mob (a zombie
+  villager as a zombie). Every member rolls from the base type; vanilla keeps the last
+  rolled type for an entry without `entity_type`, which looks like a bug. `min_guaranteed`
+  is ignored (no bundled rule uses it).
 - When `herd` is a list (one herd per spawn event, such as horse coat colours), only the
   first entry is used; the bundled lists differ only by event.
 - Structure spawn areas (ocean monuments, fortresses...) are not implemented.

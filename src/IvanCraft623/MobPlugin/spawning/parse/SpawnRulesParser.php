@@ -46,7 +46,6 @@ use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use pocketmine\utils\Filesystem;
 use pocketmine\world\World;
-use function count;
 use function implode;
 use function str_starts_with;
 use function strlen;
@@ -141,13 +140,6 @@ final class SpawnRulesParser{
 	}
 
 	/**
-	 * @phpstan-return ComponentParser|null
-	 */
-	public function getComponent(string $component) : ?\Closure{
-		return $this->components[self::normalize($component)] ?? null;
-	}
-
-	/**
 	 * @phpstan-return ParsedRules
 	 * @phpstan-throws SpawnRulesParseException
 	 */
@@ -164,9 +156,6 @@ final class SpawnRulesParser{
 
 		$entries = [];
 		foreach($document->keys() as $identifier){
-			if($identifier === ""){
-				throw new SpawnRulesParseException("Spawn rules: invalid empty entry key");
-			}
 			$entry = $this->parseEntry($document->object($identifier), $identifier);
 			if($entry !== null){
 				$entries[$identifier] = $entry;
@@ -183,12 +172,6 @@ final class SpawnRulesParser{
 		$spawnRules = $body->object(self::SPAWN_RULES_KEY);
 		$description = $spawnRules->object(SpawnSchema::KEY_DESCRIPTION);
 		$categoryId = $description->string(SpawnSchema::KEY_POPULATION_CONTROL);
-		if($categoryId === ""){
-			throw new SpawnRulesParseException("'{$description->at(SpawnSchema::KEY_POPULATION_CONTROL)}' must not be empty");
-		}
-		if(isset(self::NON_NATURAL_POPULATION_CONTROL[$categoryId])){
-			return null;
-		}
 
 		// Mobs without natural spawns (e.g. blaze) have no conditions.
 		$groups = [];
@@ -201,22 +184,18 @@ final class SpawnRulesParser{
 			}
 		}
 
+		// Skipped only now, so the groups of a skipped rule set are validated like any other.
+		if(isset(self::NON_NATURAL_POPULATION_CONTROL[$categoryId])){
+			return null;
+		}
+
 		return [$categoryId, $groups];
 	}
 
 	private function parseGroup(SpawnData $condition, string $identifier) : ?SpawnRuleGroup{
-		$normalized = [];
-		foreach($condition->keys() as $key){
-			$normalized[self::normalize($key)] = $condition->raw($key);
-		}
-		if(count($normalized) === 0){
-			throw new SpawnRulesParseException("'{$condition->path}' has no spawn rule components");
-		}
-		$condition = new SpawnData($normalized, $condition->path);
-
 		$builder = new SpawnRuleGroupBuilder($identifier);
 		foreach($condition->keys() as $component){
-			$parser = $this->components[$component] ?? throw new SpawnRulesParseException("'{$condition->at($component)}' is not a recognized spawn rule component");
+			$parser = $this->components[self::normalize($component)] ?? throw new SpawnRulesParseException("'{$condition->at($component)}' is not a recognized spawn rule component");
 			self::withPath($condition->at($component), fn() => $parser(new ComponentParseContext($condition, $component, $this->blocks), $builder));
 		}
 

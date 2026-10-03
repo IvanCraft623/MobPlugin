@@ -33,13 +33,25 @@ use pocketmine\entity\EntitySizeInfo;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
+use function ceil;
 use function count;
+use function morton2d_encode;
 
 /**
  * One sampled position. Light and population are read on first use only, so positions
  * no rule can use never pay for them.
  */
 final class AttemptContext implements SpawnConditionContext{
+
+
+	private const ROOM_INSET = 1e-7;
+
+	/**
+	 * Every collision box coordinate of every block state is a multiple of 1/1600
+	 * of a block (pixels are 1/16), so sizes that reach the same unit collide alike.
+	 */
+	private const COLLISION_UNITS_PER_BLOCK = 1600;
+
 	private ?int $light = null;
 
 	private ?int $blockLight = null;
@@ -47,6 +59,9 @@ final class AttemptContext implements SpawnConditionContext{
 	private ?PopulationCounts $population = null;
 
 	private ?int $belowItemStateId = null;
+
+	/** @phpstan-var array<int, bool> size hash => whether a box of that size fits */
+	private array $roomBySize = [];
 
 	public function __construct(
 		private readonly World $world,
@@ -116,7 +131,16 @@ final class AttemptContext implements SpawnConditionContext{
 		return $this->population ??= $this->census->getRegionPopulation($this->x >> 4, $this->z >> 4);
 	}
 
-	public function hasRoomFor(EntitySizeInfo $size, float $epsilon = 1e-7) : bool{
+	public function hasRoomFor(EntitySizeInfo $size) : bool{
+		// Many candidates at one position share a size.
+		$hash = morton2d_encode(
+			(int) ceil($size->getWidth() / 2 * self::COLLISION_UNITS_PER_BLOCK),
+			(int) ceil($size->getHeight() * self::COLLISION_UNITS_PER_BLOCK)
+		);
+		if(isset($this->roomBySize[$hash])){
+			return $this->roomBySize[$hash];
+		}
+
 		$halfWidth = $size->getWidth() / 2;
 		$centerX = $this->x + 0.5;
 		$centerZ = $this->z + 0.5;
@@ -127,9 +151,9 @@ final class AttemptContext implements SpawnConditionContext{
 			$centerX + $halfWidth,
 			$this->y + $size->getHeight(),
 			$centerZ + $halfWidth
-		))->contract($epsilon, $epsilon, $epsilon);
+		))->contract(self::ROOM_INSET, self::ROOM_INSET, self::ROOM_INSET);
 
-		return count($this->world->getCollisionBlocks($box, targetFirst: true)) === 0;
+		return $this->roomBySize[$hash] = count($this->world->getCollisionBlocks($box, targetFirst: true)) === 0;
 	}
 
 	public function getRandom() : Random{

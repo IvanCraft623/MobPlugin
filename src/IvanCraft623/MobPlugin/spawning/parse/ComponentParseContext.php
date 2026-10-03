@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use function array_is_list;
 use function array_map;
+use function count;
 use function floor;
 use function get_debug_type;
 use function is_array;
@@ -130,10 +131,10 @@ final class ComponentParseContext{
 		foreach($value as $item){
 			if(is_string($item)){
 				$names[] = $item;
-			}elseif(is_array($item) && isset($item["name"]) && is_string($item["name"])){
+			}elseif(is_array($item) && count($item) === 1 && isset($item["name"]) && is_string($item["name"])){
 				$names[] = $item["name"];
 			}else{
-				throw new SpawnRulesParseException("'{$this->getPath()}' entries must be strings or {name: string} objects");
+				throw new SpawnRulesParseException("'{$this->getPath()}' entries must be strings or objects with only a string \"name\"");
 			}
 		}
 

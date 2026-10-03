@@ -23,8 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 
-use function array_values;
-
 /**
  * Auto-generated from the Mojang spawn-rule schemas (1.21.50) — do not edit by hand.
  *
@@ -58,16 +56,4 @@ final class VanillaSpawnConditions{
 	public const WORLD_AGE_FILTER = "world_age_filter"; // $ref: ./Spawn WorldAgeFilter.json
 
 	private function __construct(){}
-
-	/**
-	 * Every spawn condition name this schema declares, reflected from the constants.
-	 *
-	 * @phpstan-return list<string>
-	 */
-	public static function getAll() : array{
-		/** @var list<string> $names */
-		$names = array_values((new \ReflectionClass(self::class))->getConstants());
-
-		return $names;
-	}
 }
