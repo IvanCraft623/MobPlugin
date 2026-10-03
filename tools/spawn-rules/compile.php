@@ -119,6 +119,9 @@ function main() : int{
 
 	$commit = BedrockSamples::getReference();
 	$gameVersion = readGameVersion($samplesDir);
+	if($gameVersion === null){
+		return fail("Failed to read the game version from $samplesDir/version.json");
+	}
 
 	$json = json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 	if($json === false){
@@ -190,9 +193,9 @@ function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $sche
 }
 
 /**
- * @return string game version from the samples' version.json, or "unknown"
+ * @return string|null game version from the samples' version.json, or null if it can't be read
  */
-function readGameVersion(string $samplesDir) : string{
+function readGameVersion(string $samplesDir) : ?string{
 	$file = $samplesDir . "/version.json";
 	if(is_file($file)){
 		$decoded = json_decode((string) file_get_contents($file), true);
@@ -207,7 +210,7 @@ function readGameVersion(string $samplesDir) : string{
 		}
 	}
 
-	return "unknown";
+	return null;
 }
 
 /**

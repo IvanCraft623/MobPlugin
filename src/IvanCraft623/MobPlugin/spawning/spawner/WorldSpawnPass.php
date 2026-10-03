@@ -69,9 +69,9 @@ final class WorldSpawnPass{
 	private ?array $tickingChunkIndex = null;
 
 	/**
-	 * @phpstan-param list<int> $tickingChunks     the world's ticking chunk hashes this tick
-	 * @phpstan-param non-empty-list<array{float, float, float}> $players the positions of the players that allow spawns
-	 * @phpstan-param float     $maxPlayerDistance the largest maximum player distance of any group; INF for no limit
+	 * @phpstan-param list<int>                                $tickingChunks     the world's ticking chunk hashes this tick
+	 * @phpstan-param non-empty-list<array{float, float, float}> $players           the positions of the players that allow spawns
+	 * @phpstan-param float                                    $maxPlayerDistance the largest maximum player distance of any group; INF for no limit
 	 */
 	public function __construct(
 		private readonly World $world,

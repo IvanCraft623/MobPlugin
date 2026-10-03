@@ -86,7 +86,7 @@ final class SpawnRulesParserStrictnessTest extends TestCase{
 		yield "text for a number" => [["minecraft:weight" => ["default" => "abc"]], "weight.default"];
 		yield "fractional integer" => [["minecraft:herd" => ["min_size" => 2.9, "max_size" => 4]], "herd.min_size"];
 		yield "number for a name" => [["minecraft:difficulty_filter" => ["min" => 1]], "difficulty_filter.min"];
-		yield "negative weight" => [["minecraft:weight" => ["default" => -5]], "weight can't be negative"];
+		yield "negative weight" => [["minecraft:weight" => ["default" => -5]], "Weight must not be negative"];
 		yield "empty herd" => [["minecraft:herd" => []], "herd' must not be empty"];
 		yield "empty biome filter" => [["minecraft:biome_filter" => []], "biome_filter' must not be empty"];
 		yield "empty any_of" => [["minecraft:biome_filter" => ["any_of" => []]], "biome_filter.any_of' must not be empty"];
@@ -113,8 +113,8 @@ final class SpawnRulesParserStrictnessTest extends TestCase{
 
 	public function testLosslessNumberSpellingsAreAccepted() : void{
 		$group = $this->parseGroup([
-			"minecraft:weight" => ["default" => 8.0, "rarity" => "2"],
-			"minecraft:herd" => ["min_size" => 2.0, "max_size" => "4"],
+			"minecraft:weight" => ["default" => 8.0, "rarity" => 2.0],
+			"minecraft:herd" => ["min_size" => 2.0, "max_size" => 4.0],
 		]);
 
 		self::assertSame(8, $group->getWeight());

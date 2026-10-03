@@ -82,11 +82,11 @@ final class SpawnRuleGroupBuilder{
 	}
 
 	/**
-	 * @phpstan-throws SpawnRulesParseException when another liquid is already required
+	 * @phpstan-throws \InvalidArgumentException when another liquid is already required
 	 */
 	public function setLiquid(SpawnLiquid $liquid) : void{
 		if($this->liquid !== SpawnLiquid::NONE && $this->liquid !== $liquid){
-			throw new SpawnRulesParseException("a group can't require both {$this->liquid->name} and {$liquid->name}");
+			throw new \InvalidArgumentException("a group can't require both {$this->liquid->name} and {$liquid->name}");
 		}
 		$this->liquid = $liquid;
 	}
@@ -98,13 +98,7 @@ final class SpawnRuleGroupBuilder{
 		$this->neverSpawns = true;
 	}
 
-	/**
-	 * @phpstan-throws SpawnRulesParseException
-	 */
 	public function setWeight(int $weight) : void{
-		if($weight < 0){
-			throw new SpawnRulesParseException("a group's weight can't be negative, got $weight");
-		}
 		$this->weight = $weight;
 	}
 

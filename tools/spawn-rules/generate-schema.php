@@ -512,6 +512,8 @@ function buildConditionsArtifact(string $schemaVersion, array $conditions) : str
 	}
 
 	return phpFile(SCHEMA_NAMESPACE, sprintf(<<<'PHP'
+use function array_values;
+
 /**
  * Auto-generated from the Mojang spawn-rule schemas (%s) — do not edit by hand.
  *
@@ -530,7 +532,7 @@ final class VanillaSpawnConditions{
 	 */
 	public static function getAll() : array{
 		/** @var list<string> $names */
-		$names = (new \ReflectionClass(self::class))->getConstants();
+		$names = array_values((new \ReflectionClass(self::class))->getConstants());
 
 		return $names;
 	}

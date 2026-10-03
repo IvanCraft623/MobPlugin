@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 
+use function array_values;
+
 /**
  * Auto-generated from the Mojang spawn-rule schemas (1.21.50) — do not edit by hand.
  *
@@ -64,7 +66,7 @@ final class VanillaSpawnConditions{
 	 */
 	public static function getAll() : array{
 		/** @var list<string> $names */
-		$names = (new \ReflectionClass(self::class))->getConstants();
+		$names = array_values((new \ReflectionClass(self::class))->getConstants());
 
 		return $names;
 	}

@@ -23,5 +23,5 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
-final class SpawnRulesParseException extends \InvalidArgumentException{
+final class SpawnRulesParseException extends \RuntimeException{
 }

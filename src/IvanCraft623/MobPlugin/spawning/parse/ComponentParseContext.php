@@ -31,7 +31,6 @@ use function is_array;
 use function is_bool;
 use function is_float;
 use function is_int;
-use function is_numeric;
 use function is_string;
 use function property_exists;
 
@@ -163,7 +162,7 @@ final class ComponentParseContext{
 
 	/**
 	 * JsonMapper casts scalars to the property type, turning "abc" or 2.9 into an int
-	 * without a word. Lossless spellings (1.0, "3") are normalized, the rest rejected.
+	 * without a word. A lossless float (1.0) is normalized, the rest rejected.
 	 *
 	 * @phpstan-param class-string $model
 	 * @phpstan-return array<array-key, mixed>
@@ -178,9 +177,6 @@ final class ComponentParseContext{
 			$type = (new \ReflectionProperty($model, $key))->getType();
 			$expected = $type instanceof \ReflectionNamedType ? $type->getName() : null;
 			if($expected === "int"){
-				if(is_string($value) && is_numeric($value)){
-					$value += 0;
-				}
 				if(is_float($value) && floor($value) === $value){
 					$value = (int) $value;
 				}

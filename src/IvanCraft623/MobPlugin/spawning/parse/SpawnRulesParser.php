@@ -48,7 +48,6 @@ use pocketmine\utils\Filesystem;
 use pocketmine\world\World;
 use function count;
 use function implode;
-use function max;
 use function str_starts_with;
 use function strlen;
 use function strpos;
@@ -168,12 +167,7 @@ final class SpawnRulesParser{
 			if($identifier === ""){
 				throw new SpawnRulesParseException("Spawn rules: invalid empty entry key");
 			}
-			try{
-				$entry = $this->parseEntry($document->object($identifier), $identifier);
-			}catch(\InvalidArgumentException $e){
-				// Also covers condition constructors rejecting a value (e.g. an unknown difficulty).
-				throw new SpawnRulesParseException("Spawn rules for \"$identifier\": " . $e->getMessage(), 0, $e);
-			}
+			$entry = $this->parseEntry($document->object($identifier), $identifier);
 			if($entry !== null){
 				$entries[$identifier] = $entry;
 			}
@@ -223,10 +217,27 @@ final class SpawnRulesParser{
 		$builder = new SpawnRuleGroupBuilder($identifier);
 		foreach($condition->keys() as $component){
 			$parser = $this->components[$component] ?? throw new SpawnRulesParseException("'{$condition->at($component)}' is not a recognized spawn rule component");
-			$parser(new ComponentParseContext($condition, $component, $this->blocks), $builder);
+			self::withPath($condition->at($component), fn() => $parser(new ComponentParseContext($condition, $component, $this->blocks), $builder));
 		}
 
-		return $builder->build();
+		return self::withPath($condition->path, $builder->build(...));
+	}
+
+	/**
+	 * Runs the callback, giving the path to a value rejected by a constructor (a condition
+	 * or the group itself), which doesn't know where the value came from.
+	 *
+	 * @template T
+	 * @phpstan-param \Closure() : T $callback
+	 * @phpstan-return T
+	 * @phpstan-throws SpawnRulesParseException
+	 */
+	private static function withPath(string $path, \Closure $callback) : mixed{
+		try{
+			return $callback();
+		}catch(\InvalidArgumentException $e){
+			throw new SpawnRulesParseException("'$path' " . $e->getMessage(), 0, $e);
+		}
 	}
 
 	private function registerVanillaComponents() : void{
@@ -282,8 +293,8 @@ final class SpawnRulesParser{
 		$this->registerComponent(VanillaSpawnConditions::HERD, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			//TODO: a list holds one herd per spawn event (e.g. horse coat colours); only the first is used until spawn events are supported
 			$data = $ctx->mapList(HerdData::class)[0] ?? throw new SpawnRulesParseException("'{$ctx->getPath()}' must not be empty");
-			$min = max(1, $data->min_size ?? 1);
-			$builder->setHerd($min, max($min, $data->max_size ?? $min));
+			$min = $data->min_size ?? 1;
+			$builder->setHerd($min, $data->max_size ?? $min);
 		});
 		$this->registerComponent(VanillaSpawnConditions::PERMUTE_TYPE, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$permutations = [];
@@ -319,7 +330,7 @@ final class SpawnRulesParser{
 	private static function parseDifficulty(string $name) : int{
 		$difficulty = World::getDifficultyFromString($name);
 		if($difficulty === -1){
-			throw new SpawnRulesParseException("unknown difficulty \"$name\"; names declared by the schema: " . implode(", ", SpawnSchema::DIFFICULTY_CASES));
+			throw new \InvalidArgumentException("unknown difficulty \"$name\"; names declared by the schema: " . implode(", ", SpawnSchema::DIFFICULTY_CASES));
 		}
 
 		return $difficulty;

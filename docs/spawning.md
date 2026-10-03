@@ -305,9 +305,6 @@ By-design exceptions:
 - the `population_control` value vanilla spawns through events (`pillager`: patrols and
   raids) skips its rule set;
 - `powder_snow` (no PocketMine block) is dropped from block filters;
-- block filters match the block's item variant, so `coarse_dirt` doesn't match dirt and
-  each terracotta colour matches only itself, while placement state (snow layers, facing)
-  is ignored as vanilla does;
 - components PocketMine can't implement (`mob_event_filter`, `delay_filter`,
   `player_in_village_filter`, `spawns_above_block_filter`) drop their group through
   `SpawnRuleGroupBuilder::markNeverSpawns()`;
