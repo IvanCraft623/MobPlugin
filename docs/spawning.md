@@ -343,6 +343,8 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
   default. Change it with `minPlayerDistance:` / `maxPlayerDistance:` (`null` for no
   bound).
 - Factories construct the entity but never spawn it: `HerdSpawner` calls `spawnToAll()`.
+  Their exceptions are not caught: like any plugin callback, a factory that throws is a
+  bug and stops the server.
 - `density_limit` is a group field too: `surfaceDensityLimit:` / `caveDensityLimit:` cap
   the mobs of the rule's own type in the region, and trim a herd to what is left.
 - An aquatic group passes its liquid to the group, not as a condition:

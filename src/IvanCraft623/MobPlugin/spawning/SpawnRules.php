@@ -29,6 +29,9 @@ use pocketmine\math\Vector3;
 use pocketmine\world\World;
 
 /**
+ * A factory builds the entity without spawning it. Its exceptions are not caught: like any
+ * plugin callback, a factory that throws is a bug and stops the server.
+ *
  * @phpstan-type SpawnFactory \Closure(World $world, Vector3 $pos, SpawnRuleGroup $group) : Entity
  */
 final class SpawnRules{
