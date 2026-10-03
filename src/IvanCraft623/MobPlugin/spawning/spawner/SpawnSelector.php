@@ -31,10 +31,8 @@ use function count;
 use function min;
 
 /**
- * Filter, then pick: every candidate under its category cap contributes its matching
- * groups that are under their density limit, one is picked by group weight, then its
- * rarity roll decides. The pick comes with the room left for its herd under both. The
- * population is read only once some group has matched.
+ * Filters the candidates by cap, room and density limit, picks one matching group by
+ * weight, then rolls its rarity.
  */
 final class SpawnSelector{
 	public function __construct(
@@ -60,8 +58,7 @@ final class SpawnSelector{
 			if($cap <= 0){
 				continue; // full without counting
 			}
-			// Once the population is known a full category costs one lookup, not its
-			// candidates' conditions and room checks.
+			// Skips a full category's conditions once the population is known.
 			if($population !== null && $population->getCategoryCount($category->id, $band) >= $cap){
 				continue;
 			}

@@ -59,8 +59,7 @@ class Utils {
 
 	/**
 	 * Picks a key with a probability proportional to its weight, or null when no weight is
-	 * positive. TKey is unbounded and the native return type is mixed on purpose: PHPStan
-	 * widens a "TKey of array-key" or an int|string|null return back to int|string|null.
+	 * positive. The return type is mixed so PHPStan keeps TKey.
 	 *
 	 * @template TKey
 	 * @phpstan-param array<TKey, int> $weights

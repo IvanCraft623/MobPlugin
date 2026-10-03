@@ -25,11 +25,8 @@ namespace IvanCraft623\MobPlugin\data\bedrock;
 
 /**
  * Auto-generated from the entities of the pinned Mojang bedrock-samples — do not edit by
- * hand. Constants are named as PocketMine-MP names its own.
- *
- * These ids name the entities of the vanilla data. An entity's network id
- * (getNetworkTypeId()) comes from PocketMine-MP's EntityIds, which follows the protocol
- * it speaks.
+ * hand. These name the vanilla data's entities; network ids come from PocketMine-MP's
+ * EntityIds.
  *
  * Regenerate with: php tools/entity-data/generate-entity-data.php
  */

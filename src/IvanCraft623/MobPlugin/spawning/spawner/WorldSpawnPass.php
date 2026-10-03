@@ -191,15 +191,13 @@ final class WorldSpawnPass{
 	}
 
 	/**
-	 * Feet in a passable block, over a block with a full top surface. Whether a whole mob
-	 * fits depends on its type, so SpawnSelector checks it for each candidate.
-	 * Blocks stay out of the world's block cache: a column scan reads far more of them than
-	 * anything else will reuse.
+	 * Feet in a passable block, over a block with a full top surface. Blocks stay out of
+	 * the world's block cache: a column scan reads far more than anything will reuse.
 	 *
-	 * @phpstan-param list<array{float, float}> $nearby squared horizontal distance and Y of every player that can reach the column
-	 * @phpstan-param Block|null                $feet   the block at the position, if the caller already read it
+	 * @phpstan-param list<array{float, float}> $nearby squared horizontal distance and Y of the players in reach
+	 * @phpstan-param Block|null                $feet   the block at the position, if already read
 	 *
-	 * @return Block|null the block below the position if it was read and is still current
+	 * @return Block|null the block below, if it was read and is still current
 	 */
 	private function tryPosition(int $x, int $y, int $z, SpawnBand $band, array $nearby, ?Block $feet = null) : ?Block{
 		// Feet first: most of a column is rock, which costs this one read.
@@ -271,7 +269,7 @@ final class WorldSpawnPass{
 			foreach($this->herdSpawner->spawn($ctx, $selection) as $entity){
 				$this->census->add($entity);
 			}
-			// A factory is code we don't control: it may have changed blocks.
+			// A factory may have changed blocks.
 			$this->groundLevels->clear();
 		}finally{
 			CustomTimings::$naturalSpawningSpawn->stopTiming();

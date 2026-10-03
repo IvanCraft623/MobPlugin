@@ -35,8 +35,6 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: composer test
 
-      # The pinned mojang/bedrock-samples dev dependency drives the generated PHP
-      # artifacts, the merged spawn data and the entity data; see docs/spawning.md.
       # Regenerating must not change, add or delete any committed file.
       - name: Spawn data, schema and entity data match the pinned samples
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}

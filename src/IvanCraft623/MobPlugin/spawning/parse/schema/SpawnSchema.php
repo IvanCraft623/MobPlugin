@@ -26,35 +26,24 @@ namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 /**
  * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Schema facts the loader consumes: envelope keys, defaults and the difficulty names.
+ * Envelope keys and difficulty names.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class SpawnSchema{
-	/** Official spawn-schema version this artifact was generated from. */
 	public const SCHEMA_VERSION = "1.21.50";
 
-	/**
-	 * Difficulty names the schema declares for difficulty_filter, in ascending order.
-	 *
-	 * @var list<string>
-	 */
+	/** @var list<string> in ascending order */
 	public const DIFFICULTY_CASES = ["peaceful", "easy", "normal", "hard"];
 
-	/** Lowest difficulty name declared by the schema (difficulty_filter min default). */
 	public const DIFFICULTY_MIN = self::DIFFICULTY_CASES[0];
 
-	/** Highest difficulty name declared by the schema (difficulty_filter max default). */
 	public const DIFFICULTY_MAX = self::DIFFICULTY_CASES[3];
 
-	/** Envelope key "conditions" the loader uses to navigate spawn-rule documents (declared by Spawn Rules.json). */
 	public const KEY_CONDITIONS = "conditions";
 
-	/** Envelope key "description" the loader uses to navigate spawn-rule documents (declared by Spawn Rules.json). */
 	public const KEY_DESCRIPTION = "description";
 
-	/** Envelope key "identifier" the loader uses to navigate spawn-rule documents (declared by Spawn Description.json). */
 	public const KEY_IDENTIFIER = "identifier";
 
-	/** Envelope key "population_control" the loader uses to navigate spawn-rule documents (declared by Spawn Description.json). */
 	public const KEY_POPULATION_CONTROL = "population_control";
 }

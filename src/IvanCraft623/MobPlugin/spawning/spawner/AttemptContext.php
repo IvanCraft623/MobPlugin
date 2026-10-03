@@ -42,8 +42,6 @@ use function morton2d_encode;
  * no rule can use never pay for them.
  */
 final class AttemptContext implements SpawnConditionContext{
-
-
 	private const ROOM_INSET = 1e-7;
 
 	/**

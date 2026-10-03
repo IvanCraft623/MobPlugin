@@ -26,7 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\parse\schema\model;
 /**
  * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Payload data model for a spawn-rule condition (JsonMapper / ComponentParseContext).
+ * Payload of a spawn-rule component, mapped with JsonMapper.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class DistanceFilterData{

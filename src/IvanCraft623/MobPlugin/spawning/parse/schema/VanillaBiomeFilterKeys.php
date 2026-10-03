@@ -24,11 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse\schema;
 
 /**
- * Auto-generated from the Mojang filter schemas biome_filter refers to — do not edit by
- * hand.
+ * Auto-generated from the Mojang filter schemas — do not edit by hand.
  *
- * The keys of a filter node: FIELD_* are the fields of a single test, GROUP_* the keys
- * that hold a group of nodes.
+ * The keys of a biome_filter node: FIELD_* for a single test, GROUP_* for a group of nodes.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class VanillaBiomeFilterKeys{

@@ -27,10 +27,8 @@ use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use pocketmine\entity\Entity;
 
 /**
- * The band each entity counts in, kept here so entities need not know about spawning.
- * Natural spawning sets it when it places a mob; for any other entity the census sets it
- * from where the entity stands the first time it is counted. Entries last as long as
- * the entity object: one that is unloaded and loaded again is unknown.
+ * The band each entity counts in. The spawner sets it for the mobs it places; the census
+ * sets it for any other entity, from where it stands when first counted.
  */
 final class EntitySpawnBands{
 	/** @phpstan-var \WeakMap<Entity, SpawnBand> */

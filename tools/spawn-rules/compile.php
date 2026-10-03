@@ -23,11 +23,8 @@ declare(strict_types=1);
 
 /**
  * Merges the vanilla spawn rules of the pinned mojang/bedrock-samples package into
- * resources/spawning/spawn_rules.json (keyed by identifier) and writes its NOTICE.md.
- *
- * Values are copied as they are; only comments are stripped. Every file must validate
- * against the pinned schemas, or nothing is written. CI regenerates and fails on any
- * diff. Usage: php tools/spawn-rules/compile.php
+ * resources/spawning/spawn_rules.json and writes its NOTICE.md. Every file must validate
+ * against the pinned schemas, or nothing is written.
  */
 
 namespace IvanCraft623\MobPlugin\tools\spawnrules\compile;

@@ -42,9 +42,8 @@ final class CandidateCache{
 	private array $entries = [];
 
 	/**
-	 * Most keys resolve to the same outcome as another one, so equal results are shared
-	 * instead of copied. Signatures are object ids, which stay unique while the pools
-	 * hold the objects.
+	 * Keys with equal results share them. Signatures are object ids, which stay unique
+	 * while the pools hold the objects.
 	 *
 	 * @phpstan-var array<array-key, CandidateRule>
 	 */

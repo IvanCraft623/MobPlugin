@@ -41,15 +41,11 @@ use function str_replace;
 use const DIRECTORY_SEPARATOR;
 
 /**
- * Validates entity spawn-rule bodies against the official Mojang JSON schemas.
+ * Validates spawn-rule bodies against the Mojang JSON schemas.
  *
- * Mojang ships draft-07 schemas whose unions use `oneOf`; the spawn-rule unions are all
- * "object | list of objects" shapes a strict `oneOf` evaluator cannot always pick a
- * branch for, so unions are patched to `anyOf` before registration. Relative `$ref`s are
- * rewritten to absolute file:// URIs because the schemas' own `$id` paths are not real
- * URLs.
- *
- * Used by the merge tool (tools/spawn-rules/compile.php) as its schema gate.
+ * The schemas are patched before use: `oneOf` becomes `anyOf` (a strict evaluator can't
+ * pick a branch between an object and a list of objects), and relative `$ref`s become
+ * absolute file:// URIs.
  */
 final class SpawnRuleSchemaValidator{
 	private function __construct(
@@ -58,13 +54,10 @@ final class SpawnRuleSchemaValidator{
 	){}
 
 	/**
-	 * Builds a validator from the root spawn-rule schema file. The full $ref closure
-	 * reachable from it (the spawn schemas in the same version directory plus the shared
-	 * client_server/common schemas they reference) is loaded and patched eagerly, so
-	 * SchemaStorage never fetches a raw (unpatched) schema file.
+	 * Loads and patches every schema reachable from the root one, so the storage never
+	 * fetches an unpatched file.
 	 *
-	 * @throws \RuntimeException when a schema is missing or unresolvable, or the root schema
-	 *                           doesn't declare $schemaVersion
+	 * @throws \RuntimeException when a schema is missing, or the root doesn't declare $schemaVersion
 	 */
 	public static function fromSchemaTree(string $rootSchemaFile, string $schemaVersion) : self{
 		$rootReal = realpath($rootSchemaFile);

@@ -1,116 +1,67 @@
 # AGENTS.md
 
-Guidance for AI coding agents (and humans) working in the **MobPlugin** repository.
-Read this before making changes.
+Guidance for AI coding agents (and humans) working on **MobPlugin**.
 
 ## What this project is
 
-MobPlugin is a [PocketMine-MP](https://github.com/pmmp/PocketMine-MP) API 5 plugin (PHP) that
-implements vanilla-like mob AI for Minecraft: **Bedrock Edition**, aiming to replicate
-vanilla behavior as closely as possible. Mirrors the architecture of Java Edition's mob AI
-(goals, senses, memories, navigation).
+A [PocketMine-MP](https://github.com/pmmp/PocketMine-MP) API 5 plugin (PHP) that
+implements vanilla mob AI for Minecraft: **Bedrock Edition**. It mirrors the architecture
+of Java Edition's mob AI (goals, senses, memories, navigation).
 
-## Repository layout
+## Layout
 
-The plugin code lives under `src/IvanCraft623/MobPlugin/` (PSR-0 autoload). Key areas:
+Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
 
-- `MobPlugin.php` — plugin entry point (`SingletonTrait`). Registers entities, custom
-  attributes, metrics (bStats), boss-bar API, and the `EventListener`.
-- `Settings.php` — YAML-backed settings (global + per-world overrides).
-- `EventListener.php` — event handlers (e.g. overrides vanilla spawn-egg behavior).
-- `CustomTimings.php`, `utils/`, `sound/`, `particle/`, `pattern/`, `item/`,
-  `inventory/` — shared infrastructure.
-- `entity/` — the mob hierarchy:
-  - `Mob.php` → `Living`, plus `Animal`, `Monster`, `Golem`, `Ambient`, `PathfinderMob`,
-    `Boss`, etc., with `CustomAttributes.php` and `schedule/` beside them. Concrete mobs
-    (Chicken, Cow, Zombie, Wither…) live under `entity/{type}/`.
-  - `entity/ai/` — the AI framework:
-    - `goal/` — **Goal-based FSM**: each mob has prioritized goals; the highest-priority
-      applicable goal runs each tick and switches seamlessly. Contains `Goal`, `GoalSelector`,
-      `WrappedGoal`, and dozens of concrete goals (melee, ranged, panic, breed, wander,
-      target goals…). Mob-specific goals are grouped in subfolders (`creeper/`, `enderman/`,
-      `slime/`, `wither/`).
-    - `brain/` (as `entity/ai/Brain.php`), `memory/`, `behavior/`, `sensing/`, `control/`,
-      `navigation/`, `targeting/`, `utils/` (position generators).
-  - `data/bedrock/` — Bedrock type-id maps / enums, hand-managed except the generated
-    `EntityIds` and `VanillaEntitySizes`. Those `EntityIds` name the vanilla data's
-    entities; entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.
-- `spawning/` — natural spawning from vanilla Bedrock spawn rules: the rule model,
-  `condition/`, the main-thread runtime in `spawner/`, and the strict loader in `parse/`
-  (`parse/schema/` is generated). See `docs/spawning.md`.
-- `resources/` — bundled config (`global-settings.yml`) and the merged vanilla
-  `spawning/spawn_rules.json` (generated, with its `NOTICE.md`).
-- `tools/spawn-rules/` — dev tools that merge the spawn rules and generate
-  `parse/schema/` from the pinned `mojang/bedrock-samples` dev dependency.
-- `tools/entity-data/` — generates `data/bedrock/EntityIds` and `VanillaEntitySizes`
-  (the vanilla collision boxes entity classes size themselves from) from the same
-  dependency.
-- `docs/` — architecture guides (`spawning.md`, `navigation.md`).
-- `.github/workflows/` — CI (`ci.yml`: PHPStan, PHPUnit, spawn and entity data
-  drift), nightly build and release.
+- `MobPlugin.php` — entry point: registers entities, attributes, metrics and the
+  `EventListener`.
+- `Settings.php` — YAML settings, global with per-world overrides.
+- `entity/` — the mob hierarchy (`Mob` → `Living`, `Animal`, `Monster`, `Golem`…), with
+  concrete mobs under `entity/{type}/`.
+  - `entity/ai/` — the AI framework: `goal/` (the goal FSM, with mob-specific goals in
+    subfolders), `Brain.php`, `memory/`, `behavior/`, `sensing/`, `control/`,
+    `navigation/`, `targeting/`, `utils/`. See `docs/navigation.md`.
+- `data/bedrock/` — Bedrock id maps. `EntityIds` and `VanillaEntitySizes` are generated;
+  entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.
+- `spawning/` — natural spawning from the vanilla spawn rules. `parse/schema/` is
+  generated. See `docs/spawning.md`.
+- `utils/`, `sound/`, `particle/`, `pattern/`, `item/`, `inventory/`, `CustomTimings.php`
+  — shared infrastructure.
 
-## Build & tooling
+Outside `src/`:
 
-- **Dependencies**: `composer install`. Third-party code is in `vendor/` (git-ignored);
-  don't edit it.
-- **Pathfinding**: implemented as an external virion porting Java's pathfinding,
-  dependency `ivancraft623/pathfinder` (`dev-main`), fetched from a VCS repository.
-  Keep usage aligned with that library's API.
-- **Static analysis**: PHPStan at **level 9**
-  (`vendor/bin/phpstan.phar analyze --no-progress`, config in `phpstan.neon.dist`).
-  CI runs it on pull requests and pushes to `main`. Code must pass level 9.
-- **Code style**: enforced by `php-cs-fixer` (`.php-cs-fixer.php`). Style is non-negotiable;
-  run it before committing.
+- `resources/` — `global-settings.yml` and the generated `spawning/spawn_rules.json`.
+- `tools/` — dev tools that generate the spawn data, `parse/schema/` and the entity data
+  from the pinned `mojang/bedrock-samples` dev dependency.
+- `tests/phpunit/` — the PHPUnit suite.
+- `.github/workflows/` — `ci.yml` (PHPStan, PHPUnit, generated data drift), `build.yml`
+  (nightly phar) and `release.yml` (tagged releases).
 
-  After adding/editing files, run `php-cs-fixer fix` — it will insert the required header
-  and apply formatting. Don't leave the header out. The config covers `src/`, `tests/`
-  and `tools/`.
+## Tooling
 
-## Conventions & architecture rules
+- `composer install` — dependencies. Don't edit `vendor/` or `composer.lock` by hand.
+- `php-cs-fixer fix` — code style, including the license header. Run it after editing.
+- `vendor/bin/phpstan.phar analyze --no-progress` — PHPStan level 9.
+- `composer test` — PHPUnit.
+- `composer build` — builds `MobPlugin.phar`.
+- After changing the `mojang/bedrock-samples` pin: `composer generate-spawn-schema`,
+  `composer compile-spawn-rules` and `composer generate-entity-data`.
 
-- **PSR-0 naming**: namespace `IvanCraft623\MobPlugin\...` maps to `src/...`;
-  one class per file, filename matches class name.
-- **Typed & strict**: PHP 8 typed properties, explicit return types everywhere,
-  `declare(strict_types=1)`. PHPStan level 9 expects precise docblocks —
-  `@phpstan-param`/`@phpstan-return` where PHP's native types can't express it
-  (e.g. `class-string<Entity>`, generic arrays).
-- **Goals over god-logic**: mob behavior is driven through the Goal FSM, not inline in
-  entity tick methods. Add/port a mob by composing `goal/` components rather than writing
-  imperative per-tick AI in the entity class.
-- Port vanilla (Java) AI behavior faithfully, adapting network/item/world APIs to PM5's.
+Pathfinding is the external virion `ivancraft623/pathfinder`; keep usage aligned with its
+API.
 
-## Testing & quality gate
+## Conventions
 
-- A PHPUnit suite lives in `tests/phpunit` (run with `composer test`). It covers natural
-  spawning, kept to what would break it outright: the bundled data loads into registered
-  categories, the candidate cache agrees with plain evaluation, the caps and density
-  limits hold, the census counts what they read, the slime-chunk algorithm, and which
-  blocks a mob can stand in. Everything else
-  (including the per-tick runtime) is verified via PHPStan, php-cs-fixer, building the
-  phar, and manual in-server testing.
-- Spawn and entity data: after changing the `mojang/bedrock-samples` pin, regenerate with
-  `composer generate-spawn-schema`, `composer compile-spawn-rules` and
-  `composer generate-entity-data` (see `docs/spawning.md`).
-- The build workflow produces a nightly phar via
-  `composer build` → `vendor/bin/pharynx -i=. -c -p=MobPlugin.phar`.
-- Before finishing: run **php-cs-fixer**, **PHPStan level 9** and **PHPUnit**
-  (`composer test`) and make sure the phar builds.
+- One class per file, `declare(strict_types=1)`, typed properties and return types.
+  Use `@phpstan-param` / `@phpstan-return` where native types can't express it.
+- Mob behavior goes through the goal FSM, not inline in entity tick methods. Port a mob by
+  composing goals.
+- Port vanilla AI faithfully, adapting to PocketMine-MP's APIs.
 
-## Workflows / CI
+## Before finishing
 
-- `.github/workflows/build.yml` — nightly phar on pushes to `main`.
-- `.github/workflows/ci.yml` — on pull requests and pushes to `main`: PHPStan, PHPUnit
-  (`composer test`) and the spawn and entity data drift check (the spawn and entity data
-  tools regenerate, then `git diff --exit-code`), after a single `composer install`. Skip it with `[skip ci]`
-  in the commit message.
-- `.github/workflows/release.yml` — tagged release builds (`v1.2.3` or `1.2.3`, with
-  optional `-pre.0` suffixes).
-- `.github/dependabot.yml` — daily Composer updates.
+Run php-cs-fixer, PHPStan and `composer test`, and make sure the phar builds.
 
-## Common pitfalls
-
-- **Don't commit `vendor/`** (git-ignored) or generated `.cache` files.
-- **Don't edit `composer.lock` by hand**; let Composer manage it.
-- Keep changes consistent with the project's goal: faithful vanilla Bedrock mob AI on PM5,
-  not ad-hoc spawn logic (override behavior through the Goal FSM and, where truly needed,
-  the `EventListener`).
+The test suite covers natural spawning only: the bundled data loads, the candidate cache
+agrees with plain evaluation, caps and density limits hold, the census counts correctly,
+the slime-chunk algorithm, and which blocks a mob can stand in. Everything else is checked
+by PHPStan and in-server testing.

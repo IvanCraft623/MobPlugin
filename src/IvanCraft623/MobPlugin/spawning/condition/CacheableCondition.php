@@ -24,10 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
 /**
- * A condition decided once per cache key instead of on every attempt. It is given only
- * the cached-by values, and must be a pure function of them and of its own immutable
- * state. If it reads anything that can change (a config), SpawnRuleRegistry::invalidateCache()
- * must be called when that changes.
+ * Decided once per cache key, so it must be a pure function of the context and its own
+ * immutable state. If it reads anything that can change, call
+ * SpawnRuleRegistry::invalidateCache() when it does.
  */
 interface CacheableCondition extends SpawnCondition{
 	public function test(CacheableConditionContext $ctx) : bool;

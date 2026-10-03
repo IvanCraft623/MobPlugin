@@ -61,14 +61,12 @@ interface SpawnConditionContext extends CacheableConditionContext{
 	public function hasRoomFor(EntitySizeInfo $size) : bool;
 
 	/**
-	 * The spawner's random source, for conditions that roll a chance. A plain
-	 * SpawnCondition runs on every attempt, so it may use it freely.
+	 * The spawner's random source, for conditions that roll a chance.
 	 */
 	public function getRandom() : Random;
 
 	/**
-	 * The world of the attempt, for conditions that need more than the values above. It is
-	 * a per-attempt value, so a condition reading it is evaluated on every attempt.
+	 * The world of the attempt, for conditions that need more than the values above.
 	 */
 	public function getWorld() : World;
 }

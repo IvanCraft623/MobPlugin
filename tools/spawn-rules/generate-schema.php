@@ -536,7 +536,6 @@ function buildSchemaArtifact(string $schemaVersion, array $difficulties, array $
 	$envelopeLines = [];
 	foreach($envelopeKeys as $fileName => $names){
 		foreach($names as $name){
-			$envelopeLines[] = "\t/** Envelope key \"$name\" the loader uses to navigate spawn-rule documents (declared by $fileName). */";
 			$envelopeLines[] = sprintf("\tpublic const KEY_%s = \"%s\";", toConstant($name), $name);
 			$envelopeLines[] = "";
 		}
@@ -546,24 +545,17 @@ function buildSchemaArtifact(string $schemaVersion, array $difficulties, array $
 /**
  * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Schema facts the loader consumes: envelope keys, defaults and the difficulty names.
+ * Envelope keys and difficulty names.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class SpawnSchema{
-	/** Official spawn-schema version this artifact was generated from. */
 	public const SCHEMA_VERSION = "%s";
 
-	/**
-	 * Difficulty names the schema declares for difficulty_filter, in ascending order.
-	 *
-	 * @var list<string>
-	 */
+	/** @var list<string> in ascending order */
 	public const DIFFICULTY_CASES = %s;
 
-	/** Lowest difficulty name declared by the schema (difficulty_filter min default). */
 	public const DIFFICULTY_MIN = self::DIFFICULTY_CASES[0];
 
-	/** Highest difficulty name declared by the schema (difficulty_filter max default). */
 	public const DIFFICULTY_MAX = self::DIFFICULTY_CASES[%d];
 
 %s
@@ -592,11 +584,9 @@ function buildFilterKeysArtifact(array $testKeys, array $groupKeys) : string{
 
 	return phpFile(SCHEMA_NAMESPACE, sprintf(<<<'PHP'
 /**
- * Auto-generated from the Mojang filter schemas biome_filter refers to — do not edit by
- * hand.
+ * Auto-generated from the Mojang filter schemas — do not edit by hand.
  *
- * The keys of a filter node: FIELD_* are the fields of a single test, GROUP_* the keys
- * that hold a group of nodes.
+ * The keys of a biome_filter node: FIELD_* for a single test, GROUP_* for a group of nodes.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class VanillaBiomeFilterKeys{
@@ -622,7 +612,6 @@ function buildRuleValuesArtifact(string $className, string $summary, array $cons
  * Auto-generated from the pinned Mojang spawn rules — do not edit by hand.
  *
  * %s
- * The schema leaves it a free string, so this is the data's own inventory.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class %s{
@@ -663,7 +652,7 @@ function buildConditionsModelsArtifact(array $models) : array{
 /**
  * Auto-generated from the Mojang spawn-rule JSON schemas — do not edit by hand.
  *
- * Payload data model for a spawn-rule condition (JsonMapper / ComponentParseContext).
+ * Payload of a spawn-rule component, mapped with JsonMapper.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class %s{

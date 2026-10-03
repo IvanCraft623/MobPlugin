@@ -1,89 +1,52 @@
 # Natural spawning
 
-MobPlugin spawns mobs from vanilla Bedrock spawn rules, evaluated on the main thread.
+MobPlugin spawns mobs from the vanilla Bedrock spawn rules, on the main thread.
 
-## Data & schema validation
+## Data
 
-`resources/spawning/spawn_rules.json` is a deterministic merge of Mojang's
-`behavior_pack/spawn_rules/*.json` from a pinned
-[bedrock-samples](https://github.com/Mojang/bedrock-samples) commit. It is the only data
-MobPlugin ships for natural spawning; nothing is fetched at runtime.
+`resources/spawning/spawn_rules.json` is Mojang's `behavior_pack/spawn_rules/*.json`
+merged into one file, from a pinned
+[bedrock-samples](https://github.com/Mojang/bedrock-samples) commit. Nothing is fetched
+at runtime.
 
-### The pin
+The `mojang/bedrock-samples` dev dependency in `composer.json` is the pin: its `reference`
+is the commit and its `version` is the spawn schema version. The tools read both through
+Composer.
 
-The `mojang/bedrock-samples` dev dependency in `composer.json` pins the commit, and its
-package version is the spawn schema version (the `server/spawn/<version>` directory).
-That declaration is the only place both are set: the tools read them through Composer,
-`NOTICE.md` records them, and `SpawnSchema::SCHEMA_VERSION` is generated from it.
-`composer install` extracts the commit into
-`vendor/mojang/bedrock-samples`; being a dev dependency, it never ships in the phar.
+| Command | Generates |
+|---|---|
+| `composer compile-spawn-rules` | `spawn_rules.json` and `NOTICE.md` |
+| `composer generate-spawn-schema` | `spawning/parse/schema/`: component names, envelope keys, the biome filter vocabulary, mob categories and one payload model per component |
+| `composer generate-entity-data` | `data/bedrock/EntityIds` and `VanillaEntitySizes` (each entity's base `collision_box`) |
 
-### Tools
+- The merge only strips comments, keys entries by identifier and sorts them. Every entry
+  must validate against the pinned schemas, or nothing is written.
+- The payload models make a renamed field fail the load instead of spawning with a wrong
+  value.
+- The generated `EntityIds` name the data's entities. A mob's network id stays
+  PocketMine's, and `registerVanilla()` matches rules and boxes by it: if the two differ,
+  the mob is skipped.
 
-```sh
-composer compile-spawn-rules     # php tools/spawn-rules/compile.php
-composer generate-spawn-schema   # php tools/spawn-rules/generate-schema.php
-composer generate-entity-data    # php tools/entity-data/generate-entity-data.php
-```
+The output is deterministic: CI regenerates it and fails on any diff.
+`SpawnRulesParseableTest` fails on anything the loader can't compile.
 
-All three read only the pinned package and take no options. Their output is
-deterministic, so CI regenerates it and fails on any diff.
+To update to a newer Mojang version:
 
-- **`compile.php`** merges the spawn rules into `spawn_rules.json` and writes `NOTICE.md`.
-  It only strips JSON comments (some vanilla files aren't strict JSON), keys entries by
-  `description.identifier`, sorts and pretty-prints; all semantics belong to the runtime
-  loader. Every entry must validate against the pinned schemas and use no unknown
-  structural keys. Nothing is written unless every file passes.
-- **`generate-schema.php`** generates `parse/schema/`: `VanillaSpawnConditions` (one
-  constant per component), `SpawnSchema` (schema version, difficulty names and the
-  envelope keys the loader navigates with), `VanillaBiomeFilterKeys` (the keys of a
-  `biome_filter` node), `VanillaMobCategories`, `VanillaBiomeFilterTestNames` and
-  `VanillaBiomeFilterOperators` (every mob category, as written in `population_control`,
-  and every filter test and operator the pinned rules use; the schemas leave them free
-  strings, so they are read from the rule files) and one JsonMapper payload model
-  (`model/*Data`) per payload-bearing component schema, so a renamed payload field breaks
-  the build instead of silently spawning with a wrong value. `model/` holds generated
-  classes only: regenerating deletes any model the pinned schemas no longer produce.
-- **`generate-entity-data.php`** reads the vanilla entity files and generates
-  `data/bedrock/EntityIds` (one constant per entity of the data, named as PocketMine-MP
-  names its own) and `data/bedrock/VanillaEntitySizes` (each entity's base
-  `collision_box`, the box before scale; component groups only hold variants such as
-  babies or slime sizes, and entities that only declare those are left out). Entity
-  classes size themselves from it, and `registerVanilla()` gives every rule the box of
-  its mob. These ids name the data's entities: an entity's network id
-  (`getNetworkTypeId()`) stays PocketMine-MP's, which follows the protocol it speaks.
-  `registerVanilla()` finds a mob's rules and box by its network id, so if the two ever
-  differ, the mob is skipped like one without natural spawns.
-
-### Checks
-
-| Check | Where | Catches |
-|---|---|---|
-| Regenerate, then `git diff --exit-code` | CI (`ci.yml`) | `spawn_rules.json`, `NOTICE.md`, `parse/schema/` or the generated `data/bedrock/` classes edited by hand, not regenerated after a pin change, or holding a stale model |
-| `SpawnRulesParseableTest` | `composer test` | anything the strict loader can't compile, including a component without a parser; a rule whose `population_control` has no registered category |
-
-The Mojang schemas are permissive (draft-07 allows extra properties), so schema
-validation is a coarse shape check. The strict loader is the authority on semantics.
-
-### Updating to a newer Mojang version
-
-1. In `composer.json`, point the `mojang/bedrock-samples` package's `dist` URL and both
-   `reference`s at the new commit, and set its `version` to the spawn schema version that
-   commit ships.
+1. In `composer.json`, point the package's `dist` URL and both `reference`s at the new
+   commit and set `version` to its spawn schema version.
 2. `composer update mojang/bedrock-samples`
-3. `composer generate-spawn-schema`, `composer compile-spawn-rules` and
-   `composer generate-entity-data`.
-4. If a component was added, renamed or removed, update `SpawnRulesParser::createVanilla()`
-   so every declared component has a parser (see [Loading](#loading)).
-5. Run `composer test` and review the diff.
+3. Run the three commands above.
+4. If a component was added, renamed or removed, update
+   `SpawnRulesParser::createVanilla()`.
+5. `composer test`, then review the diff.
 
-## Package layout
+## Layout
 
 ```
 spawning/
 ├── NaturalSpawner, SpawnRuleRegistry, SpawnRules, SpawnRuleGroup
 ├── MobCategory, MobCategoryRegistry, BiomeTagMap, SpawnBand, SpawnLiquid
-├── condition/   SpawnCondition, SpawnConditionContext and the built-in conditions
+├── condition/   SpawnCondition, its contexts and the built-in conditions
 ├── population/  MobPopulation: how many mobs are around a chunk, per band
 ├── spawner/     the runtime (internal)
 └── parse/       the strict loader; parse/schema/ is generated
@@ -91,251 +54,146 @@ spawning/
 
 ## Runtime
 
-Everything runs on the main thread, once per tick, inside `NaturalSpawner::tick()`.
+`NaturalSpawner::tick()` runs once per tick.
 
 ### Budget
 
-Each tick, every chunk in `World::getTickingChunks()` of every world with spawning
-enabled (peaceful worlds included: the data decides what spawns there) rolls vanilla's
-chance, `nextInt(2000) <= 10`, for one attempt. That list is PocketMine's ticking set:
-the chunks within `chunk-ticking.tick-radius` of a player, each counted once however many
-players share it. A world with a tick radius of 0 never spawns.
-
-The spawner doesn't roll chunk by chunk: it draws the gap to the next chunk that hits from
-the matching geometric distribution, so a tick costs one random number per attempt.
-
-If more chunks roll an attempt than `max-attempts-per-tick`, a random subset of that size
-is kept. Each world with attempts gets one `WorldSpawnPass` for the tick.
-
-The registry revision is read once per tick, so rules registered mid-tick apply from the
-next tick.
+Every ticking chunk (`World::getTickingChunks()`) of every enabled world rolls vanilla's
+chance, 11 in 2000, for one attempt. The spawner draws the gap to the next hit instead of
+rolling each chunk. If more chunks hit than `max-attempts-per-tick`, a random subset is
+kept. A world with a tick radius of 0 never spawns.
 
 ### One attempt
 
-Each attempt runs from start to finish before the next one begins:
-
-1. **Sample.** Pick a random column of the chunk: the surface position on its ground,
-   then every position below it down to the world bottom, as vanilla does. A position is
-   dropped if it fails the placement rules below or is out of reach of every player: at a
-   tick radius of 4 or less every rule's maximum distance is clamped to 44 blocks, as
-   vanilla does at 4; at 5 or more the attempt needs the 3×3 chunks around its chunk to
-   be ticking instead. The reach (44 blocks when clamped, else the largest maximum
-   distance of any group) is applied before any block is read: a column no player can
-   reach is skipped, and only the Y range some player can reach is scanned.
-2. **Candidates.** Build an `AttemptContext` and ask the `CandidateCache` which rules could
-   still spawn there. An empty list ends the position.
-3. **Select.** `SpawnSelector` skips candidates whose category is unregistered, has a cap
-   of 0 in the band or is at its cap, and those whose mob has no room there (see below).
-   Each remaining candidate contributes every matching group that is under its density
-   limit. One is picked by group weight; if it has a `rarity`, it then spawns one time in
-   that many. The pick carries the room left for its herd under the category cap and the
-   density limit.
+1. **Sample.** Pick a random column: the surface position on its ground, then every
+   position below it. Columns and Y ranges out of every player's reach are skipped before
+   any block is read.
+2. **Candidates.** `CandidateCache` returns the rules that could still spawn at the
+   position.
+3. **Select.** `SpawnSelector` drops candidates whose category is full or whose mob has no
+   room. Every matching group under its density limit enters a weighted pick; a group
+   with a `rarity` then spawns one time in that many.
 4. **Spawn.** `HerdSpawner` rolls the herd size, `min + round(rand² × (max − min))`,
-   trims it to the room left under the category cap and the group's `density_limit`, and
-   spawns every member on the lead's block. Each member picks its own `permute_type`;
-   the factory builds it and `spawnToAll()` is called.
+   trims it to the room left and spawns every member on the lead's block. Each member
+   picks its own `permute_type`.
 
-How close to a player a mob may spawn belongs to the group: 24 to 128 blocks unless the
-rule's `distance_filter` says otherwise (fish use 12 to 32). Only players that can be
-collided with count (`Player::canBeCollidedWith()`), so spectators and dead players
-neither allow nor block spawns.
+A group keeps its mobs 24 to 128 blocks from the nearest player unless its
+`distance_filter` says otherwise. Spectators and dead players don't count. At a tick
+radius of 4 or less the reach is 44 blocks, as in vanilla; above that the 3×3 chunks
+around the attempt must be ticking.
 
-`AttemptContext` reads light (`World::getFullLightAt()`), block light and the population
-lazily, at most once. The population is only read by the selector's cap and density
-checks, after a group matched, or by a custom condition, after its group's other
-conditions passed; positions that fail cheaper checks never trigger a census.
+Light and population are read lazily, at most once per position.
 
 ### Placement
 
-Every position must pass two block checks, whatever the mob:
+- **Ground** is a block with a full top surface (`getSupportType(Facing::UP) === FULL`).
+  A column's ground is its highest one; everything below it is a cave.
+- **Feet** go in a block with nothing to collide with: air, liquids, plants, torches. A
+  single snow layer is fine.
+- **Room**: the rule's collision box (`SpawnRules::getSize()`), centred on the block, must
+  collide with nothing. A `permute_type` target of another size is not checked again.
 
-- **Ground** is a block with a full top surface, `getSupportType(Facing::UP) === FULL`:
-  stone, ice, upper slabs and soul sand qualify; leaves, lower slabs, carpets and fences
-  don't. A column's ground is its highest such block, so air, liquids and canopies are
-  skipped, and everything below it is a cave.
-- **Feet** go in a block with nothing to collide with: air, liquids, grass, flowers, and
-  also torches, rails and buttons. A flat collision box doesn't count, so a single snow
-  layer (which PocketMine gives a zero-height box) is fine; thicker snow isn't.
-
-How much room a mob needs depends on its type, so the selector checks it per candidate:
-the rule's collision box (`SpawnRules::getSize()`, the vanilla `collision_box` for vanilla
-mobs), standing at the block's centre, must collide with no block
-(`SpawnConditionContext::hasRoomFor()`). A chicken fits under a one-block gap, an
-enderman needs three blocks, and a spider or an iron golem needs room in the neighbouring
-columns too. The box is the rule's own: a `permute_type` target of another size is not
-checked again.
-
-Aquatic mobs spawn in the liquid block right above the ground (the sea floor), as in
-vanilla. The pass and the census share one `GroundLevelCache`, which memoizes ground Y
-per column.
+Aquatic mobs spawn in the liquid block right above the ground.
 
 ### Population
 
-`spawning/population/` answers one question: how many mobs of a category, or of a type,
-are around a chunk, on the surface or underground. `MobPopulation` is the entry point; a
-pass gets one `PopulationCensus` from it per world and tick.
+`MobPopulation` counts the mobs around a chunk, per category and per type, on the surface
+and underground. A position's population is the sum over the 9×9 chunks around it. Any
+entity whose identifier has registered spawn rules counts.
 
-The census counts a chunk from `World::getChunkEntities()` the first time it is needed,
-and a position's population is the sum over the 9×9 chunks around its chunk, as a
-`PopulationCounts`. Any entity whose identifier has registered spawn rules counts,
-including PocketMine's squid.
+`EntitySpawnBands` keeps the band each entity counts in. `HerdSpawner` sets it for the
+mobs it places; any other entity gets it from where it stands when first counted. After a
+herd its members are added to the counts already made; nothing is recounted.
 
-The band an entity counts in is kept by `EntitySpawnBands`, on the spawning side: entity
-classes know nothing about natural spawning. `HerdSpawner` sets it for the mobs it
-places. For any other entity (spawned another way, or loaded from disk) the census sets
-it from where the entity stands the first time it counts it. Either way the band then
-stays for as long as the entity object lives, so the ground is read once per entity, not
-once per count.
+### Caches
 
-After a herd, each spawned member is added to its chunk's counts and to every region
-already summed that covers the chunk, as vanilla does; nothing is recounted.
+Ground levels, counts and light live for one `WorldSpawnPass` (one world, one tick). The
+ground memo is dropped after every herd, since a factory may change blocks.
 
-### Memo validity
-
-Memos keyed by location (ground Y, chunk and region counts, an attempt's light and
-population) live only as long as one `WorldSpawnPass`, so world edits between ticks can't
-make them stale. Within a pass only factories can edit the world, so after every herd the
-pass drops the ground memo. The census is not recounted (see Population), so a factory
-that spawns or removes other entities is only seen by chunks not counted yet.
-
-Entity bands are the exception: they outlive the pass, tied to the entity object.
-
-The only long-lived cache, `CandidateCache`, is keyed by values, never by location: every
-attempt reads its key fresh from the world, so no world edit (`setChunk()`,
-`setBiomeId()`, `setBlock()`, `setDifficulty()`) can make it stale.
+`CandidateCache` is the only long-lived cache. It is keyed by values, never by location,
+so no world edit can make it stale. It is rebuilt when the registry changes.
 
 ## Candidate cache
 
-`CandidateCache` partially evaluates every rule once per key
-`(biome id, band, difficulty, feet liquid)`:
+Every rule is evaluated once per key `(biome id, band, difficulty, feet liquid)`:
 
-- a `CacheableCondition` that returns false against the key drops its group;
-- one that returns true is removed from the group;
-- a combinator (`AllOf`, `AnyOf`, `Not`) is reduced: its cacheable children are decided,
-  and only what the key leaves undecided is kept;
-- any other condition stays as a residual and runs on every attempt.
+- a `CacheableCondition` that fails drops its group; one that passes is removed from it;
+- a combinator (`AllOf`, `AnyOf`, `Not`) is reduced to what the key leaves undecided;
+- any other condition stays and runs on every attempt, in its listed order.
 
-A key only admits groups whose required liquid is its feet liquid: aquatic groups spawn
-only in their liquid, and land groups, which carry no "not in water" condition, only out
-of any liquid (`SpawnRuleGroup::admitsLiquid()`, which `SpawnRuleGroup::matches()` applies
-too). Surviving groups keep their order, and a group's residuals keep the order of its
-conditions: list the costly ones, such as a read of the population, last.
-
-The key packs into one int; out-of-range values throw instead of colliding. Keys with
-equal results share them, so the whole vanilla key space takes a few hundred KB. The key
-space is bounded (biomes × 2 bands × 4 difficulties × 3 liquids), so the cache never
-evicts; it is rebuilt when the registry revision changes.
+A key only admits groups whose required liquid is its feet liquid
+(`SpawnRuleGroup::admitsLiquid()`). The key space is bounded, so the cache never evicts.
 
 ## Conditions
 
-A rule set (`SpawnRules`) is a list of `SpawnRuleGroup`s; **every matching group
-competes** in the weighted pick, as each is its own entry in vanilla. A group carries its
-conditions plus its weight, rarity, herd size, `permute_type` weights, player distance
-range, density limits and required liquid (`spawns_underwater`, `spawns_lava`; a group
-can't require both). Conditions implement:
+`SpawnRules` is a list of `SpawnRuleGroup`s, and every matching group competes in the
+pick. A group carries its conditions, weight, rarity, herd size, `permute_type` weights,
+player distance range, density limits and required liquid.
 
 ```php
-// Tested on every attempt, with everything about it.
+// Tested on every attempt.
 interface SpawnCondition{
 	public function test(SpawnConditionContext $ctx) : bool;
 }
 
-// Decided once per cache key: it is given only the values candidates are cached by.
+// Decided once per cache key.
 interface CacheableCondition extends SpawnCondition{
 	public function test(CacheableConditionContext $ctx) : bool;
 }
 ```
 
-`CacheableConditionContext` has the biome id, band, difficulty and feet liquid;
-`SpawnConditionContext` extends it with the per-attempt values (coordinates, light, the
-block below, time, population, whether a mob of a given size has room, the random source,
-the world). Which interface a condition implements is the whole declaration: a cacheable
-one can't reach a per-attempt value.
+`CacheableConditionContext` has the four key values. `SpawnConditionContext` adds the
+per-attempt ones: coordinates, light, the block below, time, population, room, the random
+source and the world.
 
-Built-ins live in `spawning/condition/`. Cacheable: `BiomeTagCondition`,
-`DifficultyCondition`, `BandCondition`. Per attempt: `RangeCondition` (brightness, block
-light, world age), `HeightCondition` (tests the block stood on, and the feet
-too in a liquid, as vanilla does), `SpawnsOnBlock`,
-`SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition`, and the
-`AllOf`, `AnyOf`, `Not` combinators.
+| Kind | Built-ins |
+|---|---|
+| Cacheable | `BiomeTagCondition`, `DifficultyCondition`, `BandCondition` |
+| Per attempt | `RangeCondition` (brightness, block light, world age), `HeightCondition`, `SpawnsOnBlock`, `SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition` |
+| Combinators | `AllOf`, `AnyOf`, `Not` |
 
-Two vanilla rules are hardcoded in the engine instead of the rules file, so the registry
-adds them to the groups it loads. Every `Monster` subclass gets
-`RangeCondition::blockLight(0, 0)`: monsters need no block light at all, on top of their
-brightness filter. Slimes get a condition composed from the built-ins. On the Y of the
-block stood on: at 38 or below, slime chunks only
-(Bedrock's real algorithm, a coordinate-seeded MT19937 with no world seed, reverse
-engineered by @protolambda and @jocopa3); from 50 to 68, biomes tagged
-`spawns_slimes_on_surface` at light 7 or less, with a light roll and a moon-phase roll;
-nowhere else.
+Two vanilla rules live in the engine instead of the rules file, so the registry adds them:
 
-### Condition contract
+- Every `Monster` gets `RangeCondition::blockLight(0, 0)`.
+- Slimes spawn at Y 38 or below in slime chunks (Bedrock's algorithm, reverse engineered
+  by @protolambda and @jocopa3), and from Y 50 to 68 in `spawns_slimes_on_surface` biomes
+  with a light roll and a moon-phase roll.
 
-The candidate cache relies on these rules, which it can't check:
+### Contract
 
-1. **Immutable.** Every property is `readonly` and set in the constructor, with no mutable
-   objects captured.
-2. **A `CacheableCondition` is pure.** Its result depends only on the context it is given
-   and on its own state: no statics, singletons, services, randomness or clocks. If it
-   reads something that can change, such as a config, call
-   `SpawnRuleRegistry::invalidateCache()` whenever that changes. A condition that can't
-   promise this implements plain `SpawnCondition`: it runs on every attempt, so it may
-   read anything, and takes its randomness from `$ctx->getRandom()`, the spawner's own
-   source.
-3. **No side effects.** `test()` never changes the world or any other state. The cache
-   removes the conditions a key already decides and runs the rest in their listed order,
-   so `test()` must not depend on which other conditions ran before it.
+The cache relies on these rules and can't check them:
 
-A custom combinator implements `ReducibleCondition`, whose `reduce()` returns the outcome
-when the key decides it, or otherwise what is left of the condition; extending
-`CompositeCondition` gives it `reduceChildren()`. A combinator that doesn't is simply run
-whole on every attempt.
+1. **Immutable.** Every property is `readonly`.
+2. **A `CacheableCondition` is pure.** Its result depends only on its context and its own
+   state. If it reads something that can change, call
+   `SpawnRuleRegistry::invalidateCache()` when it does.
+3. **No side effects.** `test()` changes nothing and doesn't depend on which conditions
+   ran before it.
 
-A condition that needs more than the context's values can read the attempt's world
-through `getWorld()`. Like the coordinates it is a per-attempt value, so such a condition
-is a plain `SpawnCondition` and runs on every attempt against the live world. It may read the world,
-never change it (rule 3).
+A plain `SpawnCondition` may read anything, including the world through `getWorld()`, and
+takes its randomness from `$ctx->getRandom()`. A custom combinator implements
+`ReducibleCondition` (or extends `CompositeCondition`); otherwise it runs whole on every
+attempt.
 
 ## Loading
 
-The vanilla rules load in `MobPlugin::onEnable()` through
-`SpawnRuleRegistry::registerVanilla($path)`, which parses the resource with
-`SpawnRulesParser::createVanilla()`, binds every implemented mob (plus PocketMine's
-squid), and adds the two hardcoded vanilla rules described under Conditions.
+`MobPlugin::onEnable()` calls `SpawnRuleRegistry::registerVanilla($path)`, which parses the
+resource and binds every implemented mob, plus PocketMine's squid.
 
-The loader is **strict**: any value it can't compile aborts the load with
-`SpawnRulesParseException`, carrying the JSON path. Payloads are mapped into the
-generated `XxxData` models with JsonMapper: a key the model doesn't declare is rejected,
-and so is a value that would lose information on the way to the model's type (text or a
-fractional number for an integer); lossless spellings such as `8.0` are accepted. A
-failed load is logged with the file path and disables the plugin before anything else is
-registered.
+The loader is strict: anything it can't compile throws `SpawnRulesParseException` with the
+JSON path, and the plugin is disabled. Unknown keys are rejected, and so are values that
+would lose information (`8.5` for an integer; `8.0` is fine).
 
-A `biome_filter` node may only use the test fields the loader reads (`test`, `operator`,
-`value`) and the group keys the filter schema declares (`all_of`, `any_of`, `none_of` and
-their aliases). The schema's `subject` and `domain` are accepted and ignored: they mean
-nothing for a biome. Any other key is rejected, and so is a test field in a node that has
-no `test`.
+What it accepts without spawning:
 
-A biome tag that no biome carries is not an error: `registerVanilla()` returns a warning
-for each, which the plugin logs. Tests on such a tag never match.
-
-By-design exceptions:
-
-- the `population_control` value vanilla spawns through events (`pillager`: patrols and
-  raids) skips its rule set;
-- `powder_snow` (no PocketMine block) is dropped from block filters;
-- components PocketMine can't implement (`mob_event_filter`, `delay_filter`,
-  `player_in_village_filter`, `spawns_above_block_filter`) drop their group through
-  `SpawnRuleGroupBuilder::markNeverSpawns()`;
-- a group with neither `spawns_on_surface` nor `spawns_underground` is dropped: vanilla
-  spawns it nowhere (only guardian, which spawns through structures);
-- components with no runtime effect (`disallow_spawns_in_bubble`, `is_persistent`,
-  `is_experimental`) are accepted and ignored; `spawn_event` is validated and ignored.
-
-`distance_filter` sets the group's player distance range (a group without one keeps
-`SpawnRuleGroup`'s 24 to 128 block default), and `weight.rarity` becomes the group's
-rarity.
+- `pillager` rule sets are skipped: vanilla spawns them through patrols and raids.
+- Groups using `mob_event_filter`, `delay_filter`, `player_in_village_filter` or
+  `spawns_above_block_filter` never spawn.
+- A group with neither `spawns_on_surface` nor `spawns_underground` is dropped (guardian).
+- `powder_snow` is dropped from block filters: PocketMine has no such block.
+- `disallow_spawns_in_bubble`, `is_persistent`, `is_experimental` and `spawn_event` are
+  ignored.
+- A biome tag no biome carries never matches; the plugin logs a warning for each.
 
 ## Registration API
 
@@ -351,51 +209,34 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 		], weight: 100),
 	],
 	fn(World $world, Vector3 $pos, SpawnRuleGroup $group) => new MyBoss(Location::fromObject($pos, $world)),
-	new EntitySizeInfo(2.0, 1.0), // height, width: the room it needs to spawn
+	new EntitySizeInfo(2.0, 1.0), // height, width: the room it needs
 ));
 ```
 
-- `register()` throws if the category id isn't registered in `MobCategoryRegistry`, or if
-  rules for the identifier exist and `override` is `false`.
-- Rules store only the category id; every consumer looks the category up when it needs
-  it, so re-registering a category (for example to raise a cap) applies to rules
-  registered before it.
-- A group keeps its mobs 24 to 128 blocks from the nearest player, as vanilla does by
-  default. Change it with `minPlayerDistance:` / `maxPlayerDistance:` (`0.0` and `INF`
-  for no bound).
-- Factories construct the entity but never spawn it: `HerdSpawner` calls `spawnToAll()`.
-  Their exceptions are not caught: like any plugin callback, a factory that throws is a
-  bug and stops the server.
-- `density_limit` is a group field too: `surfaceDensityLimit:` / `caveDensityLimit:` cap
-  the mobs of the rule's own type in the region, and trim a herd to what is left.
-- An aquatic group passes its liquid to the group, not as a condition:
-  `new SpawnRuleGroup([...], weight: 10, requiredLiquid: SpawnLiquid::WATER)`.
-- `SpawnRules::check($ctx)` is the uncached reference evaluation of the conditions: the
-  cache returns the same groups for every context (`CandidateCacheTest`). Caps and
-  density limits are the selector's, not part of it.
+- `register()` throws on an unknown category, or on a duplicate identifier without
+  `override`.
+- Rules store the category id, so re-registering a category applies to existing rules.
+- The factory builds the entity; `HerdSpawner` spawns it. Its exceptions are not caught.
+- `SpawnRuleGroup` options: `minPlayerDistance:` / `maxPlayerDistance:` (`0.0` and `INF`
+  for no bound), `surfaceDensityLimit:` / `caveDensityLimit:`, and
+  `requiredLiquid: SpawnLiquid::WATER` for aquatic groups.
+- `SpawnRules::check($ctx)` evaluates the conditions without the cache.
 
 ### Population queries
 
 ```php
-$population = MobPopulation::getInstance();
-
-// Counts over the 9×9 chunks around a chunk, as of now.
-$counts = $population->around($world, $chunkX, $chunkZ);
+$counts = MobPopulation::getInstance()->around($world, $chunkX, $chunkZ);
 $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE);
 $counts->getIdentifierCount(EntityIds::ZOMBIE, SpawnBand::SURFACE);
 
 // A plugin that spawns a mob its own way can say which band it counts in.
-$population->getBands()->set($entity, SpawnBand::SURFACE);
+MobPopulation::getInstance()->getBands()->set($entity, SpawnBand::SURFACE);
 ```
 
-`around()` scans the entities of those 81 chunks on every call, so keep its result rather
-than asking in a loop. Inside a condition, read `$ctx->getPopulation()` instead: it is
-the same counts for the attempt's chunk, shared with the rest of the tick.
+`around()` scans 81 chunks on every call: keep its result. Inside a condition use
+`$ctx->getPopulation()`.
 
 ### Custom components
-
-Component parsers are registered on a parser instance (`override: true` replaces an
-existing one) and receive a `ComponentParseContext` scoped to one component occurrence:
 
 ```php
 $parser = SpawnRulesParser::createVanilla();
@@ -410,75 +251,54 @@ foreach($parser->parseFile($path) as $identifier => [$categoryId, $groups]){
 }
 ```
 
-`$ctx->mapList()` reads a component that is an object or a list of objects,
-`$ctx->resolveBlockSet()` resolves block-name values, and for shapes with no model
-`$ctx->objectOrList()` returns path-tracking `SpawnData` readers while `$ctx->getValue()` /
-`$ctx->getPath()` expose the raw value and its JSON path. A parser that needs biome tags
-captures `$parser->getBiomeTags()`.
+`ComponentParseContext` also has `mapList()`, `resolveBlockSet()`, `objectOrList()`,
+`getValue()` and `getPath()`.
 
 ## Settings
 
 ```yaml
 mob-natural-spawning:
   enabled: true
-  max-attempts-per-tick: 8   # ceiling on the columns tried in one tick, over every world
+  max-attempts-per-tick: 8
 ```
 
-`enabled` in a world settings file (`worlds-settings/<world>.yml`) turns spawning off for
-that world only; the global switch must be on for any world to spawn.
-`max-attempts-per-tick` is read from the global file only, since it is one budget for the
-whole server. It only caps the cost of a crowded tick: the spawn rate is vanilla's 11 in
-2000 per ticking chunk, so it follows PocketMine's `chunk-ticking.tick-radius`.
+A world settings file can set `enabled: false` for that world. `max-attempts-per-tick` is
+global: it caps the cost of a crowded tick, not the spawn rate.
 
 ## Timings
 
-`Natural Spawning` covers the whole tick (choosing chunks, setting up each world's pass
-and the attempts), with these children:
+`Natural Spawning` covers the whole tick:
 
 | Timing | Covers |
 |---|---|
 | `Sample` | column sampling, position checks and the cache lookup |
-| `Candidate Resolve` | cache misses only (runs inside `Sample`) |
+| `Candidate Resolve` | cache misses (inside `Sample`) |
 | `Select` | `SpawnSelector` |
-| `Census` | counting a region the first time a pass needs it (runs inside `Select`) |
+| `Census` | counting a region the first time (inside `Select`) |
 | `Spawn` | herd placement and factories |
 
-## Approximations
+## Differences from vanilla
 
-The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1. Deliberate deviations:
+The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1.
 
-- A rule that fails a block filter, its liquid, its distance, its density limit, its
-  category cap or the room its mob needs is left out of the weighted pick. Vanilla picks
-  first and checks those after, wasting the attempt, so where several rules match vanilla
-  spawns a little less.
-- The ticking set is PocketMine's (a circle around each player), not vanilla's diamond.
-- A tick radius below 4 spawns like a radius of 4. Vanilla doesn't spawn below 4, but
-  PocketMine's default is 3.
-- Ground is any block with a full top surface, so glass, barriers and upside-down stairs
-  count although vanilla doesn't spawn on them.
+- Rules that fail a block filter, liquid, distance, density limit, category cap or room
+  check are left out of the pick. Vanilla picks first and wastes the attempt.
+- The ticking set is PocketMine's circle around each player, not vanilla's diamond.
+- A tick radius below 4 spawns like 4. Vanilla doesn't spawn below 4, but PocketMine's
+  default is 3.
+- At a tick radius of 5 or more, mobs may spawn up to 128 blocks out, past most
+  categories' 64 block despawn distance.
+- Ground is any block with a full top surface, including glass and barriers.
 - A liquid position needs one block of its liquid; vanilla's surface needs two.
-- `permute_type` event suffixes are stripped at parse time: permuted types spawn in base
-  form. A target with no registered rules spawns as the group's own mob (a zombie
-  villager as a zombie). Every member rolls from the base type; vanilla keeps the last
-  rolled type for an entry without `entity_type`, which looks like a bug. `min_guaranteed`
-  is ignored (no bundled rule uses it).
-- When `herd` is a list (one herd per spawn event, such as horse coat colours), only the
-  first entry is used; the bundled lists differ only by event.
-- Structure spawn areas (ocean monuments, fortresses...) are not implemented.
-- At a tick radius of 5 or more, rules may spawn up to 128 blocks out, past the 64 block
-  despawn distance of most categories.
-- A biome id missing from the bundled biome definitions (a custom biome) has no tags, so
-  it fails every positive biome test and passes every negated one.
-- `is_snow_covered` is approximated by the `frozen` biome tag.
-- PocketMine has no weather, so `brightness_filter`'s `adjust_for_weather` is ignored.
-- The global mob cap (200) is not enforced.
-- Slimes are checked with their base collision box, the largest size (2.08 blocks), so a
-  natural slime needs 3×3×3 blocks of room even when it turns out small.
-- Monsters apply the Overworld darkness rule everywhere; the Nether's own rule and
-  thunderstorm darkening are not implemented. It is checked before the weighted pick;
-  vanilla checks it on the built mob and wastes the attempt.
-- The slime light and moon-phase rolls are drawn once per attempt. Vanilla runs its slime
-  rule again after the pick, drawing them twice, so swamp slimes spawn a little more here.
-- The band a mob was spawned in is not saved. A mob loaded from disk, or spawned another
-  way, takes the band of where it stands when first counted and keeps it while loaded.
-  Vanilla saves the band and counts mobs that didn't spawn naturally as underground.
+- `permute_type` targets spawn in base form (event suffixes are stripped), and a target
+  without registered rules spawns as the group's own mob. `min_guaranteed` is ignored.
+- When `herd` is a list, only the first entry is used.
+- Monsters use the Overworld darkness rule everywhere; the Nether's rule, thunderstorms
+  and `adjust_for_weather` are not implemented.
+- Slimes are checked with their largest box, so they need 3×3×3 blocks of room. Their
+  light and moon rolls are drawn once, where vanilla draws them twice.
+- `is_snow_covered` is approximated by the `frozen` biome tag. A biome id without bundled
+  definitions has no tags.
+- The band a mob spawned in is not saved: a loaded mob takes the band of where it stands
+  when first counted.
+- Structure spawn areas and the global mob cap (200) are not implemented.

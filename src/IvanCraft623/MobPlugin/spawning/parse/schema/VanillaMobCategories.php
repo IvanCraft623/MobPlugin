@@ -27,7 +27,6 @@ namespace IvanCraft623\MobPlugin\spawning\parse\schema;
  * Auto-generated from the pinned Mojang spawn rules — do not edit by hand.
  *
  * Every mob category they use, as written in a rule's "population_control".
- * The schema leaves it a free string, so this is the data's own inventory.
  * Regenerate with: php tools/spawn-rules/generate-schema.php
  */
 final class VanillaMobCategories{

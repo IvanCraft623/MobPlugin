@@ -33,9 +33,7 @@ use function json_decode;
 use const JSON_THROW_ON_ERROR;
 
 /**
- * Path-tracking reader over decoded spawn-rule JSON; structural work only — payload
- * values go through ComponentParseContext. Mismatches throw SpawnRulesParseException with the
- * full JSON path.
+ * Reader over decoded spawn-rule JSON that tracks the path, for error messages.
  */
 final class SpawnData{
 
