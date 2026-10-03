@@ -24,10 +24,11 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
+use IvanCraft623\MobPlugin\spawning\condition\BrightnessCondition;
 use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnsOnBlock;
+use IvanCraft623\MobPlugin\spawning\condition\WorldAgeCondition;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\BrightnessFilterData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\DensityLimitData;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\DifficultyFilterData;
@@ -236,7 +237,7 @@ final class SpawnRulesParser{
 		$this->registerComponent(VanillaSpawnConditions::BRIGHTNESS_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(BrightnessFilterData::class);
 			// adjust_for_weather is ignored: PocketMine-MP has no weather to darken the light.
-			$builder->addCondition(RangeCondition::brightness($m->min ?? 0, $m->max ?? 15));
+			$builder->addCondition(new BrightnessCondition($m->min ?? 0, $m->max ?? 15));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DIFFICULTY_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DifficultyFilterData::class);
@@ -252,7 +253,7 @@ final class SpawnRulesParser{
 		});
 		$this->registerComponent(VanillaSpawnConditions::WORLD_AGE_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(WorldAgeFilterData::class);
-			$builder->addCondition(RangeCondition::worldAge($m->min, $m->max));
+			$builder->addCondition(new WorldAgeCondition($m->min, $m->max));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_ON_BLOCK_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlockSet(), false));

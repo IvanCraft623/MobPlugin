@@ -23,28 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-/**
- * A value of the attempt within an inclusive range.
- */
-abstract class RangeCondition implements SpawnCondition{
-	/**
-	 * @param int|null $min null for no lower bound
-	 * @param int|null $max null for no upper bound
-	 */
-	protected function __construct(
-		private readonly ?int $min,
-		private readonly ?int $max
-	){
-		if($min !== null && $max !== null && $min > $max){
-			throw new \InvalidArgumentException("Range minimum ($min) must not exceed maximum ($max)");
-		}
+final class BrightnessCondition extends RangeCondition{
+	public function __construct(int $min, int $max){
+		parent::__construct($min, $max);
 	}
 
-	abstract protected function read(SpawnConditionContext $ctx) : int;
-
-	public function test(SpawnConditionContext $ctx) : bool{
-		$value = $this->read($ctx);
-
-		return ($this->min === null || $value >= $this->min) && ($this->max === null || $value <= $this->max);
+	protected function read(SpawnConditionContext $ctx) : int{
+		return $ctx->getLight();
 	}
 }

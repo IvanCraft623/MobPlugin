@@ -28,11 +28,11 @@ use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
 use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
+use IvanCraft623\MobPlugin\spawning\condition\BlockLightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\LightChanceCondition;
 use IvanCraft623\MobPlugin\spawning\condition\MoonPhaseChanceCondition;
-use IvanCraft623\MobPlugin\spawning\condition\RangeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
@@ -93,7 +93,7 @@ final class CandidateCacheTest extends TestCase{
 				]);
 			}
 			if($categoryId === "monster"){
-				$hardcoded[] = RangeCondition::blockLight(0, 0);
+				$hardcoded[] = new BlockLightCondition(0, 0);
 			}
 			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
 			self::$rules[] = new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("never spawned"), new EntitySizeInfo(1.0, 1.0));

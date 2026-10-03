@@ -149,12 +149,12 @@ source and the world.
 | Kind | Built-ins |
 |---|---|
 | Cacheable | `BiomeTagCondition`, `DifficultyCondition`, `BandCondition` |
-| Per attempt | `RangeCondition` (brightness, block light, world age), `HeightCondition`, `SpawnsOnBlock`, `SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition` |
+| Per attempt | `BrightnessCondition`, `BlockLightCondition`, `WorldAgeCondition`, `HeightCondition`, `SpawnsOnBlock`, `SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition` |
 | Combinators | `AllOf`, `AnyOf`, `Not` |
 
 Two vanilla rules live in the engine instead of the rules file, so the registry adds them:
 
-- Every `Monster` gets `RangeCondition::blockLight(0, 0)`.
+- Every `Monster` gets `new BlockLightCondition(0, 0)`.
 - Slimes spawn at Y 38 or below in slime chunks (Bedrock's algorithm, reverse engineered
   by @protolambda and @jocopa3), and from Y 50 to 68 in `spawns_slimes_on_surface` biomes
   with a light roll and a moon-phase roll.
@@ -203,7 +203,7 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 	VanillaMobCategories::MONSTER,
 	[
 		new SpawnRuleGroup([
-			RangeCondition::brightness(0, 7),
+			new BrightnessCondition(0, 7),
 			new DifficultyCondition(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
 			new SpawnsOnBlock([VanillaBlocks::STONE()->asItem()->getStateId() => true], false),
 		], weight: 100),
