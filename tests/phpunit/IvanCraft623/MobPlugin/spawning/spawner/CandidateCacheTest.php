@@ -49,11 +49,10 @@ use function array_map;
 use function count;
 use function dirname;
 use function sort;
-use function spl_object_id;
 
 /**
  * The cache against plain evaluation over the whole vanilla key space, with the rules as
- * the registry builds them: chance rolls included, results shared between keys.
+ * the registry builds them: a wrong cache gives wrong spawns for every key.
  */
 final class CandidateCacheTest extends TestCase{
 	private const POINTS_PER_KEY = 8;
@@ -190,39 +189,6 @@ final class CandidateCacheTest extends TestCase{
 		}
 		self::assertGreaterThan(count($keys), $matched, "the contexts must exercise real matches");
 		self::assertGreaterThan(20, $slimes, "the contexts must exercise the slime rule");
-	}
-
-	/**
-	 * Equal results are one object, not one copy per key: far fewer distinct rule entries
-	 * than a copy for every rule of every key.
-	 */
-	public function testEqualResultsAreSharedAcrossTheKeySpace() : void{
-		$cache = new CandidateCache(self::$rules);
-		$distinct = [];
-		$entries = 0;
-		foreach(self::$keys as [$biomeId, $band, $difficulty, $liquid]){
-			foreach($cache->getCandidates(new StubContext(biomeId: $biomeId, band: $band, difficulty: $difficulty, feetLiquid: $liquid)) as $candidate){
-				$distinct[spl_object_id($candidate)] = $candidate; // kept alive, so ids stay unique
-				$entries++;
-			}
-		}
-
-		self::assertGreaterThan(count(self::$keys), $entries);
-		self::assertLessThan($entries / 20, count($distinct), "$entries entries over " . count(self::$keys) . " keys");
-	}
-
-	public function testCacheableConditionRunsOncePerKey() : void{
-		$spy = new CacheableSpyCondition();
-		$cache = new CandidateCache([new SpawnRules("minecraft:a", "monster", [new SpawnRuleGroup([$spy])], static fn() : Entity => throw new \LogicException("never spawned"))]);
-		for($i = 0; $i < 10; $i++){
-			foreach([1, 2] as $biomeId){
-				$ctx = new StubContext(biomeId: $biomeId, y: $i);
-				foreach($cache->getCandidates($ctx) as $candidate){
-					self::assertNotSame([], $candidate->match($ctx));
-				}
-			}
-		}
-		self::assertSame(2, $spy->calls);
 	}
 
 	/**

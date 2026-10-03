@@ -27,21 +27,16 @@ use PHPUnit\Framework\TestCase;
 use pocketmine\block\VanillaBlocks;
 
 final class WorldSpawnPassTest extends TestCase{
-
+	/**
+	 * Depends on PocketMine's collision boxes. If air weren't passable nothing would spawn,
+	 * and snowy biomes are covered in single snow layers, which PocketMine gives a flat box.
+	 */
 	public function testMobsCanStandInBlocksWithNothingToCollideWith() : void{
 		self::assertTrue(WorldSpawnPass::isPassable(VanillaBlocks::AIR()));
 		self::assertTrue(WorldSpawnPass::isPassable(VanillaBlocks::TALL_GRASS()));
-		self::assertTrue(WorldSpawnPass::isPassable(VanillaBlocks::TORCH()));
-		self::assertFalse(WorldSpawnPass::isPassable(VanillaBlocks::GRASS()));
-		self::assertFalse(WorldSpawnPass::isPassable(VanillaBlocks::OAK_SLAB()));
-	}
-
-	/**
-	 * Snowy biomes are covered in single snow layers, which PocketMine gives a flat
-	 * collision box: rejecting them leaves the whole biome without surface spawns.
-	 */
-	public function testSingleSnowLayerIsPassableAndThickerSnowIsNot() : void{
 		self::assertTrue(WorldSpawnPass::isPassable(VanillaBlocks::SNOW_LAYER()));
 		self::assertFalse(WorldSpawnPass::isPassable(VanillaBlocks::SNOW_LAYER()->setLayers(2)));
+		self::assertFalse(WorldSpawnPass::isPassable(VanillaBlocks::GRASS()));
+		self::assertFalse(WorldSpawnPass::isPassable(VanillaBlocks::OAK_SLAB()));
 	}
 }

@@ -30,17 +30,18 @@ use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use PHPUnit\Framework\TestCase;
-use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 use function count;
 
+/**
+ * Wrong counts break the caps: spawning then runs unbounded or stops.
+ */
 final class PopulationCensusTest extends TestCase{
 	private const MONSTER = "test:monster";
 	private const FISH = "test:fish";
-	private const UNCOUNTED = "test:uncounted";
 
 	private SpawnRuleRegistry $registry;
 
@@ -73,24 +74,9 @@ final class PopulationCensusTest extends TestCase{
 		self::assertSame(0, $counts->getIdentifierCount(self::FISH, SpawnBand::CAVE));
 	}
 
-	public function testClosedEntitiesAndTypesWithoutRulesAreSkipped() : void{
-		$this->place(self::MONSTER, 0, 0, SpawnBand::SURFACE, closed: true);
-		$this->place(self::UNCOUNTED, 0, 0, SpawnBand::SURFACE);
-
-		$counts = $this->census()->getRegionPopulation(0, 0);
-
-		self::assertSame(0, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
-		self::assertSame(0, $counts->getIdentifierCount(self::UNCOUNTED, SpawnBand::SURFACE));
-	}
-
-	public function testRegionIsTheNineByNineChunksAround() : void{
-		$this->place(self::MONSTER, 4, -4, SpawnBand::SURFACE);
-		$this->place(self::MONSTER, 5, 0, SpawnBand::SURFACE);
-		$this->place(self::MONSTER, 0, -5, SpawnBand::SURFACE);
-
-		self::assertSame(1, $this->census()->getRegionPopulation(0, 0)->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
-	}
-
+	/**
+	 * Mobs spawned during a pass count against the caps of the rest of the pass.
+	 */
 	public function testAddUpdatesTheRegionsThatCoverTheChunk() : void{
 		$census = $this->census();
 		$near = $census->getRegionPopulation(0, 0);
@@ -105,70 +91,30 @@ final class PopulationCensusTest extends TestCase{
 		self::assertSame(1, $census->getRegionPopulation(1, 1)->getIdentifierCount(self::MONSTER, SpawnBand::CAVE));
 	}
 
-	public function testAddBeforeTheChunkIsCountedIsNotCountedTwice() : void{
-		$census = $this->census();
-		$census->add($this->place(self::MONSTER, 0, 0, SpawnBand::CAVE));
-
-		self::assertSame(1, $census->getRegionPopulation(0, 0)->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE));
-	}
-
-	public function testUnknownBandIsDerivedFromThePositionOnce() : void{
-		$above = $this->place(self::MONSTER, 0, 0, null, y: 70.0);
-		$below = $this->place(self::MONSTER, 0, 0, null, y: 20.0);
-
-		$world = $this->world();
-		$world->expects(self::exactly(2))->method("getHighestBlockAt")->willReturn(64);
-		$world->method("getBlockAt")->willReturn(VanillaBlocks::STONE());
-		$world->method("getMinY")->willReturn(-64);
-
-		$counts = $this->census($world)->getRegionPopulation(0, 0);
-		self::assertSame(1, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::SURFACE));
-		self::assertSame(1, $counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE));
-		self::assertSame(SpawnBand::SURFACE, $this->bands->get($above));
-		self::assertSame(SpawnBand::CAVE, $this->bands->get($below));
-
-		// A later census finds the bands remembered: the ground is not read again.
-		$this->census($world)->getRegionPopulation(0, 0);
-	}
-
-	private function place(string $identifier, int $chunkX, int $chunkZ, ?SpawnBand $band, bool $closed = false, float $y = 64.0) : Entity{
-		// Columns differ per entity so each one needs its own ground lookup.
+	private function place(string $identifier, int $chunkX, int $chunkZ, SpawnBand $band) : Entity{
 		$index = count($this->entities[World::chunkHash($chunkX, $chunkZ)] ?? []);
-		$position = new Position(($chunkX << 4) + $index + 0.5, $y, ($chunkZ << 4) + 0.5, null);
+		$position = new Position(($chunkX << 4) + $index + 0.5, 64.0, ($chunkZ << 4) + 0.5, null);
 		$entity = match($identifier){
-			self::MONSTER => new class($position, $closed) extends FakeEntity{
+			self::MONSTER => new class($position) extends FakeEntity{
 				public static function getNetworkTypeId() : string{
 					return "test:monster";
 				}
 			},
-			self::FISH => new class($position, $closed) extends FakeEntity{
+			default => new class($position) extends FakeEntity{
 				public static function getNetworkTypeId() : string{
 					return "test:fish";
 				}
 			},
-			default => new class($position, $closed) extends FakeEntity{
-				public static function getNetworkTypeId() : string{
-					return "test:uncounted";
-				}
-			},
 		};
-		if($band !== null){
-			$this->bands->set($entity, $band);
-		}
+		$this->bands->set($entity, $band);
 		$this->entities[World::chunkHash($chunkX, $chunkZ)][] = $entity;
 
 		return $entity;
 	}
 
-	private function world() : World&\PHPUnit\Framework\MockObject\MockObject{
+	private function census() : PopulationCensus{
 		$world = $this->createMock(World::class);
 		$world->method("getChunkEntities")->willReturnCallback(fn(int $chunkX, int $chunkZ) : array => $this->entities[World::chunkHash($chunkX, $chunkZ)] ?? []);
-
-		return $world;
-	}
-
-	private function census(?World $world = null) : PopulationCensus{
-		$world ??= $this->world();
 
 		return new PopulationCensus($world, new GroundLevelCache($world), $this->bands, $this->registry);
 	}

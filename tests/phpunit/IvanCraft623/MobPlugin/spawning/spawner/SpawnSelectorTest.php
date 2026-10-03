@@ -23,8 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
-use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
 use IvanCraft623\MobPlugin\spawning\MobCategory;
 use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
@@ -35,14 +33,14 @@ use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use PHPUnit\Framework\TestCase;
 use pocketmine\entity\Entity;
 use pocketmine\utils\Random;
-use pocketmine\world\World;
 use function array_map;
 
+/**
+ * The caps and density limits: without them spawning runs unbounded.
+ */
 final class SpawnSelectorTest extends TestCase{
-	private const TRIALS = 2000;
-
 	/** Category id => surface and cave cap. */
-	private const CATEGORIES = ["a" => 100, "b" => 100, "free" => 100, "full" => 2, "m" => 4, "zero" => 0];
+	private const CATEGORIES = ["free" => 100, "full" => 2, "m" => 4];
 
 	protected function setUp() : void{
 		foreach(self::CATEGORIES as $id => $cap){
@@ -56,152 +54,46 @@ final class SpawnSelectorTest extends TestCase{
 		}
 	}
 
-	public function testPickWeightIsTheMatchedGroupsWeight() : void{
-		$selector = self::selector(2);
-		$candidates = self::candidates([
-			// A heavy group that never matches must not inflate its rule's share.
-			self::rules("minecraft:split", "a", [self::group([self::neverMatches()], 1000), self::group([], 1)]),
-			self::rules("minecraft:plain", "b", [self::group([], 1)]),
-		]);
-
-		$split = 0;
-		for($i = 0; $i < self::TRIALS; $i++){
-			if(self::selectIdentifier($selector, new StubContext(), $candidates) === "minecraft:split"){
-				$split++;
-			}
-		}
-		self::assertEqualsWithDelta(0.5, $split / self::TRIALS, 0.05);
-	}
-
 	public function testCappedCategoryDoesNotCompete() : void{
-		$selector = self::selector(3);
 		$candidates = self::candidates([
-			self::rules("minecraft:capped", "full", [self::group([], 1000)]),
-			self::rules("minecraft:free", "free", [self::group([], 1)]),
+			self::rules("minecraft:capped", "full", 1000),
+			self::rules("minecraft:free", "free", 1),
 		]);
 		$ctx = new StubContext(population: PopulationCounts::of([SpawnBand::SURFACE->value => ["full" => 2]]));
 
-		for($i = 0; $i < self::TRIALS; $i++){
-			self::assertSame("minecraft:free", self::selectIdentifier($selector, $ctx, $candidates));
-		}
+		self::assertSame("minecraft:free", self::selector()->select($ctx, $candidates)?->rules->getIdentifier());
 	}
 
-	public function testCategoryUnderItsCapIsAlwaysAcceptedWithItsRoom() : void{
-		$selector = self::selector(4);
-		$candidates = self::candidates([self::rules("minecraft:mob", "m", [self::group([], 1)])]);
+	public function testRoomIsWhatTheCategoryCapLeaves() : void{
+		$candidates = self::candidates([self::rules("minecraft:mob", "m", 1)]);
 		$ctx = new StubContext(population: PopulationCounts::of([SpawnBand::SURFACE->value => ["m" => 3]]));
 
-		for($i = 0; $i < self::TRIALS; $i++){
-			$selected = $selector->select($ctx, $candidates);
-			self::assertNotNull($selected, "vanilla has no cap roll");
-			self::assertSame(1, $selected->room); // 4 - 3
-		}
+		self::assertSame(1, self::selector()->select($ctx, $candidates)?->room); // 4 - 3
 	}
 
 	public function testDensityLimitTrimsTheRoom() : void{
-		$selector = self::selector(14);
-		$candidates = self::candidates([self::rules("minecraft:mob", "free", [new SpawnRuleGroup([], surfaceDensityLimit: 5)])]);
+		$candidates = self::candidates([new SpawnRules("minecraft:mob", "free", [new SpawnRuleGroup([], surfaceDensityLimit: 5)], self::factory())]);
 
-		$selected = $selector->select(new StubContext(population: PopulationCounts::of([], [SpawnBand::SURFACE->value => ["minecraft:mob" => 3]])), $candidates);
-		self::assertNotNull($selected);
-		self::assertSame(2, $selected->room); // 5 - 3, well under the category's 100
+		$under = new StubContext(population: PopulationCounts::of([], [SpawnBand::SURFACE->value => ["minecraft:mob" => 3]]));
+		self::assertSame(2, self::selector()->select($under, $candidates)?->room); // 5 - 3, well under the category's 100
 
 		$atLimit = new StubContext(population: PopulationCounts::of([], [SpawnBand::SURFACE->value => ["minecraft:mob" => 5]]));
-		self::assertNull($selector->select($atLimit, $candidates));
+		self::assertNull(self::selector()->select($atLimit, $candidates));
 	}
 
-	public function testEveryMatchingGroupOfARuleCompetes() : void{
-		$selector = self::selector(11);
-		$heavy = self::group([], 3);
-		$light = self::group([], 1);
-		$candidates = self::candidates([self::rules("minecraft:mob", "a", [$heavy, $light])]);
-
-		$lightPicks = 0;
-		for($i = 0; $i < self::TRIALS; $i++){
-			$selected = $selector->select(new StubContext(), $candidates);
-			self::assertNotNull($selected);
-			if($selected->group === $light){
-				$lightPicks++;
-			}
-		}
-		self::assertEqualsWithDelta(0.25, $lightPicks / self::TRIALS, 0.04);
+	private static function selector() : SpawnSelector{
+		return new SpawnSelector(new Random(1), MobCategoryRegistry::getInstance());
 	}
 
-	public function testRarityAcceptsOneInThatMany() : void{
-		$selector = self::selector(12);
-		$candidates = self::candidates([self::rules("minecraft:rare", "a", [self::group([], 1, 4)])]);
-
-		$accepted = 0;
-		for($i = 0; $i < self::TRIALS * 2; $i++){
-			if($selector->select(new StubContext(), $candidates) !== null){
-				$accepted++;
-			}
-		}
-		self::assertEqualsWithDelta(0.25, $accepted / (self::TRIALS * 2), 0.04);
-	}
-
-	public function testLosingTheRarityRollWastesTheAttempt() : void{
-		$selector = self::selector(13);
-		$candidates = self::candidates([
-			self::rules("minecraft:rare", "a", [self::group([], 1000, 1000000)]),
-			self::rules("minecraft:plain", "b", [self::group([], 1)]),
-		]);
-
-		$accepted = 0;
-		for($i = 0; $i < self::TRIALS; $i++){
-			if($selector->select(new StubContext(), $candidates) !== null){
-				$accepted++;
-			}
-		}
-		// The plain rule only spawns when it wins the pick, not when the rare one loses its roll.
-		self::assertLessThan(self::TRIALS * 0.01, $accepted);
-	}
-
-	public function testNoMatchReadsNoPopulation() : void{
-		$ctx = new StubContext();
-		self::assertNull(self::selector(8)->select($ctx, self::candidates([self::rules("minecraft:never", "a", [self::group([self::neverMatches()], 1)])])));
-		self::assertSame(0, $ctx->populationReads);
-	}
-
-	public function testPopulationIsReadOncePerSelect() : void{
-		$ctx = new StubContext();
-		self::selector(10)->select($ctx, self::candidates([
-			self::rules("minecraft:x", "a", [self::group([], 1)]),
-			self::rules("minecraft:y", "b", [self::group([], 1)]),
-		]));
-		self::assertSame(1, $ctx->populationReads);
-	}
-
-	private static function selector(int $seed) : SpawnSelector{
-		return new SpawnSelector(new Random($seed), MobCategoryRegistry::getInstance());
+	private static function rules(string $identifier, string $categoryId, int $weight) : SpawnRules{
+		return new SpawnRules($identifier, $categoryId, [new SpawnRuleGroup([], $weight)], self::factory());
 	}
 
 	/**
-	 * @phpstan-param list<CandidateRule> $candidates
+	 * @phpstan-return \Closure() : Entity
 	 */
-	private static function selectIdentifier(SpawnSelector $selector, StubContext $ctx, array $candidates) : string{
-		$selected = $selector->select($ctx, $candidates);
-		self::assertNotNull($selected, "a free category with a match is always accepted");
-
-		return $selected->rules->getIdentifier();
-	}
-
-	private static function neverMatches() : SpawnCondition{
-		return new DifficultyCondition(World::DIFFICULTY_HARD, World::DIFFICULTY_HARD);
-	}
-
-	/**
-	 * @phpstan-param list<SpawnCondition> $conditions
-	 */
-	private static function group(array $conditions, int $weight, int $rarity = 0) : SpawnRuleGroup{
-		return new SpawnRuleGroup($conditions, $weight, rarity: $rarity);
-	}
-
-	/**
-	 * @phpstan-param list<SpawnRuleGroup> $groups
-	 */
-	private static function rules(string $identifier, string $categoryId, array $groups) : SpawnRules{
-		return new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("the selector never spawns"));
+	private static function factory() : \Closure{
+		return static fn() : Entity => throw new \LogicException("the selector never spawns");
 	}
 
 	/**

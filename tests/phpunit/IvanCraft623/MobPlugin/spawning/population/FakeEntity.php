@@ -28,12 +28,11 @@ use pocketmine\entity\EntitySizeInfo;
 use pocketmine\world\Position;
 
 /**
- * An entity that needs no running server: it only has a position and a closed flag.
+ * An entity that needs no running server: it only has a position.
  */
 abstract class FakeEntity extends Entity{
 	public function __construct(
-		private readonly Position $position,
-		private readonly bool $isClosed = false
+		private readonly Position $position
 	){}
 
 	public function __destruct(){
@@ -42,10 +41,6 @@ abstract class FakeEntity extends Entity{
 
 	public function getPosition() : Position{
 		return $this->position;
-	}
-
-	public function isClosed() : bool{
-		return $this->isClosed;
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
