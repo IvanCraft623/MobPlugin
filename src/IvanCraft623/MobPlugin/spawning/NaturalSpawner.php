@@ -24,11 +24,13 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
+use IvanCraft623\MobPlugin\event\ChunkPreNaturalSpawnEvent;
 use IvanCraft623\MobPlugin\spawning\population\MobPopulation;
 use IvanCraft623\MobPlugin\spawning\spawner\CandidateCache;
 use IvanCraft623\MobPlugin\spawning\spawner\HerdSpawner;
 use IvanCraft623\MobPlugin\spawning\spawner\SpawnSelector;
 use IvanCraft623\MobPlugin\spawning\spawner\WorldSpawnPass;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
 use pocketmine\world\WorldManager;
@@ -117,7 +119,12 @@ final class NaturalSpawner{
 				$pass ??= new WorldSpawnPass($world, $chunks, $players, $candidateCache, $this->selector, $this->herdSpawner, $this->population, $this->registry, $this->random, $this->maxPlayerDistance);
 				World::getXZ($chunks[$i], $chunkX, $chunkZ);
 				// Decided here so a chunk that can't spawn takes none of the tick's budget.
-				if($pass->canAttempt($chunkX, $chunkZ)){
+				if(!$pass->canAttempt($chunkX, $chunkZ)){
+					continue;
+				}
+				$event = new ChunkPreNaturalSpawnEvent($world, $chunkX, $chunkZ, $world->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Ticking chunks are loaded"));
+				$event->call();
+				if(!$event->isCancelled()){
 					$hits[] = [$pass, $chunkX, $chunkZ];
 				}
 			}

@@ -32,8 +32,10 @@ use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeRandomDirectionGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeMoveControl;
-
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
@@ -202,6 +204,7 @@ class Slime extends Mob implements Enemy {
 				$slime = new Slime($this->getLocation());
 				$slime->setType($slimeType);
 				$slime->setPersistent($persistent);
+				(new MobSpawnEvent($slime, MobSpawnCause::SPLIT))->call();
 				$slime->spawnToAll();
 			}
 		}

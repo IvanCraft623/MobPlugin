@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\spawning\population\EntitySpawnBands;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -62,6 +64,7 @@ final class HerdSpawner{
 
 			$entity = ($spawnRules->getFactory())($world, $position, $group);
 			$this->spawnBands->set($entity, $band);
+			(new MobSpawnEvent($entity, MobSpawnCause::NATURAL))->call();
 			$entity->spawnToAll();
 			$spawned[] = $entity;
 		}
