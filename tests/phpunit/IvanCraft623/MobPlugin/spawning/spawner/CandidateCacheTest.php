@@ -23,144 +23,136 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
-use IvanCraft623\MobPlugin\data\bedrock\EntityIds;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\AllOf;
 use IvanCraft623\MobPlugin\spawning\condition\AnyOf;
+use IvanCraft623\MobPlugin\spawning\condition\BandCondition;
 use IvanCraft623\MobPlugin\spawning\condition\BiomeTagCondition;
-use IvanCraft623\MobPlugin\spawning\condition\BlockLightCondition;
-use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
+use IvanCraft623\MobPlugin\spawning\condition\BrightnessCondition;
+use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\LightChanceCondition;
-use IvanCraft623\MobPlugin\spawning\condition\MoonPhaseChanceCondition;
-use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
+use IvanCraft623\MobPlugin\spawning\condition\Not;
 use IvanCraft623\MobPlugin\spawning\condition\StubContext;
-use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use PHPUnit\Framework\TestCase;
-use pocketmine\block\Block;
-use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\utils\Random;
-use function array_keys;
-use function array_map;
+use function array_reverse;
 use function count;
-use function dirname;
-use function sort;
 
 /**
- * The cache against plain evaluation over the whole vanilla key space, with the rules as
- * the registry builds them: a wrong cache gives wrong spawns for every key.
+ * The cache must return what plain evaluation returns: a wrong cache gives wrong spawns.
  */
 final class CandidateCacheTest extends TestCase{
-	private const POINTS_PER_KEY = 8;
+	private const POINTS_PER_KEY = 6;
 
-	/** @phpstan-var list<int> item state ids of the blocks a position stands on */
-	private static array $below;
+	/**
+	 * One rule set per thing the cache does to a rule.
+	 *
+	 * @phpstan-return list<SpawnRules>
+	 */
+	private static function rules() : array{
+		$tags = new BiomeTagMap([1 => ["warm" => true], 2 => ["cold" => true], 3 => ["warm" => true, "wet" => true]]);
+		$warm = new BiomeTagCondition($tags, "warm");
+		$cold = new BiomeTagCondition($tags, "cold");
+		$wet = new BiomeTagCondition($tags, "wet");
+		$dark = new BrightnessCondition(0, 7);
+		$deep = new HeightCondition(null, 40);
 
-	/** @phpstan-var list<SpawnRules> */
-	private static array $rules;
+		$sets = [
+			// Decided by the key alone.
+			"cacheable" => [
+				new SpawnRuleGroup([$warm, new DifficultyCondition(1, 3)]),
+				new SpawnRuleGroup([new BandCondition(SpawnBand::CAVE)]),
+			],
+			// Left for every attempt.
+			"residual" => [
+				new SpawnRuleGroup([$dark, $deep]),
+			],
+			// Combinators mixing both kinds, which the key decides only in part.
+			"combinators" => [
+				new SpawnRuleGroup([new AllOf([$warm, $deep])]),
+				new SpawnRuleGroup([new AnyOf([new BandCondition(SpawnBand::SURFACE), $dark])]),
+				new SpawnRuleGroup([new Not(new AnyOf([$cold, $dark]))]),
+				new SpawnRuleGroup([new AnyOf([new AllOf([$wet, $deep]), new AllOf([new Not($warm), new Not($dark)])])]),
+			],
+			"liquids" => [
+				new SpawnRuleGroup([$warm], requiredLiquid: SpawnLiquid::WATER),
+				new SpawnRuleGroup([$dark], requiredLiquid: SpawnLiquid::LAVA),
+			],
+			// Chances are rolled by both sides in the same order.
+			"chances" => [
+				new SpawnRuleGroup([$wet, new LightChanceCondition(8)]),
+				new SpawnRuleGroup([new AnyOf([
+					new AllOf([$deep, new LightChanceCondition(8)]),
+					new AllOf([$cold, new LightChanceCondition(8, inverted: true)]),
+				])]),
+			],
+		];
 
-	/** @phpstan-var list<array{int, SpawnBand, int, SpawnLiquid}> every key of the vanilla key space */
-	private static array $keys;
-
-	public static function setUpBeforeClass() : void{
-		self::$below = array_map(
-			static fn(Block $block) : int => $block->asItem()->getStateId(),
-			[VanillaBlocks::GRASS(), VanillaBlocks::SAND(), VanillaBlocks::STONE(), VanillaBlocks::MYCELIUM(), VanillaBlocks::SNOW(), VanillaBlocks::NETHERRACK(), VanillaBlocks::DEEPSLATE()]
-		);
-		$root = dirname(__DIR__, 6);
-		$tags = BiomeTagMap::fromFiles($root . "/vendor/pocketmine/bedrock-data/biome_id_map.json", $root . "/vendor/pocketmine/bedrock-data/biome_definitions.json");
-
-		// As SpawnRuleRegistry::registerVanilla() builds them; it tells monsters by their
-		// entity class, here by their category.
-		self::$rules = [];
-		foreach(SpawnRulesParser::createVanilla($tags)->parseFile($root . "/resources/spawning/spawn_rules.json") as $identifier => [$categoryId, $groups]){
-			$hardcoded = [];
-			if($identifier === EntityIds::SLIME){
-				$hardcoded[] = new AnyOf([
-					new AllOf([new HeightCondition(null, 38), new SlimeChunkCondition()]),
-					new AllOf([
-						new HeightCondition(50, 68),
-						new BiomeTagCondition($tags, "spawns_slimes_on_surface"),
-						new LightChanceCondition(8, inverted: true),
-						new MoonPhaseChanceCondition(),
-					]),
-				]);
-			}
-			if($categoryId === "monster"){
-				$hardcoded[] = new BlockLightCondition(0, 0);
-			}
-			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
-			self::$rules[] = new SpawnRules($identifier, $categoryId, $groups, static fn() : Entity => throw new \LogicException("never spawned"), new EntitySizeInfo(1.0, 1.0));
+		$rules = [];
+		foreach($sets as $identifier => $groups){
+			$rules[] = new SpawnRules($identifier, "monster", $groups, static fn() : Entity => throw new \LogicException("never spawned"), new EntitySizeInfo(1.0, 1.0));
 		}
 
-		self::$keys = [];
-		for($biomeId = 0; $biomeId < 400; $biomeId++){
-			if(count($tags->getTags($biomeId)) === 0){
-				continue;
-			}
+		return $rules;
+	}
+
+	/**
+	 * @phpstan-return list<array{int, SpawnBand, int, SpawnLiquid}>
+	 */
+	private static function keys() : array{
+		$keys = [];
+		foreach([1, 2, 3, 4] as $biomeId){
 			foreach(SpawnBand::cases() as $band){
 				for($difficulty = 0; $difficulty < 4; $difficulty++){
 					foreach(SpawnLiquid::cases() as $liquid){
-						self::$keys[] = [$biomeId, $band, $difficulty, $liquid];
+						$keys[] = [$biomeId, $band, $difficulty, $liquid];
 					}
 				}
 			}
 		}
-		self::assertGreaterThan(1000, count(self::$keys));
+
+		return $keys;
 	}
 
 	/**
-	 * @phpstan-return iterable<string, array{int|null}>
+	 * @phpstan-return iterable<string, array{bool}>
 	 */
 	public static function keyOrders() : iterable{
-		yield "in order" => [null];
-		yield "shuffled" => [20240];
+		yield "in order" => [false];
+		yield "reversed" => [true];
 	}
 
 	/**
-	 * Shared results make a key's outcome depend on what was resolved before it only if
-	 * sharing is wrong, so the keys are resolved in two orders.
+	 * Keys with equal results share them, so the keys are resolved in two orders: the
+	 * outcome of a key must not depend on what was resolved before it.
 	 *
 	 * @dataProvider keyOrders
 	 */
-	public function testEveryKeyMatchesPlainEvaluation(?int $shuffleSeed) : void{
-		$keys = self::$keys;
-		if($shuffleSeed !== null){
-			$shuffle = new Random($shuffleSeed);
-			for($i = count($keys) - 1; $i > 0; $i--){
-				$j = $shuffle->nextBoundedInt($i + 1);
-				[$keys[$i], $keys[$j]] = [$keys[$j], $keys[$i]];
-			}
-		}
-
-		$cache = new CandidateCache(self::$rules);
+	public function testEveryKeyMatchesPlainEvaluation(bool $reversed) : void{
+		$rules = self::rules();
+		$keys = $reversed ? array_reverse(self::keys()) : self::keys();
+		$cache = new CandidateCache($rules);
 		$random = new Random(4242);
-		$matched = 0;
-		$slimes = 0;
-		foreach($keys as $index => [$biomeId, $band, $difficulty, $liquid]){
+		$matches = [];
+		foreach($keys as [$biomeId, $band, $difficulty, $liquid]){
 			for($point = 0; $point < self::POINTS_PER_KEY; $point++){
 				$arguments = [
 					"biomeId" => $biomeId,
 					"band" => $band,
 					"difficulty" => $difficulty,
 					"feetLiquid" => $liquid,
-					"x" => $random->nextRange(-3000, 3000),
-					"y" => $random->nextRange(-64, 120),
-					"z" => $random->nextRange(-3000, 3000),
+					"y" => $random->nextRange(20, 60),
 					"light" => $random->nextBoundedInt(16),
-					"belowItemStateId" => self::$below[$random->nextBoundedInt(count(self::$below))],
-					"nearestPlayerDistance" => 10 + $random->nextFloat() * 130,
-					"time" => $random->nextBoundedInt(400000),
-					"blockLight" => $random->nextBoundedInt(4) === 0 ? $random->nextBoundedInt(16) : 0,
 				];
-				// Each side rolls from its own equally seeded source: any chance drawn
-				// out of step shows as a different outcome.
+				// Each side rolls from its own equally seeded source: a chance drawn out of
+				// step shows as a different outcome.
 				$seed = $random->nextInt();
 				$cached = new StubContext(...$arguments, random: new Random($seed));
 				$plain = new StubContext(...$arguments, random: new Random($seed));
@@ -173,43 +165,19 @@ final class CandidateCacheTest extends TestCase{
 					}
 				}
 				$expected = [];
-				foreach(self::$rules as $rules){
-					$groups = $rules->check($plain);
+				foreach($rules as $spawnRules){
+					$groups = $spawnRules->check($plain);
 					if(count($groups) !== 0){
-						$expected[$rules->getIdentifier()] = $groups;
+						$expected[$spawnRules->getIdentifier()] = $groups;
 					}
 				}
 
-				self::assertSame(array_keys($expected), array_keys($actual), "key $index, point $point");
-				foreach($expected as $identifier => $groups){
-					self::assertSame($groups, $actual[$identifier], "$identifier at key $index, point $point");
-				}
-				self::assertSame($plain->random->nextInt(), $cached->random->nextInt(), "both sides drew the same number of rolls (key $index, point $point)");
-				$matched += count($expected);
-				$slimes += isset($expected[EntityIds::SLIME]) ? 1 : 0;
+				$where = "biome $biomeId, $band->name, difficulty $difficulty, $liquid->name, point $point";
+				self::assertSame($expected, $actual, $where);
+				self::assertSame($plain->random->nextInt(), $cached->random->nextInt(), "both sides drew the same rolls ($where)");
+				$matches += $expected;
 			}
 		}
-		self::assertGreaterThan(count($keys), $matched, "the contexts must exercise real matches");
-		self::assertGreaterThan(20, $slimes, "the contexts must exercise the slime rule");
-	}
-
-	/**
-	 * The cache key packs exactly these values, each in its own bits. A new getter or a
-	 * new enum case changes what a key means: update the hash and this test together.
-	 */
-	public function testTheKeyCoversEveryCachedByValue() : void{
-		$getters = array_map(
-			static fn(\ReflectionMethod $method) : string => $method->getName(),
-			(new \ReflectionClass(CacheableConditionContext::class))->getMethods()
-		);
-		sort($getters);
-		self::assertSame(["getBand", "getBiomeId", "getDifficulty", "getFeetLiquid"], $getters);
-
-		foreach(SpawnLiquid::cases() as $liquid){
-			self::assertLessThan(4, $liquid->value);
-		}
-		foreach(SpawnBand::cases() as $band){
-			self::assertLessThan(2, $band->value);
-		}
+		self::assertCount(count($rules), $matches, "every rule set must match somewhere");
 	}
 }

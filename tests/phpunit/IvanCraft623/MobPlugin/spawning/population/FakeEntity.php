@@ -32,8 +32,11 @@ use pocketmine\world\Position;
  */
 abstract class FakeEntity extends Entity{
 	public function __construct(
-		private readonly Position $position
-	){}
+		private readonly Position $position,
+		bool $closed = false
+	){
+		$this->closed = $closed;
+	}
 
 	public function __destruct(){
 		// Nothing was initialized, so there is nothing to dispose of.

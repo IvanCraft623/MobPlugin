@@ -27,7 +27,6 @@ use pocketmine\data\bedrock\BedrockDataFiles;
 use pocketmine\plugin\PluginException;
 use pocketmine\utils\Filesystem;
 use pocketmine\utils\Utils;
-use function array_keys;
 use function is_array;
 use function is_int;
 use function is_string;
@@ -90,12 +89,5 @@ final class BiomeTagMap{
 	 */
 	public function isKnownTag(string $tag) : bool{
 		return isset($this->knownTags[$tag]);
-	}
-
-	/**
-	 * @phpstan-return list<string>
-	 */
-	public function getTags(int $biomeId) : array{
-		return array_keys($this->tagsByBiomeId[$biomeId] ?? []);
 	}
 }
