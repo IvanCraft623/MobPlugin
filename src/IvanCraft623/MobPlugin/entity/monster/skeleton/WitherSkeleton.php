@@ -64,7 +64,11 @@ class WitherSkeleton extends AbstractSkeleton {
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::WITHER_SKELETON_HEIGHT, VanillaEntitySizes::WITHER_SKELETON_WIDTH, VanillaEntitySizes::WITHER_SKELETON_HEIGHT * 0.9);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::WITHER_SKELETON_HEIGHT,
+			VanillaEntitySizes::WITHER_SKELETON_WIDTH,
+			VanillaEntitySizes::WITHER_SKELETON_HEIGHT * 0.9
+		);
 	}
 
 	public function isFireProof() : bool{

@@ -59,7 +59,11 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 	protected bool $saddled = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::PIG_HEIGHT, VanillaEntitySizes::PIG_WIDTH, VanillaEntitySizes::PIG_HEIGHT * 0.85);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::PIG_HEIGHT,
+			VanillaEntitySizes::PIG_WIDTH,
+			VanillaEntitySizes::PIG_HEIGHT * 0.85
+		);
 	}
 
 	public function getName() : string{

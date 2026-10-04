@@ -72,7 +72,11 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 	protected bool $sheared = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::SNOW_GOLEM_HEIGHT, VanillaEntitySizes::SNOW_GOLEM_WIDTH, VanillaEntitySizes::SNOW_GOLEM_HEIGHT * 0.94);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::SNOW_GOLEM_HEIGHT,
+			VanillaEntitySizes::SNOW_GOLEM_WIDTH,
+			VanillaEntitySizes::SNOW_GOLEM_HEIGHT * 0.94
+		);
 	}
 
 	public function getName() : string{

@@ -152,7 +152,11 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	private WrappedGoal $explodeOnHalfLifeWrapped;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::WITHER_HEIGHT, VanillaEntitySizes::WITHER_WIDTH, VanillaEntitySizes::WITHER_HEIGHT * 1.2); // what? eye above bounding box...
+		return new EntitySizeInfo(
+			VanillaEntitySizes::WITHER_HEIGHT,
+			VanillaEntitySizes::WITHER_WIDTH,
+			VanillaEntitySizes::WITHER_HEIGHT * 1.2 // what? eye above bounding box...
+		);
 	}
 
 	public function getName() : string{

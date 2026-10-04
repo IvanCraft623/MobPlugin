@@ -34,7 +34,6 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeMoveControl;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
-
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\EntitySizeInfo;

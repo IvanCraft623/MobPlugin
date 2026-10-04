@@ -79,7 +79,11 @@ class IronGolem extends Golem implements NeutralMob{
 	protected bool $createdByPlayer = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::IRON_GOLEM_HEIGHT, VanillaEntitySizes::IRON_GOLEM_WIDTH, VanillaEntitySizes::IRON_GOLEM_HEIGHT * 0.9);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::IRON_GOLEM_HEIGHT,
+			VanillaEntitySizes::IRON_GOLEM_WIDTH,
+			VanillaEntitySizes::IRON_GOLEM_HEIGHT * 0.9
+		);
 	}
 
 	public function getName() : string{

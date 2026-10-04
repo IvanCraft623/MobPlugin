@@ -85,7 +85,11 @@ class Creeper extends Monster implements Explosive, Powerable{
 	protected int $explosionRadius = self::DEFAULT_EXPLOSION_RADIUS;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::CREEPER_HEIGHT, VanillaEntitySizes::CREEPER_WIDTH, VanillaEntitySizes::CREEPER_HEIGHT * 0.9);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::CREEPER_HEIGHT,
+			VanillaEntitySizes::CREEPER_WIDTH,
+			VanillaEntitySizes::CREEPER_HEIGHT * 0.9
+		);
 	}
 
 	public function getName() : string{

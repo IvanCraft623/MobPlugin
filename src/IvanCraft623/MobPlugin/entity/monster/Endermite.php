@@ -50,7 +50,10 @@ class Endermite extends Monster {
 	public static function getNetworkTypeId() : string{ return EntityIds::ENDERMITE; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::ENDERMITE_HEIGHT, VanillaEntitySizes::ENDERMITE_WIDTH);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ENDERMITE_HEIGHT,
+			VanillaEntitySizes::ENDERMITE_WIDTH
+		);
 	}
 
 	public function getName() : string{

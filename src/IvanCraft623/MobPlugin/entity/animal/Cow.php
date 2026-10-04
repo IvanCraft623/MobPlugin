@@ -52,7 +52,11 @@ class Cow extends Animal {
 	public static function getNetworkTypeId() : string{ return EntityIds::COW; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::COW_HEIGHT, VanillaEntitySizes::COW_WIDTH, VanillaEntitySizes::COW_HEIGHT);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::COW_HEIGHT,
+			VanillaEntitySizes::COW_WIDTH,
+			VanillaEntitySizes::COW_HEIGHT
+		);
 	}
 
 	public function getName() : string{

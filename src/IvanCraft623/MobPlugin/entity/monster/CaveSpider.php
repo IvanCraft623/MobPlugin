@@ -50,7 +50,11 @@ class CaveSpider extends Spider {
 	public static function getNetworkTypeId() : string{ return EntityIds::CAVE_SPIDER; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::CAVE_SPIDER_HEIGHT, VanillaEntitySizes::CAVE_SPIDER_WIDTH, VanillaEntitySizes::CAVE_SPIDER_HEIGHT * 0.9);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::CAVE_SPIDER_HEIGHT,
+			VanillaEntitySizes::CAVE_SPIDER_WIDTH,
+			VanillaEntitySizes::CAVE_SPIDER_HEIGHT * 0.9
+		);
 	}
 
 	public function getName() : string{

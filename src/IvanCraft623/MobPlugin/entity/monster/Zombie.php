@@ -109,7 +109,11 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::ZOMBIE_HEIGHT, VanillaEntitySizes::ZOMBIE_WIDTH, VanillaEntitySizes::ZOMBIE_HEIGHT * 0.9);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ZOMBIE_HEIGHT,
+			VanillaEntitySizes::ZOMBIE_WIDTH,
+			VanillaEntitySizes::ZOMBIE_HEIGHT * 0.9
+		);
 	}
 
 	protected function initProperties() : void {

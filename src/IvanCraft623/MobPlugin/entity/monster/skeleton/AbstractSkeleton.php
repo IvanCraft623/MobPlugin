@@ -81,7 +81,11 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo {
-		return new EntitySizeInfo(VanillaEntitySizes::SKELETON_HEIGHT, VanillaEntitySizes::SKELETON_WIDTH, VanillaEntitySizes::SKELETON_HEIGHT * 0.9);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::SKELETON_HEIGHT,
+			VanillaEntitySizes::SKELETON_WIDTH,
+			VanillaEntitySizes::SKELETON_HEIGHT * 0.9
+		);
 	}
 
 	protected function registerGoals() : void{

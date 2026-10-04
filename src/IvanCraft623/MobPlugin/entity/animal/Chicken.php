@@ -66,7 +66,11 @@ class Chicken extends Animal {
 	protected bool $canLayEggs = true;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::CHICKEN_HEIGHT, VanillaEntitySizes::CHICKEN_WIDTH, VanillaEntitySizes::CHICKEN_HEIGHT * 0.875);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::CHICKEN_HEIGHT,
+			VanillaEntitySizes::CHICKEN_WIDTH,
+			VanillaEntitySizes::CHICKEN_HEIGHT * 0.875
+		);
 	}
 
 	public function getName() : string{

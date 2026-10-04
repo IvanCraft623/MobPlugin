@@ -54,7 +54,11 @@ class Bat extends Ambient {
 	public static function getNetworkTypeId() : string{ return EntityIds::BAT; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::BAT_HEIGHT, VanillaEntitySizes::BAT_WIDTH, VanillaEntitySizes::BAT_HEIGHT * 0.44);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::BAT_HEIGHT,
+			VanillaEntitySizes::BAT_WIDTH,
+			VanillaEntitySizes::BAT_HEIGHT * 0.44
+		);
 	}
 
 	public function getName() : string{

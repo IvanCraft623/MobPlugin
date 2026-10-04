@@ -72,7 +72,12 @@ class WitherSkull extends Projectile implements Explosive, NeverSavedWithChunkEn
 	protected bool $deflectable = false;
 	protected bool $wasDeflected = false;
 
-	protected function getInitialSizeInfo() : EntitySizeInfo{ return new EntitySizeInfo(VanillaEntitySizes::WITHER_SKULL_HEIGHT, VanillaEntitySizes::WITHER_SKULL_WIDTH); }
+	protected function getInitialSizeInfo() : EntitySizeInfo{
+		return new EntitySizeInfo(
+			VanillaEntitySizes::WITHER_SKULL_HEIGHT,
+			VanillaEntitySizes::WITHER_SKULL_WIDTH
+		);
+	}
 
 	protected function getInitialDragMultiplier() : float{ return 0.05; }
 

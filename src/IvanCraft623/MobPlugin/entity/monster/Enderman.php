@@ -153,7 +153,11 @@ class Enderman extends Monster implements NeutralMob{
 	protected RandomTeleportGoal $teleportGoal;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::ENDERMAN_HEIGHT, VanillaEntitySizes::ENDERMAN_WIDTH, VanillaEntitySizes::ENDERMAN_HEIGHT * 0.88);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ENDERMAN_HEIGHT,
+			VanillaEntitySizes::ENDERMAN_WIDTH,
+			VanillaEntitySizes::ENDERMAN_HEIGHT * 0.88
+		);
 	}
 
 	public function getName() : string{

@@ -52,7 +52,11 @@ class Spider extends Monster {
 	protected bool $isClimbing = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::SPIDER_HEIGHT, VanillaEntitySizes::SPIDER_WIDTH, VanillaEntitySizes::SPIDER_HEIGHT * 0.72);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::SPIDER_HEIGHT,
+			VanillaEntitySizes::SPIDER_WIDTH,
+			VanillaEntitySizes::SPIDER_HEIGHT * 0.72
+		);
 	}
 
 	public function getName() : string{
