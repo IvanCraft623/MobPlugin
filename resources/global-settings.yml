@@ -16,8 +16,12 @@
 debug-mode: false
 
 ## Spawning Behavior
-# Note: Natural spawning feature will be implemented in a future update
-# mob-natural-spawning: false
+# Natural spawning of mobs, from the vanilla Bedrock spawn rules.
+mob-natural-spawning:
+  # A world settings file can set this to false for that world only.
+  enabled: true
+  # Most spawn attempts in one tick, over every world. Global only.
+  max-attempts-per-tick: 8
 
 # Enables natural despawning of mobs
 # Note: Persistent mobs are unaffected by this setting

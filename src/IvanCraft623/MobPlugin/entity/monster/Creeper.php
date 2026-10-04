@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\creeper\SwellGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
@@ -84,7 +85,7 @@ class Creeper extends Monster implements Explosive, Powerable{
 	protected int $explosionRadius = self::DEFAULT_EXPLOSION_RADIUS;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.8, 0.6, 1.62);
+		return new EntitySizeInfo(VanillaEntitySizes::CREEPER_HEIGHT, VanillaEntitySizes::CREEPER_WIDTH, VanillaEntitySizes::CREEPER_HEIGHT * 0.9);
 	}
 
 	public function getName() : string{

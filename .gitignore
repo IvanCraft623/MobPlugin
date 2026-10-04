@@ -4,3 +4,12 @@ vendor/*
 # php-cs-fixer
 /.php_cs.cache
 /.php-cs-fixer.cache
+
+# phpunit
+/.phpunit.result.cache
+
+# Build output
+/*.phar
+
+# Local exploration checkouts (e.g. .cache/bedrock-samples)
+/.cache/

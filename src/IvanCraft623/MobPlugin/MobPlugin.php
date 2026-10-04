@@ -37,7 +37,7 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
-use IvanCraft623\MobPlugin\entity\MobCategory;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
@@ -49,6 +49,9 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
+use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
+use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
+use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\AttributeFactory;
@@ -56,10 +59,14 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\EntityDataHelper as Helper;
 use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\plugin\DisablePluginException;
 use pocketmine\plugin\PluginBase;
+use pocketmine\plugin\PluginException;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
+use Symfony\Component\Filesystem\Path;
 
 use xenialdan\apibossbar\API as BossBarAPI;
 
@@ -109,15 +116,49 @@ class MobPlugin extends PluginBase {
 		Settings::init();
 		CustomTimings::init();
 
+		$this->registerSpawnRules();
 		$this->registerAttributes();
 		$this->registerEntities();
 		$this->registerMetrics();
+		$this->registerNaturalSpawning();
 
 		ExtraItemRegisterHelper::init();
 
 		BossBarAPI::load($this);
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
+	}
+
+	/**
+	 * Runs before anything else is registered, so a failure leaves nothing half set up.
+	 */
+	private function registerSpawnRules() : void{
+		$path = Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json");
+		try{
+			$warnings = SpawnRuleRegistry::getInstance()->registerVanilla($path);
+		}catch(SpawnRulesParseException | PluginException $e){
+			$this->getLogger()->critical("Could not load the spawn rules from $path: " . $e->getMessage());
+			throw new DisablePluginException();
+		}
+		foreach($warnings as $warning){
+			$this->getLogger()->warning($warning);
+		}
+	}
+
+	private function registerNaturalSpawning() : void{
+		$settings = Settings::getGlobalSettings();
+
+		if (!$settings->isMobNaturalSpawningEnabled()) {
+			return;
+		}
+
+		$spawner = new NaturalSpawner(
+			SpawnRuleRegistry::getInstance(),
+			$settings->getMobNaturalSpawningMaxAttemptsPerTick(),
+			$this->getServer()->getWorldManager(),
+			static fn(World $world) : bool => Settings::getSettings($world->getFolderName())->isMobNaturalSpawningEnabled()
+		);
+		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask($spawner->tick(...)), 1);
 	}
 
 	public function getRandom() : Random {
@@ -154,18 +195,18 @@ class MobPlugin extends PluginBase {
 		}, [$entityId, Utils::getEntityNameFromId($entityId)]);
 	}
 
-	public function trackEntity(MobCategory $category, string $name) : void {
+	public function trackEntity(Mob $mob) : void {
 		$this->totalEntitiesCount++;
-		$categoryName = strtolower($category->name());
-		$mobName = strtolower($name);
+		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategoryId() ?? "unknown";
+		$mobName = strtolower($mob->getName());
 		$this->entitiesStats[$categoryName][$mobName] =
 			($this->entitiesStats[$categoryName][$mobName] ?? 0) + 1
 		;
 	}
 
-	public function untrackEntity(MobCategory $category, string $name) : void {
-		$categoryName = strtolower($category->name());
-		$mobName = strtolower($name);
+	public function untrackEntity(Mob $mob) : void {
+		$categoryName = SpawnRuleRegistry::getInstance()->get($mob::getNetworkTypeId())?->getCategoryId() ?? "unknown";
+		$mobName = strtolower($mob->getName());
 		if (isset($this->entitiesStats[$categoryName][$mobName])) {
 			$this->totalEntitiesCount--;
 			if (--$this->entitiesStats[$categoryName][$mobName] <= 0) {

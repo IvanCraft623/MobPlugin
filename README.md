@@ -28,6 +28,16 @@ Pathfinding is computed off the main thread using [Pathfinder](https://github.co
 ### Goal-based Finite State Machine (FSM)
 Each mob has a set of **goals** with priorities — things like attacking, fleeing, wandering, or looking at players. Every tick, the mob evaluates which goals are applicable and runs the highest-priority one, switching seamlessly when conditions change. This mirrors how vanilla Minecraft handles mob AI, producing natural and predictable behavior.
 
+### Natural Spawning
+Mobs spawn from the vanilla Bedrock [spawn rules](https://github.com/Mojang/bedrock-samples), the same data Mojang ships. See [`docs/spawning.md`](docs/spawning.md).
+
+---
+
+## 📚 Documentation
+
+- [Natural spawning](docs/spawning.md)
+- [Mob navigation](docs/navigation.md)
+
 ---
 
 ## 📥 Download

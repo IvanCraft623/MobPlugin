@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\golem;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MoveTowardsTargetGoal;
@@ -78,7 +79,7 @@ class IronGolem extends Golem implements NeutralMob{
 	protected bool $createdByPlayer = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(2.9, 1.4, 2.61);
+		return new EntitySizeInfo(VanillaEntitySizes::IRON_GOLEM_HEIGHT, VanillaEntitySizes::IRON_GOLEM_WIDTH, VanillaEntitySizes::IRON_GOLEM_HEIGHT * 0.9);
 	}
 
 	public function getName() : string{

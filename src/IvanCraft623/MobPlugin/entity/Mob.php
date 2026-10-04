@@ -35,6 +35,8 @@ use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
+use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
+use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
@@ -171,7 +173,7 @@ abstract class Mob extends Living {
 			$this->setNameTagAlwaysVisible(true);
 		}
 
-		MobPlugin::getInstance()->trackEntity($this->getMobCategory(), $this->getName());
+		MobPlugin::getInstance()->trackEntity($this);
 
 		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
 
@@ -239,10 +241,6 @@ abstract class Mob extends Living {
 
 	public function getMobType() : MobType{
 		return MobType::UNDEFINED();
-	}
-
-	public function getMobCategory() : MobCategory{
-		return MobCategory::CREATURE();
 	}
 
 	public function setForwardSpeed(float $forwardSpeed) : void {
@@ -467,8 +465,9 @@ abstract class Mob extends Living {
 			}
 
 			$nearestPlayer = Utils::getNearestPlayer($this);
-			if ($nearestPlayer !== null) {
-				$mobCategory = $this->getMobCategory();
+			$categoryId = SpawnRuleRegistry::getInstance()->get(static::getNetworkTypeId())?->getCategoryId();
+			$mobCategory = $categoryId !== null ? MobCategoryRegistry::getInstance()->get($categoryId) : null;
+			if ($nearestPlayer !== null && $mobCategory !== null) {
 				$distanceSquared = $this->location->distanceSquared($nearestPlayer->getPosition());
 				if ($this->shouldDespawnWhenFarAway($distanceSquared) &&
 					$distanceSquared > $mobCategory->getDespawnDistance() ** 2
@@ -971,7 +970,7 @@ abstract class Mob extends Living {
 	}
 
 	protected function onDispose() : void{
-		MobPlugin::getInstance()->untrackEntity($this->getMobCategory(), $this->getName());
+		MobPlugin::getInstance()->untrackEntity($this);
 
 		parent::onDispose();
 	}

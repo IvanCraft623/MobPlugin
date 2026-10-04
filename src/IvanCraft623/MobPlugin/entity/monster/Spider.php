@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LeapAtTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
@@ -51,7 +52,7 @@ class Spider extends Monster {
 	protected bool $isClimbing = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(0.9, 1.4, 0.65);
+		return new EntitySizeInfo(VanillaEntitySizes::SPIDER_HEIGHT, VanillaEntitySizes::SPIDER_WIDTH, VanillaEntitySizes::SPIDER_HEIGHT * 0.72);
 	}
 
 	public function getName() : string{
