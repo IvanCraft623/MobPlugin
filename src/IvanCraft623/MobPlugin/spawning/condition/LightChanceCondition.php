@@ -26,16 +26,13 @@ namespace IvanCraft623\MobPlugin\spawning\condition;
 /**
  * The lighter the position, the likelier it passes: never at light 0, always at the bound
  * or above. It passes when the light exceeds a random level below the bound.
- * Inverted, it is the opposite: the darker, the likelier.
  */
 final class LightChanceCondition implements SpawnCondition{
 	/**
-	 * @param int  $bound    the light level from which it always passes (never, when inverted)
-	 * @param bool $inverted whether darker positions are the likelier ones
+	 * @param int $bound the light level from which it always passes
 	 */
 	public function __construct(
-		private readonly int $bound,
-		private readonly bool $inverted = false
+		private readonly int $bound
 	){
 		if($bound < 1){
 			throw new \InvalidArgumentException("Bound must be at least 1, got $bound");
@@ -43,6 +40,6 @@ final class LightChanceCondition implements SpawnCondition{
 	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
-		return ($ctx->getLight() > $ctx->getRandom()->nextBoundedInt($this->bound)) !== $this->inverted;
+		return $ctx->getLight() > $ctx->getRandom()->nextBoundedInt($this->bound);
 	}
 }

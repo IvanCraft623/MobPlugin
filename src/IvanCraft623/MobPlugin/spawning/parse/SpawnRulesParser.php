@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 use IvanCraft623\MobPlugin\spawning\condition\BrightnessCondition;
 use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
+use IvanCraft623\MobPlugin\spawning\condition\Not;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnsOnBlock;
 use IvanCraft623\MobPlugin\spawning\condition\WorldAgeCondition;
 use IvanCraft623\MobPlugin\spawning\parse\schema\model\BrightnessFilterData;
@@ -249,10 +250,10 @@ final class SpawnRulesParser{
 			$builder->addCondition(new WorldAgeCondition($m->min, $m->max));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_ON_BLOCK_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlocks(), false));
+			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlocks()));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_ON_BLOCK_PREVENTED_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlocks(), true));
+			$builder->addCondition(new Not(new SpawnsOnBlock($ctx->resolveBlocks())));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DENSITY_LIMIT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DensityLimitData::class);

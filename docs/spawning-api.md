@@ -29,7 +29,7 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 			new BandCondition(SpawnBand::CAVE),
 			new BiomeTagCondition("mountain"),
 			new BlockLightCondition(0, 0),
-			new SpawnsOnBlock([VanillaBlocks::STONE(), VanillaBlocks::DEEPSLATE()], false),
+			new SpawnsOnBlock([VanillaBlocks::STONE(), VanillaBlocks::DEEPSLATE()]),
 		], weight: 100),
 	],
 	static fn(World $world, Vector3 $pos, SpawnRuleGroup $group) : Entity => new MyBoss(Location::fromObject($pos, $world)),
@@ -75,11 +75,11 @@ A group spawns only where all its conditions pass.
 | `BlockLightCondition(int $min, int $max)` | The light from blocks alone is in the range. |
 | `HeightCondition(?int $min, ?int $max)` | The block the mob stands on is in the Y range (and its feet too, in a liquid). `null` for no bound. |
 | `WorldAgeCondition(?int $min, ?int $max)` | The world's age in ticks is in the range. |
-| `SpawnsOnBlock(Block[] $blocks, bool $prevent)` | With `$prevent` false, the block under the feet is one of the blocks; with true, it is none of them. Blocks match by type and variant, not by placement state. |
+| `SpawnsOnBlock(Block[] $blocks)` | The block under the feet is one of the blocks. Blocks match by type and variant, not by placement state. |
 | `SlimeChunkCondition()` | The chunk is a Bedrock slime chunk. |
-| `LightChanceCondition(int $bound, bool $inverted = false)` | A roll that is likelier the lighter the position is: never at light 0, always at `$bound` or above. Inverted, the darker. |
+| `LightChanceCondition(int $bound)` | A roll that is likelier the lighter the position is: never at light 0, always at `$bound` or above. |
 | `MoonPhaseChanceCondition()` | A roll that is likelier the fuller the moon is. |
-| `AllOf(array)`, `AnyOf(array)`, `Not(SpawnCondition)` | Combine other conditions. |
+| `AllOf(array)`, `AnyOf(array)`, `Not(SpawnCondition)` | Combine other conditions. `Not` is how any of the above is negated: `new Not(new SpawnsOnBlock([...]))` forbids those blocks. |
 
 Two things are easy to miss:
 

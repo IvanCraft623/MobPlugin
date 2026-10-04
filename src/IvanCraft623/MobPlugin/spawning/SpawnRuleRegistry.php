@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\spawning\condition\BlockLightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
 use IvanCraft623\MobPlugin\spawning\condition\LightChanceCondition;
 use IvanCraft623\MobPlugin\spawning\condition\MoonPhaseChanceCondition;
+use IvanCraft623\MobPlugin\spawning\condition\Not;
 use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
@@ -115,7 +116,7 @@ final class SpawnRuleRegistry{
 					new AllOf([
 						new HeightCondition(50, 68),
 						new BiomeTagCondition(self::SLIME_SURFACE_BIOME_TAG),
-						new LightChanceCondition(8, inverted: true),
+						new Not(new LightChanceCondition(8)), // the darker, the likelier
 						new MoonPhaseChanceCondition(),
 					]),
 				]);

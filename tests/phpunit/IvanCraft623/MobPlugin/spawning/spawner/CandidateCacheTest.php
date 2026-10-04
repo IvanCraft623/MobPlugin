@@ -90,7 +90,7 @@ final class CandidateCacheTest extends TestCase{
 				new SpawnRuleGroup([$wet, new LightChanceCondition(8)]),
 				new SpawnRuleGroup([new AnyOf([
 					new AllOf([$deep, new LightChanceCondition(8)]),
-					new AllOf([$cold, new LightChanceCondition(8, inverted: true)]),
+					new AllOf([$cold, new Not(new LightChanceCondition(8))]),
 				])]),
 			],
 		];
