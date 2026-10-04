@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning;
 
+use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
+use IvanCraft623\MobPlugin\spawning\condition\CompositeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
 use function count;
@@ -158,6 +160,28 @@ final class SpawnRuleGroup{
 	 */
 	public function admitsLiquid(SpawnLiquid $feetLiquid) : bool{
 		return $feetLiquid === $this->requiredLiquid;
+	}
+
+	/**
+	 * @internal
+	 * @phpstan-return list<SpawnCondition>|null the conditions the key leaves undecided; null when it rules the group out
+	 */
+	public function reduce(CacheableConditionContext $ctx) : ?array{
+		if(!$this->admitsLiquid($ctx->getFeetLiquid())){
+			return null;
+		}
+		$residuals = [];
+		foreach($this->conditions as $condition){
+			$reduced = CompositeCondition::reduceCondition($condition, $ctx);
+			if($reduced === false){
+				return null;
+			}
+			if($reduced !== true){
+				$residuals[] = $reduced;
+			}
+		}
+
+		return $residuals;
 	}
 
 	public function admitsPlayerDistance(float $distance) : bool{

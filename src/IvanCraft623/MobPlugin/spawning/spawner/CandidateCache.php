@@ -24,9 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
 use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
-use IvanCraft623\MobPlugin\spawning\condition\CompositeCondition;
-use IvanCraft623\MobPlugin\spawning\SpawnBand;
-use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
 use pocketmine\timings\TimingsHandler;
 use function count;
@@ -42,15 +39,11 @@ final class CandidateCache{
 	private array $entries = [];
 
 	/**
-	 * Keys with equal results share them. Signatures are object ids, which stay unique
-	 * while the pools hold the objects.
+	 * Equal candidates are shared between keys, keyed by their objects' ids.
 	 *
-	 * @phpstan-var array<array-key, CandidateRule>
+	 * @phpstan-var array<string, CandidateRule>
 	 */
-	private array $rulePool = [];
-
-	/** @phpstan-var array<array-key, list<CandidateRule>> */
-	private array $listPool = [];
+	private array $uniqueCandidates = [];
 
 	/**
 	 * @phpstan-param list<SpawnRules> $rules
@@ -64,82 +57,39 @@ final class CandidateCache{
 	 * @phpstan-return list<CandidateRule>
 	 */
 	public function getCandidates(CacheableConditionContext $ctx) : array{
-		$biomeId = $ctx->getBiomeId();
-		$band = $ctx->getBand();
-		$difficulty = $ctx->getDifficulty();
-		$liquid = $ctx->getFeetLiquid();
-		$key = self::hash($biomeId, $band, $difficulty, $liquid);
+		$key = ($ctx->getBiomeId() << 5) | ($ctx->getDifficulty() << 3) | ($ctx->getBand()->value << 2) | $ctx->getFeetLiquid()->value;
 
-		return $this->entries[$key] ?? $this->resolve($key, new KeyContext($biomeId, $band, $difficulty, $liquid));
-	}
-
-	private static function hash(int $biomeId, SpawnBand $band, int $difficulty, SpawnLiquid $liquid) : int{
-		if($biomeId < 0 || $difficulty < 0 || $difficulty > 3){
-			throw new \InvalidArgumentException("Spawn key out of range: biome $biomeId, difficulty $difficulty");
-		}
-
-		return ($biomeId << 5) | ($difficulty << 3) | ($band->value << 2) | $liquid->value;
+		return $this->entries[$key] ?? $this->resolve($key, $ctx);
 	}
 
 	/**
 	 * @phpstan-return list<CandidateRule>
 	 */
-	private function resolve(int $key, KeyContext $keyContext) : array{
+	private function resolve(int $key, CacheableConditionContext $ctx) : array{
 		$this->resolveTimings?->startTiming();
 		try{
 			$candidates = [];
 			foreach($this->rules as $rules){
-				$candidate = $this->resolveRule($rules, $keyContext);
-				if($candidate !== null){
-					$candidates[] = $candidate;
+				$groups = [];
+				$ids = [spl_object_id($rules)];
+				foreach($rules->getGroups() as $group){
+					$residuals = $group->reduce($ctx);
+					if($residuals !== null){
+						$groups[] = [$group, $residuals];
+						$ids[] = spl_object_id($group);
+						foreach($residuals as $condition){
+							$ids[] = spl_object_id($condition);
+						}
+					}
+				}
+				if(count($groups) !== 0){
+					$candidates[] = $this->uniqueCandidates[implode(",", $ids)] ??= new CandidateRule($rules, $groups);
 				}
 			}
 
-			// Written last: a throwing condition leaves no partial entry behind.
-			return $this->entries[$key] = $this->shareList($candidates);
+			return $this->entries[$key] = $candidates;
 		}finally{
 			$this->resolveTimings?->stopTiming();
 		}
-	}
-
-	private function resolveRule(SpawnRules $rules, KeyContext $keyContext) : ?CandidateRule{
-		$liquid = $keyContext->getFeetLiquid();
-		$groups = [];
-		$signature = (string) spl_object_id($rules);
-		foreach($rules->getGroups() as $group){
-			if(!$group->admitsLiquid($liquid)){
-				continue;
-			}
-			$residuals = [];
-			foreach($group->getConditions() as $condition){
-				$reduced = CompositeCondition::reduceCondition($condition, $keyContext);
-				if($reduced === false){
-					continue 2;
-				}
-				if($reduced !== true){
-					$residuals[] = $reduced;
-				}
-			}
-			$groups[] = [$group, $residuals];
-			$signature .= ":" . spl_object_id($group);
-			foreach($residuals as $condition){
-				$signature .= "," . spl_object_id($condition);
-			}
-		}
-
-		return count($groups) === 0 ? null : $this->rulePool[$signature] ??= new CandidateRule($rules, $groups);
-	}
-
-	/**
-	 * @phpstan-param list<CandidateRule> $candidates
-	 * @phpstan-return list<CandidateRule>
-	 */
-	private function shareList(array $candidates) : array{
-		$ids = [];
-		foreach($candidates as $candidate){
-			$ids[] = spl_object_id($candidate);
-		}
-
-		return $this->listPool[implode(",", $ids)] ??= $candidates;
 	}
 }
