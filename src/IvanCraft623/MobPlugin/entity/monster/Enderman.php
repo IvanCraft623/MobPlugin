@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\FreezeWhenLookedAt;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\LeaveBlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\LookForStaringPlayerGoal;
@@ -152,7 +153,11 @@ class Enderman extends Monster implements NeutralMob{
 	protected RandomTeleportGoal $teleportGoal;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(2.9, 0.6, 2.55);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ENDERMAN_HEIGHT,
+			VanillaEntitySizes::ENDERMAN_WIDTH,
+			VanillaEntitySizes::ENDERMAN_HEIGHT * 0.88
+		);
 	}
 
 	public function getName() : string{

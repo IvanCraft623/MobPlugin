@@ -1,0 +1,42 @@
+<?php
+
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
+declare(strict_types=1);
+
+namespace IvanCraft623\MobPlugin\spawning\parse\schema;
+
+/**
+ * Auto-generated from the pinned Mojang spawn rules — do not edit by hand.
+ *
+ * Every mob category they use, as written in a rule's "population_control".
+ * Regenerate with: php tools/spawn-rules/generate-schema.php
+ */
+final class VanillaMobCategories{
+
+	public const AMBIENT = "ambient";
+	public const ANIMAL = "animal";
+	public const CAT = "cat";
+	public const MONSTER = "monster";
+	public const PILLAGER = "pillager";
+	public const WATER_ANIMAL = "water_animal";
+
+	private function __construct(){}
+}

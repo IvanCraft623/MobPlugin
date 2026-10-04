@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ambient;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -53,7 +54,11 @@ class Bat extends Ambient {
 	public static function getNetworkTypeId() : string{ return EntityIds::BAT; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(0.9, 0.5, 0.4);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::BAT_HEIGHT,
+			VanillaEntitySizes::BAT_WIDTH,
+			VanillaEntitySizes::BAT_HEIGHT * 0.44
+		);
 	}
 
 	public function getName() : string{

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
@@ -49,7 +50,10 @@ class Endermite extends Monster {
 	public static function getNetworkTypeId() : string{ return EntityIds::ENDERMITE; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(0.3, 0.4);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ENDERMITE_HEIGHT,
+			VanillaEntitySizes::ENDERMITE_WIDTH
+		);
 	}
 
 	public function getName() : string{

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\animal;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
@@ -65,7 +66,11 @@ class Chicken extends Animal {
 	protected bool $canLayEggs = true;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(0.8, 0.6, 0.7);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::CHICKEN_HEIGHT,
+			VanillaEntitySizes::CHICKEN_WIDTH,
+			VanillaEntitySizes::CHICKEN_HEIGHT * 0.875
+		);
 	}
 
 	public function getName() : string{

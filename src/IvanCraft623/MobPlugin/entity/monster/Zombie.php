@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreakDoorGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\DestroyEggGoal;
@@ -108,7 +109,11 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.9, 0.6, 1.71);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ZOMBIE_HEIGHT,
+			VanillaEntitySizes::ZOMBIE_WIDTH,
+			VanillaEntitySizes::ZOMBIE_HEIGHT * 0.9
+		);
 	}
 
 	protected function initProperties() : void {

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: PHPStan, PHPUnit and spawn data
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: pmmp/setup-php-action@3.2.0
+        with:
+          php-version: 8.2
+          install-path: ./bin
+
+      - name: Install Composer dependencies
+        id: install
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      # Each check runs even if an earlier one failed, so one run reports every problem.
+      - name: PHPStan
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: php vendor/bin/phpstan.phar analyze --no-progress
+
+      - name: PHPUnit
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: composer test
+
+      # Regenerating must not change, add or delete any committed file.
+      - name: Spawn data, schema and entity data match the pinned samples
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          composer generate-spawn-schema
+          composer compile-spawn-rules
+          composer generate-entity-data
+          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
