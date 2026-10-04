@@ -34,11 +34,14 @@ use pocketmine\item\Releasable;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\utils\Random;
 use pocketmine\world\particle\BlockBreakParticle;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 use function abs;
+use function array_key_last;
 use function array_reduce;
+use function array_sum;
 use function cos;
 use function floor;
 use function fmod;
@@ -53,6 +56,30 @@ use function ucwords;
 use const M_PI;
 
 class Utils {
+
+	/**
+	 * Picks a key with a probability proportional to its weight, or null when no weight is
+	 * positive. The return type is mixed so PHPStan keeps TKey.
+	 *
+	 * @template TKey
+	 * @phpstan-param array<TKey, int> $weights
+	 * @phpstan-return TKey|null
+	 */
+	public static function pickWeighted(Random $random, array $weights) : mixed{
+		$total = array_sum($weights);
+		if($total <= 0){
+			return null;
+		}
+		$roll = $random->nextBoundedInt($total);
+		foreach($weights as $key => $weight){
+			$roll -= $weight;
+			if($roll < 0){
+				return $key;
+			}
+		}
+
+		return array_key_last($weights);
+	}
 
 	public static function clamp(float $value, float $minValue, float $maxValue) : float {
 		return max($minValue, min($maxValue, $value));

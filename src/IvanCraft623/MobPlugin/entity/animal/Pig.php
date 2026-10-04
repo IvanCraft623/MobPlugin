@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\animal;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
@@ -58,7 +59,11 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 	protected bool $saddled = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(0.9, 0.9, 0.765);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::PIG_HEIGHT,
+			VanillaEntitySizes::PIG_WIDTH,
+			VanillaEntitySizes::PIG_HEIGHT * 0.85
+		);
 	}
 
 	public function getName() : string{

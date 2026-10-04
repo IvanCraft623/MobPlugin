@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\golem;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RangedAttackGoal;
@@ -71,7 +72,11 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 	protected bool $sheared = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(1.8, 0.4, 1.7);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::SNOW_GOLEM_HEIGHT,
+			VanillaEntitySizes::SNOW_GOLEM_WIDTH,
+			VanillaEntitySizes::SNOW_GOLEM_HEIGHT * 0.94
+		);
 	}
 
 	public function getName() : string{

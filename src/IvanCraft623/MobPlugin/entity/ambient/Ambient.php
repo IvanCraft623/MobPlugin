@@ -24,11 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ambient;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\entity\MobCategory;
 
 abstract class Ambient extends Mob {
-
-	public function getMobCategory() : MobCategory{
-		return MobCategory::AMBIENT();
-	}
 }

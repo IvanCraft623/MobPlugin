@@ -25,10 +25,11 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
-use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
@@ -37,6 +38,7 @@ use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\item\Item;
@@ -59,6 +61,14 @@ class WitherSkeleton extends AbstractSkeleton {
 
 	public function getName() : string {
 		return "Wither Skeleton";
+	}
+
+	protected function getInitialSizeInfo() : EntitySizeInfo{
+		return new EntitySizeInfo(
+			VanillaEntitySizes::WITHER_SKELETON_HEIGHT,
+			VanillaEntitySizes::WITHER_SKELETON_WIDTH,
+			VanillaEntitySizes::WITHER_SKELETON_HEIGHT * 0.9
+		);
 	}
 
 	public function isFireProof() : bool{

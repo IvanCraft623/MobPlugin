@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\projectile;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use pocketmine\block\Block;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
@@ -71,7 +72,12 @@ class WitherSkull extends Projectile implements Explosive, NeverSavedWithChunkEn
 	protected bool $deflectable = false;
 	protected bool $wasDeflected = false;
 
-	protected function getInitialSizeInfo() : EntitySizeInfo{ return new EntitySizeInfo(0.15, 0.15); }
+	protected function getInitialSizeInfo() : EntitySizeInfo{
+		return new EntitySizeInfo(
+			VanillaEntitySizes::WITHER_SKULL_HEIGHT,
+			VanillaEntitySizes::WITHER_SKULL_WIDTH
+		);
+	}
 
 	protected function getInitialDragMultiplier() : float{ return 0.05; }
 

@@ -28,8 +28,10 @@ use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\entity\Feedable;
 use IvanCraft623\MobPlugin\entity\Lureable;
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\entity\Living;
@@ -202,6 +204,7 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		$offspring = $this->getBreedOffspring($partner);
 		$offspring->setBaby();
 		$offspring->setPersistent();
+		(new MobSpawnEvent($offspring, MobSpawnCause::BREEDING))->call();
 		$offspring->spawnToAll();
 
 		$this->finalizeSpawnChildFromBreeding($partner, $offspring);

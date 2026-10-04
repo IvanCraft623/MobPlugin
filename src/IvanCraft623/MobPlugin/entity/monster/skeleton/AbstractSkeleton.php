@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\AvoidSunlightGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FleeSunlightGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
@@ -80,7 +81,11 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo {
-		return new EntitySizeInfo(1.9, 0.6, 1.71);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::SKELETON_HEIGHT,
+			VanillaEntitySizes::SKELETON_WIDTH,
+			VanillaEntitySizes::SKELETON_HEIGHT * 0.9
+		);
 	}
 
 	protected function registerGoals() : void{

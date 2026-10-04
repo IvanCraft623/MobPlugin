@@ -26,6 +26,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal\wither;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 
 use pocketmine\entity\Location;
 use pocketmine\math\Vector3;
@@ -102,6 +104,7 @@ class WitherExplodeOnHalfLifeGoal extends Goal {
 			for ($i = 0; $i < 3; $i++) {
 				$witherSkeleton = new WitherSkeleton($spawnLoc);
 				$witherSkeleton->setOwningEntity($this->mob);
+				(new MobSpawnEvent($witherSkeleton, MobSpawnCause::SUMMONED))->call();
 				$witherSkeleton->spawnToAll();
 			}
 		}

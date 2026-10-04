@@ -26,6 +26,8 @@ namespace IvanCraft623\MobPlugin\pattern;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -72,6 +74,7 @@ final class BlockPatternFactory {
 					$world
 				));
 				$golem->setOwningEntity($owner);
+				(new MobSpawnEvent($golem, MobSpawnCause::BUILT))->call();
 				$golem->spawnToAll();
 			})
 			->build()
@@ -98,6 +101,7 @@ final class BlockPatternFactory {
 					$world
 				));
 				$golem->setOwningEntity($owner);
+				(new MobSpawnEvent($golem, MobSpawnCause::BUILT))->call();
 				$golem->spawnToAll();
 			})
 			->build()
@@ -132,6 +136,7 @@ final class BlockPatternFactory {
 					$world
 				));
 				$wither->setOwningEntity($owner);
+				(new MobSpawnEvent($wither, MobSpawnCause::BUILT))->call();
 				$wither->spawnToAll();
 			})
 			->build()

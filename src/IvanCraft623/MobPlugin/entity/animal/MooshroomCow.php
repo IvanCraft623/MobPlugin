@@ -27,6 +27,8 @@ use IvanCraft623\MobPlugin\data\bedrock\MooshroomCowTypeIdMap;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\animal\utils\SuspiciousStewTypeFlowerMap;
 use IvanCraft623\MobPlugin\entity\Shearable;
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\sound\MilkSuspiciouslySound;
 use IvanCraft623\MobPlugin\sound\MooshroomCowConvertSound;
@@ -193,6 +195,7 @@ class MooshroomCow extends Cow implements Shearable{
 			//Spawn a cow :P
 
 			$cow = new Cow($this->location, $this->saveNBT());
+			(new MobSpawnEvent($cow, MobSpawnCause::CONVERSION))->call();
 			$cow->spawnToAll();
 
 			$this->flagForDespawn();

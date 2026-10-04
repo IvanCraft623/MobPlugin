@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\FreezeWhenLookedAt;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\LeaveBlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\LookForStaringPlayerGoal;
@@ -40,7 +41,7 @@ use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_ded3a4a499900258\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -152,7 +153,11 @@ class Enderman extends Monster implements NeutralMob{
 	protected RandomTeleportGoal $teleportGoal;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(2.9, 0.6, 2.55);
+		return new EntitySizeInfo(
+			VanillaEntitySizes::ENDERMAN_HEIGHT,
+			VanillaEntitySizes::ENDERMAN_WIDTH,
+			VanillaEntitySizes::ENDERMAN_HEIGHT * 0.88
+		);
 	}
 
 	public function getName() : string{
