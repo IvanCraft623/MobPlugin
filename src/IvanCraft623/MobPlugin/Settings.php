@@ -95,6 +95,8 @@ final class Settings{
 
 	private int $mobNaturalSpawningMaxAttemptsPerTick;
 
+	private int $mobNaturalSpawningMaxMobs;
+
 	/**
 	 * @param mixed[] $data
 	 * @phpstan-param array<string, mixed> $data
@@ -105,6 +107,7 @@ final class Settings{
 		$this->mobGriefing = $this->getPropertyBool($data, "mob-griefing", true);
 		$this->mobNaturalSpawning = $this->getSpawningSubProperty($data, "enabled", true) !== false;
 		$this->mobNaturalSpawningMaxAttemptsPerTick = self::clampMaxAttemptsPerTick($this->getSpawningSubProperty($data, "max-attempts-per-tick", 8));
+		$this->mobNaturalSpawningMaxMobs = (int) $this->getSpawningSubProperty($data, "max-mobs", 200);
 	}
 
 	/**
@@ -164,5 +167,9 @@ final class Settings{
 	 */
 	public function getMobNaturalSpawningMaxAttemptsPerTick() : int{
 		return $this->mobNaturalSpawningMaxAttemptsPerTick;
+	}
+
+	public function getMobNaturalSpawningMaxMobs() : int{
+		return $this->mobNaturalSpawningMaxMobs;
 	}
 }

@@ -12,10 +12,14 @@ MobPlugin spawns mobs from the vanilla Bedrock spawn rules, on the main thread.
 mob-natural-spawning:
   enabled: true
   max-attempts-per-tick: 8
+  max-mobs: 200
 ```
 
 A world settings file can set `enabled: false` for that world. `max-attempts-per-tick` is
 global: it caps the cost of a crowded tick, not the spawn rate.
+
+`max-mobs` pauses spawning in a world that holds that many mobs with spawn rules. It can
+be set per world; `0` is no limit.
 
 ## Data
 
@@ -213,4 +217,6 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1.
   definitions has no tags.
 - The band a mob spawned in is not saved: a loaded mob takes the band of where it stands
   when first counted.
-- Structure spawn areas and the global mob cap (200) are not implemented.
+- Structure spawn areas are not implemented.
+- The mob cap (`max-mobs`) is per world and counted once a second, so a world can go
+  slightly past it.

@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\spawning;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\event\ChunkPreNaturalSpawnEvent;
+use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\spawning\population\MobPopulation;
 use IvanCraft623\MobPlugin\spawning\spawner\CandidateCache;
 use IvanCraft623\MobPlugin\spawning\spawner\HerdSpawner;
@@ -48,6 +49,13 @@ final class NaturalSpawner{
 	/** Vanilla attempts a chunk when nextInt(2000) <= 10. */
 	private const CHUNK_ATTEMPT_CHANCE = 11 / 2000;
 
+	private const MOB_COUNT_INTERVAL = 20;
+
+	/** @phpstan-var array<int, int> world id => mobs, counted again every MOB_COUNT_INTERVAL ticks */
+	private array $mobCounts = [];
+
+	private int $ticksUntilMobCount = 0;
+
 	private ?CandidateCache $candidateCache = null;
 
 	/** The largest maximum player distance of any registered group; INF when one has no limit. */
@@ -63,14 +71,10 @@ final class NaturalSpawner{
 
 	private readonly float $chunkGapScale;
 
-	/**
-	 * @phpstan-param \Closure(World) : bool $isWorldEnabled whether the world takes part in spawning
-	 */
 	public function __construct(
 		private readonly SpawnRuleRegistry $registry,
 		private readonly int $maxAttemptsPerTick,
 		private readonly WorldManager $worldManager,
-		private readonly \Closure $isWorldEnabled,
 		private readonly Random $random = new Random(),
 		?MobPopulation $population = null
 	){
@@ -99,16 +103,25 @@ final class NaturalSpawner{
 	private function doTick() : void{
 		// The revision is read once: rules registered mid-tick apply from the next tick.
 		$candidateCache = $this->refreshRuleCaches();
+		if(--$this->ticksUntilMobCount <= 0){
+			$this->mobCounts = [];
+			$this->ticksUntilMobCount = self::MOB_COUNT_INTERVAL;
+		}
 		/** @phpstan-var list<array{WorldSpawnPass, int, int}> $hits pass and chunk coordinates */
 		$hits = [];
 		foreach($this->worldManager->getWorlds() as $world){
+			$settings = Settings::getSettings($world->getFolderName());
 			// The ticking list is only kept up to date while chunk ticking is on.
-			if($world->getChunkTickRadius() <= 0 || !($this->isWorldEnabled)($world)){
+			if($world->getChunkTickRadius() <= 0 || !$settings->isMobNaturalSpawningEnabled()){
 				continue;
 			}
 			$players = self::getSpawningPlayers($world);
 			if(count($players) === 0){
 				continue; // nothing spawns without a player
+			}
+			$maxMobs = $settings->getMobNaturalSpawningMaxMobs();
+			if($maxMobs > 0 && ($this->mobCounts[$world->getId()] ??= $this->countMobs($world)) >= $maxMobs){
+				continue;
 			}
 			$chunks = $world->getTickingChunks();
 			$chunkCount = count($chunks);
@@ -146,6 +159,17 @@ final class NaturalSpawner{
 			[$pass, $chunkX, $chunkZ] = $hits[$i];
 			$pass->attempt($chunkX, $chunkZ);
 		}
+	}
+
+	private function countMobs(World $world) : int{
+		$count = 0;
+		foreach($world->getEntities() as $entity){
+			if($this->registry->get($entity::getNetworkTypeId()) !== null){
+				$count++;
+			}
+		}
+
+		return $count;
 	}
 
 	/**
