@@ -57,10 +57,10 @@ final class CandidateCacheTest extends TestCase{
 	 * @phpstan-return list<SpawnRules>
 	 */
 	private static function rules() : array{
-		$tags = new BiomeTagMap([1 => ["warm" => true], 2 => ["cold" => true], 3 => ["warm" => true, "wet" => true]]);
-		$warm = new BiomeTagCondition($tags, "warm");
-		$cold = new BiomeTagCondition($tags, "cold");
-		$wet = new BiomeTagCondition($tags, "wet");
+		BiomeTagMap::setInstance(new BiomeTagMap([1 => ["warm" => true], 2 => ["cold" => true], 3 => ["warm" => true, "wet" => true]]));
+		$warm = new BiomeTagCondition("warm");
+		$cold = new BiomeTagCondition("cold");
+		$wet = new BiomeTagCondition("wet");
 		$dark = new BrightnessCondition(0, 7);
 		$deep = new HeightCondition(null, 40);
 

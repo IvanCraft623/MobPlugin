@@ -203,9 +203,11 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 	VanillaMobCategories::MONSTER,
 	[
 		new SpawnRuleGroup([
+			new BandCondition(SpawnBand::CAVE),
+			new BiomeTagCondition("mountain"),
 			new BrightnessCondition(0, 7),
 			new DifficultyCondition(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
-			new SpawnsOnBlock([VanillaBlocks::STONE()->asItem()->getStateId() => true], false),
+			new SpawnsOnBlock([VanillaBlocks::STONE(), VanillaBlocks::DEEPSLATE()], false),
 		], weight: 100),
 	],
 	fn(World $world, Vector3 $pos, SpawnRuleGroup $group) => new MyBoss(Location::fromObject($pos, $world)),
@@ -217,10 +219,27 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
   `override`.
 - Rules store the category id, so re-registering a category applies to existing rules.
 - The factory builds the entity; `HerdSpawner` spawns it. Its exceptions are not caught.
+- Surface or underground is a condition, not a group option: a group without a
+  `BandCondition` spawns in both. `SpawnBand::SURFACE` is the position on a column's
+  ground and `SpawnBand::CAVE` is everything below it.
+- `SpawnsOnBlock` takes the blocks and whether they forbid the spawn (`true`) or are the
+  only ones allowed (`false`). Blocks match by type and variant, not by placement state.
 - `SpawnRuleGroup` options: `minPlayerDistance:` / `maxPlayerDistance:` (`0.0` and `INF`
   for no bound), `surfaceDensityLimit:` / `caveDensityLimit:`, and
   `requiredLiquid: SpawnLiquid::WATER` for aquatic groups.
 - `SpawnRules::check($ctx)` evaluates the conditions without the cache.
+
+### Biome tags
+
+`BiomeTagCondition` tests the shared `BiomeTagMap`, which starts from the bundled Bedrock
+data. Custom biomes, or custom tags on vanilla ones, are added to it:
+
+```php
+BiomeTagMap::getInstance()->addTag($biomeId, "myplugin:haunted");
+```
+
+`removeTag()` takes one away. Either change, like replacing the map with `setInstance()`,
+invalidates the candidate cache, so it applies from the next tick.
 
 ### Population queries
 
@@ -251,7 +270,7 @@ foreach($parser->parseFile($path) as $identifier => [$categoryId, $groups]){
 }
 ```
 
-`ComponentParseContext` also has `mapList()`, `resolveBlockSet()`, `objectOrList()`,
+`ComponentParseContext` also has `mapList()`, `resolveBlocks()`, `objectOrList()`,
 `getValue()` and `getPath()`.
 
 ## Settings

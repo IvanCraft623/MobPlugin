@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
-use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\spawning\condition\BrightnessCondition;
 use IvanCraft623\MobPlugin\spawning\condition\DifficultyCondition;
 use IvanCraft623\MobPlugin\spawning\condition\HeightCondition;
@@ -102,22 +101,16 @@ final class SpawnRulesParser{
 
 	private readonly BiomeFilterParser $biomeFilter;
 
-	public function __construct(
-		private readonly BiomeTagMap $biomeTags
-	){
+	public function __construct(){
 		$this->blocks = new BlockNameResolver();
-		$this->biomeFilter = new BiomeFilterParser($biomeTags);
+		$this->biomeFilter = new BiomeFilterParser();
 	}
 
-	public static function createVanilla(?BiomeTagMap $biomeTags = null) : self{
-		$parser = new self($biomeTags ?? BiomeTagMap::fromBedrockData());
+	public static function createVanilla() : self{
+		$parser = new self();
 		$parser->registerVanillaComponents();
 
 		return $parser;
-	}
-
-	public function getBiomeTags() : BiomeTagMap{
-		return $this->biomeTags;
 	}
 
 	/**
@@ -256,10 +249,10 @@ final class SpawnRulesParser{
 			$builder->addCondition(new WorldAgeCondition($m->min, $m->max));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_ON_BLOCK_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlockSet(), false));
+			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlocks(), false));
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWNS_ON_BLOCK_PREVENTED_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlockSet(), true));
+			$builder->addCondition(new SpawnsOnBlock($ctx->resolveBlocks(), true));
 		});
 		$this->registerComponent(VanillaSpawnConditions::DENSITY_LIMIT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$m = $ctx->map(DensityLimitData::class);
@@ -310,7 +303,7 @@ final class SpawnRulesParser{
 	private static function parseDifficulty(string $name) : int{
 		$difficulty = World::getDifficultyFromString($name);
 		if($difficulty === -1){
-			throw new \InvalidArgumentException("unknown difficulty \"$name\"; names declared by the schema: " . implode(", ", SpawnSchema::DIFFICULTY_CASES));
+			throw new \InvalidArgumentException("Unknown difficulty \"$name\"; names declared by the schema: " . implode(", ", SpawnSchema::DIFFICULTY_CASES));
 		}
 
 		return $difficulty;

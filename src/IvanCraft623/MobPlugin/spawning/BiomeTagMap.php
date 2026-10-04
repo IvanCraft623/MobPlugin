@@ -26,36 +26,45 @@ namespace IvanCraft623\MobPlugin\spawning;
 use pocketmine\data\bedrock\BedrockDataFiles;
 use pocketmine\plugin\PluginException;
 use pocketmine\utils\Filesystem;
+use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use function is_array;
 use function is_int;
 use function is_string;
 use function json_decode;
 
+/**
+ * The tags of every biome, which biome filters test.
+ */
 final class BiomeTagMap{
-	/** @phpstan-var array<string, true> */
-	private readonly array $knownTags;
+	use SingletonTrait;
+
+	public static function setInstance(self $instance) : void{
+		self::$instance = $instance;
+		SpawnRuleRegistry::getInstance()->invalidateCache();
+	}
+
+	public static function reset() : void{
+		self::$instance = null;
+		SpawnRuleRegistry::getInstance()->invalidateCache();
+	}
+
+	/** @phpstan-var array<int, array<string, true>> biome id => set of tags */
+	private array $tagsByBiomeId;
 
 	/**
-	 * @phpstan-param array<int, array<string, true>> $tagsByBiomeId biome id => set of tags
+	 * @phpstan-param array<int, array<string, true>>|null $tagsByBiomeId biome id => set of tags; null for the bundled Bedrock data
 	 */
-	public function __construct(
-		private readonly array $tagsByBiomeId
-	){
-		$known = [];
-		foreach($tagsByBiomeId as $tags){
-			$known += $tags;
-		}
-		$this->knownTags = $known;
+	public function __construct(?array $tagsByBiomeId = null){
+		$this->tagsByBiomeId = $tagsByBiomeId ?? self::readBedrockData();
 	}
 
-	public static function fromBedrockData() : self{
-		return self::fromFiles(BedrockDataFiles::BIOME_ID_MAP_JSON, BedrockDataFiles::BIOME_DEFINITIONS_JSON);
-	}
-
-	public static function fromFiles(string $idMapPath, string $definitionsPath) : self{
-		$idMap = json_decode(Filesystem::fileGetContents($idMapPath), true);
-		$definitions = json_decode(Filesystem::fileGetContents($definitionsPath), true);
+	/**
+	 * @phpstan-return array<int, array<string, true>>
+	 */
+	private static function readBedrockData() : array{
+		$idMap = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_ID_MAP_JSON), true);
+		$definitions = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_DEFINITIONS_JSON), true);
 		if(!is_array($idMap) || !is_array($definitions)){
 			throw new PluginException("bedrock-data biome definitions are missing or corrupted");
 		}
@@ -77,7 +86,23 @@ final class BiomeTagMap{
 			}
 		}
 
-		return new self($map);
+		return $map;
+	}
+
+	/**
+	 * Tags a biome, for custom biomes or custom tags on vanilla ones.
+	 */
+	public function addTag(int $biomeId, string $tag) : void{
+		$this->tagsByBiomeId[$biomeId][$tag] = true;
+
+		// Biome tests are decided once per cache key.
+		SpawnRuleRegistry::getInstance()->invalidateCache();
+	}
+
+	public function removeTag(int $biomeId, string $tag) : void{
+		unset($this->tagsByBiomeId[$biomeId][$tag]);
+
+		SpawnRuleRegistry::getInstance()->invalidateCache();
 	}
 
 	public function hasTag(int $biomeId, string $tag) : bool{
@@ -88,6 +113,12 @@ final class BiomeTagMap{
 	 * Whether any biome carries the tag; a test on a tag none has can never match.
 	 */
 	public function isKnownTag(string $tag) : bool{
-		return isset($this->knownTags[$tag]);
+		foreach($this->tagsByBiomeId as $tags){
+			if(isset($tags[$tag])){
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

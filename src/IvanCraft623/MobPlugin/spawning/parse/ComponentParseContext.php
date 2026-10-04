@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
+use pocketmine\block\Block;
 use function array_is_list;
 use function array_map;
 use function count;
@@ -97,23 +98,19 @@ final class ComponentParseContext{
 	}
 
 	/**
-	 * @phpstan-return array<int, true> item state ids of the named blocks
+	 * @phpstan-return list<Block> the named blocks
 	 * @phpstan-throws SpawnRulesParseException
 	 */
-	public function resolveBlockSet() : array{
-		$set = [];
+	public function resolveBlocks() : array{
+		$blocks = [];
 		foreach($this->readBlockNames() as $name){
 			if(isset(self::KNOWN_MISSING_BLOCKS[$name])){
 				continue;
 			}
-			$itemStateId = $this->blocks->resolve($name);
-			if($itemStateId === null){
-				throw new SpawnRulesParseException("'{$this->getPath()}' block name \"$name\" cannot be resolved");
-			}
-			$set[$itemStateId] = true;
+			$blocks[] = $this->blocks->resolve($name) ?? throw new SpawnRulesParseException("'{$this->getPath()}' block name \"$name\" cannot be resolved");
 		}
 
-		return $set;
+		return $blocks;
 	}
 
 	/**

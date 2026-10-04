@@ -87,7 +87,7 @@ final class SpawnRuleRegistry{
 		$parsed = $parser->parseFile($spawnRulesPath);
 
 		$unknownTags = $parser->getUnknownBiomeTags();
-		if(!$parser->getBiomeTags()->isKnownTag(self::SLIME_SURFACE_BIOME_TAG)){
+		if(!BiomeTagMap::getInstance()->isKnownTag(self::SLIME_SURFACE_BIOME_TAG)){
 			$unknownTags[] = self::SLIME_SURFACE_BIOME_TAG;
 		}
 		$warnings = array_map(
@@ -114,7 +114,7 @@ final class SpawnRuleRegistry{
 					]),
 					new AllOf([
 						new HeightCondition(50, 68),
-						new BiomeTagCondition($parser->getBiomeTags(), self::SLIME_SURFACE_BIOME_TAG),
+						new BiomeTagCondition(self::SLIME_SURFACE_BIOME_TAG),
 						new LightChanceCondition(8, inverted: true),
 						new MoonPhaseChanceCondition(),
 					]),

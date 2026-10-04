@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\parse;
 
+use pocketmine\block\Block;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\StringToItemParser;
 use function str_starts_with;
@@ -48,23 +49,19 @@ final class BlockNameResolver{
 		"minecraft:yellow_terracotta" => "minecraft:yellow_stained_clay",
 	];
 
-	/**
-	 * The item state id of the named block: its type plus the properties that make it a
-	 * distinct block (dirt type, colour), but not placement state like facing or snow layers.
-	 */
-	public function resolve(string $name) : ?int{
-		$itemStateId = self::parse($name);
-		if($itemStateId === null && isset(self::ALIASES[$name])){
-			$itemStateId = self::parse(self::ALIASES[$name]);
+	public function resolve(string $name) : ?Block{
+		$block = self::parse($name);
+		if($block === null && isset(self::ALIASES[$name])){
+			$block = self::parse(self::ALIASES[$name]);
 		}
 
-		return $itemStateId;
+		return $block;
 	}
 
-	private static function parse(string $name) : ?int{
+	private static function parse(string $name) : ?Block{
 		$localName = str_starts_with($name, self::PREFIX) ? substr($name, strlen(self::PREFIX)) : $name;
 		$parsed = StringToItemParser::getInstance()->parse($localName);
 
-		return $parsed instanceof ItemBlock ? $parsed->getStateId() : null;
+		return $parsed instanceof ItemBlock ? $parsed->getBlock() : null;
 	}
 }

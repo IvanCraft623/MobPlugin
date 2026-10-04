@@ -31,11 +31,10 @@ use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
  */
 final class BiomeTagCondition implements CacheableCondition{
 	public function __construct(
-		private readonly BiomeTagMap $tags,
 		private readonly string $tag
 	){}
 
 	public function test(CacheableConditionContext $ctx) : bool{
-		return $this->tags->hasTag($ctx->getBiomeId(), $this->tag);
+		return BiomeTagMap::getInstance()->hasTag($ctx->getBiomeId(), $this->tag);
 	}
 }

@@ -23,14 +23,30 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+use pocketmine\block\Block;
+
 final class SpawnsOnBlock implements SpawnCondition{
+
+	/** @phpstan-var array<int, true> item state id => true */
+	private readonly array $itemStateIds;
+
 	/**
-	 * @phpstan-param array<int, true> $itemStateIds item state ids checked against the block under the feet
+	 * Blocks match by what makes them a distinct block (dirt type, colour), not by
+	 * placement state like facing or snow layers.
+	 *
+	 * @phpstan-param Block[] $blocks  checked against the block under the feet
+	 * @phpstan-param bool    $prevent whether the blocks forbid the spawn instead of allowing it
 	 */
 	public function __construct(
-		private readonly array $itemStateIds,
+		array $blocks,
 		private readonly bool $prevent
-	){}
+	){
+		$itemStateIds = [];
+		foreach($blocks as $block){
+			$itemStateIds[$block->asItem()->getStateId()] = true;
+		}
+		$this->itemStateIds = $itemStateIds;
+	}
 
 	public function test(SpawnConditionContext $ctx) : bool{
 		return isset($this->itemStateIds[$ctx->getBelowItemStateId()]) !== $this->prevent;

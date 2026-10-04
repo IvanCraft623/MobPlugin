@@ -86,10 +86,6 @@ final class BiomeFilterParser{
 	/** @phpstan-var array<string, true> */
 	private array $unknownTags = [];
 
-	public function __construct(
-		private readonly BiomeTagMap $tags
-	){}
-
 	/**
 	 * Tags tested so far that no biome carries. Not an error: vanilla references tags
 	 * of biomes the bundled bedrock-data doesn't have yet.
@@ -191,10 +187,10 @@ final class BiomeFilterParser{
 			default:
 				throw new SpawnRulesParseException("'{$node->at(VanillaBiomeFilterKeys::FIELD_TEST)}' names a test this loader doesn't implement: '$test'");
 		}
-		if(!$this->tags->isKnownTag($tag)){
+		if(!BiomeTagMap::getInstance()->isKnownTag($tag)){
 			$this->unknownTags[$tag] = true;
 		}
-		$condition = new BiomeTagCondition($this->tags, $tag);
+		$condition = new BiomeTagCondition($tag);
 
 		return $negated ? new Not($condition) : $condition;
 	}
