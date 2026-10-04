@@ -63,7 +63,7 @@ To update to a newer Mojang version:
 
 ```
 spawning/
-├── NaturalSpawner, SpawnRuleRegistry, SpawnRules, SpawnRuleGroup
+├── NaturalSpawnerTask, SpawnRuleRegistry, SpawnRules, SpawnRuleGroup
 ├── MobCategory, MobCategoryRegistry, BiomeTagMap, SpawnBand, SpawnLiquid
 ├── condition/   SpawnCondition, its contexts and the built-in conditions
 ├── population/  MobPopulation: how many mobs are around a chunk, per band
@@ -73,7 +73,7 @@ spawning/
 
 ## Runtime
 
-`NaturalSpawner::tick()` runs once per tick.
+`NaturalSpawnerTask` runs once per tick.
 
 ### Budget
 

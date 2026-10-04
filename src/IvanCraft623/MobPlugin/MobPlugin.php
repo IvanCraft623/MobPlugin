@@ -49,7 +49,7 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
-use IvanCraft623\MobPlugin\spawning\NaturalSpawner;
+use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -62,7 +62,6 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\DisablePluginException;
 use pocketmine\plugin\PluginBase;
 use pocketmine\plugin\PluginException;
-use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
@@ -152,12 +151,11 @@ class MobPlugin extends PluginBase {
 			return;
 		}
 
-		$spawner = new NaturalSpawner(
+		$this->getScheduler()->scheduleRepeatingTask(new NaturalSpawnerTask(
 			SpawnRuleRegistry::getInstance(),
 			$settings->getMobNaturalSpawningMaxAttemptsPerTick(),
 			$this->getServer()->getWorldManager()
-		);
-		$this->getScheduler()->scheduleRepeatingTask(new ClosureTask($spawner->tick(...)), 1);
+		), 1);
 	}
 
 	public function getRandom() : Random {

@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\spawning\spawner\CandidateCache;
 use IvanCraft623\MobPlugin\spawning\spawner\HerdSpawner;
 use IvanCraft623\MobPlugin\spawning\spawner\SpawnSelector;
 use IvanCraft623\MobPlugin\spawning\spawner\WorldSpawnPass;
+use pocketmine\scheduler\Task;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
 use pocketmine\world\World;
@@ -45,7 +46,7 @@ use const PHP_FLOAT_EPSILON;
  * Runs every tick on the main thread: each ticking chunk rolls vanilla's chance for one
  * column attempt.
  */
-final class NaturalSpawner{
+final class NaturalSpawnerTask extends Task{
 	/** Vanilla attempts a chunk when nextInt(2000) <= 10. */
 	private const CHUNK_ATTEMPT_CHANCE = 11 / 2000;
 
@@ -87,7 +88,7 @@ final class NaturalSpawner{
 		$this->chunkGapScale = 1 / log(1 - self::CHUNK_ATTEMPT_CHANCE);
 	}
 
-	public function tick() : void{
+	public function onRun() : void{
 		if(count($this->registry->getAll()) === 0){
 			return;
 		}
