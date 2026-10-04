@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\spawning;
 
 use pocketmine\data\bedrock\BedrockDataFiles;
-use pocketmine\plugin\PluginException;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Filesystem;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
@@ -66,7 +66,7 @@ final class BiomeTagMap{
 		$idMap = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_ID_MAP_JSON), true);
 		$definitions = json_decode(Filesystem::fileGetContents(BedrockDataFiles::BIOME_DEFINITIONS_JSON), true);
 		if(!is_array($idMap) || !is_array($definitions)){
-			throw new PluginException("bedrock-data biome definitions are missing or corrupted");
+			throw new AssumptionFailedError("bedrock-data biome definitions are missing or corrupted");
 		}
 
 		$map = [];

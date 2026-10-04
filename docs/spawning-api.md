@@ -45,8 +45,8 @@ SpawnRuleRegistry::getInstance()->register(new SpawnRules(
 | factory | Builds the entity at the position **without spawning it**; the spawner spawns it. An exception thrown here is not caught. |
 | size | The mob's collision box as `EntitySizeInfo(height, width)`. The spawner checks that it fits before calling the factory, so no entity is built just to test for room. |
 
-`register()` throws a `PluginException` when the category is unknown, or when the
-identifier already has rules and `override: true` was not passed.
+`register()` throws an `\InvalidArgumentException` when the category is unknown, or when
+the identifier already has rules and `override: true` was not passed.
 
 ## Group options
 

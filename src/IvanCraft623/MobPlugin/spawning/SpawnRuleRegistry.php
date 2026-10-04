@@ -42,7 +42,7 @@ use pocketmine\entity\Entity;
 use pocketmine\entity\Location;
 use pocketmine\entity\Squid;
 use pocketmine\math\Vector3;
-use pocketmine\plugin\PluginException;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\utils\Utils;
 use pocketmine\world\World;
@@ -63,16 +63,16 @@ final class SpawnRuleRegistry{
 	private int $revision = 0;
 
 	/**
-	 * @phpstan-throws PluginException
+	 * @throws \InvalidArgumentException if the identifier already has rules, or the category is not registered
 	 */
 	public function register(SpawnRules $rules, bool $override = false) : void{
 		$identifier = $rules->getIdentifier();
 		if(!$override && isset($this->rules[$identifier])){
-			throw new PluginException("Spawn rules for \"$identifier\" are already registered");
+			throw new \InvalidArgumentException("Spawn rules for \"$identifier\" are already registered");
 		}
 		$categoryId = $rules->getCategoryId();
 		if(!MobCategoryRegistry::getInstance()->has($categoryId)){
-			throw new PluginException("Spawn rules for \"$identifier\": unknown mob category \"$categoryId\"");
+			throw new \InvalidArgumentException("Spawn rules for \"$identifier\": unknown mob category \"$categoryId\"");
 		}
 		$this->rules[$identifier] = $rules;
 		$this->revision++;
@@ -81,7 +81,6 @@ final class SpawnRuleRegistry{
 	/**
 	 * @phpstan-return list<string> non-fatal problems found in the rules, for the caller to log
 	 * @phpstan-throws SpawnRulesParseException
-	 * @phpstan-throws PluginException
 	 */
 	public function registerVanilla(string $spawnRulesPath) : array{
 		$parser = SpawnRulesParser::createVanilla();
@@ -127,7 +126,7 @@ final class SpawnRuleRegistry{
 			}
 			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
 
-			$size = VanillaEntitySizes::get($identifier) ?? throw new PluginException("Spawn rules for \"$identifier\": the vanilla data has no collision box for it");
+				$size = VanillaEntitySizes::get($identifier) ?? throw new AssumptionFailedError("No vanilla collision box data for found for \"$identifier\"");
 			$this->register(new SpawnRules($identifier, $categoryId, $groups, self::createFactory($entityClass), $size));
 		}
 

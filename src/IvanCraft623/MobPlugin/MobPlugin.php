@@ -61,7 +61,6 @@ use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\DisablePluginException;
 use pocketmine\plugin\PluginBase;
-use pocketmine\plugin\PluginException;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
@@ -135,7 +134,7 @@ class MobPlugin extends PluginBase {
 		$path = Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json");
 		try{
 			$warnings = SpawnRuleRegistry::getInstance()->registerVanilla($path);
-		}catch(SpawnRulesParseException | PluginException $e){
+		}catch(SpawnRulesParseException $e){
 			$this->getLogger()->critical("Could not load the spawn rules from $path: " . $e->getMessage());
 			throw new DisablePluginException();
 		}
