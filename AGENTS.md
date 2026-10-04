@@ -23,7 +23,7 @@ Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
 - `data/bedrock/` — Bedrock id maps. `EntityIds` and `VanillaEntitySizes` are generated;
   entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.
 - `spawning/` — natural spawning from the vanilla spawn rules. `parse/schema/` is
-  generated. See `docs/spawning.md`.
+  generated. See `docs/spawning.md`, and `docs/spawning-api.md` for the public API.
 - `utils/`, `sound/`, `particle/`, `pattern/`, `item/`, `inventory/`, `CustomTimings.php`
   — shared infrastructure.
 

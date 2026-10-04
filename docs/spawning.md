@@ -2,6 +2,21 @@
 
 MobPlugin spawns mobs from the vanilla Bedrock spawn rules, on the main thread.
 
+- Running a server: see [Settings](#settings).
+- Writing a plugin that adds or changes spawns: see [spawning-api.md](spawning-api.md).
+- Working on the spawner itself: the rest of this page.
+
+## Settings
+
+```yaml
+mob-natural-spawning:
+  enabled: true
+  max-attempts-per-tick: 8
+```
+
+A world settings file can set `enabled: false` for that world. `max-attempts-per-tick` is
+global: it caps the cost of a crowded tick, not the spawn rate.
+
 ## Data
 
 `resources/spawning/spawn_rules.json` is Mojang's `behavior_pack/spawn_rules/*.json`
@@ -124,56 +139,15 @@ Every rule is evaluated once per key `(biome id, band, difficulty, feet liquid)`
 A key only admits groups whose required liquid is its feet liquid
 (`SpawnRuleGroup::admitsLiquid()`). The key space is bounded, so the cache never evicts.
 
-## Conditions
-
-`SpawnRules` is a list of `SpawnRuleGroup`s, and every matching group competes in the
-pick. A group carries its conditions, weight, rarity, herd size, `permute_type` weights,
-player distance range, density limits and required liquid.
-
-```php
-// Tested on every attempt.
-interface SpawnCondition{
-	public function test(SpawnConditionContext $ctx) : bool;
-}
-
-// Decided once per cache key.
-interface CacheableCondition extends SpawnCondition{
-	public function test(CacheableConditionContext $ctx) : bool;
-}
-```
-
-`CacheableConditionContext` has the four key values. `SpawnConditionContext` adds the
-per-attempt ones: coordinates, light, the block below, time, population, room, the random
-source and the world.
-
-| Kind | Built-ins |
+| Kind | Built-in conditions |
 |---|---|
 | Cacheable | `BiomeTagCondition`, `DifficultyCondition`, `BandCondition` |
 | Per attempt | `BrightnessCondition`, `BlockLightCondition`, `WorldAgeCondition`, `HeightCondition`, `SpawnsOnBlock`, `SlimeChunkCondition`, `LightChanceCondition`, `MoonPhaseChanceCondition` |
 | Combinators | `AllOf`, `AnyOf`, `Not` |
 
-Two vanilla rules live in the engine instead of the rules file, so the registry adds them:
-
-- Every `Monster` gets `new BlockLightCondition(0, 0)`.
-- Slimes spawn at Y 38 or below in slime chunks (Bedrock's algorithm, reverse engineered
-  by @protolambda and @jocopa3), and from Y 50 to 68 in `spawns_slimes_on_surface` biomes
-  with a light roll and a moon-phase roll.
-
-### Contract
-
-The cache relies on these rules and can't check them:
-
-1. **Immutable.** Every property is `readonly`.
-2. **A `CacheableCondition` is pure.** Its result depends only on its context and its own
-   state. If it reads something that can change, call
-   `SpawnRuleRegistry::invalidateCache()` when it does.
-3. **No side effects.** `test()` changes nothing and doesn't depend on which conditions
-   ran before it.
-
-A plain `SpawnCondition` may read anything, including the world through `getWorld()`, and
-takes its randomness from `$ctx->getRandom()`. A custom combinator implements
-`ReducibleCondition` (or extends `CompositeCondition`); otherwise it runs whole on every
-attempt.
+The cache can't check that a `CacheableCondition` is pure and that conditions are
+immutable and free of side effects: that contract is in
+[spawning-api.md](spawning-api.md#cacheable-conditions).
 
 ## Loading
 
@@ -184,7 +158,15 @@ The loader is strict: anything it can't compile throws `SpawnRulesParseException
 JSON path, and the plugin is disabled. Unknown keys are rejected, and so are values that
 would lose information (`8.5` for an integer; `8.0` is fine).
 
-What it accepts without spawning:
+Two vanilla rules live in the engine instead of the rules file, so `registerVanilla()`
+adds them:
+
+- Every `Monster` gets `new BlockLightCondition(0, 0)`.
+- Slimes spawn at Y 38 or below in slime chunks (Bedrock's algorithm, reverse engineered
+  by @protolambda and @jocopa3), and from Y 50 to 68 in `spawns_slimes_on_surface` biomes
+  with a light roll and a moon-phase roll.
+
+What the loader accepts without spawning:
 
 - `pillager` rule sets are skipped: vanilla spawns them through patrols and raids.
 - Groups using `mob_event_filter`, `delay_filter`, `player_in_village_filter` or
@@ -194,95 +176,6 @@ What it accepts without spawning:
 - `disallow_spawns_in_bubble`, `is_persistent`, `is_experimental` and `spawn_event` are
   ignored.
 - A biome tag no biome carries never matches; the plugin logs a warning for each.
-
-## Registration API
-
-```php
-SpawnRuleRegistry::getInstance()->register(new SpawnRules(
-	"minecraft:myboss",
-	VanillaMobCategories::MONSTER,
-	[
-		new SpawnRuleGroup([
-			new BandCondition(SpawnBand::CAVE),
-			new BiomeTagCondition("mountain"),
-			new BrightnessCondition(0, 7),
-			new DifficultyCondition(World::DIFFICULTY_EASY, World::DIFFICULTY_HARD),
-			new SpawnsOnBlock([VanillaBlocks::STONE(), VanillaBlocks::DEEPSLATE()], false),
-		], weight: 100),
-	],
-	fn(World $world, Vector3 $pos, SpawnRuleGroup $group) => new MyBoss(Location::fromObject($pos, $world)),
-	new EntitySizeInfo(2.0, 1.0), // height, width: the room it needs
-));
-```
-
-- `register()` throws on an unknown category, or on a duplicate identifier without
-  `override`.
-- Rules store the category id, so re-registering a category applies to existing rules.
-- The factory builds the entity; `HerdSpawner` spawns it. Its exceptions are not caught.
-- Surface or underground is a condition, not a group option: a group without a
-  `BandCondition` spawns in both. `SpawnBand::SURFACE` is the position on a column's
-  ground and `SpawnBand::CAVE` is everything below it.
-- `SpawnsOnBlock` takes the blocks and whether they forbid the spawn (`true`) or are the
-  only ones allowed (`false`). Blocks match by type and variant, not by placement state.
-- `SpawnRuleGroup` options: `minPlayerDistance:` / `maxPlayerDistance:` (`0.0` and `INF`
-  for no bound), `surfaceDensityLimit:` / `caveDensityLimit:`, and
-  `requiredLiquid: SpawnLiquid::WATER` for aquatic groups.
-- `SpawnRules::check($ctx)` evaluates the conditions without the cache.
-
-### Biome tags
-
-`BiomeTagCondition` tests the shared `BiomeTagMap`, which starts from the bundled Bedrock
-data. Custom biomes, or custom tags on vanilla ones, are added to it:
-
-```php
-BiomeTagMap::getInstance()->addTag($biomeId, "myplugin:haunted");
-```
-
-`removeTag()` takes one away. Either change, like replacing the map with `setInstance()`,
-invalidates the candidate cache, so it applies from the next tick.
-
-### Population queries
-
-```php
-$counts = MobPopulation::getInstance()->around($world, $chunkX, $chunkZ);
-$counts->getCategoryCount(VanillaMobCategories::MONSTER, SpawnBand::CAVE);
-$counts->getIdentifierCount(EntityIds::ZOMBIE, SpawnBand::SURFACE);
-
-// A plugin that spawns a mob its own way can say which band it counts in.
-MobPopulation::getInstance()->getBands()->set($entity, SpawnBand::SURFACE);
-```
-
-`around()` scans 81 chunks on every call: keep its result. Inside a condition use
-`$ctx->getPopulation()`.
-
-### Custom components
-
-```php
-$parser = SpawnRulesParser::createVanilla();
-$parser->registerComponent(
-	"myplugin:my_filter",
-	static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-		$builder->addCondition(new MyCustomCondition($ctx->map(MyCustomData::class)->field));
-	}
-);
-foreach($parser->parseFile($path) as $identifier => [$categoryId, $groups]){
-	// build SpawnRules with a factory and register them
-}
-```
-
-`ComponentParseContext` also has `mapList()`, `resolveBlocks()`, `objectOrList()`,
-`getValue()` and `getPath()`.
-
-## Settings
-
-```yaml
-mob-natural-spawning:
-  enabled: true
-  max-attempts-per-tick: 8
-```
-
-A world settings file can set `enabled: false` for that world. `max-attempts-per-tick` is
-global: it caps the cost of a crowded tick, not the spawn rate.
 
 ## Timings
 
