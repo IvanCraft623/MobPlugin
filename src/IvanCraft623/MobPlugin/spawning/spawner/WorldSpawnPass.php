@@ -30,9 +30,12 @@ use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use pocketmine\block\Block;
+use pocketmine\block\RuntimeBlockStateRegistry;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
+use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
+use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 use function array_flip;
 use function ceil;
@@ -169,9 +172,27 @@ final class WorldSpawnPass{
 		// Strictly below the ground, so genuinely underground. The scan doesn't stop when a
 		// herd spawns.
 		$bottomY = (int) max($this->world->getMinY() + 1, ceil($lowestY));
+		$chunk = $this->world->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Ticking chunks are loaded");
+		$collisionInfo = RuntimeBlockStateRegistry::getInstance()->collisionInfo;
+		$localX = $x & Chunk::COORD_MASK;
+		$localZ = $z & Chunk::COORD_MASK;
 		// The block under one position is the feet of the next.
 		$feet = null;
 		for($y = (int) min($groundY - 1, floor($highestY)); $y >= $bottomY; $y--){
+			if($feet === null){
+				// Most of a column is decided by the collision class alone, without building
+				// a block: a full cube can't be stood in, and nothing can't be stood on.
+				$collision = $collisionInfo[$chunk->getBlockStateId($localX, $y, $localZ)];
+				if($collision === RuntimeBlockStateRegistry::COLLISION_CUBE){
+					continue;
+				}
+				if(
+					$collision === RuntimeBlockStateRegistry::COLLISION_NONE &&
+					$collisionInfo[$chunk->getBlockStateId($localX, $y - 1, $localZ)] === RuntimeBlockStateRegistry::COLLISION_NONE
+				){
+					continue;
+				}
+			}
 			$feet = $this->tryPosition($x, $y, $z, SpawnBand::CAVE, $nearby, $feet);
 		}
 	}

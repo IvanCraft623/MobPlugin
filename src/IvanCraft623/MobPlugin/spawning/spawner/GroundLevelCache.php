@@ -23,8 +23,11 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\spawner;
 
+use pocketmine\block\RuntimeBlockStateRegistry;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
+use pocketmine\utils\AssumptionFailedError;
+use pocketmine\world\format\Chunk;
 use pocketmine\world\World;
 
 /**
@@ -52,7 +55,15 @@ final class GroundLevelCache{
 		$minY = $this->world->getMinY();
 		$topY = $this->world->getHighestBlockAt($x, $z) ?? $minY;
 		$groundY = $topY;
+		$chunk = $this->world->getChunk($x >> Chunk::COORD_BIT_SIZE, $z >> Chunk::COORD_BIT_SIZE) ?? throw new AssumptionFailedError("The chunk was loaded to get its highest block");
+		$collisionInfo = RuntimeBlockStateRegistry::getInstance()->collisionInfo;
+		$localX = $x & Chunk::COORD_MASK;
+		$localZ = $z & Chunk::COORD_MASK;
 		for($y = $topY; $y >= $minY; $y--){
+			// Nothing to collide with is nothing to stand on: no block needs building.
+			if($collisionInfo[$chunk->getBlockStateId($localX, $y, $localZ)] === RuntimeBlockStateRegistry::COLLISION_NONE){
+				continue;
+			}
 			if($this->world->getBlockAt($x, $y, $z, addToCache: false)->getSupportType(Facing::UP) === SupportType::FULL){
 				$groundY = $y;
 				break;
