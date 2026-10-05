@@ -23,8 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
+use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
@@ -34,16 +36,19 @@ use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Living;
 use pocketmine\entity\Location;
+use pocketmine\entity\projectile\EnderPearl;
 use pocketmine\entity\projectile\Projectile;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDeathEvent;
+use pocketmine\event\entity\ProjectileHitEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
+use pocketmine\player\Player;
 use pocketmine\player\UsedChunkStatus;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\World;
@@ -127,6 +132,36 @@ class EventListener implements Listener {
 			$drops[] = $witherRose->asItem();
 			$event->setDrops($drops);
 		}
+	}
+
+	public function onProjectileHit(ProjectileHitEvent $event) : void{
+		$pearl = $event->getEntity();
+		if (!$pearl instanceof EnderPearl || !$pearl->getOwningEntity() instanceof Player) {
+			return;
+		}
+
+		$world = $pearl->getWorld();
+		if ($world->getDifficulty() === World::DIFFICULTY_PEACEFUL ||
+			!Settings::getSettings($world->getFolderName())->isMobNaturalSpawningEnabled()
+		) {
+			return;
+		}
+
+		if (PMUtils::getRandomFloat() >= Endermite::ENDER_PEARL_SPAWN_CHANCE) {
+			return;
+		}
+
+		$hitResult = $event->getRayTraceResult();
+
+		$endermite = new Endermite(Location::fromObject(
+			$hitResult->getHitVector()->addVector(
+				Vector3::zero()->getSide($hitResult->getHitFace())->multiply(VanillaEntitySizes::ENDERMITE_HEIGHT)
+			),
+			$world,
+			PMUtils::getRandomFloat() * 360
+		));
+		(new MobSpawnEvent($endermite, MobSpawnCause::ENDER_PEARL, $pearl))->call();
+		$endermite->spawnToAll();
 	}
 
 	/**

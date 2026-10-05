@@ -42,6 +42,8 @@ use pocketmine\player\Player;
 
 class Endermite extends Monster {
 
+	public const ENDER_PEARL_SPAWN_CHANCE = 0.05;
+
 	public static function getNetworkTypeId() : string{ return EntityIds::ENDERMITE; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{

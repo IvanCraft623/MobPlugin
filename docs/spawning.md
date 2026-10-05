@@ -16,7 +16,8 @@ mob-natural-spawning:
 ```
 
 A world settings file can set `enabled: false` for that world. `max-attempts-per-tick` is
-global: it caps the cost of a crowded tick, not the spawn rate.
+global: it caps the cost of a crowded tick, not the spawn rate. `enabled` also covers
+endermites from ender pearls.
 
 `max-mobs` pauses spawning in a world that holds that many mobs with spawn rules. It can
 be set per world; `0` is no limit.

@@ -31,6 +31,7 @@ enum MobSpawnCause{
 	case SUMMONED;
 	case CONVERSION;
 	case SPAWN_EGG;
+	case ENDER_PEARL;
 	/** For plugins that spawn mobs their own way. */
 	case CUSTOM;
 }
