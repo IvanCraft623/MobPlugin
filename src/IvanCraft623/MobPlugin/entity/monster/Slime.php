@@ -144,10 +144,6 @@ class Slime extends Mob implements Enemy {
 		return $this->type->getMovementSpeed();
 	}
 
-	public function shouldDespawnInPeaceful() : bool{
-		return $this->type->getAttackDamage() > 0;
-	}
-
 	public function getType() : SlimeType{
 		return $this->type;
 	}
@@ -196,14 +192,11 @@ class Slime extends Mob implements Enemy {
 	protected function onDeathUpdate(int $tickDiff) : bool{
 		$shouldDespawn = parent::onDeathUpdate($tickDiff);
 		if ($shouldDespawn && ($slimeType = $this->type->getSplitType()) !== null) {
-			$persistent = $this->isPersistent();
-
 			$splitAmount = 2 + $this->random->nextBoundedInt(3);
 			for ($i = 0; $i < $splitAmount; $i++) {
 				$slime = new Slime($this->getLocation());
 				$slime->setType($slimeType);
-				$slime->setPersistent($persistent);
-				(new MobSpawnEvent($slime, MobSpawnCause::SPLIT))->call();
+				(new MobSpawnEvent($slime, MobSpawnCause::SPLIT, $this))->call();
 				$slime->spawnToAll();
 			}
 		}

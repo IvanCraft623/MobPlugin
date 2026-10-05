@@ -26,7 +26,7 @@ mob-natural-spawning:
   max-mobs: 200
 
 # Enables natural despawning of mobs
-# Note: Persistent mobs are unaffected by this setting
+# Note: Monsters are removed in peaceful, and endermites after two minutes, either way
 mob-natural-despawning: true
 
 ## Mob Behavior

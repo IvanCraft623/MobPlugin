@@ -24,6 +24,8 @@ Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
   entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.
 - `spawning/` — natural spawning from the vanilla spawn rules. `parse/schema/` is
   generated. See `docs/spawning.md`, and `docs/spawning-api.md` for the public API.
+- `despawning/` — natural despawning, for any entity with a registered `DespawnRule`. See
+  `docs/despawning.md`.
 - `utils/`, `sound/`, `particle/`, `pattern/`, `item/`, `inventory/`, `CustomTimings.php`
   — shared infrastructure.
 
@@ -56,6 +58,7 @@ API.
 - Mob behavior goes through the goal FSM, not inline in entity tick methods. Port a mob by
   composing goals.
 - Port vanilla AI faithfully, adapting to PocketMine-MP's APIs.
+- A new mob needs its despawn rule in `DespawnRuleRegistry`; without one it never despawns.
 
 ## Before finishing
 

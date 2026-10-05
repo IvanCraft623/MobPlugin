@@ -23,14 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\event;
 
-enum MobSpawnCause{
-	case NATURAL;
-	case BUILT;
-	case BREEDING;
-	case SPLIT;
-	case SUMMONED;
-	case CONVERSION;
-	case SPAWN_EGG;
-	/** For plugins that spawn mobs their own way. */
-	case CUSTOM;
+enum NaturalDespawnCause{
+	case DIFFICULTY;
+	case MAX_LIFETIME;
+	case DISTANCE;
+	case SIMULATION_EDGE;
+	case INACTIVITY;
 }

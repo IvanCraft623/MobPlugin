@@ -45,7 +45,7 @@ final class SpawnSelectorTest extends TestCase{
 
 	protected function setUp() : void{
 		foreach(self::CATEGORIES as $id => $cap){
-			MobCategoryRegistry::getInstance()->register(new MobCategory($id, $cap, $cap, 64));
+			MobCategoryRegistry::getInstance()->register(new MobCategory($id, $cap, $cap));
 		}
 	}
 

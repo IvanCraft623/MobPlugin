@@ -39,6 +39,8 @@ final class CustomTimings {
 	public static TimingsHandler $naturalSpawningSelect;
 	public static TimingsHandler $naturalSpawningSpawn;
 
+	public static TimingsHandler $naturalDespawning;
+
 	public static TimingsHandler $pathfinding;
 
 	public static TimingsHandler $navigation;
@@ -62,6 +64,8 @@ final class CustomTimings {
 		self::$naturalSpawningCensus = new TimingsHandler("Natural Spawning - Census", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
 		self::$naturalSpawningSelect = new TimingsHandler("Natural Spawning - Select", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
 		self::$naturalSpawningSpawn = new TimingsHandler("Natural Spawning - Spawn", self::$naturalSpawning, group: Timings::GROUP_BREAKDOWN);
+
+		self::$naturalDespawning = new TimingsHandler("Natural Despawning", group: Timings::GROUP_BREAKDOWN);
 
 		self::$pathfinding = new TimingsHandler("Entity Pathfinding", group: Timings::GROUP_BREAKDOWN);
 

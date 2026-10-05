@@ -202,8 +202,6 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1.
 - The ticking set is PocketMine's circle around each player, not vanilla's diamond.
 - A tick radius below 4 spawns like 4. Vanilla doesn't spawn below 4, but PocketMine's
   default is 3.
-- At a tick radius of 5 or more, mobs may spawn up to 128 blocks out, past most
-  categories' 64 block despawn distance.
 - Ground is any block with a full top surface, including glass and barriers.
 - A liquid position needs one block of its liquid; vanilla's surface needs two.
 - `permute_type` targets spawn in base form (event suffixes are stripped), and a target

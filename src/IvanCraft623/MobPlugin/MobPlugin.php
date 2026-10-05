@@ -27,6 +27,10 @@ use bStats\PocketmineMp\charts\DrilldownPie;
 use bStats\PocketmineMp\charts\SingleLineChart;
 use bStats\PocketmineMp\Metrics;
 
+use IvanCraft623\MobPlugin\despawning\DespawnListener;
+use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
+use IvanCraft623\MobPlugin\despawning\NaturalDespawnTask;
+use IvanCraft623\MobPlugin\despawning\WorldDespawnPass;
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
@@ -119,12 +123,14 @@ class MobPlugin extends PluginBase {
 		$this->registerEntities();
 		$this->registerMetrics();
 		$this->registerNaturalSpawning();
+		$this->registerNaturalDespawning();
 
 		ExtraItemRegisterHelper::init();
 
 		BossBarAPI::load($this);
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
+		$this->getServer()->getPluginManager()->registerEvents(new DespawnListener(DespawnRuleRegistry::getInstance()), $this);
 	}
 
 	/**
@@ -155,6 +161,10 @@ class MobPlugin extends PluginBase {
 			$settings->getMobNaturalSpawningMaxAttemptsPerTick(),
 			$this->getServer()->getWorldManager()
 		), 1);
+	}
+
+	private function registerNaturalDespawning() : void{
+		$this->getScheduler()->scheduleRepeatingTask(new NaturalDespawnTask(DespawnRuleRegistry::getInstance(), $this->getServer()), WorldDespawnPass::CHECK_INTERVAL);
 	}
 
 	public function getRandom() : Random {

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
+use IvanCraft623\MobPlugin\despawning\DespawnPersistenceTrait;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
@@ -35,8 +36,6 @@ use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
-use IvanCraft623\MobPlugin\spawning\MobCategoryRegistry;
-use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
@@ -78,7 +77,6 @@ use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\particle\DustParticle;
 use pocketmine\world\sound\ItemBreakSound;
-use pocketmine\world\World;
 use function assert;
 use function basename;
 use function count;
@@ -91,15 +89,10 @@ use function str_replace;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
 
 abstract class Mob extends Living {
+	use DespawnPersistenceTrait {
+		initEntity as initDespawnPersistence;
+	}
 	//TODO!
-
-	private const TAG_PERSISTENT = "Persistent"; //TAG_Byte
-
-	/**
-	 * The O(players) nearest-player scan in checkDespawn() is only worth doing periodically; the
-	 * per-mob*per-player cost is the dominant despawn overhead at scale.
-	 */
-	private const DESPAWN_PLAYER_SCAN_INTERVAL = 20;
 
 	protected PathNavigation $navigation;
 
@@ -130,8 +123,6 @@ abstract class Mob extends Living {
 	protected float $restrictRadius = -1;
 
 	protected bool $aggressive = false;
-
-	protected bool $isPersistent = false;
 
 	protected bool $hasAi = true;
 
@@ -166,16 +157,9 @@ abstract class Mob extends Living {
 	protected function initEntity(CompoundTag $nbt) : void{
 		$this->initProperties();
 
-		parent::initEntity($nbt);
-
-		if ($this->getSettings()->isDebugModeEnabled()) {
-			$this->setNameTagVisible(true);
-			$this->setNameTagAlwaysVisible(true);
-		}
+		$this->initDespawnPersistence($nbt);
 
 		MobPlugin::getInstance()->trackEntity($this);
-
-		$this->isPersistent = $nbt->getByte(self::TAG_PERSISTENT, 0) !== 0;
 
 		$this->goalSelector = new GoalSelector();
 		$this->targetSelector = new GoalSelector();
@@ -186,14 +170,6 @@ abstract class Mob extends Living {
 		$this->sensing = new Sensing($this);
 
 		$this->registerGoals();
-	}
-
-	public function saveNBT() : CompoundTag{
-		$nbt = parent::saveNBT();
-
-		$nbt->setByte(self::TAG_PERSISTENT, $this->isPersistent ? 1 : 0);
-
-		return $nbt;
 	}
 
 	protected function initProperties() : void{
@@ -314,17 +290,6 @@ abstract class Mob extends Living {
 		return 16;
 	}
 
-	public function getLifeTime() : int{
-		return $this->ticksLived;
-	}
-
-	/**
-	 * Returns maximun time in ticks that this entity can live or -1 if undefined.
-	 */
-	public function getMaxLifeTime() : int{
-		return -1;
-	}
-
 	public function getAttackDamage() : float{
 		return $this->attackDamageAttr->getValue();
 	}
@@ -365,32 +330,6 @@ abstract class Mob extends Living {
 		return $maxFallDistance + $defaultMax;
 	}
 
-	/**
-	 * Sets whether this entity is forced to not despawn naturally.
-	 *
-	 * @return $this
-	 */
-	public function setPersistent(bool $value = true) : self{
-		$this->isPersistent = $value;
-
-		return $this;
-	}
-
-	/**
-	 * Returns whether this entity is forced to not despawn naturally.
-	 */
-	public function isPersistent() : bool{
-		return $this->isPersistent;
-	}
-
-	/**
-	 * Returns whether this entity cannot despawn naturally.
-	 */
-	public function isPersistenceRequired() : bool{
-		//TODO: check if is passenger
-		return $this->isPersistent() || $this->getNameTag() !== "";
-	}
-
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		if($this->hasAi){
 			CustomTimings::$entityAiTick->startTiming();
@@ -400,10 +339,8 @@ abstract class Mob extends Living {
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		$this->checkDespawn();
-
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
-			$this->setNameTag(implode("\n", $this->getCurrentDebugInfo()));
+			$this->networkPropertiesDirty = true; // the debug info is sent in place of the name tag
 
 			$path = $this->navigation->getPath();
 			if ($path !== null) {
@@ -441,67 +378,7 @@ abstract class Mob extends Living {
 		return $data;
 	}
 
-	public function checkDespawn() : void{
-		if (!$this->getSettings()->isMobNaturalDespawningEnabled()) {
-			return;
-		}
-
-		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL && $this->shouldDespawnInPeaceful()) {
-			$this->flagForDespawn();
-			return;
-		}
-
-		if (!$this->isPersistenceRequired()) {
-			$maxLifetime = $this->getMaxLifeTime();
-			if ($maxLifetime !== -1 && $this->ticksLived >= $maxLifetime) {
-				$this->flagForDespawn();
-				return;
-			}
-
-			//Amortize the O(players) nearest-player scan across multiple ticks instead of running it
-			//for every mob every tick.
-			if ($this->ticksLived % self::DESPAWN_PLAYER_SCAN_INTERVAL === 0) {
-				return;
-			}
-
-			$nearestPlayer = Utils::getNearestPlayer($this);
-			$categoryId = SpawnRuleRegistry::getInstance()->get(static::getNetworkTypeId())?->getCategoryId();
-			$mobCategory = $categoryId !== null ? MobCategoryRegistry::getInstance()->get($categoryId) : null;
-			if ($nearestPlayer !== null && $mobCategory !== null) {
-				$distanceSquared = $this->location->distanceSquared($nearestPlayer->getPosition());
-				if ($this->shouldDespawnWhenFarAway($distanceSquared) &&
-					$distanceSquared > $mobCategory->getDespawnDistance() ** 2
-				) {
-					$this->flagForDespawn();
-				}
-
-				$noDespawnSquared = $mobCategory->getNoDespawnDistance() ** 2;
-				if ($this->noActionTime > 600 &&
-					$this->random->nextBoundedInt(800) === 0 &&
-					$distanceSquared > $noDespawnSquared &&
-					$this->shouldDespawnWhenFarAway($distanceSquared)
-				) {
-					$this->flagForDespawn();
-				} elseif ($distanceSquared < $noDespawnSquared) {
-					$this->noActionTime = 0;
-				}
-			}
-		} else {
-			$this->noActionTime = 0;
-		}
-	}
-
-	public function shouldDespawnInPeaceful() : bool{
-		return false;
-	}
-
-	public function shouldDespawnWhenFarAway(float $distanceSquared) : bool{
-		return true;
-	}
-
 	public function tickAi() : void{
-		$this->noActionTime++;
-
 		$this->sensing->tick();
 
 		CustomTimings::$goalSelector->startTiming();
@@ -934,8 +811,6 @@ abstract class Mob extends Living {
 			$entity->getWorld()->dropItem($entity->getLocation(), (clone $item)->setCount($remaining), Vector3::zero(), 0);
 		}
 		$entity->flagForDespawn();
-
-		$this->setPersistent(); //mobs that have pickup items became persistent
 	}
 
 	public function getEquipInventoryAndSlot(Item $item, int &$slot) : Inventory{
@@ -967,6 +842,13 @@ abstract class Mob extends Living {
 		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
 
 		$properties->setGenericFlag(EntityMetadataFlags::NO_AI, $this->noClientPredictions || !$this->hasAi);
+
+		if ($this->getSettings()->isDebugModeEnabled()) {
+			// Only on the network: the real name tag is saved, and makes the mob persistent.
+			$properties->setString(EntityMetadataProperties::NAMETAG, implode("\n", $this->getCurrentDebugInfo()));
+			$properties->setByte(EntityMetadataProperties::ALWAYS_SHOW_NAMETAG, 1);
+			$properties->setGenericFlag(EntityMetadataFlags::CAN_SHOW_NAMETAG, true);
+		}
 	}
 
 	protected function onDispose() : void{

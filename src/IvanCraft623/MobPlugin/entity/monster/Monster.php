@@ -29,10 +29,6 @@ use IvanCraft623\MobPlugin\utils\Utils;
 abstract class Monster extends PathfinderMob implements Enemy {
 	//TODO!
 
-	public function shouldDespawnInPeaceful() : bool{
-		return true;
-	}
-
 	public function getXpDropAmount() : int{
 		if ($this->hasBeenDamagedByPlayer()) {
 			return 5;

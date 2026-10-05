@@ -21,36 +21,34 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\event;
+namespace IvanCraft623\MobPlugin\item;
 
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use pocketmine\entity\Entity;
-use pocketmine\event\entity\EntityEvent;
+use pocketmine\entity\Location;
+use pocketmine\item\ItemIdentifier;
+use pocketmine\item\SpawnEgg;
+use pocketmine\math\Vector3;
+use pocketmine\world\World;
 
-/**
- * Called when a mob is about to be spawned to the world for the first time. Unlike
- * PocketMine's EntitySpawnEvent it is not called for mobs loaded from storage, and it
- * says why the mob spawned.
- *
- * @phpstan-extends EntityEvent<Entity>
- */
-class MobSpawnEvent extends EntityEvent{
-
-	public function __construct(
-		Entity $entity,
-		private readonly MobSpawnCause $cause,
-		private readonly ?Entity $parent = null
-	){
-		$this->entity = $entity;
-	}
-
-	public function getCause() : MobSpawnCause{
-		return $this->cause;
-	}
+final class MobSpawnEgg extends SpawnEgg{
 
 	/**
-	 * Returns the entity the mob split, converted or was summoned from, if any.
+	 * @phpstan-param class-string<Entity> $entityClass
 	 */
-	public function getParent() : ?Entity{
-		return $this->parent;
+	public function __construct(
+		ItemIdentifier $identifier,
+		string $name,
+		private readonly string $entityClass
+	){
+		parent::__construct($identifier, $name);
+	}
+
+	protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
+		$entity = new $this->entityClass(Location::fromObject($pos, $world, $yaw, $pitch));
+		(new MobSpawnEvent($entity, MobSpawnCause::SPAWN_EGG))->call();
+
+		return $entity;
 	}
 }

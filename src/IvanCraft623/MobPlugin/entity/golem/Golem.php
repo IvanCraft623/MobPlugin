@@ -34,8 +34,4 @@ abstract class Golem extends PathfinderMob {
 	public function getAmbientSoundIntervalRange() : float{
 		return 16;
 	}
-
-	public function shouldDespawnWhenFarAway(float $distanceSquared) : bool{
-		return false;
-	}
 }

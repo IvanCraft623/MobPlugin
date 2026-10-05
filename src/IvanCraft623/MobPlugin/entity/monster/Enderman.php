@@ -322,10 +322,6 @@ class Enderman extends Monster implements NeutralMob{
 		$this->networkPropertiesDirty = true;
 	}
 
-	public function isPersistenceRequired() : bool{
-		return parent::isPersistenceRequired() || $this->carryBlock !== null;
-	}
-
 	public function onBeingStaredAt() : void{
 		$this->broadcastSound(new EntityStareSound($this));
 	}

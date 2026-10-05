@@ -37,6 +37,7 @@ Mobs spawn from the vanilla Bedrock [spawn rules](https://github.com/Mojang/bedr
 
 - [Natural spawning](docs/spawning.md)
 - [Natural spawning API](docs/spawning-api.md)
+- [Natural despawning](docs/despawning.md)
 - [Mob navigation](docs/navigation.md)
 
 ---

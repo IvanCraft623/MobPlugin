@@ -43,14 +43,9 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
 
-use pocketmine\entity\Entity;
-use pocketmine\entity\Location;
 use pocketmine\item\Item;
 use pocketmine\item\ItemIdentifier as IID;
-use pocketmine\item\SpawnEgg;
-use pocketmine\math\Vector3;
 use pocketmine\utils\CloningRegistryTrait;
-use pocketmine\world\World;
 
 /**
  * This doc-block is generated automatically, do not modify it manually.
@@ -104,112 +99,23 @@ final class ExtraVanillaItems{
 	}
 
 	private static function registerSpawnEggs() : void{
-		self::register("endermite_spawn_egg", new class(new IID(Ids::ENDERMITE_SPAWN_EGG()), "Endermite Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Endermite(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("mooshroom_spawn_egg", new class(new IID(Ids::MOOSHROOM_SPAWN_EGG()), "Mooshroom Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new MooshroomCow(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("cow_spawn_egg", new class(new IID(Ids::COW_SPAWN_EGG()), "Cow Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Cow(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("sheep_spawn_egg", new class(new IID(Ids::SHEEP_SPAWN_EGG()), "Sheep Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Sheep(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("creeper_spawn_egg", new class(new IID(Ids::CREEPER_SPAWN_EGG()), "Creeper Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Creeper(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("chicken_spawn_egg", new class(new IID(Ids::CHICKEN_SPAWN_EGG()), "Chicken Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Chicken(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("pig_spawn_egg", new class(new IID(Ids::PIG_SPAWN_EGG()), "Pig Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Pig(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("bat_spawn_egg", new class(new IID(Ids::BAT_SPAWN_EGG()), "Bat Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Bat(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("slime_spawn_egg", new class(new IID(Ids::SLIME_SPAWN_EGG()), "Slime Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Slime(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("enderman_spawn_egg", new class(new IID(Ids::ENDERMAN_SPAWN_EGG()), "Enderman Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Enderman(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("spider_spawn_egg", new class(new IID(Ids::SPIDER_SPAWN_EGG()), "Spider Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Spider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("cave_spider_spawn_egg", new class(new IID(Ids::CAVE_SPIDER_SPAWN_EGG()), "Cave Spider Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new CaveSpider(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("iron_golem_spawn_egg", new class(new IID(Ids::IRON_GOLEM_SPAWN_EGG()), "Iron Golem Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new IronGolem(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("snow_golem_spawn_egg", new class(new IID(Ids::SNOW_GOLEM_SPAWN_EGG()), "Snow Golem Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new SnowGolem(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("skeleton_spawn_egg", new class(new IID(Ids::SKELETON_SPAWN_EGG()), "Skeleton Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Skeleton(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("stray_spawn_egg", new class(new IID(Ids::STRAY_SPAWN_EGG()), "Stray Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Stray(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("wither_skeleton_spawn_egg", new class(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new WitherSkeleton(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
-
-		self::register("wither_spawn_egg", new class(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg") extends SpawnEgg{
-			protected function createEntity(World $world, Vector3 $pos, float $yaw, float $pitch) : Entity{
-				return (new Wither(Location::fromObject($pos, $world, $yaw, $pitch)))->setPersistent();
-			}
-		});
+		self::register("endermite_spawn_egg", new MobSpawnEgg(new IID(Ids::ENDERMITE_SPAWN_EGG()), "Endermite Spawn Egg", Endermite::class));
+		self::register("mooshroom_spawn_egg", new MobSpawnEgg(new IID(Ids::MOOSHROOM_SPAWN_EGG()), "Mooshroom Spawn Egg", MooshroomCow::class));
+		self::register("cow_spawn_egg", new MobSpawnEgg(new IID(Ids::COW_SPAWN_EGG()), "Cow Spawn Egg", Cow::class));
+		self::register("sheep_spawn_egg", new MobSpawnEgg(new IID(Ids::SHEEP_SPAWN_EGG()), "Sheep Spawn Egg", Sheep::class));
+		self::register("creeper_spawn_egg", new MobSpawnEgg(new IID(Ids::CREEPER_SPAWN_EGG()), "Creeper Spawn Egg", Creeper::class));
+		self::register("chicken_spawn_egg", new MobSpawnEgg(new IID(Ids::CHICKEN_SPAWN_EGG()), "Chicken Spawn Egg", Chicken::class));
+		self::register("pig_spawn_egg", new MobSpawnEgg(new IID(Ids::PIG_SPAWN_EGG()), "Pig Spawn Egg", Pig::class));
+		self::register("bat_spawn_egg", new MobSpawnEgg(new IID(Ids::BAT_SPAWN_EGG()), "Bat Spawn Egg", Bat::class));
+		self::register("slime_spawn_egg", new MobSpawnEgg(new IID(Ids::SLIME_SPAWN_EGG()), "Slime Spawn Egg", Slime::class));
+		self::register("enderman_spawn_egg", new MobSpawnEgg(new IID(Ids::ENDERMAN_SPAWN_EGG()), "Enderman Spawn Egg", Enderman::class));
+		self::register("spider_spawn_egg", new MobSpawnEgg(new IID(Ids::SPIDER_SPAWN_EGG()), "Spider Spawn Egg", Spider::class));
+		self::register("cave_spider_spawn_egg", new MobSpawnEgg(new IID(Ids::CAVE_SPIDER_SPAWN_EGG()), "Cave Spider Spawn Egg", CaveSpider::class));
+		self::register("iron_golem_spawn_egg", new MobSpawnEgg(new IID(Ids::IRON_GOLEM_SPAWN_EGG()), "Iron Golem Spawn Egg", IronGolem::class));
+		self::register("snow_golem_spawn_egg", new MobSpawnEgg(new IID(Ids::SNOW_GOLEM_SPAWN_EGG()), "Snow Golem Spawn Egg", SnowGolem::class));
+		self::register("skeleton_spawn_egg", new MobSpawnEgg(new IID(Ids::SKELETON_SPAWN_EGG()), "Skeleton Spawn Egg", Skeleton::class));
+		self::register("stray_spawn_egg", new MobSpawnEgg(new IID(Ids::STRAY_SPAWN_EGG()), "Stray Spawn Egg", Stray::class));
+		self::register("wither_skeleton_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg", WitherSkeleton::class));
+		self::register("wither_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg", Wither::class));
 	}
 }

@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\entity\animation\BabyAnimalFeedAnimation;
 use IvanCraft623\MobPlugin\entity\animation\BreedingAnimation;
 use IvanCraft623\MobPlugin\entity\Feedable;
 use IvanCraft623\MobPlugin\entity\Lureable;
+use IvanCraft623\MobPlugin\event\MobFeedEvent;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -127,22 +128,17 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		$item = $player->getInventory()->getItemInHand();
 		if ($this->isFood($item)) {
 			$age = $this->getAge();
-			if ($age === AgeableMob::ADULT_AGE && $this->canFallInLove()) {
+			$canBreed = $age === AgeableMob::ADULT_AGE && $this->canFallInLove();
+			if ($canBreed || $this->isBaby()) {
 				Utils::popItemInHand($player);
-				$this->setInLove($player);
-				$this->setPersistent();
-
-				$this->broadcastAnimation(new ConsumingItemAnimation($this, $item));
-
-				return true;
-			}
-
-			if ($this->isBaby()) {
-				Utils::popItemInHand($player);
-				$this->ageUp(static::getAgeUpWhenFeeding($age));
-				$this->setPersistent();
-
-				$this->broadcastAnimation(new BabyAnimalFeedAnimation($this));
+				if ($canBreed) {
+					$this->setInLove($player);
+					$this->broadcastAnimation(new ConsumingItemAnimation($this, $item));
+				} else {
+					$this->ageUp(static::getAgeUpWhenFeeding($age));
+					$this->broadcastAnimation(new BabyAnimalFeedAnimation($this));
+				}
+				(new MobFeedEvent($this, $player, $item))->call();
 
 				return true;
 			}
@@ -203,7 +199,6 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 	public function spawnChildFromBreeding(Animal $partner) : void{
 		$offspring = $this->getBreedOffspring($partner);
 		$offspring->setBaby();
-		$offspring->setPersistent();
 		(new MobSpawnEvent($offspring, MobSpawnCause::BREEDING))->call();
 		$offspring->spawnToAll();
 

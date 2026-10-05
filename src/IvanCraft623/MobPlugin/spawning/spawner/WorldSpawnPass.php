@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\spawning\population\PopulationCensus;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
+use IvanCraft623\MobPlugin\utils\SimulationRange;
 use pocketmine\block\Block;
 use pocketmine\block\RuntimeBlockStateRegistry;
 use pocketmine\block\utils\SupportType;
@@ -36,6 +37,7 @@ use pocketmine\math\Facing;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
 use pocketmine\world\format\Chunk;
+use pocketmine\world\Position;
 use pocketmine\world\World;
 use function array_flip;
 use function ceil;
@@ -52,10 +54,6 @@ use const PHP_FLOAT_MAX;
  * the next one starts; every location-keyed memo lives only as long as the pass.
  */
 final class WorldSpawnPass{
-	/** At a tick radius this low, vanilla spawns nothing farther than this from a player. */
-	private const LOW_TICK_RADIUS = 4;
-	private const LOW_TICK_RADIUS_MAX_PLAYER_DISTANCE = 44;
-
 	private readonly GroundLevelCache $groundLevels;
 
 	private readonly PopulationCensus $census;
@@ -74,13 +72,13 @@ final class WorldSpawnPass{
 
 	/**
 	 * @phpstan-param list<int>                                $tickingChunks     the world's ticking chunk hashes this tick
-	 * @phpstan-param non-empty-list<array{float, float, float}> $players           the positions of the players that allow spawns
+	 * @phpstan-param non-empty-list<Position>                 $playerPositions   where the players that allow spawns are
 	 * @phpstan-param float                                    $maxPlayerDistance the largest maximum player distance of any group; INF for no limit
 	 */
 	public function __construct(
 		private readonly World $world,
 		private readonly array $tickingChunks,
-		private readonly array $players,
+		private readonly array $playerPositions,
 		private readonly CandidateCache $candidateCache,
 		private readonly SpawnSelector $selector,
 		private readonly HerdSpawner $herdSpawner,
@@ -93,8 +91,8 @@ final class WorldSpawnPass{
 		$this->census = $population->createCensus($world, $this->groundLevels, $registry, CustomTimings::$naturalSpawningCensus);
 		$this->difficulty = $world->getDifficulty();
 		$this->time = $world->getTime();
-		$this->lowTickRadius = $world->getChunkTickRadius() <= self::LOW_TICK_RADIUS;
-		$this->reach = $this->lowTickRadius ? min(self::LOW_TICK_RADIUS_MAX_PLAYER_DISTANCE, $maxPlayerDistance) : $maxPlayerDistance;
+		$this->lowTickRadius = SimulationRange::isLowTickRadius($world);
+		$this->reach = $this->lowTickRadius ? min(SimulationRange::LOW_TICK_RADIUS_MAX_PLAYER_DISTANCE, $maxPlayerDistance) : $maxPlayerDistance;
 	}
 
 	/**
@@ -144,22 +142,22 @@ final class WorldSpawnPass{
 		if($this->reach !== INF){
 			$lowestY = INF;
 			$highestY = -INF;
-			foreach($this->players as [$px, $py, $pz]){
-				$horizontalSquared = ($px - $x) ** 2 + ($pz - $z) ** 2;
+			foreach($this->playerPositions as $pos){
+				$horizontalSquared = ($pos->x - $x) ** 2 + ($pos->z - $z) ** 2;
 				if($horizontalSquared > $reachSquared){
 					continue;
 				}
-				$nearby[] = [$horizontalSquared, $py];
+				$nearby[] = [$horizontalSquared, $pos->y];
 				$verticalReach = sqrt($reachSquared - $horizontalSquared);
-				$lowestY = min($lowestY, $py - $verticalReach);
-				$highestY = max($highestY, $py + $verticalReach);
+				$lowestY = min($lowestY, $pos->y - $verticalReach);
+				$highestY = max($highestY, $pos->y + $verticalReach);
 			}
 			if(count($nearby) === 0){
 				return;
 			}
 		}else{
-			foreach($this->players as [$px, $py, $pz]){
-				$nearby[] = [($px - $x) ** 2 + ($pz - $z) ** 2, $py];
+			foreach($this->playerPositions as $pos){
+				$nearby[] = [($pos->x - $x) ** 2 + ($pos->z - $z) ** 2, $pos->y];
 			}
 		}
 

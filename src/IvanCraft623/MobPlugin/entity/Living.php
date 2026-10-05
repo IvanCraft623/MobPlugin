@@ -86,8 +86,6 @@ abstract class Living extends PMLiving {
 
 	protected float $verticalDrag;
 
-	protected int $noActionTime = 0; //TODO: logic
-
 	protected MobInventory $inventory;
 
 	protected Brain $brain;
@@ -490,14 +488,6 @@ abstract class Living extends PMLiving {
 		return 3;
 	}
 
-	public function getNoActionTime() : int{
-		return $this->noActionTime;
-	}
-
-	public function setNoActionTime(int $time) : void{
-		$this->noActionTime = $time;
-	}
-
 	public function getKnockbackResistance() : float{
 		return $this->knockbackResistanceAttr->getValue();
 	}
@@ -535,14 +525,6 @@ abstract class Living extends PMLiving {
 		}
 
 		return $nbt;
-	}
-
-	public function attack(EntityDamageEvent $source) : void{
-		parent::attack($source);
-
-		if (!$source->isCancelled()) {
-			$this->noActionTime = 0;
-		}
 	}
 
 	public function setLastDamageCause(EntityDamageEvent $type) : void{

@@ -115,7 +115,7 @@ final class PopulationCensus{
 
 		$counts = new PopulationCounts();
 		foreach($this->world->getChunkEntities($chunkX, $chunkZ) as $entity){
-			if($entity->isClosed()){
+			if($entity->isClosed() || $entity->isFlaggedForDespawn()){
 				continue;
 			}
 			$counted = $this->classify($entity);

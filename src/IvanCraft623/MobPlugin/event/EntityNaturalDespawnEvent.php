@@ -23,14 +23,28 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\event;
 
-enum MobSpawnCause{
-	case NATURAL;
-	case BUILT;
-	case BREEDING;
-	case SPLIT;
-	case SUMMONED;
-	case CONVERSION;
-	case SPAWN_EGG;
-	/** For plugins that spawn mobs their own way. */
-	case CUSTOM;
+use pocketmine\entity\Entity;
+use pocketmine\event\Cancellable;
+use pocketmine\event\CancellableTrait;
+use pocketmine\event\entity\EntityEvent;
+
+/**
+ * Called when an entity is about to despawn by its despawn rule. Cancelling it only keeps
+ * the entity until its next check.
+ *
+ * @phpstan-extends EntityEvent<Entity>
+ */
+class EntityNaturalDespawnEvent extends EntityEvent implements Cancellable{
+	use CancellableTrait;
+
+	public function __construct(
+		Entity $entity,
+		private readonly NaturalDespawnCause $cause
+	){
+		$this->entity = $entity;
+	}
+
+	public function getCause() : NaturalDespawnCause{
+		return $this->cause;
+	}
 }

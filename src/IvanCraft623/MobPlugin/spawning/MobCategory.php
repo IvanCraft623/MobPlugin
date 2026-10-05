@@ -28,20 +28,10 @@ final class MobCategory{
 	public function __construct(
 		public readonly string $id,
 		public readonly int $surfaceCap,
-		public readonly int $caveCap,
-		public readonly int $despawnDistance,
-		public readonly int $noDespawnDistance = 32
+		public readonly int $caveCap
 	){}
 
 	public function getCap(SpawnBand $band) : int{
 		return $band === SpawnBand::SURFACE ? $this->surfaceCap : $this->caveCap;
-	}
-
-	public function getDespawnDistance() : int{
-		return $this->despawnDistance;
-	}
-
-	public function getNoDespawnDistance() : int{
-		return $this->noDespawnDistance;
 	}
 }

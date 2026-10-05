@@ -190,13 +190,12 @@ Register your own, or replace a vanilla one to change its caps:
 MobCategoryRegistry::getInstance()->register(new MobCategory(
 	"myplugin:spirit",
 	surfaceCap: 2,
-	caveCap: 6,
-	despawnDistance: 64
+	caveCap: 6
 ));
 ```
 
-`despawnDistance` is how far from every player its mobs despawn. Rules hold the
-category's id, so replacing a category applies to the rules already registered.
+Rules hold the category's id, so replacing a category applies to the rules already
+registered.
 
 ## Changing existing rules
 
