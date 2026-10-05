@@ -28,9 +28,9 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 
 interface NeutralMob {
 
-	public function getRemainingAngerTime() : int;
+	public function getRemainingAngerTicks() : int;
 
-	public function setRemainingAngerTime(int $ticks) : void;
+	public function setRemainingAngerTicks(int $ticks) : void;
 
 	public function startAngerTimer() : void;
 

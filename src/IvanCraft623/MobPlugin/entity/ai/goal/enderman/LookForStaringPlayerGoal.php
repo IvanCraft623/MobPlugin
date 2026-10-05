@@ -23,12 +23,11 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal\enderman;
 
+use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\TargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 
-use pocketmine\entity\Entity;
-use pocketmine\math\AxisAlignedBB;
 use pocketmine\player\Player;
 
 use function array_reduce;
@@ -54,6 +53,8 @@ class LookForStaringPlayerGoal extends TargetGoal {
 			->testInvisible(false)
 			->setRange($this->getFollowDistance());
 		$this->randomInterval = $this->reducedTickDelay(self::DEFAULT_RANDOM_INTERVAL);
+
+		$this->setFlags(Goal::FLAG_TARGET);
 	}
 
 	public function canUse() : bool{
@@ -72,11 +73,10 @@ class LookForStaringPlayerGoal extends TargetGoal {
 
 	protected function findTarget() : void{
 		$pos = $this->enderman->getLocation();
-		$this->target = array_reduce($this->enderman->getWorld()->getCollidingEntities($this->getTargetSearchArea($this->getFollowDistance()), $this->enderman),
-		function(?Player $carry, Entity $current) use ($pos) : ?Player {
-			if (!$current instanceof Player ||
-				!$this->isAngerTriggering($current) ||
-				!$this->canAttack($current, $this->startAggroTargetConditions)
+		$this->target = array_reduce($this->enderman->getWorld()->getPlayers(),
+		function(?Player $carry, Player $current) use ($pos) : ?Player {
+			if (!$this->canAttack($current, $this->startAggroTargetConditions) ||
+				!$this->isAngerTriggering($current)
 			) {
 				return $carry;
 			}
@@ -87,8 +87,16 @@ class LookForStaringPlayerGoal extends TargetGoal {
 		}, null);
 	}
 
-	public function getTargetSearchArea(float $range) : AxisAlignedBB{
-		return $this->enderman->getBoundingBox()->expandedCopy($range, $range, $range);
+	public function canContinueToUse() : bool{
+		if (!parent::canContinueToUse()) {
+			return false;
+		}
+
+		if ($this->target instanceof Player && $this->isAngerTriggering($this->target)) {
+			$this->enderman->startAngerTimer();
+		}
+
+		return true;
 	}
 
 	public function isAngerTriggering(Player $player) : bool{

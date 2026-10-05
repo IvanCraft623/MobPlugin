@@ -67,14 +67,14 @@ class IronGolem extends Golem implements NeutralMob{
 	private const COMPONENT_GROUP_PLAYER_CREATED = "minecraft:player_created";
 	private const COMPONENT_GROUP_VILLAGE_CREATED = "minecraft:village_created";
 
-	public const MIN_ANGER_TIME = 20;
-	public const MAX_ANGER_TIME = 40;
+	public const MIN_ANGER_TICKS = 20 * 20;
+	public const MAX_ANGER_TICKS = 40 * 20;
 
 	public static function getNetworkTypeId() : string{ return EntityIds::IRON_GOLEM; }
 
 	protected float $stepHeight = 1;
 
-	private int $remainingAngerTime = 0;
+	private int $remainingAngerTicks = 0;
 
 	protected bool $createdByPlayer = false;
 
@@ -181,15 +181,15 @@ class IronGolem extends Golem implements NeutralMob{
 	}
 
 	public function startAngerTimer() : void{
-		$this->setRemainingAngerTime(mt_rand(self::MIN_ANGER_TIME, self::MAX_ANGER_TIME));
+		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
 	}
 
-	public function getRemainingAngerTime() : int{
-		return $this->remainingAngerTime;
+	public function getRemainingAngerTicks() : int{
+		return $this->remainingAngerTicks;
 	}
 
-	public function setRemainingAngerTime(int $ticks) : void{
-		$this->remainingAngerTime = $ticks;
+	public function setRemainingAngerTicks(int $ticks) : void{
+		$this->remainingAngerTicks = $ticks;
 	}
 
 	public function getCrackiness() : IronGolemCrackiness{

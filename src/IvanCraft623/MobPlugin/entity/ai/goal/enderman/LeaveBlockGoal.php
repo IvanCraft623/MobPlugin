@@ -47,10 +47,6 @@ class LeaveBlockGoal extends Goal {
 		return $this->entity->getRandom()->nextBoundedInt($this->reducedTickDelay(2000)) === 0;
 	}
 
-	public function start() : void{
-		$this->entity->getNavigation()->stop();
-	}
-
 	public function tick() : void{
 		$carriedBlock = $this->entity->getCarriedBlock();
 		if ($carriedBlock === null) {

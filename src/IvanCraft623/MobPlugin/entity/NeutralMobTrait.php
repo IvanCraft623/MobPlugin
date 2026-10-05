@@ -35,9 +35,9 @@ trait NeutralMobTrait {
 
 	abstract public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void;
 
-	abstract public function getRemainingAngerTime() : int;
+	abstract public function getRemainingAngerTicks() : int;
 
-	abstract public function setRemainingAngerTime(int $ticks) : void;
+	abstract public function setRemainingAngerTicks(int $ticks) : void;
 
 	abstract public function startAngerTimer() : void;
 
@@ -51,8 +51,8 @@ trait NeutralMobTrait {
 			}
 
 			if ($this->isAngry() && ($target === null || $target instanceof Human || !$value)) {
-				$this->setRemainingAngerTime($this->getRemainingAngerTime() - 1);
-				if ($this->getRemainingAngerTime() === 0) {
+				$this->setRemainingAngerTicks($this->getRemainingAngerTicks() - 1);
+				if ($this->getRemainingAngerTicks() === 0) {
 					$this->stopBeingAngry();
 				}
 			}
@@ -68,12 +68,12 @@ trait NeutralMobTrait {
 	}
 
 	public function isAngry() : bool{
-		return $this->getRemainingAngerTime() > 0;
+		return $this->getRemainingAngerTicks() > 0;
 	}
 
 	public function stopBeingAngry() : void{
 		$this->setLastDamageByEntity(null);
 		$this->setTargetEntity(null);
-		$this->setRemainingAngerTime(0);
+		$this->setRemainingAngerTicks(0);
 	}
 }

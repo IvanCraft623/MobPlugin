@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 
-use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\world\Position;
 use function min;
@@ -135,14 +134,10 @@ class RandomTeleportGoal extends Goal {
 				continue;
 			}
 
-			//TODO: Use $entity->canStandAt() instead of this, but is somehow broken
-			for ($extraY = 1; $extraY <= 3; $extraY++) {
-				if (($block = $world->getBlockAt($x, $y + $extraY, $z))->isSolid() || $block instanceof Liquid) {
-					continue 2;
-				}
+			$pos = new Vector3($x + 0.5, $y + 1, $z + 0.5);
+			if ($this->entity->canStandAt($pos)) {
+				return $pos;
 			}
-
-			return new Vector3($x + 0.5, $y + 1, $z + 0.5);
 		}
 
 		return null;

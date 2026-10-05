@@ -50,10 +50,6 @@ class TakeBlockGoal extends Goal {
 		return $this->entity->getRandom()->nextBoundedInt($this->reducedTickDelay(20)) === 0;
 	}
 
-	public function start() : void{
-		$this->entity->getNavigation()->stop();
-	}
-
 	public function tick() : void{
 		$world = $this->entity->getWorld();
 		$entityPos = $this->entity->getPosition();

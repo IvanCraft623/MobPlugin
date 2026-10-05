@@ -661,8 +661,8 @@ abstract class Mob extends Living {
 			return false;
 		}
 
-		$diff = $this->location->subtractVector($pos);
-		return count($world->getCollisionBlocks($this->boundingBox->addCoord($diff->x, $diff->y, $diff->z), true)) === 0;
+		$diff = $pos->subtractVector($this->location);
+		return count($world->getCollisionBlocks($this->boundingBox->offsetCopy($diff->x, $diff->y, $diff->z), true)) === 0;
 	}
 
 	public function onRandomTeleport(Vector3 $from, Vector3 $to) : void{
