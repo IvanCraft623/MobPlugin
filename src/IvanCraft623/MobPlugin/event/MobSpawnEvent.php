@@ -48,7 +48,8 @@ class MobSpawnEvent extends EntityEvent{
 	}
 
 	/**
-	 * Returns the entity the mob split, converted or was summoned from, if any.
+	 * Returns the entity the mob split, converted or was summoned from, or the ender pearl
+	 * that spawned it, if any.
 	 */
 	public function getParent() : ?Entity{
 		return $this->parent;

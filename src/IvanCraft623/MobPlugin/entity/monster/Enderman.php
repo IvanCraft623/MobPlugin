@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\monster;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
-use IvanCraft623\MobPlugin\entity\ai\goal\enderman\FreezeWhenLookedAt;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\LeaveBlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\LookForStaringPlayerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\enderman\TakeBlockGoal;
@@ -41,7 +40,7 @@ use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_4fd333cc564de855\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -54,6 +53,7 @@ use pocketmine\data\SavedDataLoadingException;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\event\entity\EntityDamageByBlockEvent;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
@@ -75,6 +75,7 @@ use pocketmine\world\sound\EndermanTeleportSound;
 
 use function array_merge;
 use function count;
+use function floor;
 use function mt_rand;
 use function round;
 
@@ -135,8 +136,8 @@ class Enderman extends Monster implements NeutralMob{
 		//BlockTypeIds::WARPED_ROOTS => true
 	];
 
-	public const MIN_ANGER_TIME = 20;
-	public const MAX_ANGER_TIME = 40;
+	public const MIN_ANGER_TICKS = 20 * 20;
+	public const MAX_ANGER_TICKS = 40 * 20;
 
 	public static function getNetworkTypeId() : string{ return EntityIds::ENDERMAN; }
 
@@ -148,7 +149,7 @@ class Enderman extends Monster implements NeutralMob{
 
 	private ?Block $carryBlock = null;
 
-	private int $remainingAngerTime = 0;
+	private int $remainingAngerTicks = 0;
 
 	protected RandomTeleportGoal $teleportGoal;
 
@@ -166,7 +167,6 @@ class Enderman extends Monster implements NeutralMob{
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(1, new FreezeWhenLookedAt($this));
 		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
 		$this->goalSelector->addGoal(3, ($this->teleportGoal = new RandomTeleportGoal(entity: $this,
 			randomTeleportRange: new Vector3(32, 32, 32),
@@ -278,15 +278,21 @@ class Enderman extends Monster implements NeutralMob{
 	}
 
 	public function startAngerTimer() : void{
-		$this->setRemainingAngerTime(mt_rand(self::MIN_ANGER_TIME, self::MAX_ANGER_TIME));
+		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
 	}
 
-	public function getRemainingAngerTime() : int{
-		return $this->remainingAngerTime;
+	public function getRemainingAngerTicks() : int{
+		return $this->remainingAngerTicks;
 	}
 
-	public function setRemainingAngerTime(int $ticks) : void{
-		$this->remainingAngerTime = $ticks;
+	public function setRemainingAngerTicks(int $ticks) : void{
+		$wasAngry = $this->isAngry();
+		$this->remainingAngerTicks = $ticks;
+
+		if ($wasAngry !== $this->isAngry()) {
+			$this->setMovementSpeed($this->getDefaultMovementSpeed());
+			$this->networkPropertiesDirty = true;
+		}
 	}
 
 	public function isLookingAtMe(PMLiving $entity) : bool{
@@ -381,10 +387,21 @@ class Enderman extends Monster implements NeutralMob{
 			return false;
 		}
 
-		$diff = $this->location->subtractVector($pos);
-		foreach ($this->getWorld()->getCollisionBlocks($this->boundingBox->addCoord($diff->x, $diff->y, $diff->z)) as $block) {
-			if ($block instanceof Liquid) {
-				return false;
+		//liquids have no collision boxes, so the blocks are checked directly
+		$world = $this->getWorld();
+		$diff = $pos->subtractVector($this->location);
+		$bb = $this->boundingBox->offsetCopy($diff->x, $diff->y, $diff->z);
+
+		$maxX = (int) floor($bb->maxX);
+		$maxY = (int) floor($bb->maxY);
+		$maxZ = (int) floor($bb->maxZ);
+		for ($x = (int) floor($bb->minX); $x <= $maxX; ++$x) {
+			for ($y = (int) floor($bb->minY); $y <= $maxY; ++$y) {
+				for ($z = (int) floor($bb->minZ); $z <= $maxZ; ++$z) {
+					if ($world->getBlockAt($x, $y, $z) instanceof Liquid) {
+						return false;
+					}
+				}
 			}
 		}
 		return true;
@@ -420,6 +437,15 @@ class Enderman extends Monster implements NeutralMob{
 		}
 
 		parent::attack($source);
+
+		$target = $this->getTargetEntity();
+		if ($target !== null &&
+			!$source->isCancelled() &&
+			$source instanceof EntityDamageByEntityEvent &&
+			$source->getDamager() === $target
+		) {
+			$this->startAngerTimer();
+		}
 
 		if ($cause === EntityDamageEvent::CAUSE_ENTITY_ATTACK) {
 			if (mt_rand(0, 1) === 0) {

@@ -37,8 +37,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_4fd333cc564de855\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_4fd333cc564de855\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -661,8 +661,8 @@ abstract class Mob extends Living {
 			return false;
 		}
 
-		$diff = $this->location->subtractVector($pos);
-		return count($world->getCollisionBlocks($this->boundingBox->addCoord($diff->x, $diff->y, $diff->z), true)) === 0;
+		$diff = $pos->subtractVector($this->location);
+		return count($world->getCollisionBlocks($this->boundingBox->offsetCopy($diff->x, $diff->y, $diff->z), true)) === 0;
 	}
 
 	public function onRandomTeleport(Vector3 $from, Vector3 $to) : void{

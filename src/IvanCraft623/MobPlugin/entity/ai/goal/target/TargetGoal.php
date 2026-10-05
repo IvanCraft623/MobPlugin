@@ -48,7 +48,7 @@ abstract class TargetGoal extends Goal {
 	}
 
 	public function canContinueToUse() : bool{
-		$target = $this->entity->getTargetEntity() ?? $this->target;
+		$target = $this->entity->getTargetEntity();
 		if (!$target instanceof Living || $target->isClosed() || !$this->entity->canAttack($target)) {
 			return false;
 		}
@@ -68,8 +68,6 @@ abstract class TargetGoal extends Goal {
 				return false;
 			}
 		}
-
-		$this->entity->setTargetEntity($target);
 
 		return true;
 	}

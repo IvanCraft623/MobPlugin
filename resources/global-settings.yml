@@ -19,6 +19,7 @@ debug-mode: false
 # Natural spawning of mobs, from the vanilla Bedrock spawn rules.
 mob-natural-spawning:
   # A world settings file can set this to false for that world only.
+  # Also covers endermites from ender pearls.
   enabled: true
   # Most spawn attempts in one tick, over every world. Global only.
   max-attempts-per-tick: 8
