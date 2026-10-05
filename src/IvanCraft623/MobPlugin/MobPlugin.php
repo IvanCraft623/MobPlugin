@@ -23,10 +23,14 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\bStats\PocketmineMp\Metrics;
 
+use IvanCraft623\MobPlugin\despawning\DespawnListener;
+use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
+use IvanCraft623\MobPlugin\despawning\NaturalDespawnTask;
+use IvanCraft623\MobPlugin\despawning\WorldDespawnPass;
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
@@ -66,7 +70,7 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
@@ -119,12 +123,14 @@ class MobPlugin extends PluginBase {
 		$this->registerEntities();
 		$this->registerMetrics();
 		$this->registerNaturalSpawning();
+		$this->registerNaturalDespawning();
 
 		ExtraItemRegisterHelper::init();
 
 		BossBarAPI::load($this);
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
+		$this->getServer()->getPluginManager()->registerEvents(new DespawnListener(DespawnRuleRegistry::getInstance()), $this);
 	}
 
 	/**
@@ -155,6 +161,10 @@ class MobPlugin extends PluginBase {
 			$settings->getMobNaturalSpawningMaxAttemptsPerTick(),
 			$this->getServer()->getWorldManager()
 		), 1);
+	}
+
+	private function registerNaturalDespawning() : void{
+		$this->getScheduler()->scheduleRepeatingTask(new NaturalDespawnTask(DespawnRuleRegistry::getInstance(), $this->getServer()), WorldDespawnPass::CHECK_INTERVAL);
 	}
 
 	public function getRandom() : Random {

@@ -104,7 +104,7 @@ class WitherExplodeOnHalfLifeGoal extends Goal {
 			for ($i = 0; $i < 3; $i++) {
 				$witherSkeleton = new WitherSkeleton($spawnLoc);
 				$witherSkeleton->setOwningEntity($this->mob);
-				(new MobSpawnEvent($witherSkeleton, MobSpawnCause::SUMMONED))->call();
+				(new MobSpawnEvent($witherSkeleton, MobSpawnCause::SUMMONED, $this->mob))->call();
 				$witherSkeleton->spawnToAll();
 			}
 		}

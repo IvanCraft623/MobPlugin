@@ -37,12 +37,20 @@ class MobSpawnEvent extends EntityEvent{
 
 	public function __construct(
 		Entity $entity,
-		private readonly MobSpawnCause $cause
+		private readonly MobSpawnCause $cause,
+		private readonly ?Entity $parent = null
 	){
 		$this->entity = $entity;
 	}
 
 	public function getCause() : MobSpawnCause{
 		return $this->cause;
+	}
+
+	/**
+	 * Returns the entity the mob split, converted or was summoned from, if any.
+	 */
+	public function getParent() : ?Entity{
+		return $this->parent;
 	}
 }

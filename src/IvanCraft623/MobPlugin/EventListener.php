@@ -26,6 +26,8 @@ namespace IvanCraft623\MobPlugin;
 use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
+use IvanCraft623\MobPlugin\event\MobSpawnCause;
+use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\pattern\BlockPatternFactory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -57,10 +59,11 @@ class EventListener implements Listener {
 			$event->cancel();
 
 			$blockPosition = $event->getBlock()->getPosition();
-			$entity = (new Zombie(
+			$entity = new Zombie(
 				Location::fromObject($blockPosition->add(0.5, 1, 0.5),
-				$blockPosition->getWorld(), PMUtils::getRandomFloat() * 360, 0))
-			)->setPersistent();
+				$blockPosition->getWorld(), PMUtils::getRandomFloat() * 360, 0)
+			);
+			(new MobSpawnEvent($entity, MobSpawnCause::SPAWN_EGG))->call();
 
 			if($item->hasCustomName()){
 				$entity->setNameTag($item->getCustomName());

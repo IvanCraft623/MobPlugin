@@ -41,7 +41,7 @@ use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_4ecaf8ff79b9051e\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_510917cf9bc93e1c\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -320,10 +320,6 @@ class Enderman extends Monster implements NeutralMob{
 	public function setCarriedBlock(?Block $block) : void{
 		$this->carryBlock = $block;
 		$this->networkPropertiesDirty = true;
-	}
-
-	public function isPersistenceRequired() : bool{
-		return parent::isPersistenceRequired() || $this->carryBlock !== null;
 	}
 
 	public function onBeingStaredAt() : void{

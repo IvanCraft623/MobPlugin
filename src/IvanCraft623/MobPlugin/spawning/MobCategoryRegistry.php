@@ -33,11 +33,11 @@ final class MobCategoryRegistry{
 	private array $categories = [];
 
 	private function __construct(){
-		$this->register(new MobCategory(VanillaMobCategories::MONSTER, 8, 16, 64));
-		$this->register(new MobCategory(VanillaMobCategories::ANIMAL, 4, 4, 64));
-		$this->register(new MobCategory(VanillaMobCategories::AMBIENT, 0, 2, 32));
-		$this->register(new MobCategory(VanillaMobCategories::WATER_ANIMAL, 36, 36, 64));
-		$this->register(new MobCategory(VanillaMobCategories::CAT, 4, 0, 64));
+		$this->register(new MobCategory(VanillaMobCategories::MONSTER, 8, 16));
+		$this->register(new MobCategory(VanillaMobCategories::ANIMAL, 4, 4));
+		$this->register(new MobCategory(VanillaMobCategories::AMBIENT, 0, 2));
+		$this->register(new MobCategory(VanillaMobCategories::WATER_ANIMAL, 36, 36));
+		$this->register(new MobCategory(VanillaMobCategories::CAT, 4, 0));
 	}
 
 	/**

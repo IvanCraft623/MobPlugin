@@ -195,7 +195,7 @@ class MooshroomCow extends Cow implements Shearable{
 			//Spawn a cow :P
 
 			$cow = new Cow($this->location, $this->saveNBT());
-			(new MobSpawnEvent($cow, MobSpawnCause::CONVERSION))->call();
+			(new MobSpawnEvent($cow, MobSpawnCause::CONVERSION, $this))->call();
 			$cow->spawnToAll();
 
 			$this->flagForDespawn();
