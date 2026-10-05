@@ -11,7 +11,7 @@
     },
     "require-dev": {
         "pocketmine/pocketmine-mp": "^5.42.2",
-        "phpstan/phpstan": "2.1.46",
+        "phpstan/phpstan": "2.2.16",
         "phpunit/phpunit": "^10.5",
         "sof3/pharynx": "^0.3.8",
         "justinrainbow/json-schema": "^6.10.0",
