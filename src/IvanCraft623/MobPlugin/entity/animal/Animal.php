@@ -32,7 +32,7 @@ use IvanCraft623\MobPlugin\event\MobFeedEvent;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\entity\Living;
@@ -104,8 +104,6 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		return $this->getWorld()->getBlock($position)->getTypeId() === BlockTypeIds::GRASS ? 10 : 0;
 		//TODO: If it is not grass calculate the value using light level
 	}
-
-	//TODO: natural spawning logic
 
 	public function getAmbientSoundInterval() : float{
 		return 12;

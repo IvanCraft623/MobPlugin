@@ -28,12 +28,13 @@ use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\math\AxisAlignedBB;
+use pocketmine\player\Player;
 
 use pocketmine\utils\Utils;
-use function array_reduce;
+use function is_a;
+use const INF;
 
 class NearestAttackableGoal extends TargetGoal {
 
@@ -93,16 +94,26 @@ class NearestAttackableGoal extends TargetGoal {
 
 	protected function findTarget() : void{
 		$pos = $this->entity->getEyePos();
-		$this->target = array_reduce($this->entity->getWorld()->getCollidingEntities($this->getTargetSearchArea($this->getFollowDistance()), $this->entity),
-		function(?Living $carry, Entity $current) use ($pos) : ?Living {
-			if (!$current instanceof $this->targetType || !$this->targetingConditions->test($this->entity, $current)) {
-				return $carry;
+		$world = $this->entity->getWorld();
+		$candidates = is_a($this->targetType, Player::class, true) ?
+			$world->getPlayers() :
+			$world->getNearbyEntities($this->getTargetSearchArea($this->getFollowDistance()), $this->entity);
+
+		$this->target = null;
+		$nearestDistanceSquared = INF;
+		foreach ($candidates as $candidate) {
+			if (!$candidate instanceof $this->targetType) {
+				continue;
 			}
 
-			return ($carry !== null &&
-				$carry->getPosition()->distanceSquared($pos) < $current->getPosition()->distanceSquared($pos)
-			) ? $carry : $current;
-		}, null);
+			$distanceSquared = $candidate->getPosition()->distanceSquared($pos);
+			if ($distanceSquared > $nearestDistanceSquared || !$this->targetingConditions->test($this->entity, $candidate)) {
+				continue;
+			}
+
+			$this->target = $candidate;
+			$nearestDistanceSquared = $distanceSquared;
+		}
 	}
 
 	public function start() : void{

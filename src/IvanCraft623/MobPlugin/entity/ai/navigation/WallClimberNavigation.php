@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\Path;
 
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
@@ -44,12 +44,16 @@ class WallClimberNavigation extends GroundPathNavigation{
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 0) : void{
-		$this->createPathToEntity($target, $reach)->onCompletion(function(Path $path) use ($speedModifier) : void {
-			$this->moveToPath($path, $speedModifier);
-		}, function(){});
+		parent::moveToEntity($target, $speedModifier, $reach);
 
 		$this->pathToPosition = $target->getPosition()->floor();
 		$this->speedModifier = $speedModifier;
+	}
+
+	public function stop() : void{
+		//Without a goal behind the movement nothing would ever replace an unreachable target.
+		$this->pathToPosition = null;
+		parent::stop();
 	}
 
 	public function tick() : void{

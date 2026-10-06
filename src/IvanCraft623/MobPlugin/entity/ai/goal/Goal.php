@@ -33,7 +33,9 @@ abstract class Goal {
 	public const FLAG_TARGET = 3;
 
 	/** @var int[] */
-	protected array $flags = [];
+	private array $flags = [];
+
+	private int $flagMask = 0;
 
 	abstract public function canUse() : bool;
 
@@ -67,6 +69,17 @@ abstract class Goal {
 
 	public function setFlags(int ...$flags) : void{
 		$this->flags = $flags;
+		$this->flagMask = 0;
+		foreach ($flags as $flag) {
+			$this->flagMask |= 1 << $flag;
+		}
+	}
+
+	/**
+	 * @return int bit set of the flags
+	 */
+	public function getFlagMask() : int{
+		return $this->flagMask;
 	}
 
 	public function adjustedTickDelay(int $ticks) : int{

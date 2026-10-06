@@ -244,6 +244,4 @@ class IronGolem extends Golem implements NeutralMob{
 
 		return parent::onInteract($player, $clickPos);
 	}
-
-	//TODO: spawn rules code
 }

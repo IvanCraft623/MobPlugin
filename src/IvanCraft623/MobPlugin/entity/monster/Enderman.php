@@ -40,7 +40,7 @@ use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -464,8 +464,6 @@ class Enderman extends Monster implements NeutralMob{
 		$data[] = "Teleporting in: " . round(($this->teleportGoal->getTeleportTick() - $this->getServer()->getTick()) / 20, 1) . "s";
 		return $data;
 	}
-
-	//TODO: spawn rules code
 
 	protected function destroyCycles() : void{
 		unset($this->teleportGoal);

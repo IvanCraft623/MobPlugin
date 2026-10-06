@@ -25,8 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\control;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\math\Vector3;
 use function atan2;
@@ -84,12 +84,9 @@ class MoveControl implements Control {
 	}
 
 	public function tick() : void {
-		$location = $this->mob->getLocation();
-
-		$movementSpeed = $this->mob->getMovementSpeed(); // atrribute speed
-
 		if ($this->operation === self::OPERATION_STRAFE) {
-			$speed = $this->speedModifier * $movementSpeed;
+			$location = $this->mob->getLocation();
+			$speed = $this->speedModifier * $this->mob->getMovementSpeed();
 			$forwardMovement = $this->forwardMovement;
 			$sidewaysMovement = $this->sidewaysMovement;
 			$strafe = sqrt(($forwardMovement ** 2) + ($sidewaysMovement ** 2));
@@ -118,6 +115,7 @@ class MoveControl implements Control {
 		} elseif ($this->operation === self::OPERATION_MOVE_TO) {
 			$this->operation = self::OPERATION_WAIT;
 
+			$location = $this->mob->getLocation();
 			$dx = $this->wantedPosition->x - $location->x;
 			$dy = $this->wantedPosition->y - $location->y;
 			$dz = $this->wantedPosition->z - $location->z;
@@ -130,7 +128,7 @@ class MoveControl implements Control {
 
 			$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
 			$this->mob->setRotation($yaw, $location->pitch);
-			$this->mob->setMotionSpeed($this->speedModifier * $movementSpeed);
+			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 
 			if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 				$this->mob->getJumpControl()->jump();
@@ -138,7 +136,7 @@ class MoveControl implements Control {
 				return;
 			}
 		} elseif ($this->operation === self::OPERATION_JUMPING) {
-			$this->mob->setMotionSpeed($this->speedModifier * $movementSpeed);
+			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 			if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
 				$this->operation = self::OPERATION_WAIT;
 			}

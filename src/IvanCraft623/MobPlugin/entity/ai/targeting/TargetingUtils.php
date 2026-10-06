@@ -45,17 +45,11 @@ class TargetingUtils {
 			}
 			$visibilityPercent *= 0.7 * $percent;
 		}
-		if ($target !== null) {
-			$head = $entity->getArmorInventory()->getHelmet();
-			$headBlock = $head->getBlock();
-			if ($headBlock instanceof MobHead) {
-				$headType = $headBlock->getMobHeadType();
-				if (
-					//($target instanceof Skeleton && $headType->equals(MobHeadType::SKELETON())) ||
-					($target instanceof Zombie && $headType->equals(MobHeadType::ZOMBIE()))
-				) {
-					$visibilityPercent *= 0.5;
-				}
+		//TODO: skeleton and creeper heads
+		if ($target instanceof Zombie) {
+			$headBlock = $entity->getArmorInventory()->getHelmet()->getBlock();
+			if ($headBlock instanceof MobHead && $headBlock->getMobHeadType()->equals(MobHeadType::ZOMBIE())) {
+				$visibilityPercent *= 0.5;
 			}
 		}
 		return $visibilityPercent;

@@ -41,8 +41,6 @@ class MeleeAttackGoal extends Goal {
 
 	public const ATTACK_INTERVAL = 20;
 
-	public const REPATH_INTERVAL = 10;
-
 	private int $ticksToAttack = 0;
 
 	private int $ticksToRepath = 0;
@@ -111,8 +109,22 @@ class MeleeAttackGoal extends Goal {
 
 		$this->ticksToRepath = max($this->ticksToRepath - 1, 0);
 		if ($distanceSquared > $attackReachSquared && $this->ticksToRepath <= 0) {
-			$this->mob->getNavigation()->moveToEntity($target, $this->speedModifier, 0);
-			$this->ticksToRepath = $this->adjustedTickDelay(self::REPATH_INTERVAL);
+			$delay = 4 + $this->mob->getRandom()->nextBoundedInt(7);
+			if ($distanceSquared > 1024) {
+				$delay += 10;
+			} elseif ($distanceSquared > 256) {
+				$delay += 5;
+			}
+
+			$navigation = $this->mob->getNavigation();
+			$path = $navigation->getPath();
+			if ($path !== null && !$path->canReach()) {
+				//The last one could not get to the target, chances are this one will not either
+				$delay += 15;
+			}
+
+			$navigation->moveToEntity($target, $this->speedModifier, 0);
+			$this->ticksToRepath = $this->adjustedTickDelay($delay);
 		}
 
 		$this->ticksToAttack = max($this->ticksToAttack - 1, 0);

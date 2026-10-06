@@ -219,8 +219,6 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		return $this->hurtByTargetGoal;
 	}
 
-	//TODO: spawn rules code
-
 	protected function destroyCycles() : void{
 		unset(
 			$this->hurtByTargetGoal,

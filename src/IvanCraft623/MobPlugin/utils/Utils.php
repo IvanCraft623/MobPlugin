@@ -40,7 +40,6 @@ use pocketmine\world\Position;
 use pocketmine\world\World;
 use function abs;
 use function array_key_last;
-use function array_reduce;
 use function array_sum;
 use function cos;
 use function floor;
@@ -53,6 +52,7 @@ use function str_replace;
 use function strtolower;
 use function trim;
 use function ucwords;
+use const INF;
 use const M_PI;
 
 class Utils {
@@ -134,22 +134,22 @@ class Utils {
 
 	public static function getNearestPlayer(Living $entity, float $maxDistance = -1, ?TargetingConditions $conditions = null) : ?Player{
 		$pos = $entity->getPosition();
-		return array_reduce($pos->getWorld()->getPlayers(), function(?Player $carry, Player $current) use ($entity, $pos, $maxDistance, $conditions) : ?Player{
-			if ($conditions !== null && !$conditions->test($entity, $current)) {
-				return $carry;
+		$nearest = null;
+		$nearestDistanceSquared = $maxDistance > 0 ? $maxDistance ** 2 : INF;
+		foreach ($pos->getWorld()->getPlayers() as $player) {
+			$distanceSquared = $player->getPosition()->distanceSquared($pos);
+			if ($distanceSquared > $nearestDistanceSquared) {
+				continue;
+			}
+			if ($conditions !== null && !$conditions->test($entity, $player)) {
+				continue;
 			}
 
-			$distanceSquared = $current->getPosition()->distanceSquared($pos);
-			if ($maxDistance > 0 && $distanceSquared > ($maxDistance ** 2)) {
-				return $carry;
-			}
+			$nearest = $player;
+			$nearestDistanceSquared = $distanceSquared;
+		}
 
-			if ($carry === null) {
-				return $current;
-			}
-
-			return $carry->getPosition()->distanceSquared($pos) < $distanceSquared ? $carry : $current;
-		}, null);
+		return $nearest;
 	}
 
 	public static function movementInputToMotion(Vector3 $movementInput, float $yaw, float $speed) : Vector3{

@@ -241,6 +241,4 @@ class Sheep extends Animal implements Shearable, Colored{
 	public function isFood(Item $item) : bool{
 		return $item->getTypeId() === ItemTypeIds::WHEAT;
 	}
-
-	//TODO: natural spawning logic
 }

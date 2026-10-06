@@ -100,6 +100,8 @@ class RandomTeleportGoal extends Goal {
 				$this->teleportPos = $pos;
 				return true;
 			}
+
+			$this->resetTeleportTick();
 		}
 
 		return false;

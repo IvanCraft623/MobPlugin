@@ -32,9 +32,7 @@ use pocketmine\entity\Human;
 use pocketmine\entity\Living;
 use pocketmine\entity\Location;
 use pocketmine\player\Player;
-use pocketmine\world\World;
 use function abs;
-use function floor;
 
 class TemptGoal extends Goal {
 
@@ -53,8 +51,6 @@ class TemptGoal extends Goal {
 	private Player $player;
 
 	private Location $lastPlayerLocation;
-
-	private ?int $lastPathTargetBlock = null;
 
 	private int $calmDown = 0;
 
@@ -131,8 +127,6 @@ class TemptGoal extends Goal {
 		unset($this->player);
 		unset($this->lastPlayerLocation);
 
-		$this->lastPathTargetBlock = null;
-
 		$this->entity->getNavigation()->stop();
 		$this->calmDown = $this->reducedTickDelay(100);
 
@@ -144,15 +138,8 @@ class TemptGoal extends Goal {
 		$playerPos = $this->player->getPosition();
 		if ($this->entity->getPosition()->distanceSquared($playerPos) < 6.25) {
 			$this->entity->getNavigation()->stop();
-			$this->lastPathTargetBlock = null;
 		} else {
-			//Only request a new path when the player has moved to a different block; otherwise the
-			//navigation re-serializes the whole chunk corridor and re-computes a path every tick.
-			$blockHash = World::blockHash((int) floor($playerPos->x), (int) floor($playerPos->y), (int) floor($playerPos->z));
-			if ($blockHash !== $this->lastPathTargetBlock) {
-				$this->lastPathTargetBlock = $blockHash;
-				$this->entity->getNavigation()->moveToEntity($this->player, $this->speedModifier);
-			}
+			$this->entity->getNavigation()->moveToEntity($this->player, $this->speedModifier);
 		}
 	}
 

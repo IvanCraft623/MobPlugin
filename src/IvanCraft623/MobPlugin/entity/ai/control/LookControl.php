@@ -58,17 +58,18 @@ class LookControl implements Control {
 	}
 
 	public function tick() : void {
-		if ($this->resetPitchOnTick()) {
-			$this->mob->setRotation($this->mob->getLocation()->yaw, 0.0);
-		}
-
 		$location = $this->mob->getLocation();
+		$pitch = $this->resetPitchOnTick() ? 0.0 : $location->pitch;
 		if ($this->lookAtTimer > 0) {
 			$this->lookAtTimer--;
+
+			$diff = $this->wanted->subtractVector($this->mob->getEyePos());
 			$this->mob->setRotation(
-				static::rotateTowards($location->yaw, $this->getYawD(), $this->yawMaxRotationAngle),
-				static::rotateTowards($location->pitch, $this->getPitchD(), $this->pitchMaxRotationAngle)
+				static::rotateTowards($location->yaw, (atan2($diff->z, $diff->x) * (180 / M_PI)) - 90, $this->yawMaxRotationAngle),
+				static::rotateTowards($pitch, -(atan2($diff->y, sqrt(($diff->x ** 2) + ($diff->z ** 2))) * (180 / M_PI)), $this->pitchMaxRotationAngle)
 			);
+		} elseif ($pitch !== $location->pitch) {
+			$this->mob->setRotation($location->yaw, $pitch);
 		}/* else {
 			$this->mob->setRotation(static::rotateTowards($location->yaw, $location->bodyYaw, 10.0), $location->pitch);
 		}
@@ -92,16 +93,6 @@ class LookControl implements Control {
 
 	public function getWanted() : ?Vector3 {
 		return $this->wanted;
-	}
-
-	public function getPitchD() : float {
-		$diff = $this->wanted->subtractVector($this->mob->getEyePos());
-		return -(atan2($diff->y, sqrt(($diff->x ** 2) + ($diff->z ** 2))) * (180 / M_PI));
-	}
-
-	public function getYawD() : float {
-		$diff = $this->wanted->subtractVector($this->mob->getEyePos());
-		return (atan2($diff->z, $diff->x) * (180 / M_PI)) - 90;
 	}
 
 	public static function rotateTowards(float $currentDegrees, float $targetDegrees, float $maxRotation) : float {

@@ -37,8 +37,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_caed326e5b9af4dd\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -368,7 +368,7 @@ abstract class Mob extends Living {
 		$data = [];
 		foreach ($this->goalSelector->getRunningGoals() as $wrappedGoal) {
 			$goalInfo = $wrappedGoal->getCurrentDebugInfo();
-			$data[] = basename(str_replace('\\', '/', $wrappedGoal->getGoal()::class)) . ($goalInfo === null ?
+			$data[] = basename(str_replace('\\', '/', $wrappedGoal->goal::class)) . ($goalInfo === null ?
 				"" : " (" . $goalInfo . ")"
 			);
 		}
@@ -406,7 +406,9 @@ abstract class Mob extends Living {
 		$this->sidewaysSpeed *= 0.98;
 		$this->forwardSpeed *= 0.98;
 		//TODO: is being controlled by passenger check!
-		$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+		if ($this->sidewaysSpeed !== 0.0 || $this->upwardSpeed !== 0.0 || $this->forwardSpeed !== 0.0 || $this->isCollidedHorizontally) {
+			$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+		}
 	}
 
 	public function travel(Vector3 $movementInput) : void{
@@ -858,6 +860,7 @@ abstract class Mob extends Living {
 	}
 
 	protected function destroyCycles() : void{
+		$this->navigation->stop();
 		$this->goalSelector->destroyCycles();
 		$this->targetSelector->destroyCycles();
 		unset(

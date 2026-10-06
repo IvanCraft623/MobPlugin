@@ -46,9 +46,8 @@ abstract class Monster extends PathfinderMob implements Enemy {
 
 		if (!$this->isOnFire() && $this->isSunSensitive()) {
 			$world = $this->getWorld();
-			$pos = $this->getEyePos();
 			if ($world->getSkyLightReduction() <= 3 &&
-				Utils::isSkyVisible($world, $pos) &&
+				Utils::isSkyVisible($world, $this->getEyePos()) &&
 				!$this->isInWater() //TODO: Powder snow also prevents this
 			) {
 				$helmet = $this->getArmorInventory()->getHelmet();
