@@ -23,105 +23,72 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use IvanCraft623\Pathfinder\Path;
 use pocketmine\math\Vector3;
-use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\player\ChunkSelector;
 use pocketmine\world\ChunkListener;
 use pocketmine\world\format\Chunk;
+use pocketmine\world\Position;
 use pocketmine\world\World;
 
 abstract class PathfinderMob extends Mob implements ChunkListener {
 
-	protected ChunkSelector $chunkSelector;
-
 	/**
-	 * @var bool[] chunkHash => isUsed
-	 * @phpstan-var array<int, true>
+	 * Chunks listened for block changes: the ones the path being followed goes through.
+	 *
+	 * @phpstan-var array<int, true> chunkHash => true
 	 */
 	protected array $usedChunks = [];
 
-	protected int $viewDistance;
+	private ?Path $listenedPath = null;
 
-	protected int $viewAreaCenterPoint = -1; //ChunkPosHash
-
-	protected function initEntity(CompoundTag $nbt) : void{
-		parent::initEntity($nbt);
-
-		$this->chunkSelector = new ChunkSelector();
-		$this->viewDistance = $this->getFollowRange() >> Chunk::COORD_BIT_SIZE;
-	}
-
-	protected function orderChunks() : void{
-		if($this->isFlaggedForDespawn()){
-			return;
-		}
-
-		$chunkX = $this->location->getFloorX() >> Chunk::COORD_BIT_SIZE;
-		$chunkZ = $this->location->getFloorZ() >> Chunk::COORD_BIT_SIZE;
-
-		$unloadChunks = $this->usedChunks;
-
-		foreach($this->chunkSelector->selectChunks(
-			$this->viewDistance,
-			$chunkX,
-			$chunkZ
-		) as $hash){
-			if(!isset($this->usedChunks[$hash])){
-				$X = $Z = 0;
-				World::getXZ($hash, $X, $Z);
-				$this->getWorld()->registerChunkListener($this, $X, $Z);
-				$this->usedChunks[$hash] = true;
+	private function listenToPathChunks(?Path $path) : void{
+		$chunks = [];
+		if($path !== null){
+			foreach($path->getNodes() as $node){
+				$chunks[World::chunkHash($node->x() >> Chunk::COORD_BIT_SIZE, $node->z() >> Chunk::COORD_BIT_SIZE)] = true;
 			}
-			unset($unloadChunks[$hash]);
 		}
 
-		foreach($unloadChunks as $index => $bool){
-			$X = $Z = 0;
-			World::getXZ($index, $X, $Z);
-			$this->getWorld()->unregisterChunkListener($this, $X, $Z);
-			unset($this->usedChunks[$index]);
+		$world = $this->getWorld();
+		foreach($chunks as $hash => $_){
+			if(!isset($this->usedChunks[$hash])){
+				World::getXZ($hash, $chunkX, $chunkZ);
+				$world->registerChunkListener($this, $chunkX, $chunkZ);
+			}
+		}
+		foreach($this->usedChunks as $hash => $_){
+			if(!isset($chunks[$hash])){
+				World::getXZ($hash, $chunkX, $chunkZ);
+				$world->unregisterChunkListener($this, $chunkX, $chunkZ);
+			}
 		}
 
-		$this->viewAreaCenterPoint = World::chunkHash($chunkX, $chunkZ);
+		$this->usedChunks = $chunks;
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		$currentChunk = World::chunkHash($this->location->getFloorX() >> Chunk::COORD_BIT_SIZE, $this->location->getFloorZ() >> Chunk::COORD_BIT_SIZE);
-		$currentViewDistance = $this->getFollowRange() >> Chunk::COORD_BIT_SIZE;
-
-		if ($this->viewAreaCenterPoint === -1 ||
-			$currentChunk !== $this->viewAreaCenterPoint ||
-			$currentViewDistance !== $this->viewDistance
-		) {
-			$this->orderChunks();
-			$this->viewDistance = $currentViewDistance;
-
-			$hasUpdate = true;
+		$path = $this->navigation->getPath();
+		if($path !== null && $path->isDone()){
+			$path = null;
+		}
+		if($path !== $this->listenedPath){
+			$this->listenedPath = $path;
+			$this->listenToPathChunks($path);
 		}
 
 		return $hasUpdate;
 	}
 
-	/**
-	 * Returns whether the mob is using the chunk with the given coordinates, irrespective of whether the chunk has
-	 * been sent yet.
-	 */
-	public function isUsingChunk(int $chunkX, int $chunkZ) : bool{
-		return $this->usedChunks[World::chunkHash($chunkX, $chunkZ)] ?? false;
-	}
+	protected function setPosition(Vector3 $pos) : bool{
+		if(!$this->closed && $pos instanceof Position && $pos->getWorld() !== $this->getWorld()){
+			//The chunks listened belong to the world being left
+			$this->listenedPath = null;
+			$this->listenToPathChunks(null);
+		}
 
-	/**
-	 * @return bool[] chunkHash => isUsing
-	 * @phpstan-return array<int, true>
-	 */
-	public function getUsedChunks() : array{
-		return $this->usedChunks;
-	}
-
-	public function getViewDistance() : int{
-		return $this->viewDistance;
+		return parent::setPosition($pos);
 	}
 
 	public function isPathFinding() : bool{

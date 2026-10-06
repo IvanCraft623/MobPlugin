@@ -45,7 +45,8 @@ serialized on the main thread at submission, which is expensive. So:
 
 `recomputePath()` runs at most every `MAX_TIME_RECOMPUTE = 20` ticks; an earlier call is
 deferred to the next eligible tick. `PathfinderMob::onBlockChanged()` triggers it when a
-changed block is close to the remaining path.
+changed block is close to the remaining path. Block changes are only listened for in the
+chunks the path goes through.
 
 ## Following a path
 
