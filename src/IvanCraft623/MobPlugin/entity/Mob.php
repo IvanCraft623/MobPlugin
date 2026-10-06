@@ -406,7 +406,9 @@ abstract class Mob extends Living {
 		$this->sidewaysSpeed *= 0.98;
 		$this->forwardSpeed *= 0.98;
 		//TODO: is being controlled by passenger check!
-		$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+		if ($this->sidewaysSpeed !== 0.0 || $this->upwardSpeed !== 0.0 || $this->forwardSpeed !== 0.0 || $this->isCollidedHorizontally) {
+			$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+		}
 	}
 
 	public function travel(Vector3 $movementInput) : void{
