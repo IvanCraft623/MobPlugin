@@ -30,6 +30,7 @@ use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
 use IvanCraft623\Pathfinder\Node;
 use IvanCraft623\Pathfinder\Path;
 use IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
 use IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
@@ -121,6 +122,8 @@ abstract class PathNavigation {
 	 * @phpstan-var Promise<Path>|null
 	 */
 	protected ?Promise $pendingPromise = null;
+
+	private ?AsyncPathFinderTask $pendingTask = null;
 
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
@@ -264,7 +267,7 @@ abstract class PathNavigation {
 		$promise = $pathResolver->getPromise();
 		$this->pendingPromise = $promise;
 
-		PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach, $requestId) : void{
+		$this->pendingTask = PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach, $requestId) : void{
 				if ($requestId !== $this->pathComputationId) {
 					//Stale result (a newer computation superseded this one); the newer computation owns
 					//the pending state.
@@ -273,6 +276,7 @@ abstract class PathNavigation {
 
 				$this->isPathComputationPending = false;
 				$this->pendingPromise = null;
+				$this->pendingTask = null;
 
 				$this->targetPosition = $this->toBlockVector($path->getTarget());
 				$this->reachRange = $reach;
@@ -580,6 +584,8 @@ abstract class PathNavigation {
 		$this->pathComputationId++;
 		$this->isPathComputationPending = false;
 		$this->pendingPromise = null;
+		$this->pendingTask?->cancel();
+		$this->pendingTask = null;
 	}
 
 	protected abstract function getTempMobPosition() : Vector3;

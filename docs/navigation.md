@@ -36,7 +36,8 @@ serialized on the main thread at submission, which is expensive. So:
 
 - One computation per mob at a time. A new request while one runs attaches to its promise.
 - Each request has an id; a result superseded by a newer request is discarded.
-- `stop()` bumps the id, so a late result can't revive a stopped navigation.
+- `stop()` bumps the id, so a late result can't revive a stopped navigation, and cancels
+  the search.
 - `isDone()` is `false` while a computation is pending, so a goal doesn't cancel itself
   before its path arrives.
 - `moveToEntity()` can be called every tick: it requests again when the entity changes
