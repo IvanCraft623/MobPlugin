@@ -429,8 +429,7 @@ abstract class Living extends PMLiving {
 			foreach(VoxelRayTrace::betweenPoints($start, $end) as $vector3){
 				$block = $this->getWorld()->getBlockAt((int) $vector3->x, (int) $vector3->y, (int) $vector3->z);
 
-				$blockHitResult = $block->calculateIntercept($start, $end);
-				if(!$block->isTransparent() && $blockHitResult !== null){
+				if(!$block->isTransparent() && $block->calculateIntercept($start, $end) !== null){
 					return false;
 				}
 			}

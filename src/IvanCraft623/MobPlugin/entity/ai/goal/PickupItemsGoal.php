@@ -39,6 +39,16 @@ class PickupItemsGoal extends Goal {
 	/** @phpstan-var array<int, int|Closure(Item): int> */
 	private array $wantedItems = [];
 
+	/** @phpstan-var array<int, int>|null item type id => priority of the entry wanting one of it */
+	private ?array $wantedTypeIds = null;
+
+	/**
+	 * Entries that have to be asked, in order.
+	 *
+	 * @phpstan-var list<array{int, Closure(Item): int, array<int, true>}> priority, predicate, type ids wanted by earlier entries
+	 */
+	private array $wantedPredicates = [];
+
 	protected ?ItemEntity $targetItem = null;
 	protected int $wantedCount = 0;
 
@@ -59,6 +69,7 @@ class PickupItemsGoal extends Goal {
 		$this->wantedItems[$priority] = $wantAmount === 1
 			? $typeId
 			: static fn(Item $item) : int => $item->getTypeId() === $typeId ? $wantAmount : 0;
+		$this->wantedTypeIds = null;
 		return $this;
 	}
 
@@ -67,6 +78,7 @@ class PickupItemsGoal extends Goal {
 	 */
 	public function wantIf(int $priority, Closure $predicate) : static {
 		$this->wantedItems[$priority] = $predicate;
+		$this->wantedTypeIds = null;
 		return $this;
 	}
 
@@ -75,6 +87,7 @@ class PickupItemsGoal extends Goal {
 	 */
 	public function setWantedItems(array $template) : static {
 		$this->wantedItems = $template;
+		$this->wantedTypeIds = null;
 		return $this;
 	}
 
@@ -202,14 +215,46 @@ class PickupItemsGoal extends Goal {
 		}
 	}
 
-	private function evaluateItem(Item $item, int &$priority, int &$count) : void {
+	/**
+	 * Splits the wanted items so an item only has to be asked to the predicates, the type ids are a lookup.
+	 */
+	private function indexWantedItems() : void {
+		$this->wantedTypeIds = [];
+		$this->wantedPredicates = [];
+
+		$earlierTypeIds = [];
 		foreach ($this->wantedItems as $priority => $entry) {
-			$count = is_int($entry)
-				? ($item->getTypeId() === $entry ? 1 : 0)
-				: $entry($item);
+			if (is_int($entry)) {
+				$this->wantedTypeIds[$entry] ??= $priority;
+				$earlierTypeIds[$entry] = true;
+			} else {
+				$this->wantedPredicates[] = [$priority, $entry, $earlierTypeIds];
+			}
+		}
+	}
+
+	private function evaluateItem(Item $item, int &$priority, int &$count) : void {
+		if ($this->wantedTypeIds === null) {
+			$this->indexWantedItems();
+		}
+
+		$typeId = $item->getTypeId();
+		foreach ($this->wantedPredicates as [$predicatePriority, $predicate, $earlierTypeIds]) {
+			if (isset($earlierTypeIds[$typeId])) {
+				break;
+			}
+
+			$count = $predicate($item);
 			if ($count > 0) {
+				$priority = $predicatePriority;
 				return;
 			}
+		}
+
+		if (isset($this->wantedTypeIds[$typeId])) {
+			$priority = $this->wantedTypeIds[$typeId];
+			$count = 1;
+			return;
 		}
 
 		$priority = -1;
@@ -218,6 +263,7 @@ class PickupItemsGoal extends Goal {
 
 	public function destroyCycles() : void{
 		$this->wantedItems = [];
+		$this->wantedPredicates = [];
 		parent::destroyCycles();
 	}
 }

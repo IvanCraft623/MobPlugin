@@ -92,20 +92,25 @@ class TargetingConditions {
 		if (!$this->allowInvulnerable && ($target instanceof Player && $target->isCreative())) {
 			return false;
 		}
+		if ($entity !== null && $this->range > 0) {
+			$distanceSquare = $entity->getLocation()->distanceSquared($target->getLocation());
+			$visibility = max($this->range, 2.0);
+			if ($distanceSquare > $visibility * $visibility) {
+				return false;
+			}
+			if ($this->testInvisible) {
+				$visibility = max($this->range * TargetingUtils::getVisibilityPercent($target, $entity), 2.0);
+				if ($distanceSquare > $visibility * $visibility) {
+					return false;
+				}
+			}
+		}
 		if ($this->validator !== null && !($this->validator)($target)) {
 			return false;
 		}
 		if ($entity !== null) {
 			if (!$this->allowNonAttackable) {
 				if ($entity instanceof Living && !$entity->canAttack($target)) {
-					return false;
-				}
-			}
-			if ($this->range > 0) {
-				$percent = $this->testInvisible ? TargetingUtils::getVisibilityPercent($target, $entity) : 1.0;
-				$visibility = max($this->range * $percent, 2.0);
-				$distanceSquare = $entity->getLocation()->distanceSquared($target->getLocation());
-				if ($distanceSquare > $visibility * $visibility) {
 					return false;
 				}
 			}
