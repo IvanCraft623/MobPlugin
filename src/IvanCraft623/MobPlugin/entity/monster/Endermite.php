@@ -95,6 +95,4 @@ class Endermite extends Monster {
 
 		return 0;
 	}
-
-	//TODO: spawn rules code
 }

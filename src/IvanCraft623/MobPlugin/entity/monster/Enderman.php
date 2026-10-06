@@ -465,8 +465,6 @@ class Enderman extends Monster implements NeutralMob{
 		return $data;
 	}
 
-	//TODO: spawn rules code
-
 	protected function destroyCycles() : void{
 		unset($this->teleportGoal);
 		parent::destroyCycles();

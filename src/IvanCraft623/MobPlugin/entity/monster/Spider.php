@@ -176,6 +176,4 @@ class Spider extends Monster {
 	}
 
 	//TODO: riding and jokey stuff!
-
-	//TODO: spawn rules code
 }

@@ -134,6 +134,4 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 	public function getBabyScale() : float{
 		return 0.5;
 	}
-
-	//TODO: natural spawning logic
 }

@@ -105,8 +105,6 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		//TODO: If it is not grass calculate the value using light level
 	}
 
-	//TODO: natural spawning logic
-
 	public function getAmbientSoundInterval() : float{
 		return 12;
 	}

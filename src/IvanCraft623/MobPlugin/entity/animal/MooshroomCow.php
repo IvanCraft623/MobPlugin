@@ -233,6 +233,4 @@ class MooshroomCow extends Cow implements Shearable{
 
 		return true;
 	}
-
-	//TODO: natural spawning logic
 }
