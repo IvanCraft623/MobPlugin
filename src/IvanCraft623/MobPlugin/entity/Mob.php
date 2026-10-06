@@ -368,7 +368,7 @@ abstract class Mob extends Living {
 		$data = [];
 		foreach ($this->goalSelector->getRunningGoals() as $wrappedGoal) {
 			$goalInfo = $wrappedGoal->getCurrentDebugInfo();
-			$data[] = basename(str_replace('\\', '/', $wrappedGoal->getGoal()::class)) . ($goalInfo === null ?
+			$data[] = basename(str_replace('\\', '/', $wrappedGoal->goal::class)) . ($goalInfo === null ?
 				"" : " (" . $goalInfo . ")"
 			);
 		}

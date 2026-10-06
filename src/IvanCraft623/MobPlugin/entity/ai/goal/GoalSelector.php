@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-
 use function array_filter;
+use function ksort;
 
 class GoalSelector {
 
@@ -35,8 +35,15 @@ class GoalSelector {
 	/** @var WrappedGoal[] */
 	protected array $availableGoals = [];
 
-	/** @var array<int, int> flag => flag */
-	protected array $disabledFlags = [];
+	/**
+	 * Goals started and not yet seen stopped, in the order of $availableGoals.
+	 *
+	 * @var WrappedGoal[]
+	 */
+	private array $runningGoals = [];
+
+	/** Bit set of the disabled flags */
+	protected int $disabledFlags = 0;
 
 	public function addGoal(int $priority, Goal $goal) : WrappedGoal{
 		return $this->availableGoals[] = new WrappedGoal($priority, $goal);
@@ -44,50 +51,33 @@ class GoalSelector {
 
 	public function removeGoal(Goal $goal) : void {
 		foreach ($this->availableGoals as $key => $wrappedGoal) {
-			if ($wrappedGoal->getGoal() === $goal) {
-				if ($wrappedGoal->isRunning()) {
-					$wrappedGoal->stop();
-				}
-				unset($this->availableGoals[$key]);
+			if ($wrappedGoal->goal === $goal) {
+				$wrappedGoal->stop();
+				unset($this->availableGoals[$key], $this->runningGoals[$key]);
 			}
 		}
-	}
-
-	/**
-	 * @param array<int, int> $flags
-	 */
-	private static function goalContainsAnyFlags(WrappedGoal $wrappedGoal, array $flags) : bool {
-		foreach ($wrappedGoal->getFlags() as $flag) {
-			if (isset($flags[$flag])) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * @param array<int, WrappedGoal> $lockedFlags
-	 */
-	private static function goalCanBeReplacedForAllFlags(WrappedGoal $wrappedGoal, array $lockedFlags) : bool {
-		foreach ($wrappedGoal->getFlags() as $flag) {
-			if (isset($lockedFlags[$flag]) && !$lockedFlags[$flag]->canBeReplacedBy($wrappedGoal)) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	public function tick() : void{
 		CustomTimings::$goalSelectorCleanup->startTiming();
 
-		foreach ($this->availableGoals as $wrappedGoal) {
-			if ($wrappedGoal->isRunning() && (self::goalContainsAnyFlags($wrappedGoal, $this->disabledFlags) || !$wrappedGoal->canContinueToUse())) {
+		foreach ($this->runningGoals as $key => $wrappedGoal) {
+			if ($wrappedGoal->isRunning() && (
+				($wrappedGoal->goal->getFlagMask() & $this->disabledFlags) !== 0 ||
+				!$wrappedGoal->goal->canContinueToUse()
+			)) {
 				$wrappedGoal->stop();
+			}
+			if (!$wrappedGoal->isRunning()) {
+				unset($this->runningGoals[$key]);
 			}
 		}
 
+		$lockedFlags = 0;
 		foreach ($this->lockedFlags as $flag => $wrappedGoal) {
-			if (!$wrappedGoal->isRunning()) {
+			if ($wrappedGoal->isRunning()) {
+				$lockedFlags |= 1 << $flag;
+			} else {
 				unset($this->lockedFlags[$flag]);
 			}
 		}
@@ -96,21 +86,43 @@ class GoalSelector {
 
 		CustomTimings::$goalSelectorUpdate->startTiming();
 
-		foreach ($this->availableGoals as $wrappedGoal) {
-			if (!$wrappedGoal->isRunning() &&
-				!self::goalContainsAnyFlags($wrappedGoal, $this->disabledFlags) &&
-				self::goalCanBeReplacedForAllFlags($wrappedGoal, $this->lockedFlags) &&
-				$wrappedGoal->canUse()
-			) {
-				foreach ($wrappedGoal->getFlags() as $flag) {
-					if (isset($this->lockedFlags[$flag])) {
-						$this->lockedFlags[$flag]->stop();
-					}
-					$this->lockedFlags[$flag] = $wrappedGoal;
-				}
-
-				$wrappedGoal->start();
+		$started = false;
+		foreach ($this->availableGoals as $key => $wrappedGoal) {
+			if ($wrappedGoal->isRunning()) {
+				continue;
 			}
+
+			$goal = $wrappedGoal->goal;
+			$flags = $goal->getFlagMask();
+			if (($flags & $this->disabledFlags) !== 0) {
+				continue;
+			}
+			if (($flags & $lockedFlags) !== 0) {
+				foreach ($this->lockedFlags as $flag => $holder) {
+					if (($flags & (1 << $flag)) !== 0 && !$holder->canBeReplacedBy($wrappedGoal)) {
+						continue 2;
+					}
+				}
+			}
+			if (!$goal->canUse()) {
+				continue;
+			}
+
+			foreach ($goal->getFlags() as $flag) {
+				if (isset($this->lockedFlags[$flag])) {
+					$this->lockedFlags[$flag]->stop();
+				}
+				$this->lockedFlags[$flag] = $wrappedGoal;
+			}
+			$lockedFlags |= $flags;
+
+			$wrappedGoal->start();
+			$this->runningGoals[$key] = $wrappedGoal;
+			$started = true;
+		}
+
+		if ($started) {
+			ksort($this->runningGoals);
 		}
 
 		CustomTimings::$goalSelectorUpdate->stopTiming();
@@ -121,9 +133,9 @@ class GoalSelector {
 	public function tickRunningGoals(bool $force = false) : void{
 		CustomTimings::$goalSelectorTick->startTiming();
 
-		foreach ($this->availableGoals as $wrappedGoal) {
-			if ($wrappedGoal->isRunning() && ($force || $wrappedGoal->requiresUpdateEveryTick())) {
-				$wrappedGoal->tick();
+		foreach ($this->runningGoals as $wrappedGoal) {
+			if ($wrappedGoal->isRunning() && ($force || $wrappedGoal->goal->requiresUpdateEveryTick())) {
+				$wrappedGoal->goal->tick();
 			}
 		}
 
@@ -141,7 +153,7 @@ class GoalSelector {
 	 * @return WrappedGoal[]
 	 */
 	public function getRunningGoals() : array{
-		return array_filter($this->availableGoals, static function(WrappedGoal $wrappedGoal) : bool{
+		return array_filter($this->runningGoals, static function(WrappedGoal $wrappedGoal) : bool{
 			return $wrappedGoal->isRunning();
 		});
 	}
@@ -150,14 +162,14 @@ class GoalSelector {
 		if ($flag < Goal::FLAG_MOVE || $flag > Goal::FLAG_TARGET) {
 			throw new \InvalidArgumentException("Invalid goal flag");
 		}
-		$this->disabledFlags[$flag] = $flag;
+		$this->disabledFlags |= 1 << $flag;
 	}
 
 	public function enableControlFlag(int $flag) : void{
 		if ($flag < Goal::FLAG_MOVE || $flag > Goal::FLAG_TARGET) {
 			throw new \InvalidArgumentException("Invalid goal flag");
 		}
-		unset($this->disabledFlags[$flag]);
+		$this->disabledFlags &= ~(1 << $flag);
 	}
 
 	public function setControlFlag(int $flag, bool $enabled) : void{
@@ -173,9 +185,7 @@ class GoalSelector {
 			$wrappedGoal->destroyCycles();
 		}
 		$this->availableGoals = [];
-		foreach($this->lockedFlags as $wrappedGoal){
-			$wrappedGoal->destroyCycles();
-		}
+		$this->runningGoals = [];
 		$this->lockedFlags = [];
 	}
 }
