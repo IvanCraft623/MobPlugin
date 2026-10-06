@@ -87,6 +87,11 @@ abstract class PathNavigation {
 
 	protected ?Vector3 $targetPosition = null;
 
+	/** Position handed to the move control for node $wantedNodeIndex of $wantedPath */
+	private ?Vector3 $wantedPosition = null;
+	private ?Path $wantedPath = null;
+	private int $wantedNodeIndex = -1;
+
 	/** Block of the entity last requested through moveToEntity(), while that request stands */
 	private ?int $entityTargetBlock = null;
 
@@ -421,9 +426,23 @@ abstract class PathNavigation {
 		//followThePath() (or the async computation) may have stopped/invalidated the path.
 		$path = $this->path;
 		if ($path !== null && !$path->isDone()) {
-			$nextPos = $path->getNextEntityPosition($this->mob);
-			$adjustedY = $this->getGroundY($nextPos);
-			$this->mob->getMoveControl()->setWantedPosition(new Vector3($nextPos->x, $adjustedY, $nextPos->z), $this->speedModifier);
+			$nodeIndex = $path->getNextNodeIndex();
+			if ($this->wantedPosition === null || $path !== $this->wantedPath || $nodeIndex !== $this->wantedNodeIndex) {
+				$nextPos = $path->getNextEntityPosition($this->mob);
+				$this->wantedPosition = new Vector3($nextPos->x, $this->getGroundY($nextPos), $nextPos->z);
+				$this->wantedPath = $path;
+				$this->wantedNodeIndex = $nodeIndex;
+			}
+			$this->mob->getMoveControl()->setWantedPosition($this->wantedPosition, $this->speedModifier);
+		}
+	}
+
+	public function onBlockChanged(Vector3 $position) : void{
+		//The ground under the node being walked to may not be where it was
+		$this->wantedPosition = null;
+
+		if ($this->shouldRecomputePath($position)) {
+			$this->recomputePath();
 		}
 	}
 
@@ -553,6 +572,8 @@ abstract class PathNavigation {
 		$this->hasDelayedRecomputation = false;
 		$this->entityTargetBlock = null;
 		$this->entityTargetPath = null;
+		$this->wantedPosition = null;
+		$this->wantedPath = null;
 
 		//Invalidate any in-flight computation so its late result can't resurrect a path after we've
 		//stopped, and so a subsequent move can't be hijacked into an obsolete computation's promise.

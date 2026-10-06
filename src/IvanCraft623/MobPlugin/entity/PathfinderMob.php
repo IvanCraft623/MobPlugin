@@ -136,9 +136,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	public function onBlockChanged(Vector3 $position) : void{
 		// It would be great to be able to compare block collisions to save execution time but
 		// with the current pocketmine implementation there is no an easy way to know which block was before
-		if ($this->navigation->shouldRecomputePath($position)) {
-			$this->navigation->recomputePath();
-		}
+		$this->navigation->onBlockChanged($position);
 	}
 
 	public function getWalkTargetValue(Vector3 $position) : float{
