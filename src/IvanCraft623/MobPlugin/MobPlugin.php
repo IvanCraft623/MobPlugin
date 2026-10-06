@@ -152,10 +152,6 @@ class MobPlugin extends PluginBase {
 	private function registerNaturalSpawning() : void{
 		$settings = Settings::getGlobalSettings();
 
-		if (!$settings->isMobNaturalSpawningEnabled()) {
-			return;
-		}
-
 		$this->getScheduler()->scheduleRepeatingTask(new NaturalSpawnerTask(
 			SpawnRuleRegistry::getInstance(),
 			$settings->getMobNaturalSpawningMaxAttemptsPerTick(),
