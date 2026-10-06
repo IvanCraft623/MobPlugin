@@ -50,6 +50,12 @@ class WallClimberNavigation extends GroundPathNavigation{
 		$this->speedModifier = $speedModifier;
 	}
 
+	public function stop() : void{
+		//Without a goal behind the movement nothing would ever replace an unreachable target.
+		$this->pathToPosition = null;
+		parent::stop();
+	}
+
 	public function tick() : void{
 		if (!$this->isDone()) {
 			parent::tick();
