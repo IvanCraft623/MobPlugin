@@ -155,6 +155,9 @@ abstract class PathNavigation {
 		$targetPosition = clone $this->targetPosition;
 		$reachRange = $this->reachRange;
 
+		//Drop the current path, otherwise createPath() hands it back for the unchanged target.
+		$this->path = null;
+
 		//createPath() owns the path computation id and the pending state; if a computation is already
 		//running it will attach to it instead of starting a duplicate one.
 		$this->createPath($targetPosition, $reachRange)->onCompletion(
@@ -498,6 +501,7 @@ abstract class PathNavigation {
 
 	public function stop() : void{
 		$this->path = null;
+		$this->hasDelayedRecomputation = false;
 
 		//Invalidate any in-flight computation so its late result can't resurrect a path after we've
 		//stopped, and so a subsequent move can't be hijacked into an obsolete computation's promise.

@@ -116,7 +116,7 @@ class FollowParentGoal extends Goal {
 	}
 
 	public function tick() : void {
-		if (--$this->ticksToRecalculatePath) {
+		if (--$this->ticksToRecalculatePath <= 0) {
 			$this->ticksToRecalculatePath = $this->adjustedTickDelay(10);
 			$this->entity->getNavigation()->moveToEntity($this->parent, $this->speedModifier);
 		}

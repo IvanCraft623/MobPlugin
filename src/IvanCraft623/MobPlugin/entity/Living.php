@@ -57,7 +57,6 @@ use pocketmine\utils\Random;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 use function abs;
-use function count;
 use function floatval;
 use function floor;
 use function get_class;
@@ -248,7 +247,7 @@ abstract class Living extends PMLiving {
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		$hasUpdate = $hasUpdate || $this->pushOutOfEntities();
+		$hasUpdate = $this->pushOutOfEntities() || $hasUpdate;
 
 		if ($this->lastDamageByEntity !== null &&
 			$this->lastDamageByEntityTick !== -1 &&
@@ -578,23 +577,17 @@ abstract class Living extends PMLiving {
 	}
 
 	protected function checkBlockIntersections() : void{
-		$vectors = [];
-
+		$hasUpdate = false;
 		foreach($this->getBlocksAroundWithEntityInsideActions() as $block){
-			if(!$block->onEntityInside($this) || $this->onInsideBlock($block)){
-				$this->blocksAround = null;
-			}
-			if(($v = $block->addVelocityToEntity($this)) !== null){
-				$vectors[] = $v;
+			if($this->onInsideBlock($block)){
+				$hasUpdate = true;
 			}
 		}
 
-		if(count($vectors) > 0){
-			$vector = Vector3::sum(...$vectors);
-			if($vector->lengthSquared() > 0){
-				$d = 0.014;
-				$this->motion = $this->motion->addVector($vector->normalize()->multiply($d));
-			}
+		parent::checkBlockIntersections();
+
+		if($hasUpdate){
+			$this->blocksAround = null;
 		}
 	}
 

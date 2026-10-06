@@ -49,7 +49,6 @@ class MoveTowardsTargetGoal extends Goal {
 		if ($target === null) {
 			return false;
 		}
-		$this->target = $target;
 
 		$targetPos = $target->getPosition();
 		if ($targetPos->distanceSquared($this->mob->getPosition()) > $this->within ** 2) {
@@ -61,6 +60,7 @@ class MoveTowardsTargetGoal extends Goal {
 			return false;
 		}
 
+		$this->target = $target;
 		$this->wantedPos = $randomPos;
 
 		return true;

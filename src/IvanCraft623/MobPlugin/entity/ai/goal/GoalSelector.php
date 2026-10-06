@@ -38,19 +38,8 @@ class GoalSelector {
 	/** @var array<int, int> flag => flag */
 	protected array $disabledFlags = [];
 
-	protected int $newGoalRate = 3;
-
 	public function addGoal(int $priority, Goal $goal) : WrappedGoal{
 		return $this->availableGoals[] = new WrappedGoal($priority, $goal);
-	}
-
-	/**
-	 * @phpstan-param \Closure(Goal $goal) : bool $predicate
-	 */
-	public function removeAllGoals(\Closure $predicate) : void {
-		$this->availableGoals = array_filter($this->availableGoals, function (WrappedGoal $wrappedGoal) use ($predicate) {
-			return !$predicate($wrappedGoal->getGoal());
-		});
 	}
 
 	public function removeGoal(Goal $goal) : void {
@@ -155,10 +144,6 @@ class GoalSelector {
 		return array_filter($this->availableGoals, static function(WrappedGoal $wrappedGoal) : bool{
 			return $wrappedGoal->isRunning();
 		});
-	}
-
-	public function setNewGoalRate(int $rate) : void{
-		$this->newGoalRate = $rate;
 	}
 
 	public function disableControlFlag(int $flag) : void{
