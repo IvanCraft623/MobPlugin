@@ -44,9 +44,7 @@ class WallClimberNavigation extends GroundPathNavigation{
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 0) : void{
-		$this->createPathToEntity($target, $reach)->onCompletion(function(Path $path) use ($speedModifier) : void {
-			$this->moveToPath($path, $speedModifier);
-		}, function(){});
+		parent::moveToEntity($target, $speedModifier, $reach);
 
 		$this->pathToPosition = $target->getPosition()->floor();
 		$this->speedModifier = $speedModifier;

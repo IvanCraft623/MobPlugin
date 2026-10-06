@@ -52,6 +52,9 @@ abstract class PathNavigation {
 
 	public const DEFAULT_MAX_VISITED_NODES_MULTIPLIER = 1.0;
 
+	/** Ticks before asking again for a path to an entity that has not changed block */
+	public const ENTITY_REPATH_INTERVAL = 20;
+
 	protected Mob $mob;
 
 	protected ?Path $path = null;
@@ -83,6 +86,15 @@ abstract class PathNavigation {
 	protected int $maxVisitedNodes;
 
 	protected ?Vector3 $targetPosition = null;
+
+	/** Block of the entity last requested through moveToEntity(), while that request stands */
+	private ?int $entityTargetBlock = null;
+
+	/** Path that request resolved to */
+	private ?Path $entityTargetPath = null;
+
+	/** Navigation tick of that request */
+	private int $entityTargetTick = 0;
 
 	protected int $reachRange;
 
@@ -294,15 +306,43 @@ abstract class PathNavigation {
 	}
 
 	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier, int $reach = 1) : void{
+		$this->entityTargetBlock = null;
 		$this->createPathToXYZ($x, $y, $z, $reach)->onCompletion(function(Path $path) use ($speedModifier){
 			$this->moveToPath($path, $speedModifier);
 		}, function(){});
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 1) : void{
-		$this->createPathToEntity($target, $reach)->onCompletion(function(Path $path) use ($speedModifier){
+		$targetPosition = $target->getPosition();
+		$targetBlock = World::blockHash((int) floor($targetPosition->x), (int) floor($targetPosition->y), (int) floor($targetPosition->z));
+		if ($targetBlock === $this->entityTargetBlock) {
+			//Goals following an entity ask again every tick; there is nothing new to request until it changes block.
+			if ($this->isPathComputationPending) {
+				return;
+			}
+			if ($this->path !== null && $this->path === $this->entityTargetPath && !$this->path->isDone()) {
+				$this->speedModifier = $speedModifier;
+				return;
+			}
+			//The path ended and the entity is still there: a new one is only worth it now and then.
+			if ($this->tick - $this->entityTargetTick < self::ENTITY_REPATH_INTERVAL) {
+				return;
+			}
+		}
+
+		//A request made while another computation is in flight gets that computation's path, not its own.
+		$this->entityTargetBlock = $this->isPathComputationPending ? null : $targetBlock;
+		$this->entityTargetPath = null;
+		$this->entityTargetTick = $this->tick;
+
+		$this->createPathToPosition($targetPosition, $reach)->onCompletion(function(Path $path) use ($speedModifier, $targetBlock) : void{
 			$this->moveToPath($path, $speedModifier);
-		}, function(){});
+			if ($this->entityTargetBlock === $targetBlock) {
+				$this->entityTargetPath = $this->path;
+			}
+		}, function() : void{
+			$this->entityTargetBlock = null;
+		});
 	}
 
 	public function moveToPath(?Path $path, float $speedModifier) : bool{
@@ -311,9 +351,18 @@ abstract class PathNavigation {
 			return false;
 		}
 
-		if ($this->path === null || !$path->equals($this->path)) {
-			$this->path = $path;
-			$this->resetStuckTimeout();
+		if ($path !== $this->path) {
+			if ($this->path === null || !$path->equals($this->path)) {
+				$this->path = $path;
+				$this->resetStuckTimeout();
+			}
+		} elseif (!$this->isDone()) {
+			//Already following it, and trimmed
+			$this->speedModifier = $speedModifier;
+			$this->lastStuckCheckPos = $this->getTempMobPosition();
+			$this->lastStuckCheck = $this->tick;
+
+			return $path->getNodeCount() > 0;
 		}
 
 		if ($this->isDone()) {
@@ -502,6 +551,8 @@ abstract class PathNavigation {
 	public function stop() : void{
 		$this->path = null;
 		$this->hasDelayedRecomputation = false;
+		$this->entityTargetBlock = null;
+		$this->entityTargetPath = null;
 
 		//Invalidate any in-flight computation so its late result can't resurrect a path after we've
 		//stopped, and so a subsequent move can't be hijacked into an obsolete computation's promise.

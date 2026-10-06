@@ -39,6 +39,9 @@ serialized on the main thread at submission, which is expensive. So:
 - `stop()` bumps the id, so a late result can't revive a stopped navigation.
 - `isDone()` is `false` while a computation is pending, so a goal doesn't cancel itself
   before its path arrives.
+- `moveToEntity()` can be called every tick: it requests again when the entity changes
+  block, or when the path has ended and the last request is `ENTITY_REPATH_INTERVAL = 20`
+  ticks old.
 
 `recomputePath()` runs at most every `MAX_TIME_RECOMPUTE = 20` ticks; an earlier call is
 deferred to the next eligible tick. `PathfinderMob::onBlockChanged()` triggers it when a
