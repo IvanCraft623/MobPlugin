@@ -30,8 +30,9 @@ use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
+use pocketmine\block\Lava;
 use pocketmine\block\Liquid;
-use pocketmine\block\VanillaBlocks;
+use pocketmine\block\Water;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
@@ -94,6 +95,11 @@ abstract class Living extends PMLiving {
 	protected int $lastDamageByEntityTick = -1; //server tick
 
 	protected bool $hasBeenDamagedByPlayer = false;
+
+	/** Server tick the liquid immersion was computed for */
+	private int $immersionTick = -1;
+	private float $waterImmersion = 0.0;
+	private float $lavaImmersion = 0.0;
 
 	protected function getInitialDragMultiplier() : float{ return 0.09; }
 
@@ -303,6 +309,7 @@ abstract class Living extends PMLiving {
 
 			if(floatval($this->motion->x) !== 0.0 || floatval($this->motion->y) !== 0.0 || floatval($this->motion->z) !== 0.0){
 				$this->move($this->motion->x, $this->motion->y, $this->motion->z);
+				$this->immersionTick = -1;
 			}
 
 			$this->tryChangeMovement();
@@ -448,31 +455,55 @@ abstract class Living extends PMLiving {
 	}
 
 	public function isInWater() : bool{
-		return $this->getImmersionPercentage(VanillaBlocks::WATER()) > 0;
+		return $this->getWaterImmersion() > 0;
 	}
 
 	public function isInLava() : bool{
-		return $this->getImmersionPercentage(VanillaBlocks::LAVA()) > 0;
+		return $this->getLavaImmersion() > 0;
 	}
 
 	/**
-	 * Returns the immersion percentage in the specified liquid.
-	 *
 	 * @return float 0-1
 	 */
-	public function getImmersionPercentage(Liquid $liquid) : float{
-		$entityHeight = $this->getSize()->getHeight();
+	public function getWaterImmersion() : float{
+		$this->updateImmersion();
+		return $this->waterImmersion;
+	}
+
+	/**
+	 * @return float 0-1
+	 */
+	public function getLavaImmersion() : float{
+		$this->updateImmersion();
+		return $this->lavaImmersion;
+	}
+
+	private function updateImmersion() : void{
+		$tick = $this->server->getTick();
+		if ($this->immersionTick === $tick) {
+			return;
+		}
+		$this->immersionTick = $tick;
+
+		$waterTop = null;
+		$lavaTop = null;
+
+		$world = $this->getWorld();
+		$entityHeight = $this->size->getHeight();
 		$floorX = (int) floor($this->location->x);
 		$floorY = (int) floor($this->location->y);
 		$floorZ = (int) floor($this->location->z);
 		for ($y = (int) floor($this->location->y + $entityHeight); $y >= $floorY; $y--) {
-			$block = $this->getWorld()->getBlockAt($floorX, $y, $floorZ);
-			if ($block instanceof $liquid) {
-				$liquidHeigh = ($y + 1) - ($block->getFluidHeightPercent() - 0.1111111);
-				return min(1, ($liquidHeigh - $this->location->y) / $entityHeight);
+			$block = $world->getBlockAt($floorX, $y, $floorZ);
+			if ($block instanceof Water) {
+				$waterTop ??= ($y + 1) - ($block->getFluidHeightPercent() - 0.1111111);
+			} elseif ($block instanceof Lava) {
+				$lavaTop ??= ($y + 1) - ($block->getFluidHeightPercent() - 0.1111111);
 			}
 		}
-		return 0;
+
+		$this->waterImmersion = $waterTop === null ? 0.0 : min(1.0, ($waterTop - $this->location->y) / $entityHeight);
+		$this->lavaImmersion = $lavaTop === null ? 0.0 : min(1.0, ($lavaTop - $this->location->y) / $entityHeight);
 	}
 
 	public function getFluidJumpThreshold() : float{

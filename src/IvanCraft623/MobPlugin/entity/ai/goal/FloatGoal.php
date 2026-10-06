@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use pocketmine\block\VanillaBlocks;
 
 class FloatGoal extends Goal {
 
@@ -34,7 +33,7 @@ class FloatGoal extends Goal {
 	}
 
 	public function canUse() : bool{
-		return $this->mob->getImmersionPercentage(VanillaBlocks::WATER()) > $this->mob->getFluidJumpThreshold() || $this->mob->isInLava();
+		return $this->mob->getWaterImmersion() > $this->mob->getFluidJumpThreshold() || $this->mob->isInLava();
 	}
 
 	public function requiresUpdateEveryTick() : bool{
