@@ -258,8 +258,7 @@ abstract class Living extends PMLiving {
 			$this->lastDamageByEntityTick !== -1 &&
 			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
 		) {
-			//Free the retained EntityDamageByEntityEvent (which pins the attacker's whole object graph)
-			//once it's past the expirable window.
+			//The last damager is only remembered for a limited time.
 			$this->setLastDamageByEntity(null);
 		}
 

@@ -56,7 +56,7 @@ class BreedGoal extends Goal {
 		?string $partnerClass = null
 	) {
 		$partnerClass = $partnerClass ?? $entity::class;
-		$this->partnerConditions = self::PARTNER_TARGETING()->setValidator(static function(Living $target) use ($entity, $partnerClass) {
+		$this->partnerConditions = self::PARTNER_TARGETING()->setValidator(static function(Living $target) use ($entity, $partnerClass) : bool{
 			return $target instanceof $partnerClass && $entity->canMate($target);
 		});
 

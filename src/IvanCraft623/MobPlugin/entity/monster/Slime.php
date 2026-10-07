@@ -224,9 +224,4 @@ class Slime extends Mob implements Enemy {
 
 		return 0;
 	}
-
-	protected function destroyCycles() : void{
-		unset($this->attackableValidator);
-		parent::destroyCycles();
-	}
 }

@@ -842,7 +842,6 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	protected function destroyCycles() : void{
 		unset(
 			$this->bossBar,
-			$this->targetingConditions,
 			$this->explodeOnHalfLifeWrapped,
 			$this->attackGoal
 		);
