@@ -117,5 +117,6 @@ class OfferFlowerGoal extends Goal {
 
 	public function tick() : void {
 		$this->mob->getLookControl()->setLookAt($this->target, 30, 30);
+		$this->remainingTicks--;
 	}
 }
