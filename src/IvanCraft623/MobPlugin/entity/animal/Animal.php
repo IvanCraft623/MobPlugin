@@ -84,15 +84,11 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		parent::tickAi();
 
 		if ($this->getAge() !== AgeableMob::ADULT_AGE) {
-			$this->inLoveTicks = 0;
+			$this->setInLoveTicks(0);
 		}
 
 		if ($this->inLoveTicks > 0) {
-			$this->inLoveTicks--;
-
-			if ($this->inLoveTicks <= 0) {
-				$this->loveCauser = null;
-			}
+			$this->setInLoveTicks($this->inLoveTicks - 1);
 
 			if ($this->inLoveTicks % 16 === 0) {
 				$this->broadcastAnimation(new BreedingAnimation($this));
