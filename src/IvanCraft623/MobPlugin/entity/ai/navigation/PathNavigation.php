@@ -27,7 +27,6 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
 use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\Pathfinder\Node;
 use IvanCraft623\Pathfinder\Path;
 use IvanCraft623\Pathfinder\PathFinder;
 use IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
@@ -434,12 +433,14 @@ abstract class PathNavigation {
 	}
 
 	public function onBlockChanged(Vector3 $position) : void{
+		$path = $this->path;
+		if ($path === null || $path->isDone() || !$path->isInCorridor($position->getFloorX(), $position->getFloorY(), $position->getFloorZ())) {
+			return;
+		}
+
 		//The ground under the node being walked to may not be where it was
 		$this->wantedPosition = null;
-
-		if ($this->shouldRecomputePath($position)) {
-			$this->recomputePath();
-		}
+		$this->recomputePath();
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
@@ -647,24 +648,6 @@ abstract class PathNavigation {
 
 	public function setCanFloat(bool $value = true) : void{
 		$this->nodeEvaluator->setCanFloat($value);
-	}
-
-	public function shouldRecomputePath(Vector3 $updatedBlock) : bool{
-		if ($this->hasDelayedRecomputation) {
-			return false;
-		}
-
-		if ($this->path === null || $this->path->isDone() || $this->path->getNodeCount() === 0) {
-			return false;
-		}
-
-		/** @var Node $endNode */
-		$endNode = $this->path->getEndNode();
-		$targetPos = $endNode->addVector($this->mob->getPosition())->divide(2);
-
-		$updatedCenter = $updatedBlock->add(0.5, 0.5, 0.5);
-
-		return $updatedCenter->distanceSquared($targetPos) < ($this->path->getNodeCount() - $this->path->getNextNodeIndex()) ** 2;
 	}
 
 	public function getMaxDistanceToWaypoint() : float{

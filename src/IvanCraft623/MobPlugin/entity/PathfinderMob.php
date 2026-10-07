@@ -42,12 +42,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	private ?Path $listenedPath = null;
 
 	private function listenToPathChunks(?Path $path) : void{
-		$chunks = [];
-		if($path !== null){
-			foreach($path->getNodes() as $node){
-				$chunks[World::chunkHash($node->x() >> Chunk::COORD_BIT_SIZE, $node->z() >> Chunk::COORD_BIT_SIZE)] = true;
-			}
-		}
+		$chunks = $path?->getCorridorChunks() ?? [];
 
 		$world = $this->getWorld();
 		foreach($chunks as $hash => $_){

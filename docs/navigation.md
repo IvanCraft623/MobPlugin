@@ -46,8 +46,9 @@ serialized on the main thread at submission, which is expensive. So:
 
 `recomputePath()` runs at most every `MAX_TIME_RECOMPUTE = 20` ticks; an earlier call is
 deferred to the next eligible tick. `PathfinderMob::onBlockChanged()` triggers it when a
-changed block is close to the remaining path. Block changes are only listened for in the
-chunks the path goes through.
+changed block is one the search looked at for the nodes still to walk (`Path::isInCorridor()`).
+Block changes are only listened for in the chunks those blocks are in
+(`Path::getCorridorChunks()`).
 
 ## Following a path
 
