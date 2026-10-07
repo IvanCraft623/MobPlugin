@@ -110,7 +110,6 @@ abstract class Living extends PMLiving {
 
 		$this->random = MobPlugin::getInstance()->getRandom();
 		$this->inventory = new MobInventory($this);
-		$this->effectManager = new CustomEffectManager($this);
 
 		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
 
