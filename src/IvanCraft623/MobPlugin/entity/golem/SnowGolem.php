@@ -92,7 +92,7 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(
 			entity: $this,
 			targetType: PMLiving::class,
-			targetValidator: fn(PMLiving $e) : bool => $e instanceof Enemy
+			targetValidator: static fn(PMLiving $e) : bool => $e instanceof Enemy
 		));
 	}
 

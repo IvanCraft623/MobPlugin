@@ -180,12 +180,9 @@ class GoalSelector {
 		}
 	}
 
-	public function destroyCycles() : void{
-		foreach($this->availableGoals as $wrappedGoal){
-			$wrappedGoal->destroyCycles();
+	public function stopRunningGoals() : void{
+		foreach($this->runningGoals as $wrappedGoal){
+			$wrappedGoal->stop();
 		}
-		$this->availableGoals = [];
-		$this->runningGoals = [];
-		$this->lockedFlags = [];
 	}
 }

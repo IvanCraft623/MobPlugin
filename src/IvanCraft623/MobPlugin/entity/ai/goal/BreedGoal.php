@@ -56,8 +56,8 @@ class BreedGoal extends Goal {
 		?string $partnerClass = null
 	) {
 		$partnerClass = $partnerClass ?? $entity::class;
-		$this->partnerConditions = self::PARTNER_TARGETING()->setValidator(function(Living $target) use ($partnerClass) {
-			return $target instanceof $partnerClass && $this->entity->canMate($target);
+		$this->partnerConditions = self::PARTNER_TARGETING()->setValidator(static function(Living $target) use ($entity, $partnerClass) {
+			return $target instanceof $partnerClass && $entity->canMate($target);
 		});
 
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
@@ -120,10 +120,5 @@ class BreedGoal extends Goal {
 
 	public function bread() : void{
 		$this->entity->spawnChildFromBreeding($this->partner);
-	}
-
-	public function destroyCycles() : void{
-		unset($this->partnerConditions);
-		parent::destroyCycles();
 	}
 }

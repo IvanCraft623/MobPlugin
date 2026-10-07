@@ -93,12 +93,4 @@ class TargetHighestDamagerGoal extends TargetGoal {
 		$this->entity->setTargetEntity($this->target);
 		parent::start();
 	}
-
-	public function destroyCycles() : void{
-		unset(
-			$this->mob,
-			$this->targetingConditions
-		);
-		parent::destroyCycles();
-	}
 }

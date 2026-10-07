@@ -58,9 +58,4 @@ final class WrappedGoal {
 	public function getCurrentDebugInfo() : ?string{
 		return $this->goal->getCurrentDebugInfo();
 	}
-
-	public function destroyCycles() : void{
-		$this->stop();
-		$this->goal->destroyCycles();
-	}
 }

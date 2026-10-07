@@ -260,10 +260,4 @@ class PickupItemsGoal extends Goal {
 		$priority = -1;
 		$count = 0;
 	}
-
-	public function destroyCycles() : void{
-		$this->wantedItems = [];
-		$this->wantedPredicates = [];
-		parent::destroyCycles();
-	}
 }

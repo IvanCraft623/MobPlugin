@@ -110,18 +110,14 @@ abstract class PathNavigation {
 
 	protected bool $isStuck = false;
 
-	protected int $pathComputationId = 0;
-
-	protected bool $isPathComputationPending = false;
+	private int $pathComputationId = 0;
 
 	/**
-	 * Promise of the currently in-flight path computation. Shared between all callers that request a path
-	 * while a computation is already running, so we never stack multiple async tasks (each submission would
-	 * synchronously re-serialize the whole chunk corridor on the main thread).
+	 * Of the in-flight path computation; requests made meanwhile share its promise.
 	 *
-	 * @phpstan-var Promise<Path>|null
+	 * @phpstan-var PromiseResolver<Path>|null
 	 */
-	protected ?Promise $pendingPromise = null;
+	private ?PromiseResolver $pendingResolver = null;
 
 	private ?AsyncPathFinderTask $pendingTask = null;
 
@@ -148,7 +144,7 @@ abstract class PathNavigation {
 	}
 
 	public function isPathComputationPending() : bool{
-		return $this->isPathComputationPending;
+		return $this->pendingResolver !== null;
 	}
 
 	protected abstract function createPathFinder() : void;
@@ -236,24 +232,19 @@ abstract class PathNavigation {
 			return $pathResolver->getPromise();
 		}
 
-		if ($this->isPathComputationPending) {
+		if ($this->pendingResolver !== null) {
 			//A computation is already running; don't stack another one (each submission synchronously
 			//re-serializes the whole start->target chunk corridor on the main thread). Attach to the
 			//in-flight promise instead: everyone gets the same result and, if it's stale for a caller,
 			//that caller will simply re-request on the next tick.
-			if ($this->pendingPromise !== null) {
-				$this->pendingPromise->onCompletion(
-					static function(Path $path) use ($pathResolver) : void{
-						$pathResolver->resolve($path);
-					},
-					static function() use ($pathResolver) : void{
-						$pathResolver->reject();
-					}
-				);
-				return $pathResolver->getPromise();
-			}
-
-			$pathResolver->reject();
+			$this->pendingResolver->getPromise()->onCompletion(
+				static function(Path $path) use ($pathResolver) : void{
+					$pathResolver->resolve($path);
+				},
+				static function() use ($pathResolver) : void{
+					$pathResolver->reject();
+				}
+			);
 			return $pathResolver->getPromise();
 		}
 
@@ -261,28 +252,12 @@ abstract class PathNavigation {
 		$this->updateNodeEvaluatorAttributes();
 
 		$requestId = ++$this->pathComputationId;
-		$this->isPathComputationPending = true;
+		$this->pendingResolver = $pathResolver;
 
-		/** @phpstan-var Promise<Path> $promise */
-		$promise = $pathResolver->getPromise();
-		$this->pendingPromise = $promise;
-
-		$this->pendingTask = PathFinder::findPathAsync(function(Path $path) use ($pathResolver, $reach, $requestId) : void{
-				if ($requestId !== $this->pathComputationId) {
-					//Stale result (a newer computation superseded this one); the newer computation owns
-					//the pending state.
-					return;
-				}
-
-				$this->isPathComputationPending = false;
-				$this->pendingPromise = null;
-				$this->pendingTask = null;
-
-				$this->targetPosition = $this->toBlockVector($path->getTarget());
-				$this->reachRange = $reach;
-
-				//todo!
-				$pathResolver->resolve($path);
+		//The task outlives a stopped navigation, so it must not keep the navigation (and its mob) alive.
+		$navigation = \WeakReference::create($this);
+		$this->pendingTask = PathFinder::findPathAsync(static function(Path $path) use ($navigation, $reach, $requestId) : void{
+				$navigation->get()?->onPathComputed($path, $reach, $requestId);
 			},
 			$this->nodeEvaluator,
 			$this->mob->getWorld(),
@@ -293,7 +268,24 @@ abstract class PathNavigation {
 			$reach
 		);
 
-		return $promise;
+		return $pathResolver->getPromise();
+	}
+
+	private function onPathComputed(Path $path, int $reach, int $requestId) : void{
+		if ($requestId !== $this->pathComputationId || $this->pendingResolver === null) {
+			//Stale result: the navigation was stopped since this computation was requested.
+			return;
+		}
+
+		$pathResolver = $this->pendingResolver;
+		$this->pendingResolver = null;
+		$this->pendingTask = null;
+
+		$this->targetPosition = $this->toBlockVector($path->getTarget());
+		$this->reachRange = $reach;
+
+		//todo!
+		$pathResolver->resolve($path);
 	}
 
 	protected function toBlockVector(Vector3 $position) : Vector3{
@@ -318,7 +310,7 @@ abstract class PathNavigation {
 		$this->entityTargetBlock = null;
 		$this->createPathToXYZ($x, $y, $z, $reach)->onCompletion(function(Path $path) use ($speedModifier){
 			$this->moveToPath($path, $speedModifier);
-		}, function(){});
+		}, static function(){});
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 1) : void{
@@ -326,7 +318,7 @@ abstract class PathNavigation {
 		$targetBlock = World::blockHash((int) floor($targetPosition->x), (int) floor($targetPosition->y), (int) floor($targetPosition->z));
 		if ($targetBlock === $this->entityTargetBlock) {
 			//Goals following an entity ask again every tick; there is nothing new to request until it changes block.
-			if ($this->isPathComputationPending) {
+			if ($this->isPathComputationPending()) {
 				return;
 			}
 			if ($this->path !== null && $this->path === $this->entityTargetPath && !$this->path->isDone()) {
@@ -340,7 +332,7 @@ abstract class PathNavigation {
 		}
 
 		//A request made while another computation is in flight gets that computation's path, not its own.
-		$this->entityTargetBlock = $this->isPathComputationPending ? null : $targetBlock;
+		$this->entityTargetBlock = $this->isPathComputationPending() ? null : $targetBlock;
 		$this->entityTargetPath = null;
 		$this->entityTargetTick = $this->tick;
 
@@ -564,7 +556,7 @@ abstract class PathNavigation {
 	public function isDone() : bool{
 		//While a path computation is in-flight the path is still null, but we must not report "done",
 		//or the running goal will stop and cancel its own path before it arrives.
-		return ($this->path === null || $this->path->isDone()) && !$this->isPathComputationPending;
+		return ($this->path === null || $this->path->isDone()) && !$this->isPathComputationPending();
 	}
 
 	public function isInProgress() : bool{
@@ -582,8 +574,7 @@ abstract class PathNavigation {
 		//Invalidate any in-flight computation so its late result can't resurrect a path after we've
 		//stopped, and so a subsequent move can't be hijacked into an obsolete computation's promise.
 		$this->pathComputationId++;
-		$this->isPathComputationPending = false;
-		$this->pendingPromise = null;
+		$this->pendingResolver = null;
 		$this->pendingTask?->cancel();
 		$this->pendingTask = null;
 	}

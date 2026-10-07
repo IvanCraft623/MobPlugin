@@ -112,12 +112,4 @@ class LookAtEntityGoal extends Goal {
 		$this->entity->getLookControl()->setLookAt($lookAt);
 		$this->lookTime--;
 	}
-
-	public function destroyCycles() : void{
-		unset($this->entity);
-		unset($this->targetConditions);
-		$this->lookingAt = null;
-
-		parent::destroyCycles();
-	}
 }
