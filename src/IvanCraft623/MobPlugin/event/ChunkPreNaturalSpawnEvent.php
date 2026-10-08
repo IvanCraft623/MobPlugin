@@ -29,7 +29,8 @@ use pocketmine\event\world\ChunkEvent;
 
 /**
  * Called when natural spawning is about to attempt a chunk. Cancelling it skips the
- * attempt before any of it runs, so nothing spawns naturally in the chunk this tick.
+ * attempt before any of it runs, so nothing spawns naturally in the chunk this tick. A
+ * cancelled chunk doesn't use up one of the tick's `max-attempts-per-tick`.
  */
 class ChunkPreNaturalSpawnEvent extends ChunkEvent implements Cancellable{
 	use CancellableTrait;
