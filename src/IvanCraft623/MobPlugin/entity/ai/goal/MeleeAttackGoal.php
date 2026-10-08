@@ -27,7 +27,6 @@ use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
-use pocketmine\player\Player;
 use function max;
 
 /**
@@ -62,7 +61,7 @@ class MeleeAttackGoal extends Goal {
 	}
 
 	protected function isTargetValid(?Entity $target) : bool{
-		if (!$target instanceof Living || !$target->isAlive()) {
+		if (!$target instanceof Living) {
 			return false;
 		}
 
@@ -70,15 +69,7 @@ class MeleeAttackGoal extends Goal {
 			return false;
 		}
 
-		if (!$this->alwaysFollowTarget && !$this->mob->isWithinRestriction($target->getPosition())) {
-			return false;
-		}
-
-		if ($target instanceof Player && $target->isCreative()) {
-			return false;
-		}
-
-		return true;
+		return $this->alwaysFollowTarget || $this->mob->isWithinRestriction($target->getPosition());
 	}
 
 	public function start() : void{

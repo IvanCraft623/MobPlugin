@@ -234,6 +234,10 @@ abstract class Living extends PMLiving {
 	}
 
 	public function canAttack(Entity $target) : bool {
+		if (!$target->isAlive()) {
+			return false;
+		}
+
 		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL) {
 			return false;
 		}
