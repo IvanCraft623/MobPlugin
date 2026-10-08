@@ -70,7 +70,7 @@ class Endermite extends Monster {
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
 
 		$this->targetSelector->addGoal(1, (new HurtByTargetGoal($this))->setAlertOthers());
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, PMLiving::class, NearestAttackableGoal::DEFAULT_RANDOM_INTERVAL, true, false, fn(PMLiving $e) => $e instanceof Player || $e instanceof Enderman));
+		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, PMLiving::class, NearestAttackableGoal::DEFAULT_RANDOM_INTERVAL, true, false, static fn(PMLiving $e) => $e instanceof Player || $e instanceof Enderman));
 	}
 
 	protected function initProperties() : void{

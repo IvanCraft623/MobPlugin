@@ -32,7 +32,7 @@ use IvanCraft623\MobPlugin\event\MobFeedEvent;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_961ae0d7a788b635\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\entity\Living;
@@ -84,15 +84,11 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		parent::tickAi();
 
 		if ($this->getAge() !== AgeableMob::ADULT_AGE) {
-			$this->inLoveTicks = 0;
+			$this->setInLoveTicks(0);
 		}
 
 		if ($this->inLoveTicks > 0) {
-			$this->inLoveTicks--;
-
-			if ($this->inLoveTicks <= 0) {
-				$this->loveCauser = null;
-			}
+			$this->setInLoveTicks($this->inLoveTicks - 1);
 
 			if ($this->inLoveTicks % 16 === 0) {
 				$this->broadcastAnimation(new BreedingAnimation($this));

@@ -52,7 +52,7 @@ class WitherExplodeOnHalfLifeGoal extends Goal {
 	}
 
 	public function canContinueToUse() : bool{
-		return $this->mob->isPowered() && !$this->mob->isOnGround() && $this->timeoutTicks > 0;
+		return $this->mob->isPowered() && !($this->hasExploded && $this->hasLanded());
 	}
 
 	public function start() : void{
@@ -68,18 +68,18 @@ class WitherExplodeOnHalfLifeGoal extends Goal {
 		}
 	}
 
-	public function stop() : void {
-		if (!$this->hasExploded) {
-			$this->explode();
-		}
-	}
-
 	public function requiresUpdateEveryTick() : bool {
 		return true;
 	}
 
 	public function tick() : void {
-		$position = $this->mob->getPosition();
+		if ($this->hasLanded()) {
+			if (!$this->hasExploded) {
+				$this->explode();
+			}
+			return;
+		}
+
 		$this->mob->addMotion(
 			0,
 			-$this->speedModifier * $this->mob->getFlyingSpeed(),
@@ -87,6 +87,10 @@ class WitherExplodeOnHalfLifeGoal extends Goal {
 		);
 
 		$this->timeoutTicks--;
+	}
+
+	private function hasLanded() : bool{
+		return $this->mob->isOnGround() || $this->timeoutTicks <= 0;
 	}
 
 	protected function explode() : void {

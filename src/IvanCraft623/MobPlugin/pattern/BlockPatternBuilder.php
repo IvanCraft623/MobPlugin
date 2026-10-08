@@ -63,7 +63,7 @@ class BlockPatternBuilder {
 	 * Initializes the lookup table with a default predicate for an empty space.
 	 */
 	private function __construct() {
-		$this->lookup[" "] = fn(Block $block) : bool => true;
+		$this->lookup[" "] = static fn(Block $block) : bool => true;
 	}
 
 	/**

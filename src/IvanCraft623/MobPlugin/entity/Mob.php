@@ -37,8 +37,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_76575007da187bcf\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_961ae0d7a788b635\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_961ae0d7a788b635\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -398,16 +398,20 @@ abstract class Mob extends Living {
 		$this->navigation->tick();
 		CustomTimings::$navigation->stopTiming();
 
+		CustomTimings::$entityControls->startTiming();
 		$this->moveControl->tick();
 		$this->lookControl->tick();
 		$this->jumpControl->tick();
+		CustomTimings::$entityControls->stopTiming();
 
 		// Movement update
 		$this->sidewaysSpeed *= 0.98;
 		$this->forwardSpeed *= 0.98;
 		//TODO: is being controlled by passenger check!
 		if ($this->sidewaysSpeed !== 0.0 || $this->upwardSpeed !== 0.0 || $this->forwardSpeed !== 0.0 || $this->isCollidedHorizontally) {
+			CustomTimings::$entityTravel->startTiming();
 			$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+			CustomTimings::$entityTravel->stopTiming();
 		}
 	}
 
@@ -861,8 +865,8 @@ abstract class Mob extends Living {
 
 	protected function destroyCycles() : void{
 		$this->navigation->stop();
-		$this->goalSelector->destroyCycles();
-		$this->targetSelector->destroyCycles();
+		$this->goalSelector->stopRunningGoals();
+		$this->targetSelector->stopRunningGoals();
 		unset(
 			$this->goalSelector,
 			$this->targetSelector,

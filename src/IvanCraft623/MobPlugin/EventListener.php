@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
+use IvanCraft623\MobPlugin\entity\Living;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
@@ -34,13 +35,14 @@ use IvanCraft623\MobPlugin\pattern\BlockPatternFactory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\VanillaBlocks;
-use pocketmine\entity\Living;
+use pocketmine\entity\Living as PMLiving;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\EnderPearl;
 use pocketmine\entity\projectile\Projectile;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDeathEvent;
+use pocketmine\event\entity\EntityEffectAddEvent;
 use pocketmine\event\entity\ProjectileHitEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
@@ -102,9 +104,19 @@ class EventListener implements Listener {
 		}
 	}
 
+	/**
+	 * @priority LOWEST
+	 */
+	public function onEntityEffectAdd(EntityEffectAddEvent $event) : void{
+		$entity = $event->getEntity();
+		if ($entity instanceof Living && !$entity->canAddEffect($event->getEffect())) {
+			$event->cancel();
+		}
+	}
+
 	public function onEntityDeath(EntityDeathEvent $event) : void{
 		$entity = $event->getEntity();
-		if (!$entity instanceof Living) {
+		if (!$entity instanceof PMLiving) {
 			return;
 		}
 

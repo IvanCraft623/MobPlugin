@@ -61,7 +61,12 @@ class TemptGoal extends Goal {
 		protected float $speedModifier,
 		protected bool $canScare
 	) {
-		$this->targetingConditions = static::TEMP_TARGETING()->setValidator(\Closure::fromCallable([$this, 'shouldFollow']));
+		$this->targetingConditions = static::TEMP_TARGETING()->setValidator(static function(Living $target) use ($entity) : bool{
+			return $target instanceof Human && (
+				$entity->isLuring($target, $target->getInventory()->getItemInHand()) ||
+				$entity->isLuring($target, $target->getOffHandInventory()->getItem(0))
+			);
+		});
 
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
@@ -106,13 +111,6 @@ class TemptGoal extends Goal {
 		return $this->canUse();
 	}
 
-	private function shouldFollow(Living $entity) : bool{
-		return $entity instanceof Human && (
-			$this->entity->isLuring($entity, $entity->getInventory()->getItemInHand()) ||
-			$this->entity->isLuring($entity, $entity->getOffHandInventory()->getItem(0))
-		);
-	}
-
 	protected function canScare() : bool{
 		return $this->canScare;
 	}
@@ -145,10 +143,5 @@ class TemptGoal extends Goal {
 
 	public function isRunning() : bool{
 		return $this->isRunning;
-	}
-
-	public function destroyCycles() : void{
-		unset($this->targetingConditions);
-		parent::destroyCycles();
 	}
 }

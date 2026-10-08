@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\MobPlugin;
@@ -110,7 +111,6 @@ abstract class Living extends PMLiving {
 
 		$this->random = MobPlugin::getInstance()->getRandom();
 		$this->inventory = new MobInventory($this);
-		$this->effectManager = new CustomEffectManager($this);
 
 		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
 
@@ -253,14 +253,15 @@ abstract class Living extends PMLiving {
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
+		CustomTimings::$entityPush->startTiming();
 		$hasUpdate = $this->pushOutOfEntities() || $hasUpdate;
+		CustomTimings::$entityPush->stopTiming();
 
 		if ($this->lastDamageByEntity !== null &&
 			$this->lastDamageByEntityTick !== -1 &&
 			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
 		) {
-			//Free the retained EntityDamageByEntityEvent (which pins the attacker's whole object graph)
-			//once it's past the expirable window.
+			//The last damager is only remembered for a limited time.
 			$this->setLastDamageByEntity(null);
 		}
 
