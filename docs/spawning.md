@@ -81,7 +81,8 @@ spawning/
 Every ticking chunk (`World::getTickingChunks()`) of every enabled world rolls vanilla's
 chance, 11 in 2000, for one attempt. The spawner draws the gap to the next hit instead of
 rolling each chunk. If more chunks hit than `max-attempts-per-tick`, a random subset is
-kept. A world with a tick radius of 0 never spawns.
+kept. `ChunkPreNaturalSpawnEvent` is called only for the chunks drawn, and a cancelled one
+doesn't use up an attempt. A world with a tick radius of 0 never spawns.
 
 ### One attempt
 

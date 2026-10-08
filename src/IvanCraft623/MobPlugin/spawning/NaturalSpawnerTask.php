@@ -109,7 +109,7 @@ final class NaturalSpawnerTask extends Task{
 			$this->mobCounts = [];
 			$this->ticksUntilMobCount = self::MOB_COUNT_INTERVAL;
 		}
-		/** @phpstan-var list<array{WorldSpawnPass, int, int}> $hits pass and chunk coordinates */
+		/** @phpstan-var list<array{World, WorldSpawnPass, int, int}> $hits world, its pass and chunk coordinates */
 		$hits = [];
 		foreach($this->worldManager->getWorlds() as $world){
 			$settings = Settings::getSettings($world->getFolderName());
@@ -134,32 +134,27 @@ final class NaturalSpawnerTask extends Task{
 				$pass ??= new WorldSpawnPass($world, $chunks, $playerPositions, $candidateCache, $this->selector, $this->herdSpawner, $this->population, $this->registry, $this->random, $this->maxPlayerDistance);
 				World::getXZ($chunks[$i], $chunkX, $chunkZ);
 				// Decided here so a chunk that can't spawn takes none of the tick's budget.
-				if(!$pass->canAttempt($chunkX, $chunkZ)){
-					continue;
-				}
-				$event = new ChunkPreNaturalSpawnEvent($world, $chunkX, $chunkZ, $world->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Ticking chunks are loaded"));
-				$event->call();
-				if(!$event->isCancelled()){
-					$hits[] = [$pass, $chunkX, $chunkZ];
+				if($pass->canAttempt($chunkX, $chunkZ)){
+					$hits[] = [$world, $pass, $chunkX, $chunkZ];
 				}
 			}
 		}
 		$hitCount = count($hits);
-		if($hitCount === 0){
-			return;
-		}
-		if($hitCount > $this->maxAttemptsPerTick){
-			// Keep a random subset.
-			for($i = 0; $i < $this->maxAttemptsPerTick; $i++){
+		// A crowded tick draws its hits in random order, which keeps a random subset. A
+		// cancelled chunk doesn't use up an attempt.
+		$crowded = $hitCount > $this->maxAttemptsPerTick;
+		for($i = 0, $attempts = 0; $i < $hitCount && $attempts < $this->maxAttemptsPerTick; $i++){
+			if($crowded){
 				$j = $i + $this->random->nextBoundedInt($hitCount - $i);
 				[$hits[$i], $hits[$j]] = [$hits[$j], $hits[$i]];
 			}
-			$hitCount = $this->maxAttemptsPerTick;
-		}
-
-		for($i = 0; $i < $hitCount; $i++){
-			[$pass, $chunkX, $chunkZ] = $hits[$i];
-			$pass->attempt($chunkX, $chunkZ);
+			[$world, $pass, $chunkX, $chunkZ] = $hits[$i];
+			$event = new ChunkPreNaturalSpawnEvent($world, $chunkX, $chunkZ, $world->getChunk($chunkX, $chunkZ) ?? throw new AssumptionFailedError("Ticking chunks are loaded"));
+			$event->call();
+			if(!$event->isCancelled()){
+				$attempts++;
+				$pass->attempt($chunkX, $chunkZ);
+			}
 		}
 	}
 
