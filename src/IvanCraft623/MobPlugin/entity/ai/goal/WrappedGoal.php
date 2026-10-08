@@ -23,14 +23,20 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
+use IvanCraft623\MobPlugin\CustomTimings;
+use pocketmine\timings\TimingsHandler;
+
 final class WrappedGoal {
 
 	private bool $isRunning = false;
+
+	public readonly TimingsHandler $timings;
 
 	public function __construct(
 		public readonly int $priority,
 		public readonly Goal $goal
 	) {
+		$this->timings = CustomTimings::getGoalTimings($goal);
 	}
 
 	public function canBeReplacedBy(WrappedGoal $goal) : bool{
@@ -40,14 +46,18 @@ final class WrappedGoal {
 	public function start() : void{
 		if (!$this->isRunning) {
 			$this->isRunning = true;
+			$this->timings->startTiming();
 			$this->goal->start();
+			$this->timings->stopTiming();
 		}
 	}
 
 	public function stop() : void{
 		if ($this->isRunning) {
 			$this->isRunning = false;
+			$this->timings->startTiming();
 			$this->goal->stop();
+			$this->timings->stopTiming();
 		}
 	}
 

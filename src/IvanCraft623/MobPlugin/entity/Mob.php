@@ -398,16 +398,20 @@ abstract class Mob extends Living {
 		$this->navigation->tick();
 		CustomTimings::$navigation->stopTiming();
 
+		CustomTimings::$entityControls->startTiming();
 		$this->moveControl->tick();
 		$this->lookControl->tick();
 		$this->jumpControl->tick();
+		CustomTimings::$entityControls->stopTiming();
 
 		// Movement update
 		$this->sidewaysSpeed *= 0.98;
 		$this->forwardSpeed *= 0.98;
 		//TODO: is being controlled by passenger check!
 		if ($this->sidewaysSpeed !== 0.0 || $this->upwardSpeed !== 0.0 || $this->forwardSpeed !== 0.0 || $this->isCollidedHorizontally) {
+			CustomTimings::$entityTravel->startTiming();
 			$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+			CustomTimings::$entityTravel->stopTiming();
 		}
 	}
 

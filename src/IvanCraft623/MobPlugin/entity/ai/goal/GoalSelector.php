@@ -62,11 +62,13 @@ class GoalSelector {
 		CustomTimings::$goalSelectorCleanup->startTiming();
 
 		foreach ($this->runningGoals as $key => $wrappedGoal) {
-			if ($wrappedGoal->isRunning() && (
-				($wrappedGoal->goal->getFlagMask() & $this->disabledFlags) !== 0 ||
-				!$wrappedGoal->goal->canContinueToUse()
-			)) {
-				$wrappedGoal->stop();
+			if ($wrappedGoal->isRunning()) {
+				$wrappedGoal->timings->startTiming();
+				$canContinue = ($wrappedGoal->goal->getFlagMask() & $this->disabledFlags) === 0 && $wrappedGoal->goal->canContinueToUse();
+				$wrappedGoal->timings->stopTiming();
+				if (!$canContinue) {
+					$wrappedGoal->stop();
+				}
 			}
 			if (!$wrappedGoal->isRunning()) {
 				unset($this->runningGoals[$key]);
@@ -104,7 +106,10 @@ class GoalSelector {
 					}
 				}
 			}
-			if (!$goal->canUse()) {
+			$wrappedGoal->timings->startTiming();
+			$canUse = $goal->canUse();
+			$wrappedGoal->timings->stopTiming();
+			if (!$canUse) {
 				continue;
 			}
 
@@ -135,7 +140,9 @@ class GoalSelector {
 
 		foreach ($this->runningGoals as $wrappedGoal) {
 			if ($wrappedGoal->isRunning() && ($force || $wrappedGoal->goal->requiresUpdateEveryTick())) {
+				$wrappedGoal->timings->startTiming();
 				$wrappedGoal->goal->tick();
+				$wrappedGoal->timings->stopTiming();
 			}
 		}
 

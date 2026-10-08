@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\Pathfinder\Path;
 use pocketmine\math\Vector3;
 use pocketmine\world\ChunkListener;
@@ -98,7 +99,9 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	public function onBlockChanged(Vector3 $position) : void{
 		// It would be great to be able to compare block collisions to save execution time but
 		// with the current pocketmine implementation there is no an easy way to know which block was before
+		CustomTimings::$pathBlockChange->startTiming();
 		$this->navigation->onBlockChanged($position);
+		CustomTimings::$pathBlockChange->stopTiming();
 	}
 
 	public function getWalkTargetValue(Vector3 $position) : float{

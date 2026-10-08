@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
+use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
@@ -247,6 +248,8 @@ abstract class PathNavigation {
 			return $pathResolver->getPromise();
 		}
 
+		CustomTimings::$pathRequest->startTiming();
+
 		$this->resetStuckTimeout();
 		$this->updateNodeEvaluatorAttributes();
 
@@ -266,6 +269,8 @@ abstract class PathNavigation {
 			$maxDistanceFromStart ?? $this->mob->getFollowRange(),
 			$reach
 		);
+
+		CustomTimings::$pathRequest->stopTiming();
 
 		return $pathResolver->getPromise();
 	}
