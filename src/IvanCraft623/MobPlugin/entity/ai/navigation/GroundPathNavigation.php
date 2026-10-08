@@ -24,9 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_961ae0d7a788b635\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_961ae0d7a788b635\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_961ae0d7a788b635\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_24f1b309f55b1ceb\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_24f1b309f55b1ceb\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_24f1b309f55b1ceb\IvanCraft623\Pathfinder\Path;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Water;
