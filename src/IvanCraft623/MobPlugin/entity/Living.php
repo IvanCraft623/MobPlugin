@@ -59,7 +59,6 @@ use pocketmine\utils\Random;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 use function abs;
-use function floatval;
 use function floor;
 use function get_class;
 use function max;
@@ -302,15 +301,20 @@ abstract class Living extends PMLiving {
 		$this->timings->startTiming();
 
 		if($this->hasMovementUpdate()){
-			$this->motion = $this->motion->withComponents(
-				abs($this->motion->x) <= self::MOTION_THRESHOLD ? 0 : null,
-				abs($this->motion->y) <= self::MOTION_THRESHOLD ? 0 : null,
-				abs($this->motion->z) <= self::MOTION_THRESHOLD ? 0 : null
-			);
+			$motionX = abs($this->motion->x) > self::MOTION_THRESHOLD ? $this->motion->x : 0;
+			$motionY = abs($this->motion->y) > self::MOTION_THRESHOLD ? $this->motion->y : 0;
+			$motionZ = abs($this->motion->z) > self::MOTION_THRESHOLD ? $this->motion->z : 0;
 
-			if(floatval($this->motion->x) !== 0.0 || floatval($this->motion->y) !== 0.0 || floatval($this->motion->z) !== 0.0){
-				$this->move($this->motion->x, $this->motion->y, $this->motion->z);
-				$this->immersionTick = -1;
+			if(!$this->forceMovementUpdate && $this->onGround && $motionX === 0 && $motionZ === 0 && $motionY < 0 && $this->ySize <= self::MOTION_THRESHOLD){
+				//move() would only find the floor again (ySize: a step up still being smoothed)
+				$this->checkGroundState(0, $motionY, 0, 0, 0, 0);
+				$this->motion = Vector3::zero();
+			}else{
+				$this->motion = new Vector3($motionX, $motionY, $motionZ);
+				if($motionX !== 0 || $motionY !== 0 || $motionZ !== 0){
+					$this->move($motionX, $motionY, $motionZ);
+					$this->immersionTick = -1;
+				}
 			}
 
 			$this->tryChangeMovement();
@@ -327,6 +331,13 @@ abstract class Living extends PMLiving {
 		$this->timings->stopTiming();
 
 		return ($hasUpdate || $this->hasMovementUpdate());
+	}
+
+	protected function setPosition(Vector3 $pos) : bool{
+		//The floor is only known for where move() left the mob
+		$this->setForceMovementUpdate();
+
+		return parent::setPosition($pos);
 	}
 
 	protected function tryChangeMovement() : void{
