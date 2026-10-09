@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_68b69235740e29ab\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_68b69235740e29ab\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_68b69235740e29ab\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
@@ -70,7 +70,7 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_68b69235740e29ab\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;

@@ -25,8 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\control;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_68b69235740e29ab\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_68b69235740e29ab\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\math\Vector3;
 use function atan2;
