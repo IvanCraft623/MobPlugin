@@ -71,7 +71,8 @@ then stops, and the goal decides whether to path again.
 PathNavigation
 ├── GroundPathNavigation     default
 │   └── WallClimberNavigation   Spider
-└── FlyingPathNavigation     Wither
+├── FlyingPathNavigation     Wither
+└── AmphibiousSwimNavigation   Axolotl
 ```
 
 | Navigator | Node evaluator | Notes |
@@ -79,6 +80,7 @@ PathNavigation
 | `GroundPathNavigation` | `WalkNodeEvaluator` | Snaps an air or solid target to the nearest walkable block. `setAvoidSun(true)` truncates paths that step into full light. |
 | `WallClimberNavigation` | inherited | Keeps pushing `MoveControl` toward the target after the path ends, which is how spiders climb. |
 | `FlyingPathNavigation` | `FlightNodeEvaluator` | Steers in 3D and cuts corners through open air. |
+| `AmphibiousSwimNavigation` | `AmphibiousNodeEvaluator` | Swims in 3D through water, walks on land; always updates its path. Pair with `AquaticMoveControl`. |
 
 Path costs per block type come from `Mob::getPathTypeCostMap()`; set them with
 `Mob::setPathfindingMalus()`.

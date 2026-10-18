@@ -227,12 +227,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/IvanCraft623/Pahtfinder.git",
-                "reference": "d68e3b27a340f5fd1a4b6fac4f0e56d985a1e9c4"
+                "reference": "4092af3c8bd41e5f5f65d061a4a742916030d814"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/d68e3b27a340f5fd1a4b6fac4f0e56d985a1e9c4",
-                "reference": "d68e3b27a340f5fd1a4b6fac4f0e56d985a1e9c4",
+                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/4092af3c8bd41e5f5f65d061a4a742916030d814",
+                "reference": "4092af3c8bd41e5f5f65d061a4a742916030d814",
                 "shasum": ""
             },
             "require-dev": {
@@ -261,7 +261,7 @@
                 "source": "https://github.com/IvanCraft623/Pahtfinder/tree/main",
                 "issues": "https://github.com/IvanCraft623/Pahtfinder/issues"
             },
-            "time": "2026-10-08T01:46:03+00:00"
+            "time": "2026-10-18T20:39:36+00:00"
         },
         {
             "name": "netresearch/jsonmapper",

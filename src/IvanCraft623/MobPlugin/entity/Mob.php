@@ -248,6 +248,13 @@ abstract class Mob extends Living {
 	}
 
 	/**
+	 * Returns acceleration while in water.
+	 */
+	public function getWaterMovementSpeed() : float{
+		return $this->getMovementSpeed();
+	}
+
+	/**
 	 * Returns acceleration while airborne.
 	 */
 	public function getAirMovementSpeed() : float{
@@ -418,8 +425,12 @@ abstract class Mob extends Living {
 	public function travel(Vector3 $movementInput) : void{
 		// TODO: More complex movement suff :P
 
-		$accel = $this->onGround || $this->isInWater() || $this->isInLava() ?
-			$this->getMovementSpeed() : $this->getAirMovementSpeed();
+		if ($this->isInWater()) {
+			$accel = $this->getWaterMovementSpeed();
+		} else {
+			$accel = $this->onGround || $this->isInLava() ?
+				$this->getMovementSpeed() : $this->getAirMovementSpeed();
+		}
 
 		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $accel);
 

@@ -135,13 +135,20 @@ class MoveControl implements Control {
 		$this->mob->setRotation($yaw, $location->pitch);
 		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 
+		$this->jumpIfNeeded($dx, $dy, $dz);
+	}
+
+	/**
+	 * Jumps when the wanted position is more than a step up and close.
+	 */
+	protected function jumpIfNeeded(float $dx, float $dy, float $dz) : void {
 		if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 			$this->mob->getJumpControl()->jump();
 			$this->operation = MoveOperation::JUMPING;
 		}
 	}
 
-	private function tickJumping() : void {
+	protected function tickJumping() : void {
 		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 		if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
 			$this->operation = MoveOperation::WAIT;
