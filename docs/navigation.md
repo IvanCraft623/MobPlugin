@@ -89,10 +89,10 @@ Path costs per block type come from `Mob::getPathTypeCostMap()`; set them with
 
 | Operation | Meaning |
 |---|---|
-| `OPERATION_WAIT` | idle |
-| `OPERATION_MOVE_TO` | steer toward the wanted position |
-| `OPERATION_STRAFE` | move relative to the current yaw |
-| `OPERATION_JUMPING` | hold the jump until back on the ground or in liquid |
+| `MoveOperation::WAIT` | idle |
+| `MoveOperation::MOVE_TO` | steer toward the wanted position |
+| `MoveOperation::STRAFE` | move relative to the current yaw |
+| `MoveOperation::JUMPING` | hold the jump until back on the ground or in liquid |
 
 For `MOVE_TO` it turns the mob toward the target (at most 90° per tick), sets its speed,
 and jumps when the target is more than a step up and close. `FlightMoveControl` also

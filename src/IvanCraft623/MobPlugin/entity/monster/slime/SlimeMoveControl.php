@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\monster\slime;
 
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\control\MoveOperation;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use const M_PI;
 
@@ -48,7 +49,7 @@ class SlimeMoveControl extends MoveControl{
 
 	public function setWantedMovement(float $speedModifier) : void{
 		$this->speedModifier = $speedModifier;
-		$this->operation = MoveControl::OPERATION_MOVE_TO;
+		$this->operation = MoveOperation::MOVE_TO;
 	}
 
 	public function tick() : void {
@@ -56,12 +57,12 @@ class SlimeMoveControl extends MoveControl{
 
 		$this->mob->setRotation($this->rotateLerp($location->yaw, $this->yaw, 90), $location->pitch);
 
-		if ($this->operation !== MoveControl::OPERATION_MOVE_TO) {
+		if ($this->operation !== MoveOperation::MOVE_TO) {
 			$this->mob->setForwardSpeed(0);
 			return;
 		}
 
-		$this->operation = MoveControl::OPERATION_WAIT;
+		$this->operation = MoveOperation::WAIT;
 
 		if ($this->mob->isOnGround()) {
 			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());

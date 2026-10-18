@@ -46,8 +46,8 @@ class FlightMoveControl extends MoveControl {
 		assert($this->mob instanceof Flyable);
 
 		$location = $this->mob->getLocation();
-		if ($this->operation === static::OPERATION_MOVE_TO) {
-			$this->operation = self::OPERATION_WAIT;
+		if ($this->operation === MoveOperation::MOVE_TO) {
+			$this->operation = MoveOperation::WAIT;
 
 			$this->mob->setHasGravity(false);
 
