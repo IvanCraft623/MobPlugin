@@ -23,8 +23,9 @@ declare(strict_types=1);
 
 /**
  * Merges the vanilla spawn rules of the pinned mojang/bedrock-samples package into
- * resources/spawning/spawn_rules.json and writes its NOTICE.md. Every file must validate
- * against the pinned schemas, or nothing is written.
+ * resources/spawning/spawn_rules.json and writes its NOTICE.md, and names the spawn events
+ * they send in VanillaSpawnEvents. Every file must validate against the pinned schemas, or
+ * nothing is written.
  */
 
 namespace IvanCraft623\MobPlugin\tools\spawnrules\compile;
@@ -53,9 +54,15 @@ use function json_decode;
 use function json_encode;
 use function json_last_error_msg;
 use function ksort;
+use function preg_match;
 use function printf;
+use function sort;
 use function sprintf;
+use function str_starts_with;
 use function strlen;
+use function strpos;
+use function strtoupper;
+use function substr;
 use const JSON_PRESERVE_ZERO_FRACTION;
 use const JSON_PRETTY_PRINT;
 use const JSON_UNESCAPED_SLASHES;
@@ -64,6 +71,37 @@ use const SORT_STRING;
 use const STDERR;
 
 const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
+const EVENT_PREFIX = "minecraft:";
+const EVENTS_NAMESPACE = "IvanCraft623\\MobPlugin\\spawning\\event";
+
+/**
+ * Everything every generated file starts with, up to its namespace.
+ */
+const FILE_HEADER = <<<'PHP'
+<?php
+
+/*
+ *   __  __       _     _____  _             _
+ *  |  \/  |     | |   |  __ \| |           (_)
+ *  | \  / | ___ | |__ | |__) | |_   _  __ _ _ _ __
+ *  | |\/| |/ _ \| '_ \|  ___/| | | | |/ _` | | '_ \
+ *  | |  | | (_) | |_) | |    | | |_| | (_| | | | | |
+ *  |_|  |_|\___/|_.__/|_|    |_|\__,_|\__, |_|_| |_|
+ *                                      __/ |
+ *                                     |___/
+ *
+ * A PocketMine-MP plugin that implements mobs AI.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * @author IvanCraft623
+ */
+
+declare(strict_types=1);
+
+PHP;
 const SCHEMA_PATH = "metadata/json_schemas/server/spawn";
 
 function main() : int{
@@ -127,10 +165,16 @@ function main() : int{
 	$json .= "\n";
 
 	$notice = buildNotice($commit, $gameVersion, $schemaVersion);
+	try{
+		$eventsClass = buildEventsArtifact(collectEvents($merged));
+	}catch(\RuntimeException $e){
+		return fail($e->getMessage());
+	}
 
-	// Both outputs are written only after every source file merged successfully.
+	// The outputs are written only after every source file merged successfully.
 	$outDir = dirname(__DIR__, 2) . "/resources/spawning";
-	foreach([$outDir . "/spawn_rules.json" => $json, $outDir . "/NOTICE.md" => $notice] as $path => $contents){
+	$eventsPath = dirname(__DIR__, 2) . "/src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php";
+	foreach([$outDir . "/spawn_rules.json" => $json, $outDir . "/NOTICE.md" => $notice, $eventsPath => $eventsClass] as $path => $contents){
 		if(file_put_contents($path, $contents) === false){
 			return fail("Failed to write: $path");
 		}
@@ -208,6 +252,82 @@ function readGameVersion(string $samplesDir) : ?string{
 	}
 
 	return null;
+}
+
+/**
+ * The events the rules send: of herds, of their first members, and the ones a permuted mob
+ * is created with ("minecraft:pillager<minecraft:spawn_as_patrol_follower>").
+ *
+ * @phpstan-param array<string, stdClass> $rules identifier => file body
+ * @phpstan-return list<string> sorted
+ */
+function collectEvents(array $rules) : array{
+	$events = [];
+	foreach($rules as $body){
+		foreach($body->{"minecraft:spawn_rules"}->{"conditions"} ?? [] as $condition){
+			foreach(asList($condition->{"minecraft:herd"} ?? []) as $herd){
+				foreach([$herd->{"event"} ?? null, $herd->{"initial_event"} ?? null] as $event){
+					if(is_string($event)){
+						$events[$event] = true;
+					}
+				}
+			}
+			foreach(asList($condition->{"minecraft:permute_type"} ?? []) as $permutation){
+				$type = $permutation->{"entity_type"} ?? "";
+				$start = strpos($type, "<");
+				if($start !== false){
+					$events[substr($type, $start + 1, -1)] = true;
+				}
+			}
+		}
+	}
+	$events = array_keys($events);
+	sort($events, SORT_STRING);
+
+	return $events;
+}
+
+/**
+ * A component holds one entry or a list of them.
+ *
+ * @phpstan-param stdClass|list<stdClass> $value
+ * @phpstan-return list<stdClass>
+ */
+function asList(stdClass|array $value) : array{
+	return $value instanceof stdClass ? [$value] : $value;
+}
+
+/**
+ * @phpstan-param list<string> $events
+ */
+function buildEventsArtifact(array $events) : string{
+	$lines = [];
+	foreach($events as $event){
+		$constant = strtoupper(substr($event, strlen(EVENT_PREFIX)));
+		if(!str_starts_with($event, EVENT_PREFIX) || preg_match('/^[A-Z][A-Z0-9_]*$/', $constant) !== 1){
+			throw new \RuntimeException("The spawn event \"$event\" doesn't make a constant name");
+		}
+		$lines[] = sprintf("\tpublic const %s = \"%s\";", $constant, $event);
+	}
+
+	return FILE_HEADER . sprintf(<<<'PHP'
+
+namespace %s;
+
+/**
+ * Auto-generated from the spawn rules of the pinned Mojang bedrock-samples — do not edit by
+ * hand. The vanilla spawn events, to register handlers with.
+ *
+ * Regenerate with: php tools/spawn-rules/compile.php
+ */
+final class VanillaSpawnEvents{
+
+%s
+
+	private function __construct(){}
+}
+
+PHP, EVENTS_NAMESPACE, implode("\n", $lines));
 }
 
 function buildNotice(?string $commit, string $gameVersion, string $schemaVersion) : string{

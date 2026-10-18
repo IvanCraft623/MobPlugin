@@ -26,7 +26,9 @@ namespace IvanCraft623\MobPlugin\spawning\parse;
 use IvanCraft623\MobPlugin\spawning\condition\BandCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnHerd;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use IvanCraft623\MobPlugin\spawning\SpawnPermutation;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use function array_values;
 use function count;
@@ -51,11 +53,10 @@ final class SpawnRuleGroupBuilder{
 
 	private ?int $caveDensityLimit = null;
 
-	private int $herdMin = 1;
+	/** @phpstan-var list<SpawnHerd> */
+	private array $herds = [];
 
-	private int $herdMax = 1;
-
-	/** @phpstan-var array<string, int> */
+	/** @phpstan-var list<SpawnPermutation> */
 	private array $permutations = [];
 
 	/** @phpstan-var array<int, SpawnBand> */
@@ -122,13 +123,15 @@ final class SpawnRuleGroupBuilder{
 		$this->caveDensityLimit = $underground !== null && $underground >= 0 ? $underground : null;
 	}
 
-	public function setHerd(int $min, int $max) : void{
-		$this->herdMin = $min;
-		$this->herdMax = $max;
+	/**
+	 * @phpstan-param list<SpawnHerd> $herds
+	 */
+	public function setHerds(array $herds) : void{
+		$this->herds = $herds;
 	}
 
 	/**
-	 * @phpstan-param array<string, int> $permutations entity identifier => weight
+	 * @phpstan-param list<SpawnPermutation> $permutations
 	 */
 	public function setPermutations(array $permutations) : void{
 		$this->permutations = $permutations;
@@ -151,8 +154,7 @@ final class SpawnRuleGroupBuilder{
 		return new SpawnRuleGroup(
 			conditions: $conditions,
 			weight: $this->weight,
-			herdMin: $this->herdMin,
-			herdMax: $this->herdMax,
+			herds: $this->herds,
 			permutations: $this->permutations,
 			requiredLiquid: $this->liquid,
 			rarity: $this->rarity,

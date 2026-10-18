@@ -35,7 +35,7 @@ Composer.
 
 | Command | Generates |
 |---|---|
-| `composer compile-spawn-rules` | `spawn_rules.json` and `NOTICE.md` |
+| `composer compile-spawn-rules` | `spawn_rules.json` and `NOTICE.md`, and `spawning/event/VanillaSpawnEvents`: the names of the spawn events the rules send |
 | `composer generate-spawn-schema` | `spawning/parse/schema/`: component names, envelope keys, the biome filter vocabulary, mob categories and one payload model per component |
 | `composer generate-entity-data` | `data/bedrock/EntityIds` and `VanillaEntitySizes` (each entity's base `collision_box`) |
 
@@ -94,9 +94,10 @@ doesn't use up an attempt. A world with a tick radius of 0 never spawns.
 3. **Select.** `SpawnSelector` drops candidates whose category is full or whose mob has no
    room. Every matching group under its density limit enters a weighted pick; a group
    with a `rarity` then spawns one time in that many.
-4. **Spawn.** `HerdSpawner` rolls the herd size, `min + round(rand² × (max − min))`,
-   trims it to the room left and spawns every member on the lead's block. Each member
-   picks its own `permute_type`.
+4. **Spawn.** `HerdSpawner` picks one of the group's herds, rolls its size,
+   `min + round(rand² × (max − min))`, trims it to the room left and builds every member
+   on the lead's block. Each member picks its own `permute_type`. Once all exist, the
+   herd's spawn events are sent, and only then do the members spawn.
 
 A group keeps its mobs 24 to 128 blocks from the nearest player unless its
 `distance_filter` says otherwise. Spectators and dead players don't count. At a tick
@@ -208,7 +209,8 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1.
 - A liquid position needs one block of its liquid; vanilla's surface needs two.
 - `permute_type` targets spawn in base form (event suffixes are stripped), and a target
   without registered rules spawns as the group's own mob. `min_guaranteed` is ignored.
-- When `herd` is a list, only the first entry is used.
+- Events nothing handles are skipped. `mob_event_filter` and
+  `delay_filter`, the world events that trigger a rule, are not supported.
 - Monsters use the Overworld darkness rule everywhere; the Nether's rule, thunderstorms
   and `adjust_for_weather` are not implemented.
 - Slimes are checked with their largest box, so they need 3×3×3 blocks of room. Their

@@ -27,16 +27,21 @@ use IvanCraft623\MobPlugin\spawning\condition\CacheableConditionContext;
 use IvanCraft623\MobPlugin\spawning\condition\CompositeCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnCondition;
 use IvanCraft623\MobPlugin\spawning\condition\SpawnConditionContext;
+use function array_keys;
 use function count;
 
 final class SpawnRuleGroup{
+	/** @phpstan-var non-empty-list<SpawnHerd> */
+	private readonly array $herds;
+
 	/** Vanilla's player distance range for a rule without a distance_filter. */
 	public const DEFAULT_MIN_PLAYER_DISTANCE = 24.0;
 	public const DEFAULT_MAX_PLAYER_DISTANCE = 128.0;
 
 	/**
 	 * @phpstan-param list<SpawnCondition> $conditions
-	 * @phpstan-param array<string, int>   $permutations        entity identifier => weight
+	 * @phpstan-param list<SpawnHerd>      $herds               the ways the mobs spawn together; one is picked per spawn, one mob alone when empty
+	 * @phpstan-param list<SpawnPermutation> $permutations      the mobs each herd member may spawn as
 	 * @phpstan-param SpawnLiquid          $requiredLiquid      the liquid the feet must be in; NONE for land mobs
 	 * @phpstan-param int                  $rarity              once picked, the group spawns 1 time in this many; 0 for always
 	 * @phpstan-param float                $minPlayerDistance   blocks to the nearest player
@@ -47,8 +52,7 @@ final class SpawnRuleGroup{
 	public function __construct(
 		private readonly array $conditions,
 		private readonly int $weight = 1,
-		private readonly int $herdMin = 1,
-		private readonly int $herdMax = 1,
+		array $herds = [],
 		private readonly array $permutations = [],
 		private readonly SpawnLiquid $requiredLiquid = SpawnLiquid::NONE,
 		private readonly int $rarity = 0,
@@ -60,14 +64,7 @@ final class SpawnRuleGroup{
 		if($weight < 0){
 			throw new \InvalidArgumentException("Weight must not be negative, got $weight");
 		}
-		foreach($permutations as $identifier => $permutationWeight){
-			if($permutationWeight < 0){
-				throw new \InvalidArgumentException("Permutation weight of \"$identifier\" must not be negative, got $permutationWeight");
-			}
-		}
-		if($herdMin < 1 || $herdMax < $herdMin){
-			throw new \InvalidArgumentException("Invalid herd size range [$herdMin, $herdMax]");
-		}
+		$this->herds = count($herds) === 0 ? [new SpawnHerd()] : $herds;
 		if($rarity < 0){
 			throw new \InvalidArgumentException("Rarity must not be negative, got $rarity");
 		}
@@ -90,19 +87,43 @@ final class SpawnRuleGroup{
 		return $this->weight;
 	}
 
-	public function getHerdMin() : int{
-		return $this->herdMin;
-	}
-
-	public function getHerdMax() : int{
-		return $this->herdMax;
+	/**
+	 * @phpstan-return non-empty-list<SpawnHerd>
+	 */
+	public function getHerds() : array{
+		return $this->herds;
 	}
 
 	/**
-	 * @phpstan-return array<string, int>
+	 * @phpstan-return list<SpawnPermutation>
 	 */
 	public function getPermutations() : array{
 		return $this->permutations;
+	}
+
+	/**
+	 * @phpstan-return list<string> the spawn events the group's mobs are sent
+	 */
+	public function getEvents() : array{
+		$events = [];
+		foreach($this->herds as $herd){
+			$event = $herd->getEvent();
+			if($event !== null){
+				$events[$event] = true;
+			}
+			$initialEvent = $herd->getInitialEvent();
+			if($initialEvent !== null){
+				$events[$initialEvent] = true;
+			}
+		}
+		foreach($this->permutations as $permutation){
+			$event = $permutation->getEvent();
+			if($event !== null){
+				$events[$event] = true;
+			}
+		}
+
+		return array_keys($events);
 	}
 
 	public function getRequiredLiquid() : SpawnLiquid{
@@ -142,8 +163,7 @@ final class SpawnRuleGroup{
 		return new self(
 			conditions: [...$this->conditions, ...$extra],
 			weight: $this->weight,
-			herdMin: $this->herdMin,
-			herdMax: $this->herdMax,
+			herds: $this->herds,
 			permutations: $this->permutations,
 			requiredLiquid: $this->requiredLiquid,
 			rarity: $this->rarity,

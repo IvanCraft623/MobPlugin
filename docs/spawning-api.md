@@ -55,12 +55,34 @@ A `SpawnRuleGroup` takes its conditions first; everything else is a named argume
 | Option | Default | Meaning |
 |---|---|---|
 | `weight` | `1` | Share of the weighted pick among matching groups. |
-| `herdMin`, `herdMax` | `1`, `1` | How many mobs spawn together. |
+| `herds` | `[]` | `SpawnHerd`s: how many mobs spawn together, and the events they are sent. One is picked at random for each spawn. One mob alone when empty. |
 | `rarity` | `0` | Once picked, the group spawns one time in this many. `0` for always. |
-| `permutations` | `[]` | `identifier => weight`: each herd member spawns as one of these mobs, picked by weight, using that mob's registered factory. List the group's own identifier to keep it in the pick. |
+| `permutations` | `[]` | `SpawnPermutation`s of identifier, weight and optional creation event: each herd member spawns as one of these mobs, picked by weight, using that mob's registered factory. List the group's own identifier to keep it in the pick. |
 | `requiredLiquid` | `SpawnLiquid::NONE` | The liquid the feet must be in. `NONE` means out of any liquid; use `WATER` or `LAVA` for aquatic mobs. |
 | `minPlayerDistance`, `maxPlayerDistance` | `24.0`, `128.0` | Distance to the nearest player, in blocks. `0.0` and `INF` for no bound. |
 | `surfaceDensityLimit`, `caveDensityLimit` | `null` | Most mobs of this type allowed around the position. `null` for no limit. |
+
+## Spawn events
+
+A `SpawnHerd` can name events: `event` goes to the members from `eventSkipCount` on, and
+`initialEvent` to the first `initialEventCount`. A `SpawnPermutation` event goes to that
+mob as it is created. Once the whole herd is built, the events are sent and the herd spawns.
+
+```php
+SpawnEventRegistry::getInstance()->register(
+	"myplugin:spawn_enraged",
+	MyBoss::class,
+	static fn(MyBoss $boss, SpawnEventContext $ctx) => $boss->setEnraged(true)
+);
+```
+
+`minecraft:entity_born` is handled out of the box: the member spawns as a baby.
+
+A handler runs for mobs of its class and their subclasses, the nearest class winning.
+`SpawnEventContext` gives the herd built so far, the mob's index in it and the group.
+Register in `onEnable()` after your entities. An event nothing handles is ignored.
+`register()` throws when the class already handles the event. The vanilla event names are
+the constants of `VanillaSpawnEvents`.
 
 ## Conditions
 
@@ -273,5 +295,5 @@ $parser->registerComponent(
 class of typed public properties, `resolveBlocks()` for block names, and `getValue()`,
 `objectOrList()` and `getPath()` for anything else. `SpawnRuleGroupBuilder` sets what the
 component means for the group: `addCondition()`, `setWeight()`, `setRarity()`,
-`setHerd()`, `setPermutations()`, `setLiquid()`, `setPlayerDistance()`,
+`setHerds()`, `setPermutations()`, `setLiquid()`, `setPlayerDistance()`,
 `setDensityLimit()`, `allowHabitatBand()` and `markNeverSpawns()`.

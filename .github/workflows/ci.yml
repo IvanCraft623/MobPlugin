@@ -42,5 +42,5 @@ jobs:
           composer generate-spawn-schema
           composer compile-spawn-rules
           composer generate-entity-data
-          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
-          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
