@@ -93,7 +93,7 @@ class Slime extends Mob implements Enemy {
 	protected function initEntity(CompoundTag $nbt) : void{
 		$slimeType = SlimeTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_TYPE, -1));
 		if ($slimeType === null) {
-			$slimeTypes = SlimeType::getAll();
+			$slimeTypes = SlimeType::cases();
 			$slimeType = $slimeTypes[array_rand($slimeTypes)];
 		}
 		$this->setType($slimeType);
@@ -141,7 +141,7 @@ class Slime extends Mob implements Enemy {
 	}
 
 	public function getDefaultMovementSpeed() : float{
-		return $this->type->getMovementSpeed();
+		return $this->type->getDefaultMovementSpeed();
 	}
 
 	public function getType() : SlimeType{
@@ -152,7 +152,7 @@ class Slime extends Mob implements Enemy {
 	 * @return $this
 	 */
 	public function setType(SlimeType $type) : self{
-		if (!isset($this->type) || !$type->equals($this->type)) {
+		if (!isset($this->type) || $type !== $this->type) {
 			$this->type = $type;
 			$this->recalculateTypeProperties();
 		}

@@ -25,8 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\control;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_a6972960de662630\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_a6972960de662630\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\math\Vector3;
 use function atan2;
@@ -39,11 +39,6 @@ use const M_PI;
 
 class MoveControl implements Control {
 
-	public const OPERATION_WAIT = 0;
-	public const OPERATION_MOVE_TO = 1;
-	public const OPERATION_STRAFE = 2;
-	public const OPERATION_JUMPING = 3;
-
 	protected Mob $mob;
 
 	protected Vector3 $wantedPosition;
@@ -54,14 +49,14 @@ class MoveControl implements Control {
 
 	protected float $sidewaysMovement;
 
-	protected int $operation = self::OPERATION_WAIT;
+	protected MoveOperation $operation = MoveOperation::WAIT;
 
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
 	}
 
 	public function hasWanted() : bool {
-		return $this->operation === self::OPERATION_MOVE_TO;
+		return $this->operation === MoveOperation::MOVE_TO;
 	}
 
 	public function getSpeedModifier() : float {
@@ -71,77 +66,85 @@ class MoveControl implements Control {
 	public function setWantedPosition(Vector3 $position, float $speedModifier) : void {
 		$this->wantedPosition = $position;
 		$this->speedModifier = $speedModifier;
-		if ($this->operation !== self::OPERATION_JUMPING) {
-			$this->operation = self::OPERATION_MOVE_TO;
+		if ($this->operation !== MoveOperation::JUMPING) {
+			$this->operation = MoveOperation::MOVE_TO;
 		}
 	}
 
 	public function strafe(float $forwardMovement, float $sidewaysMovement) : void {
-		$this->operation = self::OPERATION_STRAFE;
+		$this->operation = MoveOperation::STRAFE;
 		$this->forwardMovement = $forwardMovement;
 		$this->sidewaysMovement = $sidewaysMovement;
 		$this->speedModifier = 1 / 4;
 	}
 
 	public function tick() : void {
-		if ($this->operation === self::OPERATION_STRAFE) {
-			$location = $this->mob->getLocation();
-			$speed = $this->speedModifier * $this->mob->getMovementSpeed();
-			$forwardMovement = $this->forwardMovement;
-			$sidewaysMovement = $this->sidewaysMovement;
-			$strafe = sqrt(($forwardMovement ** 2) + ($sidewaysMovement ** 2));
-			if ($strafe < 1) {
-				$strafe = 1;
-			}
-			$strafe = $speed / $strafe;
-			$forwardMovement *= $strafe;
-			$sidewaysMovement *= $strafe;
+		match ($this->operation) {
+			MoveOperation::STRAFE => $this->tickStrafe(),
+			MoveOperation::MOVE_TO => $this->tickMoveTo(),
+			MoveOperation::JUMPING => $this->tickJumping(),
+			MoveOperation::WAIT => $this->mob->setForwardSpeed(0),
+		};
+	}
 
-			$sin = sin($location->yaw * (M_PI / 180));
-			$cos = cos($location->yaw * (M_PI / 180));
+	private function tickStrafe() : void {
+		$location = $this->mob->getLocation();
+		$speed = $this->speedModifier * $this->mob->getMovementSpeed();
+		$forwardMovement = $this->forwardMovement;
+		$sidewaysMovement = $this->sidewaysMovement;
+		$strafe = sqrt(($forwardMovement ** 2) + ($sidewaysMovement ** 2));
+		if ($strafe < 1) {
+			$strafe = 1;
+		}
+		$strafe = $speed / $strafe;
+		$forwardMovement *= $strafe;
+		$sidewaysMovement *= $strafe;
 
-			$x = $forwardMovement * $cos - $sidewaysMovement * $sin;
-			$z = $sidewaysMovement * $cos + $forwardMovement * $sin;
-			if (!$this->isWalkable($x, $z)) {
-				$this->forwardMovement = 1;
-				$this->sidewaysMovement = 0;
-			}
+		$sin = sin($location->yaw * (M_PI / 180));
+		$cos = cos($location->yaw * (M_PI / 180));
 
-			$this->mob->setMotionSpeed($speed);
-			$this->mob->setForwardSpeed($this->forwardMovement);
-			$this->mob->setSidewaysSpeed($this->sidewaysMovement);
+		$x = $forwardMovement * $cos - $sidewaysMovement * $sin;
+		$z = $sidewaysMovement * $cos + $forwardMovement * $sin;
+		if (!$this->isWalkable($x, $z)) {
+			$this->forwardMovement = 1;
+			$this->sidewaysMovement = 0;
+		}
 
-			$this->operation = self::OPERATION_WAIT;
-		} elseif ($this->operation === self::OPERATION_MOVE_TO) {
-			$this->operation = self::OPERATION_WAIT;
+		$this->mob->setMotionSpeed($speed);
+		$this->mob->setForwardSpeed($this->forwardMovement);
+		$this->mob->setSidewaysSpeed($this->sidewaysMovement);
 
-			$location = $this->mob->getLocation();
-			$dx = $this->wantedPosition->x - $location->x;
-			$dy = $this->wantedPosition->y - $location->y;
-			$dz = $this->wantedPosition->z - $location->z;
-			$distanceSquared = ($dx ** 2) + ($dy ** 2) + ($dz ** 2);
+		$this->operation = MoveOperation::WAIT;
+	}
 
-			if ($distanceSquared < 2.5E-7) { // 0.0005 ** 2
-				$this->mob->setForwardSpeed(0);
-				return;
-			}
+	private function tickMoveTo() : void {
+		$this->operation = MoveOperation::WAIT;
 
-			$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
-			$this->mob->setRotation($yaw, $location->pitch);
-			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+		$location = $this->mob->getLocation();
+		$dx = $this->wantedPosition->x - $location->x;
+		$dy = $this->wantedPosition->y - $location->y;
+		$dz = $this->wantedPosition->z - $location->z;
+		$distanceSquared = ($dx ** 2) + ($dy ** 2) + ($dz ** 2);
 
-			if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
-				$this->mob->getJumpControl()->jump();
-				$this->operation = self::OPERATION_JUMPING;
-				return;
-			}
-		} elseif ($this->operation === self::OPERATION_JUMPING) {
-			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
-			if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
-				$this->operation = self::OPERATION_WAIT;
-			}
-		} else {
+		if ($distanceSquared < 2.5E-7) { // 0.0005 ** 2
 			$this->mob->setForwardSpeed(0);
+			return;
+		}
+
+		$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
+		$this->mob->setRotation($yaw, $location->pitch);
+		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+
+		if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
+			$this->mob->getJumpControl()->jump();
+			$this->operation = MoveOperation::JUMPING;
+		}
+	}
+
+	private function tickJumping() : void {
+		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+		if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
+			$this->operation = MoveOperation::WAIT;
 		}
 	}
 

@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\libs\_c8f7399eb3ad6f62\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_a6972960de662630\IvanCraft623\Pathfinder\Path;
 use pocketmine\math\Vector3;
 use pocketmine\world\ChunkListener;
 use pocketmine\world\format\Chunk;
