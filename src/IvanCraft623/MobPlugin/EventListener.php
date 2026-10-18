@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\Living;
@@ -35,9 +36,12 @@ use IvanCraft623\MobPlugin\pattern\BlockPatternFactory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\VanillaBlocks;
+use pocketmine\entity\effect\EffectInstance;
+use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\EnderPearl;
 use pocketmine\entity\projectile\Projectile;
+use pocketmine\entity\projectile\SplashPotion;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDeathEvent;
@@ -47,12 +51,14 @@ use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\item\ItemTypeIds;
+use pocketmine\item\PotionType;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\player\UsedChunkStatus;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\World;
+use function min;
 
 class EventListener implements Listener {
 
@@ -146,6 +152,54 @@ class EventListener implements Listener {
 			$drops = $event->getDrops();
 			$drops[] = $witherRose->asItem();
 			$event->setDrops($drops);
+		}
+	}
+
+	// --- Axolotl ---
+
+	/**
+	 * The axolotls fighting the killed entity make its killer regenerate.
+	 */
+	public function onAxolotlTargetKilled(EntityDeathEvent $event) : void{
+		$victim = $event->getEntity();
+		$deathCause = $victim->getLastDamageCause();
+		if (!$deathCause instanceof EntityDamageByEntityEvent) {
+			return;
+		}
+
+		$killer = $deathCause->getDamager();
+		if (!$killer instanceof Player) {
+			return;
+		}
+
+		$range = Axolotl::BUFF_RANGE;
+		foreach ($victim->getWorld()->getNearbyEntities($killer->getBoundingBox()->expandedCopy($range, $range, $range)) as $nearby) {
+			if (!$nearby instanceof Axolotl || $nearby->getTargetEntity() !== $victim) {
+				continue;
+			}
+
+			$effects = $killer->getEffects();
+			$remaining = $effects->get(VanillaEffects::REGENERATION())?->getDuration() ?? 0;
+			if ($remaining < Axolotl::MAX_REGENERATION_BUFF_TICKS - 1) {
+				$effects->add(new EffectInstance(VanillaEffects::REGENERATION(), min(Axolotl::MAX_REGENERATION_BUFF_TICKS, Axolotl::BUFF_TICKS + $remaining)));
+			}
+			$effects->remove(VanillaEffects::MINING_FATIGUE());
+		}
+	}
+
+	/**
+	 * Water bottles hydrate the axolotls close to where they break.
+	 */
+	public function onWaterBottleSplash(ProjectileHitEvent $event) : void{
+		$potion = $event->getEntity();
+		if (!$potion instanceof SplashPotion || !$potion->getPotionType()->equals(PotionType::WATER())) {
+			return;
+		}
+
+		foreach ($potion->getWorld()->getNearbyEntities($potion->getBoundingBox()->expandedCopy(4, 2, 4)) as $entity) {
+			if ($entity instanceof Axolotl && $entity->getPosition()->distanceSquared($potion->getPosition()) < 16) {
+				$entity->setAirSupplyTicks(min($entity->getMaxAirSupplyTicks(), $entity->getAirSupplyTicks() + Axolotl::POTION_HYDRATION_TICKS));
+			}
 		}
 	}
 

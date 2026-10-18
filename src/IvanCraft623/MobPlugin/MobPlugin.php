@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
 use IvanCraft623\MobPlugin\despawning\NaturalDespawnTask;
 use IvanCraft623\MobPlugin\despawning\WorldDespawnPass;
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
+use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
@@ -88,6 +89,7 @@ class MobPlugin extends PluginBase {
 		MooshroomCow::class,
 		Pig::class,
 		Sheep::class,
+		Axolotl::class,
 		IronGolem::class,
 		SnowGolem::class,
 		CaveSpider::class,

@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\item;
 
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
+use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
@@ -53,6 +54,8 @@ use pocketmine\utils\CloningRegistryTrait;
  * @see build/generate-registry-annotations.php
  * @generate-registry-docblock
  *
+ * @method static MobBucket AXOLOTL_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg AXOLOTL_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg BAT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CAVE_SPIDER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CHICKEN_SPAWN_EGG()
@@ -119,9 +122,11 @@ final class ExtraVanillaItems{
 		self::register("stray_spawn_egg", new MobSpawnEgg(new IID(Ids::STRAY_SPAWN_EGG()), "Stray Spawn Egg", Stray::class));
 		self::register("wither_skeleton_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg", WitherSkeleton::class));
 		self::register("wither_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg", Wither::class));
+		self::register("axolotl_spawn_egg", new MobSpawnEgg(new IID(Ids::AXOLOTL_SPAWN_EGG()), "Axolotl Spawn Egg", Axolotl::class));
 	}
 
 	private static function registerBuckets() : void{
+		self::register("axolotl_bucket", new MobBucket(new IID(Ids::AXOLOTL_BUCKET()), "Bucket of Axolotl", Axolotl::class));
 		//TODO: pass the tropical fish once it exists
 		self::register("tropical_fish_bucket", new MobBucket(new IID(Ids::TROPICAL_FISH_BUCKET()), "Bucket of Tropical Fish"));
 	}

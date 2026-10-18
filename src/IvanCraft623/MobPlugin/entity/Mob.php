@@ -73,6 +73,7 @@ use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
+use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\particle\DustParticle;
@@ -295,6 +296,13 @@ abstract class Mob extends Living {
 
 	public function getAmbientSoundIntervalRange() : float{
 		return 16;
+	}
+
+	/**
+	 * The sound event the client plays as this mob's ambient sound.
+	 */
+	public function getAmbientSoundEvent() : string{
+		return LevelSoundEvent::AMBIENT;
 	}
 
 	public function getAttackDamage() : float{
@@ -856,7 +864,7 @@ abstract class Mob extends Living {
 
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_MIN, $this->getAmbientSoundInterval());
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_RANGE, $this->getAmbientSoundIntervalRange());
-		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
+		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, $this->getAmbientSoundEvent());
 
 		$properties->setGenericFlag(EntityMetadataFlags::NO_AI, $this->noClientPredictions || !$this->hasAi);
 
