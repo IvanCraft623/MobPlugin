@@ -43,10 +43,13 @@ use IvanCraft623\MobPlugin\spawning\parse\schema\SpawnSchema;
 use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaMobCategories;
 use IvanCraft623\MobPlugin\spawning\parse\schema\VanillaSpawnConditions;
 use IvanCraft623\MobPlugin\spawning\SpawnBand;
+use IvanCraft623\MobPlugin\spawning\SpawnHerd;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
+use IvanCraft623\MobPlugin\spawning\SpawnPermutation;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use pocketmine\utils\Filesystem;
 use pocketmine\world\World;
+use function count;
 use function implode;
 use function str_starts_with;
 use function strlen;
@@ -265,26 +268,40 @@ final class SpawnRulesParser{
 			$builder->setRarity($m->rarity ?? 0);
 		});
 		$this->registerComponent(VanillaSpawnConditions::HERD, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			//TODO: a list holds one herd per spawn event (e.g. horse coat colours); only the first is used until spawn events are supported
-			$data = $ctx->mapList(HerdData::class)[0] ?? throw new SpawnRulesParseException("'{$ctx->getPath()}' must not be empty");
-			$min = $data->min_size ?? 1;
-			$builder->setHerd($min, $data->max_size ?? $min);
+			$herds = [];
+			foreach($ctx->mapList(HerdData::class) as $data){
+				$min = $data->min_size ?? 1;
+				$herds[] = new SpawnHerd(
+					$min,
+					$data->max_size ?? $min,
+					$data->event,
+					$data->event_skip_count ?? 0,
+					$data->initial_event,
+					$data->initial_event_count ?? 0
+				);
+			}
+			if(count($herds) === 0){
+				throw new SpawnRulesParseException("'{$ctx->getPath()}' must not be empty");
+			}
+			$builder->setHerds($herds);
 		});
 		$this->registerComponent(VanillaSpawnConditions::PERMUTE_TYPE, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
 			$permutations = [];
 			foreach($ctx->mapList(PermuteTypeData::class) as $data){
-				// A missing entity_type keeps the base type; the "<event>" suffix is dropped.
+				// A missing entity_type keeps the base type; "<event>" is the event it is created with.
 				$identifier = $data->entity_type ?? $builder->getIdentifier();
+				$event = null;
 				$suffixStart = strpos($identifier, "<");
 				if($suffixStart !== false){
+					$event = substr($identifier, $suffixStart + 1, -1);
 					$identifier = substr($identifier, 0, $suffixStart);
 				}
-				$permutations[$identifier] = ($permutations[$identifier] ?? 0) + $data->weight;
+				$permutations[] = new SpawnPermutation($identifier, $data->weight, $event);
 			}
 			$builder->setPermutations($permutations);
 		});
 		$this->registerComponent(VanillaSpawnConditions::SPAWN_EVENT, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) : void{
-			$ctx->map(MobEventFilterData::class); // validated only: nothing consumes spawn events
+			$ctx->map(MobEventFilterData::class); // validated only: the world events that trigger rules aren't supported
 		});
 		$biomeFilter = $this->biomeFilter;
 		$this->registerComponent(VanillaSpawnConditions::BIOME_FILTER, static function(ComponentParseContext $ctx, SpawnRuleGroupBuilder $builder) use ($biomeFilter) : void{
