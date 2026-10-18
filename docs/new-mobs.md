@@ -516,7 +516,7 @@ The mechanics:
      `self::registerSimpleItem(ItemTypeNames::SILVERFISH_SPAWN_EGG, ExtraVanillaItems::SILVERFISH_SPAWN_EGG(), ["silverfish_spawn_egg"]);`
 
    Eggs pass only a `Location` to the constructor. If PocketMine already ships the egg
-   (the Zombie's), `EventListener::onPlayerInteract` overrides it.
+   (the Zombie's), `EventListener::onSpawnEggInteract` overrides it.
 
 4. Spawning it from your own code: construct it, fire
    `new MobSpawnEvent($mob, MobSpawnCause::X)` (`BUILT`, `SUMMONED`, `CONVERSION`, …),

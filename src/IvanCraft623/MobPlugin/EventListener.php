@@ -35,7 +35,6 @@ use IvanCraft623\MobPlugin\pattern\BlockPatternFactory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\VanillaBlocks;
-use pocketmine\entity\Living as PMLiving;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\EnderPearl;
 use pocketmine\entity\projectile\Projectile;
@@ -57,10 +56,12 @@ use pocketmine\world\World;
 
 class EventListener implements Listener {
 
+	// --- Overriding spawn egg ---
+
 	/**
 	 * Overrides pocketmine's built-in mobs spawn logic
 	 */
-	public function onPlayerInteract(PlayerInteractEvent $event) : void{
+	public function onSpawnEggInteract(PlayerInteractEvent $event) : void{
 		$item = $event->getItem();
 		if ($item->getTypeId() === ItemTypeIds::ZOMBIE_SPAWN_EGG) {
 			$event->cancel();
@@ -80,11 +81,13 @@ class EventListener implements Listener {
 		}
 	}
 
+	// --- Block patterns ---
+
 	/**
 	 * @priority HIGH
 	 * @ignoreCancelled
 	 */
-	public function onBlockPlace(BlockPlaceEvent $event) : void {
+	public function onPatternBlockPlace(BlockPlaceEvent $event) : void {
 		$patternFactory = BlockPatternFactory::getInstance();
 		foreach ($event->getTransaction()->getBlocks() as [, , , $block]) {
 			foreach ($patternFactory->getCandidates($block) as $pattern) {
@@ -104,22 +107,22 @@ class EventListener implements Listener {
 		}
 	}
 
+	// --- Effects ---
+
 	/**
 	 * @priority LOWEST
 	 */
-	public function onEntityEffectAdd(EntityEffectAddEvent $event) : void{
+	public function onEffectAdd(EntityEffectAddEvent $event) : void{
 		$entity = $event->getEntity();
 		if ($entity instanceof Living && !$entity->canAddEffect($event->getEffect())) {
 			$event->cancel();
 		}
 	}
 
-	public function onEntityDeath(EntityDeathEvent $event) : void{
-		$entity = $event->getEntity();
-		if (!$entity instanceof PMLiving) {
-			return;
-		}
+	// --- Wither ---
 
+	public function onWitherKill(EntityDeathEvent $event) : void{
+		$entity = $event->getEntity();
 		$deathCause = $entity->getLastDamageCause();
 		if (!$deathCause instanceof EntityDamageByEntityEvent) {
 			return;
@@ -146,7 +149,9 @@ class EventListener implements Listener {
 		}
 	}
 
-	public function onProjectileHit(ProjectileHitEvent $event) : void{
+	// --- Endermite ---
+
+	public function onEnderPearlHit(ProjectileHitEvent $event) : void{
 		$pearl = $event->getEntity();
 		if (!$pearl instanceof EnderPearl || !$pearl->getOwningEntity() instanceof Player) {
 			return;
@@ -176,12 +181,14 @@ class EventListener implements Listener {
 		$endermite->spawnToAll();
 	}
 
+	// --- Boss bars ---
+
 	/**
 	 * TODO: HACK! The client ignores the BossEventPackets sent during the login sequence.
 	 * This is a problem because bosses near the player when they log in won't display their boss bar,
 	 * so we resend the packet onJoin.
 	 */
-	public function onPlayerJoin(PlayerJoinEvent $event) : void{
+	public function onPlayerJoinShowBossBars(PlayerJoinEvent $event) : void{
 		$player = $event->getPlayer();
 		$world = $player->getWorld();
 		foreach ($player->getUsedChunks() as $chunkHash => $chunkStatus) {
