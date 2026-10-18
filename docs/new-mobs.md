@@ -415,7 +415,7 @@ uses an enum, a hand-written id map, the mob's own NBT key and a metadata proper
 private const TAG_TYPE = "Variant"; //TAG_Int
 
 // initEntity(), after the parent call
-$this->mooshroomType = MooshroomCowTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_TYPE, -1)) ?? MooshroomCowType::RED();
+$this->mooshroomType = MooshroomCowTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_TYPE, -1)) ?? MooshroomCowType::RED;
 
 // saveNBT()
 $nbt->setInt(self::TAG_TYPE, MooshroomCowTypeIdMap::getInstance()->toId($this->mooshroomType));

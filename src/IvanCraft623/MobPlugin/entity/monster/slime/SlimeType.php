@@ -26,88 +26,45 @@ namespace IvanCraft623\MobPlugin\entity\monster\slime;
 use Closure;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
-
-use pocketmine\utils\EnumTrait;
 use function mt_rand;
+use function spl_object_id;
 
 /**
- * This doc-block is generated automatically, do not modify it manually.
- * This must be regenerated whenever registry members are added, removed or changed.
- * @see build/generate-registry-annotations.php
- * @generate-registry-docblock
- *
- * @method static SlimeType LARGE()
- * @method static SlimeType MEDIUM()
- * @method static SlimeType SMALL()
+ * @phpstan-type TMetadata array{0: float, 1: int, 2: float, 3: float, 4: ?SlimeType, 5: null|Closure() : Item[]}
  */
-final class SlimeType{
-	use EnumTrait {
-		__construct as Enum___construct;
-	}
-
-	protected static function setup() : void{
-		self::register(new self("small",
-			scale: 1,
-			health: 1,
-			movementSpeed: 0.3,
-			attackDamage: 0,
-			dropsGenerator: fn() => [VanillaItems::SLIMEBALL()->setCount(mt_rand(0, 2))]
-		));
-		self::register(new self("medium",
-			scale: 2,
-			health: 4,
-			movementSpeed: 0.4,
-			attackDamage: 2,
-			splitType: SlimeType::SMALL()
-		));
-		self::register(new self("large",
-			scale: 4,
-			health: 16,
-			movementSpeed: 0.6,
-			attackDamage: 4,
-			splitType: SlimeType::MEDIUM()
-		));
-	}
+enum SlimeType{
+	case SMALL;
+	case MEDIUM;
+	case LARGE;
 
 	/**
-	 * @phpstan-param null|Closure() : Item[] $dropsGenerator
+	 * Scale, health, movement speed, attack damage, split type and drops generator.
+	 *
+	 * @phpstan-return TMetadata
 	 */
-	private function __construct(
-		string $enumName,
-		private float $scale,
-		private int $health,
-		private float $movementSpeed,
-		private float $attackDamage,
-		private ?SlimeType $splitType = null,
-		private ?Closure $dropsGenerator = null
-	){
-		$this->Enum___construct($enumName);
+	private function getMetadata() : array{
+		/** @phpstan-var array<int, TMetadata> $cache */
+		static $cache = [];
+
+		return $cache[spl_object_id($this)] ??= match($this){
+			self::SMALL => [1, 1, 0.3, 0, null, static fn() => [VanillaItems::SLIMEBALL()->setCount(mt_rand(0, 2))]],
+			self::MEDIUM => [2, 4, 0.4, 2, self::SMALL, null],
+			self::LARGE => [4, 16, 0.6, 4, self::MEDIUM, null]
+		};
 	}
 
-	public function getScale() : float{
-		return $this->scale;
-	}
+	public function getScale() : float{ return $this->getMetadata()[0]; }
 
-	public function getHealth() : int{
-		return $this->health;
-	}
+	public function getHealth() : int{ return $this->getMetadata()[1]; }
 
-	public function getMovementSpeed() : float{
-		return $this->movementSpeed;
-	}
+	public function getDefaultMovementSpeed() : float{ return $this->getMetadata()[2]; }
 
-	public function getAttackDamage() : float{
-		return $this->attackDamage;
-	}
+	public function getAttackDamage() : float{ return $this->getMetadata()[3]; }
 
-	public function getSplitType() : ?SlimeType{
-		return $this->splitType;
-	}
+	public function getSplitType() : ?SlimeType{ return $this->getMetadata()[4]; }
 
 	/**
 	 * @phpstan-return null|Closure() : Item[]
 	 */
-	public function getDropsGenerator() : ?Closure{
-		return $this->dropsGenerator;
-	}
+	public function getDropsGenerator() : ?Closure{ return $this->getMetadata()[5]; }
 }

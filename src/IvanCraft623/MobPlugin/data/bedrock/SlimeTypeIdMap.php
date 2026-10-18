@@ -24,42 +24,21 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\data\bedrock;
 
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
+use pocketmine\data\bedrock\IntSaveIdMapTrait;
 use pocketmine\utils\SingletonTrait;
 
 final class SlimeTypeIdMap{
 	use SingletonTrait;
-
-	/**
-	 * @var SlimeType[]
-	 * @phpstan-var array<int, SlimeType>
-	 */
-	private array $idToEnum = [];
-
-	/**
-	 * @var int[]
-	 * @phpstan-var array<int, int>
-	 */
-	private array $enumToId = [];
+	/** @phpstan-use IntSaveIdMapTrait<SlimeType> */
+	use IntSaveIdMapTrait;
 
 	private function __construct(){
-		$this->register(SlimeTypeIds::LARGE, SlimeType::LARGE());
-		$this->register(SlimeTypeIds::MEDIUM, SlimeType::MEDIUM());
-		$this->register(SlimeTypeIds::SMALL, SlimeType::SMALL());
-	}
-
-	private function register(int $id, SlimeType $type) : void{
-		$this->idToEnum[$id] = $type;
-		$this->enumToId[$type->id()] = $id;
-	}
-
-	public function fromId(int $id) : ?SlimeType{
-		return $this->idToEnum[$id] ?? null;
-	}
-
-	public function toId(SlimeType $type) : int{
-		if(!isset($this->enumToId[$type->id()])){
-			throw new \InvalidArgumentException("Type does not have a mapped ID");
+		foreach(SlimeType::cases() as $case){
+			$this->register(match($case){
+				SlimeType::LARGE => SlimeTypeIds::LARGE,
+				SlimeType::MEDIUM => SlimeTypeIds::MEDIUM,
+				SlimeType::SMALL => SlimeTypeIds::SMALL
+			}, $case);
 		}
-		return $this->enumToId[$type->id()];
 	}
 }

@@ -63,7 +63,7 @@ class MooshroomCow extends Cow implements Shearable{
 	public static function getOffspringType(MooshroomCow $parent1, MooshroomCow $parent2) : MooshroomCowType{
 		$type1 = $parent1->getType();
 		if (mt_rand(0, self::OFFSPRING_MUTATE_CHANCE) === 0) {
-			return $type1->equals(MooshroomCowType::BROWN()) ? MooshroomCowType::RED() : MooshroomCowType::BROWN();
+			return $type1 === MooshroomCowType::BROWN ? MooshroomCowType::RED : MooshroomCowType::BROWN;
 		}
 
 		return mt_rand(0, 1) === 0 ? $type1 : $parent2->getType();
@@ -80,7 +80,7 @@ class MooshroomCow extends Cow implements Shearable{
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->mooshroomType = MooshroomCowTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_TYPE, -1)) ?? MooshroomCowType::RED();
+		$this->mooshroomType = MooshroomCowTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_TYPE, -1)) ?? MooshroomCowType::RED;
 		$this->stewType = SuspiciousStewTypeIdMap::getInstance()->fromId($nbt->getInt(self::TAG_SUSPICIOUS_STEW_TYPE, -1));
 	}
 
@@ -130,7 +130,7 @@ class MooshroomCow extends Cow implements Shearable{
 		}
 
 		if (!$this->isBaby() &&
-			$this->mooshroomType->equals(MooshroomCowType::BROWN()) &&
+			$this->mooshroomType === MooshroomCowType::BROWN &&
 			($stewType = SuspiciousStewTypeFlowerMap::getInstance()->fromFlower($item->getBlock())) !== null &&
 			($this->stewType === null || !$stewType->equals($this->stewType))
 		) {
@@ -224,8 +224,8 @@ class MooshroomCow extends Cow implements Shearable{
 	}
 
 	public function onLightningBoltHit() : bool{
-		$this->setType($this->mooshroomType->equals(MooshroomCowType::RED()) ? MooshroomCowType::BROWN() : MooshroomCowType::RED());
-		if ($this->mooshroomType->equals(MooshroomCowType::RED())) {
+		$this->setType($this->mooshroomType === MooshroomCowType::RED ? MooshroomCowType::BROWN : MooshroomCowType::RED);
+		if ($this->mooshroomType === MooshroomCowType::RED) {
 			$this->setSuspiciousStewType(null);
 		}
 
