@@ -84,6 +84,37 @@ Register in `onEnable()` after your entities. An event nothing handles is ignore
 `register()` throws when the class already handles the event. The vanilla event names are
 the constants of `VanillaSpawnEvents`.
 
+### Variant events
+
+Events that set a variant (the horse's `make_*`, the tropical fish's `become_*`) are
+registered from a map: extend `SpawnEventMap` and give it one event for each case, then
+register them all at once.
+
+```php
+/** @extends SpawnEventMap<HorseColor> */
+final class HorseColorSpawnEventMap extends SpawnEventMap{
+	use SingletonTrait;
+
+	private function __construct(){
+		foreach(HorseColor::cases() as $case){
+			$this->register(match($case){
+				HorseColor::WHITE => VanillaSpawnEvents::MAKE_WHITE,
+				// ...
+			}, $case);
+		}
+	}
+}
+
+SpawnEventRegistry::getInstance()->registerVariants(
+	Horse::class,
+	HorseColorSpawnEventMap::getInstance()->getAll(),
+	static fn(Horse $horse, HorseColor $color) => $horse->setColor($color)
+);
+```
+
+The `match` has to name every case, so PHPStan reports a case left out and a constant that
+no longer exists.
+
 ## Conditions
 
 A group spawns only where all its conditions pass.

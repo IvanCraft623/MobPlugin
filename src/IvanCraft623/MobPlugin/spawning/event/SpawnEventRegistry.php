@@ -64,6 +64,23 @@ final class SpawnEventRegistry{
 		$this->handlers[$event][$entityClass] = $handler;
 	}
 
+	/**
+	 * Registers the handler of every event of a variant map: each sets its own variant.
+	 *
+	 * @template T of Entity
+	 * @template V of object
+	 * @phpstan-param class-string<T>  $entityClass
+	 * @phpstan-param array<string, V> $variants    event => variant, as the maps return them
+	 * @phpstan-param \Closure(T, V) : void $apply
+	 *
+	 * @throws \InvalidArgumentException if the class already handles one of the events
+	 */
+	public function registerVariants(string $entityClass, array $variants, \Closure $apply) : void{
+		foreach($variants as $event => $variant){
+			$this->register($event, $entityClass, static fn(Entity $entity) => $apply($entity, $variant));
+		}
+	}
+
 	public function isHandled(string $event) : bool{
 		return isset($this->handlers[$event]);
 	}
