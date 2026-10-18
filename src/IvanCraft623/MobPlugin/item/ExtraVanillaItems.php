@@ -71,6 +71,7 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg STRAY_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WITHER_SKELETON_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WITHER_SPAWN_EGG()
+ * @method static MobBucket TROPICAL_FISH_BUCKET()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -96,6 +97,7 @@ final class ExtraVanillaItems{
 
 	protected static function setup() : void{
 		self::registerSpawnEggs();
+		self::registerBuckets();
 	}
 
 	private static function registerSpawnEggs() : void{
@@ -117,5 +119,10 @@ final class ExtraVanillaItems{
 		self::register("stray_spawn_egg", new MobSpawnEgg(new IID(Ids::STRAY_SPAWN_EGG()), "Stray Spawn Egg", Stray::class));
 		self::register("wither_skeleton_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg", WitherSkeleton::class));
 		self::register("wither_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg", Wither::class));
+	}
+
+	private static function registerBuckets() : void{
+		//TODO: pass the tropical fish once it exists
+		self::register("tropical_fish_bucket", new MobBucket(new IID(Ids::TROPICAL_FISH_BUCKET()), "Bucket of Tropical Fish"));
 	}
 }
