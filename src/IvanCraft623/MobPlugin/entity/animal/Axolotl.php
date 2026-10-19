@@ -111,7 +111,6 @@ class Axolotl extends Animal implements Bucketable{
 
 		$this->setMaxHealth(14);
 		$this->setAttackDamage(2);
-		$this->setFollowRange(8);
 		$this->setPathfindingMalus(BlockPathType::WATER, 0);
 	}
 
