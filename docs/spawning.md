@@ -207,10 +207,8 @@ The flow follows `BedrockSpawner` as traced in BDS 1.26.51.1.
   default is 3.
 - Ground is any block with a full top surface, including glass and barriers.
 - A liquid position needs one block of its liquid; vanilla's surface needs two.
-- `permute_type` targets spawn in base form (event suffixes are stripped), and a target
-  without registered rules spawns as the group's own mob. `min_guaranteed` is ignored.
-- Events nothing handles are skipped. `mob_event_filter` and
-  `delay_filter`, the world events that trigger a rule, are not supported.
+- `permute_type` targets spawn in base form, and a target without registered rules spawns
+  as the group's own mob. `min_guaranteed` is ignored.
 - Monsters use the Overworld darkness rule everywhere; the Nether's rule, thunderstorms
   and `adjust_for_weather` are not implemented.
 - Slimes are checked with their largest box, so they need 3×3×3 blocks of room. Their
