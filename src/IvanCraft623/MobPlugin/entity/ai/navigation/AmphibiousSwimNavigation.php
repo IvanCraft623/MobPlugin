@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_94f6587e0aa4d869\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
 

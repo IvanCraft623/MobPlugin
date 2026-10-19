@@ -45,7 +45,7 @@ use IvanCraft623\MobPlugin\entity\BucketableTrait;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
-use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_94f6587e0aa4d869\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
@@ -111,7 +111,6 @@ class Axolotl extends Animal implements Bucketable{
 
 		$this->setMaxHealth(14);
 		$this->setAttackDamage(2);
-		$this->setFollowRange(8);
 		$this->setPathfindingMalus(BlockPathType::WATER, 0);
 	}
 
