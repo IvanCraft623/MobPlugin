@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\utils\DefaultPositionGenerator;
+use IvanCraft623\MobPlugin\entity\ai\utils\NearestBlockFinder;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
@@ -85,17 +85,16 @@ class PanicGoal extends Goal {
 
 	protected function lookForWater(Entity $entity, int $horizontalRange) : ?Vector3 {
 		$world = $this->entity->getWorld();
-		$ePosition = $entity->getPosition()->floor();
+		$ePosition = $entity->getPosition();
 
 		if (count($world->getBlock($ePosition)->getCollisionBoxes()) > 0) {
 			return null;
 		}
 
-		foreach (Utils::getAdjacentPositions($ePosition, $horizontalRange, 1, $horizontalRange) as $pos) {
-			if ($world->getBlock($pos)->getTypeId() === BlockTypeIds::WATER) {
-				return $pos;
-			}
+		foreach (NearestBlockFinder::find($world, $ePosition, $horizontalRange, 1, BlockTypeIds::WATER) as $water) {
+			return $water;
 		}
+
 		return null;
 	}
 

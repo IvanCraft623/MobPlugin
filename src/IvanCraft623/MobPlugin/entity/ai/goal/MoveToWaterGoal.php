@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
+use IvanCraft623\MobPlugin\entity\ai\utils\NearestBlockFinder;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\utils\Utils;
-use pocketmine\block\Water;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
 
 class MoveToWaterGoal extends Goal {
@@ -76,14 +76,15 @@ class MoveToWaterGoal extends Goal {
 
 	protected function findWater() : ?Vector3{
 		$world = $this->entity->getWorld();
-		$origin = $this->entity->getPosition()->floor();
-
-		foreach (Utils::getAdjacentPositions($origin, $this->searchRange, $this->searchHeight, $this->searchRange) as $position) {
+		foreach (NearestBlockFinder::find($world, $this->entity->getPosition(), $this->searchRange, $this->searchHeight, BlockTypeIds::WATER) as $water) {
+			$x = (int) $water->x;
+			$y = (int) $water->y;
+			$z = (int) $water->z;
 			// Needs to be at least 2 blocks deep, a single block is no place to stay
-			if ($world->getBlock($position) instanceof Water &&
-				($world->getBlock($position->up()) instanceof Water || $world->getBlock($position->down()) instanceof Water)
+			if ($world->getBlockAt($x, $y + 1, $z)->getTypeId() === BlockTypeIds::WATER ||
+				$world->getBlockAt($x, $y - 1, $z)->getTypeId() === BlockTypeIds::WATER
 			) {
-				return $position;
+				return $water;
 			}
 		}
 
