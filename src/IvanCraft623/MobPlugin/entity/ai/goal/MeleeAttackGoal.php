@@ -121,8 +121,15 @@ class MeleeAttackGoal extends Goal {
 		$this->ticksToAttack = max($this->ticksToAttack - 1, 0);
 		if ($distanceSquared <= $attackReachSquared && $this->isTimeToAttack()) {
 			$this->resetAttackCooldown();
-			$this->mob->attackEntity($target);
+			$this->attackEntity($target);
 		}
+	}
+
+	/**
+	 * @return bool if the target was dealt damage
+	 */
+	protected function attackEntity(Entity $target) : bool{
+		return $this->mob->attackEntity($target);
 	}
 
 	public function resetAttackCooldown() : void{

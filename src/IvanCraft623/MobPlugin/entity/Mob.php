@@ -37,8 +37,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -73,6 +73,7 @@ use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
+use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\particle\DustParticle;
@@ -248,6 +249,13 @@ abstract class Mob extends Living {
 	}
 
 	/**
+	 * Returns acceleration while in water.
+	 */
+	public function getWaterMovementSpeed() : float{
+		return $this->getMovementSpeed();
+	}
+
+	/**
 	 * Returns acceleration while airborne.
 	 */
 	public function getAirMovementSpeed() : float{
@@ -288,6 +296,13 @@ abstract class Mob extends Living {
 
 	public function getAmbientSoundIntervalRange() : float{
 		return 16;
+	}
+
+	/**
+	 * The sound event the client plays as this mob's ambient sound.
+	 */
+	public function getAmbientSoundEvent() : string{
+		return LevelSoundEvent::AMBIENT;
 	}
 
 	public function getAttackDamage() : float{
@@ -418,8 +433,12 @@ abstract class Mob extends Living {
 	public function travel(Vector3 $movementInput) : void{
 		// TODO: More complex movement suff :P
 
-		$accel = $this->onGround || $this->isInWater() || $this->isInLava() ?
-			$this->getMovementSpeed() : $this->getAirMovementSpeed();
+		if ($this->isInWater()) {
+			$accel = $this->getWaterMovementSpeed();
+		} else {
+			$accel = $this->onGround || $this->isInLava() ?
+				$this->getMovementSpeed() : $this->getAirMovementSpeed();
+		}
 
 		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $accel);
 
@@ -845,7 +864,7 @@ abstract class Mob extends Living {
 
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_MIN, $this->getAmbientSoundInterval());
 		$properties->setFloat(EntityMetadataProperties::AMBIENT_SOUND_INTERVAL_RANGE, $this->getAmbientSoundIntervalRange());
-		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, "ambient");
+		$properties->setString(EntityMetadataProperties::AMBIENT_SOUND_EVENT, $this->getAmbientSoundEvent());
 
 		$properties->setGenericFlag(EntityMetadataFlags::NO_AI, $this->noClientPredictions || !$this->hasAi);
 

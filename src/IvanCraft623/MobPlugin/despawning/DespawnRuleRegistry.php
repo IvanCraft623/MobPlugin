@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\despawning;
 
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
+use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
@@ -68,6 +69,7 @@ final class DespawnRuleRegistry{
 		$this->profiles = $profiles;
 
 		foreach([
+			Axolotl::class,
 			Bat::class,
 			Chicken::class,
 			Cow::class,

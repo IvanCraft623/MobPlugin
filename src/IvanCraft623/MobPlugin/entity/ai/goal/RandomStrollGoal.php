@@ -40,7 +40,8 @@ class RandomStrollGoal extends Goal {
 		protected PathfinderMob $entity,
 		protected float $speedModifier,
 		protected int $interval = self::DEFAULT_INTERVAL,
-		protected bool $checkInactivityTime = true
+		protected bool $checkInactivityTime = true,
+		protected bool $strollInsideWater = true
 	) {
 		$this->setFlags(Goal::FLAG_MOVE);
 	}
@@ -48,10 +49,14 @@ class RandomStrollGoal extends Goal {
 	public function canUse() : bool{
 		// TODO: is Vehicle check
 
+		if (!$this->strollInsideWater && $this->entity->isInWater()) {
+			return false;
+		}
+
 		// The inactivity time is kept by the despawn profile: a mob without one never despawns,
 		// and so is never inactive.
 		if (!$this->forceTrigger && (
-			$this->entity->getRandom()->nextBoundedInt($this->reducedTickDelay($this->interval)) !== 0 ||
+			($this->interval !== 0 && $this->entity->getRandom()->nextBoundedInt($this->reducedTickDelay($this->interval)) !== 0) ||
 			($this->checkInactivityTime && (DespawnRuleRegistry::getInstance()->getProfile($this->entity)?->getInactivityTime() ?? 0) >= 100)
 		)) {
 			return false;

@@ -25,8 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\control;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\math\Vector3;
 use function atan2;
@@ -135,13 +135,20 @@ class MoveControl implements Control {
 		$this->mob->setRotation($yaw, $location->pitch);
 		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 
+		$this->jumpIfNeeded($dx, $dy, $dz);
+	}
+
+	/**
+	 * Jumps when the wanted position is more than a step up and close.
+	 */
+	protected function jumpIfNeeded(float $dx, float $dy, float $dz) : void {
 		if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 			$this->mob->getJumpControl()->jump();
 			$this->operation = MoveOperation::JUMPING;
 		}
 	}
 
-	private function tickJumping() : void {
+	protected function tickJumping() : void {
 		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
 		if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
 			$this->operation = MoveOperation::WAIT;

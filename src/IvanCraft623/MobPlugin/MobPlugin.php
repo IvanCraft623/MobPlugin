@@ -23,15 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
 use IvanCraft623\MobPlugin\despawning\NaturalDespawnTask;
 use IvanCraft623\MobPlugin\despawning\WorldDespawnPass;
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
+use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
@@ -70,7 +71,7 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_1543fa7a15db9b89\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_551bdf40ffc65884\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
@@ -88,6 +89,7 @@ class MobPlugin extends PluginBase {
 		MooshroomCow::class,
 		Pig::class,
 		Sheep::class,
+		Axolotl::class,
 		IronGolem::class,
 		SnowGolem::class,
 		CaveSpider::class,
