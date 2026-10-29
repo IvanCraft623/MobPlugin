@@ -68,7 +68,14 @@ use function sqrt;
 abstract class Living extends PMLiving {
 	//TODO!
 
-	public const ENTITY_PUSH_FORCE = 0.25;
+	/** Strength of a single push between two entities. */
+	public const ENTITY_PUSH_FORCE = 0.05;
+	/** Entities whose box is this close (x and z) to ours push us. */
+	public const ENTITY_PUSH_REACH = 0.2;
+	/** Entities closer than this on both horizontal axes do not push us. */
+	public const ENTITY_PUSH_MIN_DISTANCE = 0.1;
+	/** An entity pushes us, and we push it back, so every pair of pushable entities pushes twice per tick. */
+	public const ENTITY_PUSHES_PER_PAIR = 2;
 
 	public const WATER_DRAG = 0.8;
 	public const WATER_GRAVITY_MULTIPLIER = 0.5;
@@ -399,25 +406,26 @@ abstract class Living extends PMLiving {
 		$motionX = $this->motion->x;
 		$motionZ = $this->motion->z;
 
-		foreach($this->getWorld()->getCollidingEntities($this->boundingBox, $this) as $other){
+		$x = $this->location->x;
+		$z = $this->location->z;
+		$strength = self::ENTITY_PUSH_FORCE * self::ENTITY_PUSHES_PER_PAIR;
+
+		$reach = $this->boundingBox->expandedCopy(self::ENTITY_PUSH_REACH, 0, self::ENTITY_PUSH_REACH);
+		foreach($this->getWorld()->getCollidingEntities($reach, $this) as $other){
 			if(!$this->canBePushedBy($other)){
 				continue;
 			}
 
-			$otherPos = $other->getPosition();
-			$dx = $this->location->x - $otherPos->x;
-			$dz = $this->location->z - $otherPos->z;
+			$dx = $x - $other->location->x;
+			$dz = $z - $other->location->z;
 
 			$dist = max(abs($dx), abs($dz));
-			if($dist < 0.01){
+			if($dist < self::ENTITY_PUSH_MIN_DISTANCE){
 				continue;
 			}
 
-			$f = sqrt($dist);
-			$dx /= $f;
-			$dz /= $f;
-
-			$factor = min(1.0 / $dist, 1.0) * self::ENTITY_PUSH_FORCE;
+			$inverseRoot = 1.0 / sqrt($dist);
+			$factor = min($inverseRoot, 1.0) * $inverseRoot * $strength;
 			$motionX += $dx * $factor;
 			$motionZ += $dz * $factor;
 		}
@@ -435,7 +443,7 @@ abstract class Living extends PMLiving {
 	}
 
 	protected function canBePushedBy(Entity $other) : bool {
-		return true; //TODO: other not be a vehicle
+		return $other instanceof PMLiving; //TODO: other not be a vehicle
 	}
 
 	public function canSee(Entity $entity) : bool{
