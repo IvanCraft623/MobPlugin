@@ -26,7 +26,6 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\Lureable;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\Human;
 use pocketmine\entity\Living;
@@ -77,7 +76,11 @@ class TemptGoal extends Goal {
 			return false;
 		}
 
-		$player = Utils::getNearestPlayer($this->entity, self::TEMP_RANGE, $this->targetingConditions);
+		$player = $this->entity->getSensing()->findNearest(
+			Player::class,
+			self::TEMP_RANGE,
+			conditions: $this->targetingConditions
+		);
 		if ($player !== null) {
 			$this->player = $player;
 

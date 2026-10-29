@@ -25,8 +25,6 @@ namespace IvanCraft623\MobPlugin\utils;
 
 use DateTime;
 
-use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
-use pocketmine\entity\Living;
 use pocketmine\item\Bow;
 use pocketmine\item\Durable;
 use pocketmine\item\Item;
@@ -51,7 +49,6 @@ use function str_replace;
 use function strtolower;
 use function trim;
 use function ucwords;
-use const INF;
 use const M_PI;
 
 class Utils {
@@ -129,26 +126,6 @@ class Utils {
 		}
 
 		return false;
-	}
-
-	public static function getNearestPlayer(Living $entity, float $maxDistance = -1, ?TargetingConditions $conditions = null) : ?Player{
-		$pos = $entity->getPosition();
-		$nearest = null;
-		$nearestDistanceSquared = $maxDistance > 0 ? $maxDistance ** 2 : INF;
-		foreach ($pos->getWorld()->getPlayers() as $player) {
-			$distanceSquared = $player->getPosition()->distanceSquared($pos);
-			if ($distanceSquared > $nearestDistanceSquared) {
-				continue;
-			}
-			if ($conditions !== null && !$conditions->test($entity, $player)) {
-				continue;
-			}
-
-			$nearest = $player;
-			$nearestDistanceSquared = $distanceSquared;
-		}
-
-		return $nearest;
 	}
 
 	public static function movementInputToMotion(Vector3 $movementInput, float $yaw, float $speed) : Vector3{

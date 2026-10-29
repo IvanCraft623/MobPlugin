@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Lava;
 use pocketmine\block\Liquid;
 use pocketmine\block\Water;
@@ -453,7 +454,7 @@ abstract class Living extends PMLiving {
 			foreach(VoxelRayTrace::betweenPoints($start, $end) as $vector3){
 				$block = $this->getWorld()->getBlockAt((int) $vector3->x, (int) $vector3->y, (int) $vector3->z);
 
-				if(!$block->isTransparent() && $block->calculateIntercept($start, $end) !== null){
+				if($block->getTypeId() !== BlockTypeIds::AIR && $block->calculateIntercept($start, $end) !== null){
 					return false;
 				}
 			}

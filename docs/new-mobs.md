@@ -217,8 +217,9 @@ Under `entity/ai/goal/`; read the constructor of the one you use.
   `DamageTracker`).
 
 Constructor type hints are strict: handing a goal the wrong base class is a `TypeError`.
-`TargetingConditions` filters candidates; `$mob->getSensing()->canSee($e)` is the cached
-line of sight, prefer it inside goals.
+`TargetingConditions` filters candidates. Goals ask `$mob->getSensing()` instead of scanning
+the world: `findNearest()`, `getNearbyLiving()`, `getNearbyPlayers()`, `getNearbyItems()`, and
+`canSee($e)` for the line of sight, cached per tick.
 
 ### Customizing a stock goal
 
@@ -271,7 +272,11 @@ class CuriousGoal extends Goal{
 			return false;
 		}
 
-		$this->player = Utils::getNearestPlayer($this->mob, $this->range, new TargetingConditions($this->range));
+		$this->player = $this->mob->getSensing()->findNearest(
+			Player::class,
+			$this->range,
+			conditions: new TargetingConditions($this->range)
+		);
 		return $this->player !== null;
 	}
 

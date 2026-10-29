@@ -105,13 +105,7 @@ class PickupItemsGoal extends Goal {
 			}
 		}
 
-		$searchBox = $this->entity->getBoundingBox()->expandedCopy(
-			$this->maxDist,
-			$this->searchHeight ?? $this->maxDist,
-			$this->maxDist
-		);
-
-		$nearbyEntities = $this->entity->getWorld()->getNearbyEntities($searchBox, $this->entity);
+		$nearbyItems = $this->entity->getSensing()->getNearbyItems($this->maxDist, $this->searchHeight);
 
 		$bestItem = null;
 		$bestPriority = PHP_INT_MAX;
@@ -121,11 +115,7 @@ class PickupItemsGoal extends Goal {
 		$count = 0;
 
 		$mobLocation = $this->entity->getLocation();
-		foreach ($nearbyEntities as $entity) {
-			if (!$entity instanceof ItemEntity) {
-				continue;
-			}
-
+		foreach ($nearbyItems as $entity) {
 			if ($entity->getPickupDelay() !== 0) {
 				continue;
 			}

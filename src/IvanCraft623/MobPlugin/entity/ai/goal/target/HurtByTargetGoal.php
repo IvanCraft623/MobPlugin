@@ -29,7 +29,6 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\entity\Living;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\math\AxisAlignedBB;
 
 class HurtByTargetGoal extends TargetGoal {
 
@@ -119,12 +118,8 @@ class HurtByTargetGoal extends TargetGoal {
 		parent::start();
 	}
 
-	public function getAlertOthersArea(float $range) : AxisAlignedBB{
-		return $this->entity->getBoundingBox()->expandedCopy($range, self::ALERT_RANGE_Y, $range);
-	}
-
 	protected function alertOthers(Living $target) : void{
-		foreach ($this->entity->getWorld()->getCollidingEntities($this->getAlertOthersArea($this->getFollowDistance()), $this->entity) as $other) {
+		foreach ($this->entity->getSensing()->getNearbyLiving($this->getFollowDistance(), self::ALERT_RANGE_Y) as $other) {
 			if ($other instanceof $this->entity &&
 				$other->getTargetEntityId() === null &&
 				!$this->shouldIgnoreAlert($other)

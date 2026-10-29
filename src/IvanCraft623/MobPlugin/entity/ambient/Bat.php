@@ -36,8 +36,8 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
-use pocketmine\player\Player;
 use function atan2;
+use function count;
 use function floor;
 use const M_PI;
 
@@ -172,16 +172,11 @@ class Bat extends Ambient {
 
 	protected function canRest() : bool{
 		$world = $this->getWorld();
-		if (!$world->getBlock($this->location->up())->isFullCube()) {
+		if (!$world->getBlockAt($this->location->getFloorX(), $this->location->getFloorY() + 1, $this->location->getFloorZ())->isFullCube()) {
 			return false;
 		}
 
-		foreach ($world->getCollidingEntities($this->getBoundingBox()->expandedCopy(self::WAKEUP_DISTANCE, self::WAKEUP_DISTANCE, self::WAKEUP_DISTANCE), $this) as $entity) {
-			if ($entity instanceof Player) {
-				return false;
-			}
-		}
-		return true;
+		return count($this->getSensing()->getNearbyPlayers(self::WAKEUP_DISTANCE, targetFirst: true)) === 0;
 	}
 
 	protected function calculateFallDamage(float $fallDistance) : float{

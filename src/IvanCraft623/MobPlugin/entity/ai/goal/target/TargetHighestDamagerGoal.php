@@ -27,9 +27,6 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\DamageTracker;
 use IvanCraft623\MobPlugin\entity\Mob;
 
-use pocketmine\entity\Living;
-use pocketmine\math\AxisAlignedBB;
-
 class TargetHighestDamagerGoal extends TargetGoal {
 
 	public const DEFAULT_RANDOM_INTERVAL = 10;
@@ -59,17 +56,11 @@ class TargetHighestDamagerGoal extends TargetGoal {
 		return $this->target !== null;
 	}
 
-	public function getTargetSearchArea(float $range) : AxisAlignedBB{
-		return $this->entity->getBoundingBox()->expandedCopy($range, $range, $range);
-	}
-
 	protected function findTarget() : void{
 		$bestOption = null;
 		$bestDamage = -1;
-		foreach ($this->entity->getWorld()->getCollidingEntities(
-			$this->getTargetSearchArea($this->getFollowDistance()), $this->entity
-		) as $current) {
-			if (!$current instanceof Living || !$this->targetingConditions->test($this->entity, $current)) {
+		foreach ($this->entity->getSensing()->getNearbyLiving($this->getFollowDistance()) as $current) {
+			if (!$this->targetingConditions->test($this->entity, $current)) {
 				continue;
 			}
 

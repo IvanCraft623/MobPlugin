@@ -23,10 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
+use Closure;
 use IvanCraft623\MobPlugin\entity\animal\Animal;
-
-use pocketmine\math\AxisAlignedBB;
-use const INF;
 
 class FollowParentGoal extends Goal {
 
@@ -39,15 +37,18 @@ class FollowParentGoal extends Goal {
 
 	private int $ticksToRecalculatePath = 0;
 
+	/** @phpstan-var Closure(Animal) : bool */
+	private Closure $parentFilter;
+
 	public function __construct(
 		protected Animal $entity,
 		protected float $speedModifier
 	) {
-		$this->setFlags(Goal::FLAG_MOVE);
-	}
+		$this->parentFilter = static fn(Animal $candidate) : bool => $candidate::class === $entity::class &&
+			!$candidate->isBaby() &&
+			$candidate->getPosition()->distanceSquared($entity->getPosition()) >= self::DONT_FOLLOW_IF_CLOSER_THAN ** 2;
 
-	public function getParentSearchArea() : AxisAlignedBB{
-		return $this->entity->getBoundingBox()->expandedCopy(self::HORIZONTAL_SEARCH_RANGE, self::VERTICAL_SEARCH_RANGE, self::HORIZONTAL_SEARCH_RANGE);
+		$this->setFlags(Goal::FLAG_MOVE);
 	}
 
 	public function canUse() : bool {
@@ -55,29 +56,12 @@ class FollowParentGoal extends Goal {
 			return false;
 		}
 
-		$parent = null;
-		$bestDistanceSquared = INF;
-
-		foreach ($this->entity->getWorld()->getCollidingEntities($this->getParentSearchArea(), $this->entity) as $entity) {
-			if ($entity::class !== $this->entity::class) {
-				continue;
-			}
-
-			/** @var Animal $entity */
-			if ($entity->isBaby()) {
-				continue;
-			}
-
-			$distanceSquared = $entity->getPosition()->distanceSquared($this->entity->getPosition());
-			if ($distanceSquared < (self::DONT_FOLLOW_IF_CLOSER_THAN ** 2)) {
-				continue;
-			}
-
-			if ($distanceSquared < $bestDistanceSquared) {
-				$parent = $entity;
-				$bestDistanceSquared = $distanceSquared;
-			}
-		}
+		$parent = $this->entity->getSensing()->findNearest(
+			$this->entity::class,
+			self::HORIZONTAL_SEARCH_RANGE,
+			self::VERTICAL_SEARCH_RANGE,
+			filter: $this->parentFilter
+		);
 
 		if ($parent !== null) {
 			$this->parent = $parent;
