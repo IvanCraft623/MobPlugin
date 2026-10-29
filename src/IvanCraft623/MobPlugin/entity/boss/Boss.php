@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\boss;
 
-use IvanCraft623\MobPlugin\libs\_89cb28b780d4472b\xenialdan\apibossbar\BossBar;
+use IvanCraft623\MobPlugin\libs\_f776c40983db5809\xenialdan\apibossbar\BossBar;
 
 interface Boss {
 
