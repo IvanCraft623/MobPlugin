@@ -53,8 +53,6 @@ class TemptGoal extends Goal {
 
 	private int $calmDown = 0;
 
-	private bool $isRunning = false;
-
 	public function __construct(
 		protected PathfinderMob&Lureable $entity,
 		protected float $speedModifier,
@@ -120,8 +118,6 @@ class TemptGoal extends Goal {
 
 	public function start() : void{
 		$this->lastPlayerLocation = $this->player->getLocation();
-
-		$this->isRunning = true;
 	}
 
 	public function stop() : void{
@@ -130,8 +126,6 @@ class TemptGoal extends Goal {
 
 		$this->entity->getNavigation()->stop();
 		$this->calmDown = $this->reducedTickDelay(100);
-
-		$this->isRunning = false;
 	}
 
 	public function tick() : void{
@@ -142,9 +136,5 @@ class TemptGoal extends Goal {
 		} else {
 			$this->entity->getNavigation()->moveToEntity($this->player, $this->speedModifier);
 		}
-	}
-
-	public function isRunning() : bool{
-		return $this->isRunning;
 	}
 }

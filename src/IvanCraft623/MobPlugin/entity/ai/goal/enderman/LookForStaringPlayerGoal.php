@@ -44,7 +44,7 @@ class LookForStaringPlayerGoal extends TargetGoal {
 		protected Enderman $enderman,
 		?TargetingConditions $startAggroTargetConditions = null
 	) {
-		parent::__construct($enderman, false, false);
+		parent::__construct($enderman, false);
 
 		$this->startAggroTargetConditions = $startAggroTargetConditions ?? (new TargetingConditions())
 			->allowUnseeable()

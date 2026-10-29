@@ -49,14 +49,13 @@ class NearestAttackableGoal extends TargetGoal {
 		protected string $targetType,
 		int $interval = self::DEFAULT_RANDOM_INTERVAL,
 		bool $mustSee = true,
-		bool $mustReach = false,
 		?Closure $targetValidator = null
 	) {
 		if ($targetType !== Living::class) {
 			Utils::testValidInstance($targetType, Living::class);
 		}
 
-		parent::__construct($entity, $mustSee, $mustReach);
+		parent::__construct($entity, $mustSee);
 
 		$this->randomInterval = $this->reducedTickDelay($interval);
 		$this->targetingConditions = (new TargetingConditions())

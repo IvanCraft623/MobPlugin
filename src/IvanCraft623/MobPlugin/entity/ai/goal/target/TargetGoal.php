@@ -33,17 +33,13 @@ abstract class TargetGoal extends Goal {
 
 	protected ?Living $target = null;
 
-	protected bool $canReachCache;
-	protected int $reachCheckTime = 0;
-
 	private int $unseenTicks = 0;
 
 	protected int $unseenMemoryTicks = 60;
 
 	public function __construct(
 		protected Mob $entity,
-		protected bool $mustSee,
-		protected bool $mustReach = false
+		protected bool $mustSee
 	) {
 	}
 
@@ -77,8 +73,6 @@ abstract class TargetGoal extends Goal {
 	}
 
 	public function start() : void{
-		unset($this->canReachCache);
-		$this->reachCheckTime = 0;
 		$this->unseenTicks = 0;
 	}
 

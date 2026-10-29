@@ -40,7 +40,7 @@ class TargetHighestDamagerGoal extends TargetGoal {
 		?TargetingConditions $conditions = null,
 		int $interval = self::DEFAULT_RANDOM_INTERVAL
 	) {
-		parent::__construct($mob, false, false);
+		parent::__construct($mob, false);
 
 		$this->targetingConditions = $conditions ?? (new TargetingConditions())
 			->setRange($this->getFollowDistance());
