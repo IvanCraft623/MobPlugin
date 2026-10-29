@@ -52,6 +52,6 @@ class AmphibiousSwimNavigation extends PathNavigation {
 	}
 
 	public function isStableDestination(Vector3 $position) : bool{
-		return $this->getWorld()->getBlock($position->down())->getTypeId() !== BlockTypeIds::AIR;
+		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() !== BlockTypeIds::AIR;
 	}
 }

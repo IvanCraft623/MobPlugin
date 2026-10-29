@@ -346,7 +346,7 @@ class Enderman extends Monster implements NeutralMob{
 			return false;
 		}
 
-		$blockBelow = $world->getBlock($pos->down());
+		$blockBelow = $world->getBlockAt($pos->getFloorX(), $pos->getFloorY() - 1, $pos->getFloorZ());
 		if (($belowTypeId = $blockBelow->getTypeId()) === BlockTypeIds::AIR || $belowTypeId === BlockTypeIds::BEDROCK) {
 			return false;
 		}

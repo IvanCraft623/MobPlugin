@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\utils\LandPositionGenerator;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 
 class WaterAvoidingRandomStrollGoal extends RandomStrollGoal {
@@ -40,7 +39,7 @@ class WaterAvoidingRandomStrollGoal extends RandomStrollGoal {
 	}
 
 	public function getPosition() : ?Vector3{
-		if ($this->entity->getWorld()->getBlock($this->entity->getPosition()) instanceof Water) {
+		if ($this->entity->isInWater()) {
 			return LandPositionGenerator::getPos($this->entity, 15, 7) ?? parent::getPosition();
 		}
 

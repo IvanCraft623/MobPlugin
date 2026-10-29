@@ -681,7 +681,7 @@ abstract class Mob extends Living {
 	public function canStandAt(Vector3 $pos) : bool{
 		$world = $this->getWorld();
 
-		$below = $world->getBlock($pos->down());
+		$below = $world->getBlockAt($pos->getFloorX(), $pos->getFloorY() - 1, $pos->getFloorZ());
 		if (!$below->isSolid()) {
 			return false;
 		}
