@@ -126,10 +126,6 @@ class Axolotl extends Animal implements Bucketable{
 		return 0;
 	}
 
-	public function getAmbientSoundInterval() : float{
-		return 6;
-	}
-
 	public function getAmbientSoundEvent() : string{
 		return $this->isUnderwater() ? LevelSoundEvent::AMBIENT_IN_WATER : LevelSoundEvent::AMBIENT;
 	}

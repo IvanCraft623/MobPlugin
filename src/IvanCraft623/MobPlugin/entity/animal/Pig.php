@@ -47,6 +47,7 @@ use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
+use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\player\Player;
 use function mt_rand;
 
@@ -109,6 +110,10 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 
 	public function getDefaultMovementSpeed() : float{
 		return 0.25;
+	}
+
+	public function getAmbientSoundEvent() : string{
+		return $this->isBaby() ? LevelSoundEvent::AMBIENT_BABY : LevelSoundEvent::AMBIENT;
 	}
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{

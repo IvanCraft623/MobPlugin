@@ -102,7 +102,7 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 	}
 
 	public function getAmbientSoundInterval() : float{
-		return 12;
+		return 6;
 	}
 
 	public function getXpDropAmount() : int{
