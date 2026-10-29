@@ -66,6 +66,10 @@ final class StubContext implements SpawnConditionContext{
 		return $this->feetLiquid;
 	}
 
+	public function isInLiquid() : bool{
+		return $this->feetLiquid !== SpawnLiquid::NONE;
+	}
+
 	public function getX() : int{
 		return $this->x;
 	}
