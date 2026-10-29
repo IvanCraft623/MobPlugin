@@ -40,7 +40,7 @@ class MeleeAttackGoal extends Goal {
 
 	public const ATTACK_INTERVAL = 20;
 
-	private int $ticksToAttack = 0;
+	private int $ticksToAttack = self::ATTACK_INTERVAL;
 
 	private int $ticksToRepath = 0;
 
@@ -74,7 +74,6 @@ class MeleeAttackGoal extends Goal {
 
 	public function start() : void{
 		$this->mob->setAggressive();
-		$this->ticksToAttack = 0;
 		$this->ticksToRepath = 0;
 	}
 
