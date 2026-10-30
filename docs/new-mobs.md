@@ -484,7 +484,7 @@ The mechanics:
 
 - **Vanilla mobs wire themselves.** At startup `SpawnRuleRegistry::registerVanilla()`
   walks `ALL_ENTITIES`; for every network id present in the bundled
-  `resources/spawning/spawn_rules.json` it registers the vanilla rules, the population
+  `resources/bedrock/spawning/spawn_rules.json` it registers the vanilla rules, the population
   category and a factory (`new YourMob(Location)`), with the size taken from
   `VanillaEntitySizes`. `Monster` subclasses get the block-light-0 condition added.
   So adding a vanilla mob to `ALL_ENTITIES` is all it takes, and its constructor must

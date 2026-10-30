@@ -30,9 +30,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\tools\entitydata;
 
 require __DIR__ . "/../../vendor/autoload.php";
-require_once __DIR__ . "/../spawn-rules/BedrockSamples.php";
+require_once __DIR__ . "/../bedrock/BedrockSamples.php";
 
-use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
+use IvanCraft623\MobPlugin\tools\bedrock\BedrockSamples;
 use JsonException;
 use function basename;
 use function count;

@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   checks:
-    name: PHPStan, PHPUnit and spawn data
+    name: PHPStan, PHPUnit and generated data
     runs-on: ubuntu-latest
 
     steps:
@@ -36,11 +36,13 @@ jobs:
         run: composer test
 
       # Regenerating must not change, add or delete any committed file.
-      - name: Spawn data, schema and entity data match the pinned samples
+      - name: Generated data matches the pinned samples
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           composer generate-spawn-schema
           composer compile-spawn-rules
           composer generate-entity-data
-          git add --all -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
-          git diff --cached --exit-code -- resources/spawning src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          composer compile-loot-tables
+          composer generate-bedrock-notice
+          git add --all -- resources/bedrock src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git diff --cached --exit-code -- resources/bedrock src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php

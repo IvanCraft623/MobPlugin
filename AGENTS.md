@@ -31,9 +31,10 @@ Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
 
 Outside `src/`:
 
-- `resources/` — `global-settings.yml` and the generated `spawning/spawn_rules.json`.
-- `tools/` — dev tools that generate the spawn data, `parse/schema/` and the entity data
-  from the pinned `mojang/bedrock-samples` dev dependency.
+- `resources/` — `global-settings.yml` and the generated `bedrock/` data
+  (`spawning/spawn_rules.json`, `loot_tables.json`, `NOTICE.md`).
+- `tools/` — dev tools that generate the spawn data, `parse/schema/` and the entity data, and
+  merge the loot tables, from the pinned `mojang/bedrock-samples` dev dependency.
 - `tests/phpunit/` — the PHPUnit suite.
 - `.github/workflows/` — `ci.yml` (PHPStan, PHPUnit, generated data drift), `build.yml`
   (nightly phar) and `release.yml` (tagged releases).
@@ -46,7 +47,8 @@ Outside `src/`:
 - `composer test` — PHPUnit.
 - `composer build` — builds `MobPlugin.phar`.
 - After changing the `mojang/bedrock-samples` pin: `composer generate-spawn-schema`,
-  `composer compile-spawn-rules` and `composer generate-entity-data`.
+  `composer compile-spawn-rules`, `composer generate-entity-data`,
+  `composer compile-loot-tables` and `composer generate-bedrock-notice`.
 
 Pathfinding is the external virion `ivancraft623/pathfinder`; keep usage aligned with its
 API.

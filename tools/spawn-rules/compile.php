@@ -23,18 +23,18 @@ declare(strict_types=1);
 
 /**
  * Merges the vanilla spawn rules of the pinned mojang/bedrock-samples package into
- * resources/spawning/spawn_rules.json and writes its NOTICE.md, and names the spawn events
- * they send in VanillaSpawnEvents. Every file must validate against the pinned schemas, or
- * nothing is written.
+ * resources/bedrock/spawning/spawn_rules.json, and names the spawn events they send in
+ * VanillaSpawnEvents. Every file must validate against the pinned schemas, or nothing is
+ * written.
  */
 
 namespace IvanCraft623\MobPlugin\tools\spawnrules\compile;
 
 require __DIR__ . "/../../vendor/autoload.php";
 require_once __DIR__ . "/SpawnRuleSchemaValidator.php";
-require_once __DIR__ . "/BedrockSamples.php";
+require_once __DIR__ . "/../bedrock/BedrockSamples.php";
 
-use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
+use IvanCraft623\MobPlugin\tools\bedrock\BedrockSamples;
 use IvanCraft623\MobPlugin\tools\spawnrules\SpawnRuleSchemaValidator;
 use stdClass;
 use function array_keys;
@@ -42,15 +42,11 @@ use function array_map;
 use function basename;
 use function count;
 use function dirname;
-use function file_get_contents;
 use function file_put_contents;
 use function fwrite;
 use function get_object_vars;
 use function implode;
-use function is_array;
-use function is_file;
 use function is_string;
-use function json_decode;
 use function json_encode;
 use function json_last_error_msg;
 use function ksort;
@@ -70,7 +66,6 @@ use const JSON_UNESCAPED_UNICODE;
 use const SORT_STRING;
 use const STDERR;
 
-const SOURCE_REPO = "https://github.com/Mojang/bedrock-samples";
 const EVENT_PREFIX = "minecraft:";
 const EVENTS_NAMESPACE = "IvanCraft623\\MobPlugin\\spawning\\event";
 
@@ -152,19 +147,12 @@ function main() : int{
 
 	ksort($merged, SORT_STRING);
 
-	$commit = BedrockSamples::getReference();
-	$gameVersion = readGameVersion($samplesDir);
-	if($gameVersion === null){
-		return fail("Failed to read the game version from $samplesDir/version.json");
-	}
-
 	$json = json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 	if($json === false){
 		return fail("Failed to encode merged spawn rules: " . json_last_error_msg());
 	}
 	$json .= "\n";
 
-	$notice = buildNotice($commit, $gameVersion, $schemaVersion);
 	try{
 		$eventsClass = buildEventsArtifact(collectEvents($merged));
 	}catch(\RuntimeException $e){
@@ -172,19 +160,17 @@ function main() : int{
 	}
 
 	// The outputs are written only after every source file merged successfully.
-	$outDir = dirname(__DIR__, 2) . "/resources/spawning";
+	$outDir = dirname(__DIR__, 2) . "/resources/bedrock";
 	$eventsPath = dirname(__DIR__, 2) . "/src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php";
-	foreach([$outDir . "/spawn_rules.json" => $json, $outDir . "/NOTICE.md" => $notice, $eventsPath => $eventsClass] as $path => $contents){
+	foreach([$outDir . "/spawning/spawn_rules.json" => $json, $eventsPath => $eventsClass] as $path => $contents){
 		if(file_put_contents($path, $contents) === false){
 			return fail("Failed to write: $path");
 		}
 	}
 
 	printf("Merged %d spawn rule file(s) from %s\n", count($merged), $samplesDir);
-	printf("Game version: %s\n", $gameVersion);
-	printf("Source commit: %s\n", $commit ?? "unknown");
 	printf("Schema validation: %d entr%s valid against schema version %s\n", count($merged), count($merged) === 1 ? "y" : "ies", $schemaVersion);
-	printf("Wrote %s/spawn_rules.json (%d bytes) and NOTICE.md (%d bytes)\n", $outDir, strlen($json), strlen($notice));
+	printf("Wrote %s/spawning/spawn_rules.json (%d bytes)\n", $outDir, strlen($json));
 
 	return 0;
 }
@@ -231,27 +217,6 @@ function validateSpawnRules(stdClass $spawnRules, SpawnRuleSchemaValidator $sche
 	}
 
 	return $errors;
-}
-
-/**
- * @return string|null game version from the samples' version.json, or null if it can't be read
- */
-function readGameVersion(string $samplesDir) : ?string{
-	$file = $samplesDir . "/version.json";
-	if(is_file($file)){
-		$decoded = json_decode((string) file_get_contents($file), true);
-		if(is_array($decoded)){
-			$latest = $decoded["latest"] ?? null;
-			if(is_array($latest)){
-				$version = $latest["version"] ?? null;
-				if(is_string($version)){
-					return $version;
-				}
-			}
-		}
-	}
-
-	return null;
 }
 
 /**
@@ -328,28 +293,6 @@ final class VanillaSpawnEvents{
 }
 
 PHP, EVENTS_NAMESPACE, implode("\n", $lines));
-}
-
-function buildNotice(?string $commit, string $gameVersion, string $schemaVersion) : string{
-	return implode("\n", [
-		"# Vanilla Bedrock data",
-		"",
-		"`spawn_rules.json` is the vanilla spawn rules merged into one file: comments stripped, entries",
-		"keyed and sorted by identifier, values unchanged.",
-		"",
-		"| | |",
-		"|---|---|",
-		"| Game version | " . $gameVersion . " |",
-		"| Spawn schema version | " . $schemaVersion . " |",
-		"| Source | [Mojang/bedrock-samples](" . SOURCE_REPO . ") |",
-		"| Commit | `" . ($commit ?? "unknown") . "` |",
-		"| Path | `" . BedrockSamples::SPAWN_RULES_PATH . "` |",
-		"",
-		"The spawn schema classes (`spawning/parse/schema/`) and the entity data (`EntityIds`,",
-		"`VanillaEntitySizes`) are generated from the same commit. To regenerate, see",
-		"`docs/spawning.md`.",
-		"",
-	]);
 }
 
 exit(main());

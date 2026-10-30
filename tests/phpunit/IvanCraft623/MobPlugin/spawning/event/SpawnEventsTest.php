@@ -43,7 +43,7 @@ final class SpawnEventsTest extends TestCase{
 	 */
 	private static function readEvents() : array{
 		BiomeTagMap::setInstance(new BiomeTagMap([]));
-		$parsed = SpawnRulesParser::createVanilla()->parseFile(dirname(__DIR__, 6) . "/resources/spawning/spawn_rules.json");
+		$parsed = SpawnRulesParser::createVanilla()->parseFile(dirname(__DIR__, 6) . "/resources/bedrock/spawning/spawn_rules.json");
 
 		$events = [];
 		foreach($parsed as $identifier => [, $groups]){

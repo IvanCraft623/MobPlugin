@@ -34,7 +34,7 @@ final class SpawnRulesParseableTest extends TestCase{
 	public function testBundledRulesLoadIntoRegisteredCategories() : void{
 		// Throws on anything the strict loader can't compile.
 		BiomeTagMap::setInstance(new BiomeTagMap([]));
-		$parsed = SpawnRulesParser::createVanilla()->parseFile(dirname(__DIR__, 5) . "/resources/spawning/spawn_rules.json");
+		$parsed = SpawnRulesParser::createVanilla()->parseFile(dirname(__DIR__, 5) . "/resources/bedrock/spawning/spawn_rules.json");
 
 		self::assertNotEmpty($parsed);
 		foreach($parsed as $identifier => [$categoryId]){

@@ -21,7 +21,7 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\tools\spawnrules;
+namespace IvanCraft623\MobPlugin\tools\bedrock;
 
 use Composer\InstalledVersions;
 use FilesystemIterator;
@@ -48,6 +48,8 @@ final class BedrockSamples{
 	public const SPAWN_RULES_PATH = "behavior_pack/spawn_rules";
 
 	public const ENTITIES_PATH = "behavior_pack/entities";
+
+	public const LOOT_TABLES_PATH = "behavior_pack/loot_tables";
 
 	public static function getSchemaVersion() : string{
 		return InstalledVersions::getPrettyVersion(self::PACKAGE) ?? throw new \RuntimeException(self::PACKAGE . " has no version; run composer install");

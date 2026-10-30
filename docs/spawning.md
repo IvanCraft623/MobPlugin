@@ -24,7 +24,7 @@ be set per world; `0` is no limit.
 
 ## Data
 
-`resources/spawning/spawn_rules.json` is Mojang's `behavior_pack/spawn_rules/*.json`
+`resources/bedrock/spawning/spawn_rules.json` is Mojang's `behavior_pack/spawn_rules/*.json`
 merged into one file, from a pinned
 [bedrock-samples](https://github.com/Mojang/bedrock-samples) commit. Nothing is fetched
 at runtime.
@@ -35,7 +35,8 @@ Composer.
 
 | Command | Generates |
 |---|---|
-| `composer compile-spawn-rules` | `spawn_rules.json` and `NOTICE.md`, and `spawning/event/VanillaSpawnEvents`: the names of the spawn events the rules send |
+| `composer compile-spawn-rules` | `spawn_rules.json` and `spawning/event/VanillaSpawnEvents`: the names of the spawn events the rules send |
+| `composer generate-bedrock-notice` | `resources/bedrock/NOTICE.md`: the pinned commit and which vanilla data comes from it |
 | `composer generate-spawn-schema` | `spawning/parse/schema/`: component names, envelope keys, the biome filter vocabulary, mob categories and one payload model per component |
 | `composer generate-entity-data` | `data/bedrock/EntityIds` and `VanillaEntitySizes` (each entity's base `collision_box`) |
 

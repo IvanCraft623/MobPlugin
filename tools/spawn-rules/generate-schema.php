@@ -31,9 +31,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\tools\spawnrules\generate;
 
 require __DIR__ . "/../../vendor/autoload.php";
-require_once __DIR__ . "/BedrockSamples.php";
+require_once __DIR__ . "/../bedrock/BedrockSamples.php";
 
-use IvanCraft623\MobPlugin\tools\spawnrules\BedrockSamples;
+use IvanCraft623\MobPlugin\tools\bedrock\BedrockSamples;
 use stdClass;
 use function array_diff;
 use function array_key_first;

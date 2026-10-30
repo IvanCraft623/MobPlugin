@@ -296,7 +296,7 @@ MobPopulation::getInstance()->getBands()->set($entity, SpawnBand::SURFACE);
 
 `SpawnRulesParser` reads Bedrock spawn rules: one JSON object keyed by entity identifier,
 each value a `minecraft:spawn_rules` file as Mojang ships it
-(`resources/spawning/spawn_rules.json` is an example).
+(`resources/bedrock/spawning/spawn_rules.json` is an example).
 
 ```php
 $parser = SpawnRulesParser::createVanilla();

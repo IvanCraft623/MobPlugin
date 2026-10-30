@@ -139,7 +139,7 @@ class MobPlugin extends PluginBase {
 	 * Runs before anything else is registered, so a failure leaves nothing half set up.
 	 */
 	private function registerSpawnRules() : void{
-		$path = Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json");
+		$path = Path::join($this->getResourceFolder(), "bedrock", "spawning", "spawn_rules.json");
 		try{
 			$warnings = SpawnRuleRegistry::getInstance()->registerVanilla($path);
 		}catch(SpawnRulesParseException $e){
