@@ -30,10 +30,9 @@ use IvanCraft623\MobPlugin\entity\animation\WithdrawFlowerAnimation;
 
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use pocketmine\entity\Entity;
+use pocketmine\entity\Living;
 use pocketmine\entity\Villager;
-use pocketmine\math\AxisAlignedBB;
 use pocketmine\world\World;
-use const INF;
 
 class OfferFlowerGoal extends Goal {
 
@@ -61,10 +60,6 @@ class OfferFlowerGoal extends Goal {
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
 
-	public function getTargetSearchArea() : AxisAlignedBB{
-		return $this->mob->getBoundingBox()->expandedCopy(self::TARGET_SEARCH_RANGE, self::TARGET_SEARCH_RANGE, self::TARGET_SEARCH_RANGE);
-	}
-
 	public function canUse() : bool {
 		$time = $this->mob->getWorld()->getTimeOfDay();
 		if ($time >= World::TIME_NIGHT && $time < World::TIME_SUNRISE) { //is day check
@@ -75,20 +70,11 @@ class OfferFlowerGoal extends Goal {
 			return false;
 		}
 
-		$target = null;
-		$bestDistanceSquared = INF;
-
-		foreach ($this->mob->getWorld()->getCollidingEntities($this->getTargetSearchArea(), $this->mob) as $entity) {
-			if (!($this->targetValidator)($entity)) {
-				continue;
-			}
-
-			$distanceSquared = $entity->getPosition()->distanceSquared($this->mob->getPosition());
-			if ($distanceSquared < $bestDistanceSquared) {
-				$target = $entity;
-				$bestDistanceSquared = $distanceSquared;
-			}
-		}
+		$target = $this->mob->getSensing()->findNearest(
+			Living::class,
+			self::TARGET_SEARCH_RANGE,
+			filter: $this->targetValidator
+		);
 
 		if ($target !== null) {
 			$this->target = $target;

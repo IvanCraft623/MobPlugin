@@ -26,7 +26,6 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\Lureable;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\Human;
 use pocketmine\entity\Living;
@@ -54,8 +53,6 @@ class TemptGoal extends Goal {
 
 	private int $calmDown = 0;
 
-	private bool $isRunning = false;
-
 	public function __construct(
 		protected PathfinderMob&Lureable $entity,
 		protected float $speedModifier,
@@ -77,7 +74,11 @@ class TemptGoal extends Goal {
 			return false;
 		}
 
-		$player = Utils::getNearestPlayer($this->entity, self::TEMP_RANGE, $this->targetingConditions);
+		$player = $this->entity->getSensing()->findNearest(
+			Player::class,
+			self::TEMP_RANGE,
+			conditions: $this->targetingConditions
+		);
 		if ($player !== null) {
 			$this->player = $player;
 
@@ -117,8 +118,6 @@ class TemptGoal extends Goal {
 
 	public function start() : void{
 		$this->lastPlayerLocation = $this->player->getLocation();
-
-		$this->isRunning = true;
 	}
 
 	public function stop() : void{
@@ -127,8 +126,6 @@ class TemptGoal extends Goal {
 
 		$this->entity->getNavigation()->stop();
 		$this->calmDown = $this->reducedTickDelay(100);
-
-		$this->isRunning = false;
 	}
 
 	public function tick() : void{
@@ -139,9 +136,5 @@ class TemptGoal extends Goal {
 		} else {
 			$this->entity->getNavigation()->moveToEntity($this->player, $this->speedModifier);
 		}
-	}
-
-	public function isRunning() : bool{
-		return $this->isRunning;
 	}
 }

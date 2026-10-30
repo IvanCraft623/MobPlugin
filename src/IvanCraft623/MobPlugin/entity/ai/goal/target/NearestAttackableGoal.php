@@ -29,12 +29,8 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\entity\Living;
-use pocketmine\math\AxisAlignedBB;
-use pocketmine\player\Player;
 
 use pocketmine\utils\Utils;
-use function is_a;
-use const INF;
 
 class NearestAttackableGoal extends TargetGoal {
 
@@ -53,14 +49,13 @@ class NearestAttackableGoal extends TargetGoal {
 		protected string $targetType,
 		int $interval = self::DEFAULT_RANDOM_INTERVAL,
 		bool $mustSee = true,
-		bool $mustReach = false,
 		?Closure $targetValidator = null
 	) {
 		if ($targetType !== Living::class) {
 			Utils::testValidInstance($targetType, Living::class);
 		}
 
-		parent::__construct($entity, $mustSee, $mustReach);
+		parent::__construct($entity, $mustSee);
 
 		$this->randomInterval = $this->reducedTickDelay($interval);
 		$this->targetingConditions = (new TargetingConditions())
@@ -88,32 +83,13 @@ class NearestAttackableGoal extends TargetGoal {
 		return $this->targetingConditions;
 	}
 
-	public function getTargetSearchArea(float $range) : AxisAlignedBB{
-		return $this->entity->getBoundingBox()->expandedCopy($range, $range, $range);
-	}
-
 	protected function findTarget() : void{
-		$pos = $this->entity->getEyePos();
-		$world = $this->entity->getWorld();
-		$candidates = is_a($this->targetType, Player::class, true) ?
-			$world->getPlayers() :
-			$world->getNearbyEntities($this->getTargetSearchArea($this->getFollowDistance()), $this->entity);
-
-		$this->target = null;
-		$nearestDistanceSquared = INF;
-		foreach ($candidates as $candidate) {
-			if (!$candidate instanceof $this->targetType) {
-				continue;
-			}
-
-			$distanceSquared = $candidate->getPosition()->distanceSquared($pos);
-			if ($distanceSquared > $nearestDistanceSquared || !$this->targetingConditions->test($this->entity, $candidate)) {
-				continue;
-			}
-
-			$this->target = $candidate;
-			$nearestDistanceSquared = $distanceSquared;
-		}
+		$this->target = $this->entity->getSensing()->findNearest(
+			$this->targetType,
+			$this->getFollowDistance(),
+			conditions: $this->targetingConditions,
+			fromEyes: true
+		);
 	}
 
 	public function start() : void{

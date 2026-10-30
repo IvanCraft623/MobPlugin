@@ -45,6 +45,7 @@ use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
+use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\player\Player;
 use pocketmine\utils\Binary;
 use function mt_rand;
@@ -121,6 +122,10 @@ class Chicken extends Animal {
 
 	public function getDefaultMovementSpeed() : float{
 		return 0.25;
+	}
+
+	public function getAmbientSoundEvent() : string{
+		return $this->isBaby() ? LevelSoundEvent::AMBIENT_BABY : LevelSoundEvent::AMBIENT;
 	}
 
 	protected function tryChangeMovement() : void{

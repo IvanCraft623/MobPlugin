@@ -39,6 +39,12 @@ interface SpawnConditionContext extends CacheableConditionContext{
 
 	public function getZ() : int;
 
+	/**
+	 * Whether the feet count as in a liquid, which is more than getFeetLiquid() on the
+	 * surface: the block above must hold the liquid too.
+	 */
+	public function isInLiquid() : bool;
+
 	public function getLight() : int;
 
 	public function getBlockLight() : int;

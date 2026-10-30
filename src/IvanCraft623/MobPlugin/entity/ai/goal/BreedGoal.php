@@ -27,8 +27,6 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\animal\Animal;
 
 use pocketmine\entity\Living;
-use pocketmine\math\AxisAlignedBB;
-use const INF;
 
 class BreedGoal extends Goal {
 
@@ -43,6 +41,9 @@ class BreedGoal extends Goal {
 
 	protected TargetingConditions $partnerConditions;
 
+	/** @phpstan-var class-string<Animal> */
+	private string $partnerClass;
+
 	protected Animal $partner;
 
 	protected int $loveTicks = 0;
@@ -55,7 +56,7 @@ class BreedGoal extends Goal {
 		protected float $speedModifier,
 		?string $partnerClass = null
 	) {
-		$partnerClass = $partnerClass ?? $entity::class;
+		$this->partnerClass = $partnerClass = $partnerClass ?? $entity::class;
 		$this->partnerConditions = self::PARTNER_TARGETING()->setValidator(static function(Living $target) use ($entity, $partnerClass) : bool{
 			return $target instanceof $partnerClass && $entity->canMate($target);
 		});
@@ -95,27 +96,12 @@ class BreedGoal extends Goal {
 		}
 	}
 
-	public function getPartnerSearchArea(float $range = self::PARTNER_SEARCH_RANGE) : AxisAlignedBB{
-		return $this->entity->getBoundingBox()->expandedCopy($range, $range, $range);
-	}
-
 	public function getFreePartner() : ?Animal {
-		$nearest = null;
-		$bestDistance = INF;
-
-		$position = $this->entity->getPosition();
-		foreach ($this->entity->getWorld()->getCollidingEntities($this->getPartnerSearchArea(), $this->entity) as $other) {
-			if (!$other instanceof Animal || !$this->partnerConditions->test($this->entity, $other)) {
-				continue;
-			}
-
-			if (($distanceSquared = $position->distanceSquared($other->getPosition())) < $bestDistance) {
-				$nearest = $other;
-				$bestDistance = $distanceSquared;
-			}
-		}
-
-		return $nearest;
+		return $this->entity->getSensing()->findNearest(
+			$this->partnerClass,
+			self::PARTNER_SEARCH_RANGE,
+			conditions: $this->partnerConditions
+		);
 	}
 
 	public function bread() : void{

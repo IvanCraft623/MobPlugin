@@ -30,8 +30,6 @@ use IvanCraft623\MobPlugin\entity\monster\Enderman;
 
 use pocketmine\player\Player;
 
-use function array_reduce;
-
 class LookForStaringPlayerGoal extends TargetGoal {
 
 	public const DEFAULT_RANDOM_INTERVAL = 10;
@@ -46,7 +44,7 @@ class LookForStaringPlayerGoal extends TargetGoal {
 		protected Enderman $enderman,
 		?TargetingConditions $startAggroTargetConditions = null
 	) {
-		parent::__construct($enderman, false, false);
+		parent::__construct($enderman, false);
 
 		$this->startAggroTargetConditions = $startAggroTargetConditions ?? (new TargetingConditions())
 			->allowUnseeable()
@@ -72,19 +70,11 @@ class LookForStaringPlayerGoal extends TargetGoal {
 	}
 
 	protected function findTarget() : void{
-		$pos = $this->enderman->getLocation();
-		$this->target = array_reduce($this->enderman->getWorld()->getPlayers(),
-		function(?Player $carry, Player $current) use ($pos) : ?Player {
-			if (!$this->canAttack($current, $this->startAggroTargetConditions) ||
-				!$this->isAngerTriggering($current)
-			) {
-				return $carry;
-			}
-
-			return ($carry !== null &&
-				$carry->getPosition()->distanceSquared($pos) < $current->getPosition()->distanceSquared($pos)
-			) ? $carry : $current;
-		}, null);
+		$this->target = $this->enderman->getSensing()->findNearest(
+			Player::class,
+			$this->getFollowDistance(),
+			filter: fn(Player $candidate) : bool => $this->canAttack($candidate, $this->startAggroTargetConditions) && $this->isAngerTriggering($candidate)
+		);
 	}
 
 	public function canContinueToUse() : bool{

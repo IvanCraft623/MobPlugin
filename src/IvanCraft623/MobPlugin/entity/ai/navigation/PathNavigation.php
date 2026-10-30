@@ -25,13 +25,13 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
@@ -449,7 +449,7 @@ abstract class PathNavigation {
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
-		return $this->getWorld()->getBlock($position->down())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt(new SyncBlockGetter($this->getWorld()), $position);
+		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt(new SyncBlockGetter($this->getWorld()), $position);
 	}
 
 	protected function followThePath() : void{
@@ -594,7 +594,7 @@ abstract class PathNavigation {
 			$world = $this->getWorld();
 			for ($i = 0; $i < $this->path->getNodeCount(); $i++) {
 				$node = $this->path->getNode($i);
-				if ($world->getBlock($node->asVector3()) instanceof FillableCauldron) {
+				if ($world->getBlockAt($node->x(), $node->y(), $node->z()) instanceof FillableCauldron) {
 					$this->path->replaceNode($i, $node->cloneAndMove($node->x(), $node->y() + 1, $node->z()));
 
 					$nextNode = $i + 1 < $this->path->getNodeCount() ? $this->path->getNode($i + 1) : null;
@@ -640,7 +640,7 @@ abstract class PathNavigation {
 	}
 
 	public function isStableDestination(Vector3 $position) : bool{
-		return $this->getWorld()->getBlock($position->down())->isSolid();
+		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->isSolid();
 	}
 
 	public function getNodeEvaluator() : EntityNodeEvaluator{

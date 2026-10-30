@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
 
@@ -52,6 +52,6 @@ class AmphibiousSwimNavigation extends PathNavigation {
 	}
 
 	public function isStableDestination(Vector3 $position) : bool{
-		return $this->getWorld()->getBlock($position->down())->getTypeId() !== BlockTypeIds::AIR;
+		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() !== BlockTypeIds::AIR;
 	}
 }

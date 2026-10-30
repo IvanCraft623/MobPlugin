@@ -40,7 +40,7 @@ use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -346,7 +346,7 @@ class Enderman extends Monster implements NeutralMob{
 			return false;
 		}
 
-		$blockBelow = $world->getBlock($pos->down());
+		$blockBelow = $world->getBlockAt($pos->getFloorX(), $pos->getFloorY() - 1, $pos->getFloorZ());
 		if (($belowTypeId = $blockBelow->getTypeId()) === BlockTypeIds::AIR || $belowTypeId === BlockTypeIds::BEDROCK) {
 			return false;
 		}

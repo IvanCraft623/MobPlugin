@@ -38,8 +38,6 @@ class PanicGoal extends Goal {
 
 	protected Vector3 $target;
 
-	protected bool $isRunning;
-
 	public function __construct(
 		protected PathfinderMob $entity,
 		protected float $speedModifier
@@ -75,10 +73,6 @@ class PanicGoal extends Goal {
 		return $this->entity->getExpirableLastDamageByEntity() !== null || $this->entity->isOnFire();
 	}
 
-	public function isRunning() : bool{
-		return $this->isRunning;
-	}
-
 	protected function findRandomPosition() : ?Vector3 {
 		return DefaultPositionGenerator::getPos($this->entity, 5, 4);
 	}
@@ -100,10 +94,6 @@ class PanicGoal extends Goal {
 
 	public function start() : void{
 		$this->entity->getNavigation()->moveToXYZ($this->target->x, $this->target->y, $this->target->z, $this->speedModifier);
-	}
-
-	public function stop() : void {
-		$this->isRunning = false;
 	}
 
 	public function canContinueToUse() : bool {

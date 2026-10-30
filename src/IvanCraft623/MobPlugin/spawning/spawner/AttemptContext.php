@@ -58,6 +58,8 @@ final class AttemptContext implements SpawnConditionContext{
 
 	private ?int $belowItemStateId = null;
 
+	private ?bool $inLiquid = null;
+
 	/** @phpstan-var array<int, bool> size hash => whether a box of that size fits */
 	private array $roomBySize = [];
 
@@ -91,6 +93,14 @@ final class AttemptContext implements SpawnConditionContext{
 
 	public function getFeetLiquid() : SpawnLiquid{
 		return $this->feetLiquid;
+	}
+
+	public function isInLiquid() : bool{
+		// On the surface the block above must hold the liquid too; underground the feet are enough.
+		return $this->inLiquid ??= $this->feetLiquid !== SpawnLiquid::NONE && (
+			$this->band === SpawnBand::CAVE ||
+			SpawnLiquid::fromBlockTypeId($this->world->getBlockAt($this->x, $this->y + 1, $this->z)->getTypeId()) === $this->feetLiquid
+		);
 	}
 
 	public function getX() : int{

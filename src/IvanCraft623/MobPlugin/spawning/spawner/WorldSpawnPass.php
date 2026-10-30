@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\SimulationRange;
 use pocketmine\block\Block;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\RuntimeBlockStateRegistry;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
@@ -54,6 +55,17 @@ use const PHP_FLOAT_MAX;
  * the next one starts; every location-keyed memo lives only as long as the pass.
  */
 final class WorldSpawnPass{
+
+	/**
+	 * Blocks that are never ground, whatever their shape.
+	 *
+	 * @phpstan-var array<int, true> block type id => true
+	 */
+	private const UNSPAWNABLE_GROUND = [
+		BlockTypeIds::BEDROCK => true,
+		BlockTypeIds::BARRIER => true,
+	];
+
 	private readonly GroundLevelCache $groundLevels;
 
 	private readonly PopulationCensus $census;
@@ -225,7 +237,7 @@ final class WorldSpawnPass{
 			return null;
 		}
 		$below = $this->world->getBlockAt($x, $y - 1, $z, addToCache: false);
-		if($below->getSupportType(Facing::UP) !== SupportType::FULL){
+		if($below->getSupportType(Facing::UP) !== SupportType::FULL || isset(self::UNSPAWNABLE_GROUND[$below->getTypeId()])){
 			return $below;
 		}
 		// From the block's own coordinates, as vanilla measures it.

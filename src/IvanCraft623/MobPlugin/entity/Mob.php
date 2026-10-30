@@ -37,8 +37,8 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_7a702697999fd790\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -681,7 +681,7 @@ abstract class Mob extends Living {
 	public function canStandAt(Vector3 $pos) : bool{
 		$world = $this->getWorld();
 
-		$below = $world->getBlock($pos->down());
+		$below = $world->getBlockAt($pos->getFloorX(), $pos->getFloorY() - 1, $pos->getFloorZ());
 		if (!$below->isSolid()) {
 			return false;
 		}

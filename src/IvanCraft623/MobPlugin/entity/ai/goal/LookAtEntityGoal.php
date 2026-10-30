@@ -25,10 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\Mob;
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\utils\Utils;
-use function array_reduce;
 
 class LookAtEntityGoal extends Goal {
 
@@ -65,18 +63,12 @@ class LookAtEntityGoal extends Goal {
 			return false;
 		}
 
-		$pos = $this->entity->getEyePos();
-		$this->lookingAt = array_reduce($this->entity->getWorld()->getNearbyEntities(
-			$this->entity->getBoundingBox()->expandedCopy($this->lookDistance, $this->lookDistance, $this->lookDistance)
-		), function(?Living $carry, Entity $current) use ($pos) : ?Living {
-			if (!$current instanceof $this->targetType || !$this->targetConditions->test($this->entity, $current)) {
-				return $carry;
-			}
-
-			return ($carry !== null &&
-				$carry->getPosition()->distanceSquared($pos) < $current->getPosition()->distanceSquared($pos)
-			) ? $carry : $current;
-		}, null);
+		$this->lookingAt = $this->entity->getSensing()->findNearest(
+			$this->targetType,
+			$this->lookDistance,
+			conditions: $this->targetConditions,
+			fromEyes: true
+		);
 
 		return $this->lookingAt !== null;
 	}
