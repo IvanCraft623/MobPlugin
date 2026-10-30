@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\loot;
 
 use InvalidArgumentException;
 use kostamax27\loottable\condition\LootConditionRegistry;
+use kostamax27\loottable\function\LootFunction;
 use kostamax27\loottable\function\LootFunctionRegistry;
 use kostamax27\loottable\item\ChainedItemResolver;
 use kostamax27\loottable\LootData;
@@ -55,6 +56,8 @@ final class LootTableRegistry implements LootTableResolver{
 	use SingletonTrait;
 
 	private const LOOTING_ENCHANTMENT = "looting";
+
+	private const COLOR_FUNCTION = "set_data_from_color_index";
 
 	/** @phpstan-var array<array-key, mixed> table name => table as written in the data */
 	private array $data = [];
@@ -141,9 +144,9 @@ final class LootTableRegistry implements LootTableResolver{
 		}
 
 		$looting = StringToEnchantmentParser::getInstance()->parse(self::LOOTING_ENCHANTMENT);
-		$this->items = new AirFallbackItemResolver(ChainedItemResolver::createDefault());
+		$this->items = $this->createItemResolver();
 		$factory = new LootTableFactory(
-			LootFunctionRegistry::createDefault(),
+			$this->createFunctions(),
 			LootConditionRegistry::createDefault(),
 			$this->items,
 			$looting !== null ? new EnchantmentLootingEvaluator($looting) : NullLootingEvaluator::instance()
@@ -151,5 +154,17 @@ final class LootTableRegistry implements LootTableResolver{
 		$factory->setTableResolver($this);
 
 		return $this->factory = $factory;
+	}
+
+	private function createItemResolver() : AirFallbackItemResolver{
+		return new AirFallbackItemResolver(new MobHeadItemResolver(ChainedItemResolver::createDefault()));
+	}
+
+	private function createFunctions() : LootFunctionRegistry{
+		$functions = LootFunctionRegistry::createDefault();
+		$functions->unregister(self::COLOR_FUNCTION);
+		$functions->register(self::COLOR_FUNCTION, static fn() : LootFunction => new EntityColorLootFunction());
+
+		return $functions;
 	}
 }

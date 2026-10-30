@@ -23,17 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\animal;
 
-use pocketmine\block\Block;
-use pocketmine\block\VanillaBlocks;
+use IvanCraft623\MobPlugin\loot\LootTable;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 
 enum MooshroomCowType{
 	case RED;
 	case BROWN;
 
-	public function getMushroom() : Block{
+	public function getShearLoot() : LootTable{
 		return match($this){
-			self::RED => VanillaBlocks::RED_MUSHROOM(),
-			self::BROWN => VanillaBlocks::BROWN_MUSHROOM()
+			self::RED => VanillaLootTables::MOOSHROOM_SHEAR(),
+			self::BROWN => VanillaLootTables::BROWN_MOOSHROOM_SHEAR()
 		};
 	}
 }

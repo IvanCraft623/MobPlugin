@@ -766,6 +766,16 @@ abstract class Mob extends Living {
 		));
 	}
 
+	/**
+	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
+	 */
+	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{
+		$position = $this->location->add(0, $this->getSize()->getHeight(), 0);
+		foreach ($this->generateLoot($table, $source, $tool) as $item) {
+			$this->getWorld()->dropItem($position, $item);
+		}
+	}
+
 	public function getDrops() : array {
 		return $this->getEquipmentDrops();
 	}

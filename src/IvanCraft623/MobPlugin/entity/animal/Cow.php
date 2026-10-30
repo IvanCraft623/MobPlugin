@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\CowMilkSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -45,7 +46,6 @@ use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
-use function mt_rand;
 
 class Cow extends Animal {
 
@@ -100,15 +100,7 @@ class Cow extends Animal {
 	}
 
 	public function getDrops() : array{
-		$drops = [];
-		if (!$this->isBaby()) {
-			$drops = [
-				VanillaItems::LEATHER()->setCount(mt_rand(0, 2)),
-				($this->shouldDropCookedItems() ? VanillaItems::STEAK() : VanillaItems::RAW_BEEF())->setCount(mt_rand(1, 3))
-			];
-		}
-
-		return $drops;
+		return $this->isBaby() ? [] : $this->generateDeathLoot(VanillaLootTables::COW());
 	}
 
 	public function getPickedItem() : ?Item{

@@ -622,15 +622,6 @@ abstract class Living extends PMLiving {
 		return $this->hasBeenDamagedByPlayer;
 	}
 
-	protected function shouldDropCookedItems() : bool{
-		$deathCause = $this->getLastDamageCause()?->getCause() ?? null;
-		return $this->isOnFire() || (!$this->isAlive() && (
-			$deathCause === EntityDamageEvent::CAUSE_FIRE ||
-			$deathCause === EntityDamageEvent::CAUSE_FIRE_TICK ||
-			$deathCause === EntityDamageEvent::CAUSE_LAVA
-		));
-	}
-
 	protected function checkBlockIntersections() : void{
 		$hasUpdate = false;
 		foreach($this->getBlocksAroundWithEntityInsideActions() as $block){

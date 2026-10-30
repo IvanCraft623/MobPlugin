@@ -32,20 +32,18 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
-use IvanCraft623\MobPlugin\entity\monster\skeleton\AbstractSkeleton;
 use IvanCraft623\MobPlugin\entity\Powerable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Explosive;
 use pocketmine\entity\Location;
 use pocketmine\entity\object\AreaEffectCloud;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityPreExplodeEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -57,7 +55,6 @@ use pocketmine\utils\Binary;
 use pocketmine\world\Explosion;
 use pocketmine\world\sound\IgniteSound;
 use function count;
-use function mt_rand;
 
 class Creeper extends Monster implements Explosive, Powerable{
 
@@ -312,31 +309,7 @@ class Creeper extends Monster implements Explosive, Powerable{
 	}
 
 	public function getDrops() : array{
-		$items = parent::getDrops();
-
-		//TODO: looting enchantment
-		$items[] = VanillaItems::GUNPOWDER()->setCount(mt_rand(0, 2));
-
-		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
-			$cause->getDamager() instanceof AbstractSkeleton
-		) {
-			$items[] = match (mt_rand(1, 12)) {
-				1 => VanillaItems::RECORD_13(),
-				2 => VanillaItems::RECORD_CAT(),
-				3 => VanillaItems::RECORD_BLOCKS(),
-				4 => VanillaItems::RECORD_CHIRP(),
-				5 => VanillaItems::RECORD_FAR(),
-				6 => VanillaItems::RECORD_MALL(),
-				7 => VanillaItems::RECORD_MELLOHI(),
-				8 => VanillaItems::RECORD_STAL(),
-				9 => VanillaItems::RECORD_STRAD(),
-				10 => VanillaItems::RECORD_WARD(),
-				11 => VanillaItems::RECORD_11(),
-				12 => VanillaItems::RECORD_WAIT()
-			};
-		}
-
-		return $items;
+		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::CREEPER())];
 	}
 
 	public function getPickedItem() : ?Item{

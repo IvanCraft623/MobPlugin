@@ -36,6 +36,7 @@ use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
 use pocketmine\item\Item;
@@ -205,12 +206,7 @@ class Slime extends Mob implements Enemy {
 	}
 
 	public function getDrops() : array{
-		$dropsGenerator = $this->type->getDropsGenerator();
-		if ($dropsGenerator !== null) {
-			return $dropsGenerator();
-		}
-
-		return [];
+		return $this->type === SlimeType::SMALL ? $this->generateDeathLoot(VanillaLootTables::SLIME()) : [];
 	}
 
 	public function getPickedItem() : ?Item{

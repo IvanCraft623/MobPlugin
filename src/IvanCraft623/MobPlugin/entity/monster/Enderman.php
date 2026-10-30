@@ -38,6 +38,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
 use IvanCraft623\Pathfinder\BlockPathType;
@@ -263,8 +264,7 @@ class Enderman extends Monster implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-		$drops[] = VanillaItems::ENDER_PEARL()->setCount(mt_rand(0, 1)); //TODO: looting...
+		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ENDERMAN())];
 
 		if ($this->carryBlock !== null) {
 			$drops = array_merge($drops, $this->carryBlock->getSilkTouchDrops(VanillaItems::DIAMOND_AXE()));

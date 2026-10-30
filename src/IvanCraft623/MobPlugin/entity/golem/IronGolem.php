@@ -37,18 +37,17 @@ use IvanCraft623\MobPlugin\entity\monster\Enemy;
 use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\IronGolemCrackSound;
 use IvanCraft623\MobPlugin\sound\IronGolemRepairSound;
 use IvanCraft623\MobPlugin\sound\ThrowSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\EntityEventBroadcaster;
@@ -160,12 +159,7 @@ class IronGolem extends Golem implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-
-		$drops[] = VanillaBlocks::POPPY()->asItem()->setCount(mt_rand(0, 2));
-		$drops[] = VanillaItems::IRON_INGOT()->setCount(mt_rand(3, 5));
-
-		return $drops;
+		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::IRON_GOLEM())];
 	}
 
 	public function getPickedItem() : ?Item{

@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
@@ -47,9 +48,6 @@ use pocketmine\item\ItemTypeIds;
 use pocketmine\item\VanillaItems;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
-use pocketmine\player\Player;
-
-use function mt_rand;
 
 class WitherSkeleton extends AbstractSkeleton {
 
@@ -104,17 +102,10 @@ class WitherSkeleton extends AbstractSkeleton {
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-
-		//TODO: looting enchantment logic
-		$drops[] = VanillaItems::COAL()->setCount(mt_rand(0, 1));
-		$drops[] = VanillaItems::BONE()->setCount(mt_rand(0, 2));
+		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_SKELETON())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
-			(
-				(($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()) ||
-				($killer instanceof Player && mt_rand(1, 40) === 1) //TODO: looting enchantment logic
-			)
+			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()
 		) {
 			$drops[] = VanillaBlocks::MOB_HEAD()->setMobHeadType(MobHeadType::WITHER_SKELETON)->asItem();
 		}

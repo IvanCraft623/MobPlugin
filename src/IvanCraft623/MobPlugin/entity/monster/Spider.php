@@ -36,14 +36,13 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\WallClimberNavigation;
 use IvanCraft623\MobPlugin\entity\MobType;
 
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Item;
-use pocketmine\item\VanillaItems;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
-use function mt_rand;
 
 class Spider extends Monster {
 
@@ -128,14 +127,7 @@ class Spider extends Monster {
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-		$drops[] = VanillaItems::STRING()->setCount(mt_rand(0, 2)); //TODO: looting...
-
-		if ($this->hasBeenDamagedByPlayer()) {
-			$drops[] = VanillaItems::SPIDER_EYE()->setCount(mt_rand(0, 1)); //TODO: looting...
-		}
-
-		return $drops;
+		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SPIDER())];
 	}
 
 	public function getPickedItem() : ?Item{
