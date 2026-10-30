@@ -44,5 +44,5 @@ jobs:
           composer generate-entity-data
           composer compile-loot-tables
           composer generate-bedrock-notice
-          git add --all -- resources/bedrock src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
-          git diff --cached --exit-code -- resources/bedrock src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git add --all -- resources/bedrock src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/loot/VanillaLootTables.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php
+          git diff --cached --exit-code -- resources/bedrock src/IvanCraft623/MobPlugin/spawning/parse/schema src/IvanCraft623/MobPlugin/spawning/event/VanillaSpawnEvents.php src/IvanCraft623/MobPlugin/loot/VanillaLootTables.php src/IvanCraft623/MobPlugin/data/bedrock/EntityIds.php src/IvanCraft623/MobPlugin/data/bedrock/VanillaEntitySizes.php

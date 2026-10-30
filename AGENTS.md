@@ -26,6 +26,8 @@ Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
   generated. See `docs/spawning.md`, and `docs/spawning-api.md` for the public API.
 - `despawning/` — natural despawning, for any entity with a registered `DespawnRule`. See
   `docs/despawning.md`.
+- `loot/` — mob drops: the vanilla loot tables, rolled by the `kostamax27/loottable`
+  library. See the Drops section of `docs/new-mobs.md`.
 - `utils/`, `sound/`, `particle/`, `pattern/`, `item/`, `inventory/`, `CustomTimings.php`
   — shared infrastructure.
 
@@ -34,7 +36,8 @@ Outside `src/`:
 - `resources/` — `global-settings.yml` and the generated `bedrock/` data
   (`spawning/spawn_rules.json`, `loot_tables.json`, `NOTICE.md`).
 - `tools/` — dev tools that generate the spawn data, `parse/schema/` and the entity data, and
-  merge the loot tables, from the pinned `mojang/bedrock-samples` dev dependency.
+  merge the loot tables, from the pinned `mojang/bedrock-samples` dev dependency, and
+  generate registry classes with PocketMine-MP's registry generator (`tools/registry/`).
 - `tests/phpunit/` — the PHPUnit suite.
 - `.github/workflows/` — `ci.yml` (PHPStan, PHPUnit, generated data drift), `build.yml`
   (nightly phar) and `release.yml` (tagged releases).

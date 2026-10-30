@@ -58,7 +58,10 @@
         "compile-spawn-rules": "php tools/spawn-rules/compile.php",
         "generate-entity-data": "php tools/entity-data/generate-entity-data.php",
         "generate-spawn-schema": "php tools/spawn-rules/generate-schema.php",
-        "compile-loot-tables": "php tools/loot-tables/compile.php",
+        "compile-loot-tables": [
+            "php tools/loot-tables/compile.php",
+            "php tools/registry/generate.php --bootstrap=tools/loot-tables/registry-bootstrap.php src/IvanCraft623/MobPlugin/loot/VanillaLootTablesInputs.php src/IvanCraft623/MobPlugin/loot/VanillaLootTables.php"
+        ],
         "generate-bedrock-notice": "php tools/bedrock/notice.php",
         "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit"
     }

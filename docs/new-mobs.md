@@ -159,8 +159,7 @@ class Silverfish extends Monster{
   Anything a goal reads at construction must be set here, because `registerGoals()` runs
   inside `initEntity()`. Fields assigned after `parent::initEntity()` don't exist yet
   (see how `Slime` sets its type before calling the parent).
-- Drops: override `getDrops()`; call `shouldDropCookedItems()` for burning deaths. `Mob`
-  already drops equipment.
+- Drops: see [Drops](#drops). `Mob` already drops equipment.
 - `getPickedItem()` returns the spawn egg.
 
 Other `Mob` hooks: `createNavigation()`, `getAmbientSoundInterval()`,
@@ -479,6 +478,27 @@ The mechanics:
   wrap an `ActorEventPacket`. `Mob::doAttackAnimation()` is the arm swing.
 - `$mob->broadcastSound(new XSound(...))` for the classes in `sound/`. Ambient, hurt and
   death sounds are played by the client per entity id.
+
+## Drops
+
+Drops roll Mojang's loot tables with the [LootTable](https://github.com/kostamax27/LootTable)
+library. `VanillaLootTables` has a method per table (`COW()` is `entities/cow`). A mob keeps
+`getDrops()` and rolls one with `generateDeathLoot()`, choosing it by state, since Bedrock puts a
+loot table in a component group (adult cow, saddled pig):
+
+```php
+public function getDrops() : array{
+	return $this->isBaby() ? [] : $this->generateDeathLoot(VanillaLootTables::COW());
+}
+```
+
+The table's conditions read the killer, their held item and the difficulty. A drop that
+isn't a death names who caused it and what they used: `generateLoot($table, $shearer, $shears)`.
+
+The data is `resources/bedrock/loot_tables.json`; `composer compile-loot-tables` regenerates
+it and `VanillaLootTables`. An item the server doesn't have drops nothing; call
+`LootTableRegistry::reload()` after registering one late. An enchantment registered as
+`looting` enables vanilla's looting bonus.
 
 ## Natural spawning
 

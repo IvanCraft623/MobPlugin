@@ -33,12 +33,15 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
+use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use kostamax27\loottable\LootContext;
+use kostamax27\loottable\LootDifficulty;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -735,6 +738,32 @@ abstract class Mob extends Living {
 		}
 
 		return $drops;
+	}
+
+	/**
+	 * Rolls a table for this mob's death, credited to whoever killed it.
+	 *
+	 * @return Item[]
+	 */
+	protected function generateDeathLoot(LootTable $table) : array{
+		$cause = $this->getLastDamageCause();
+
+		return $this->generateLoot($table, $cause instanceof EntityDamageByEntityEvent ? $cause->getDamager() : null);
+	}
+
+	/**
+	 * Rolls a table for a drop that $source caused with $tool (its held item if null).
+	 *
+	 * @return Item[]
+	 */
+	protected function generateLoot(LootTable $table, ?Entity $source = null, ?Item $tool = null) : array{
+		return $table->generate(new LootContext(
+			random: $this->random,
+			entity: $this,
+			killer: $source,
+			tool: $tool ?? Utils::getHeldItem($source),
+			difficulty: LootDifficulty::fromWorld($this->getWorld())
+		));
 	}
 
 	public function getDrops() : array {

@@ -24,7 +24,10 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\utils;
 
 use DateTime;
+use IvanCraft623\MobPlugin\entity\Mob;
 
+use pocketmine\entity\Entity;
+use pocketmine\entity\Human;
 use pocketmine\item\Bow;
 use pocketmine\item\Durable;
 use pocketmine\item\Item;
@@ -142,6 +145,13 @@ class Utils {
 			$vec3->y,
 			$vec3->z * $g + $vec3->x * $f
 		);
+	}
+
+	/**
+	 * The item in the main hand of a player or a mob, or null for anything else.
+	 */
+	public static function getHeldItem(?Entity $entity) : ?Item{
+		return $entity instanceof Human || $entity instanceof Mob ? $entity->getInventory()->getItemInHand() : null;
 	}
 
 	public static function popItemInHand(Player $player, int $amount = 1) : void{

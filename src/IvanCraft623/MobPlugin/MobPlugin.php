@@ -54,6 +54,7 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
+use IvanCraft623\MobPlugin\loot\LootTableRegistry;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
@@ -66,6 +67,7 @@ use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\DisablePluginException;
 use pocketmine\plugin\PluginBase;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
@@ -121,6 +123,7 @@ class MobPlugin extends PluginBase {
 		CustomTimings::init();
 
 		$this->registerSpawnRules();
+		$this->registerLootTables();
 		$this->registerAttributes();
 		$this->registerEntities();
 		$this->registerMetrics();
@@ -149,6 +152,18 @@ class MobPlugin extends PluginBase {
 		foreach($warnings as $warning){
 			$this->getLogger()->warning($warning);
 		}
+	}
+
+	private function registerLootTables() : void{
+		$registry = LootTableRegistry::getInstance();
+		$registry->registerVanilla(Path::join($this->getResourceFolder(), "bedrock", "loot_tables.json"));
+
+		// Plugins enabled after this one can still add the items the tables name, so they are built once all are.
+		$this->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use ($registry) : void{
+			foreach($registry->warmUp() as $problem){
+				$this->getLogger()->debug($problem);
+			}
+		}), 1);
 	}
 
 	private function registerNaturalSpawning() : void{
