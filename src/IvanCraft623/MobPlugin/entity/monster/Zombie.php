@@ -42,6 +42,7 @@ use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
 use IvanCraft623\MobPlugin\entity\MobType;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\SoundEvents;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -258,20 +259,12 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		}
 	}
 
+	public function generateEquipment() : void{
+		$this->equipFromLootTable(VanillaLootTables::ZOMBIE_EQUIPMENT());
+	}
+
 	public function getDrops() : array {
-		$drops = parent::getDrops();
-
-		$drops[] = VanillaItems::ROTTEN_FLESH()->setCount(mt_rand(0, 2));
-
-		// Rare iron drop
-		//TODO: looting enchantment logic
-		if (mt_rand(1, 40) === 1) { // 2.5% chance
-			$drops[] = match(mt_rand(0, 2)){
-				0 => VanillaItems::IRON_INGOT(),
-				1 => VanillaItems::CARROT(),
-				2 => VanillaItems::POTATO(),
-			};
-		}
+		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ZOMBIE())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
 			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()

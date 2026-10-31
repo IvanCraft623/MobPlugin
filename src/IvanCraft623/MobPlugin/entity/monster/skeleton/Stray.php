@@ -26,12 +26,9 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 use Closure;
 
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use pocketmine\item\Item;
-use pocketmine\item\VanillaItems;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
-
-use function mt_rand;
 
 class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton instead
 
@@ -47,26 +44,12 @@ class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton 
 		return true;
 	}
 
-	protected function initEntity(CompoundTag $nbt) : void{
-		parent::initEntity($nbt);
-
-		if ($nbt->count() === 0) {
-			//TODO gear equipment
-			$this->inventory->setItemInHand(VanillaItems::BOW());
-		}
+	public function generateEquipment() : void{
+		$this->equipFromLootTable(VanillaLootTables::SKELETON_GEAR());
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-
-		//TODO: looting enchantment logic
-		$drops[] = VanillaItems::BONE()->setCount(mt_rand(0, 2));
-
-		if ($this->hasBeenDamagedByPlayer()) {
-			$drops[] = VanillaItems::ARROW()->setCount(mt_rand(0, 2));
-		}
-
-		return $drops;
+		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::STRAY())];
 	}
 
 	public function getPickedItem() : ?Item{

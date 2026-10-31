@@ -33,12 +33,15 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
+use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\LootContext;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\LootDifficulty;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -735,6 +738,52 @@ abstract class Mob extends Living {
 		}
 
 		return $drops;
+	}
+
+	/**
+	 * Rolls a table for this mob's death, credited to whoever killed it.
+	 *
+	 * @return Item[]
+	 */
+	protected function generateDeathLoot(LootTable $table) : array{
+		$cause = $this->getLastDamageCause();
+
+		return $this->generateLoot($table, $cause instanceof EntityDamageByEntityEvent ? $cause->getDamager() : null);
+	}
+
+	/**
+	 * Rolls a table for a drop that $source caused with $tool (its held item if null).
+	 *
+	 * @return Item[]
+	 */
+	protected function generateLoot(LootTable $table, ?Entity $source = null, ?Item $tool = null) : array{
+		return $table->generate(new LootContext(
+			random: $this->random,
+			entity: $this,
+			killer: $source,
+			tool: $tool ?? Utils::getHeldItem($source),
+			difficulty: LootDifficulty::fromWorld($this->getWorld())
+		));
+	}
+
+	/**
+	 * Rolls a table of gear for this mob and puts each item in its slot.
+	 */
+	protected function equipFromLootTable(LootTable $table) : void{
+		foreach ($this->generateLoot($table) as $item) {
+			$slot = 0;
+			$this->getEquipInventoryAndSlot($item, $slot)->setItem($slot, $item);
+		}
+	}
+
+	/**
+	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
+	 */
+	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{
+		$position = $this->location->add(0, $this->getSize()->getHeight(), 0);
+		foreach ($this->generateLoot($table, $source, $tool) as $item) {
+			$this->getWorld()->dropItem($position, $item);
+		}
 	}
 
 	public function getDrops() : array {

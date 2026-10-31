@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
@@ -54,6 +54,7 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
+use IvanCraft623\MobPlugin\loot\LootTableRegistry;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
@@ -66,12 +67,13 @@ use pocketmine\entity\EntityFactory;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\plugin\DisablePluginException;
 use pocketmine\plugin\PluginBase;
+use pocketmine\scheduler\ClosureTask;
 use pocketmine\utils\Random;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
@@ -121,6 +123,7 @@ class MobPlugin extends PluginBase {
 		CustomTimings::init();
 
 		$this->registerSpawnRules();
+		$this->registerLootTables();
 		$this->registerAttributes();
 		$this->registerEntities();
 		$this->registerMetrics();
@@ -139,7 +142,7 @@ class MobPlugin extends PluginBase {
 	 * Runs before anything else is registered, so a failure leaves nothing half set up.
 	 */
 	private function registerSpawnRules() : void{
-		$path = Path::join($this->getResourceFolder(), "spawning", "spawn_rules.json");
+		$path = Path::join($this->getResourceFolder(), "bedrock", "spawning", "spawn_rules.json");
 		try{
 			$warnings = SpawnRuleRegistry::getInstance()->registerVanilla($path);
 		}catch(SpawnRulesParseException $e){
@@ -149,6 +152,18 @@ class MobPlugin extends PluginBase {
 		foreach($warnings as $warning){
 			$this->getLogger()->warning($warning);
 		}
+	}
+
+	private function registerLootTables() : void{
+		$registry = LootTableRegistry::getInstance();
+		$registry->registerVanilla(Path::join($this->getResourceFolder(), "bedrock", "loot_tables.json"));
+
+		// Plugins enabled after this one can still add the items the tables name, so they are built once all are.
+		$this->getScheduler()->scheduleDelayedTask(new ClosureTask(function() use ($registry) : void{
+			foreach($registry->warmUp() as $problem){
+				$this->getLogger()->debug($problem);
+			}
+		}), 1);
 	}
 
 	private function registerNaturalSpawning() : void{

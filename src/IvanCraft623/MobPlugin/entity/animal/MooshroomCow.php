@@ -36,6 +36,7 @@ use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\data\bedrock\SuspiciousStewTypeIdMap;
 use pocketmine\entity\animation\ConsumingItemAnimation;
+use pocketmine\entity\Entity;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\SuspiciousStewType;
@@ -107,7 +108,7 @@ class MooshroomCow extends Cow implements Shearable{
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$item = $player->getInventory()->getItemInHand();
 		if ($item->getTypeId() === ItemTypeIds::SHEARS && $this->isReadyForShearing()) {
-			$this->shear();
+			$this->shear($player, $item);
 			Utils::damageItemInHand($player);
 
 			return true;
@@ -176,16 +177,12 @@ class MooshroomCow extends Cow implements Shearable{
 		return $this->stewType;
 	}
 
-	public function shear() : void{
+	public function shear(?Entity $shearer, ?Item $shears) : void{
 		$this->broadcastSound(new ShearSound());
-
-		$world = $this->getWorld();
-		$position = $this->location->add(0, $this->getSize()->getHeight(), 0);
-
-		$world->addParticle($position, new HugeExplodeParticle());
+		$this->getWorld()->addParticle($this->location->add(0, $this->getSize()->getHeight(), 0), new HugeExplodeParticle());
 
 		//TODO: pocketmine doesn't allow spread the items, they are merged immediately :(
-		$world->dropItem($position, $this->mooshroomType->getMushroom()->asItem()->setCount(5));
+		$this->dropLoot($this->mooshroomType->getShearLoot(), $shearer, $shears);
 
 		$this->setSheared();
 	}

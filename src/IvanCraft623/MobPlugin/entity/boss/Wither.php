@@ -50,6 +50,7 @@ use IvanCraft623\MobPlugin\entity\projectile\DangerousWitherSkull;
 use IvanCraft623\MobPlugin\entity\projectile\WitherSkull;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\DeathSound;
 use IvanCraft623\MobPlugin\sound\EntityBreakBlockSound;
 use IvanCraft623\MobPlugin\sound\EntityShootSound;
@@ -87,7 +88,7 @@ use pocketmine\world\Explosion;
 use pocketmine\world\sound\BowShootSound;
 use pocketmine\world\World;
 
-use IvanCraft623\MobPlugin\libs\_05235b683cec4529\xenialdan\apibossbar\BossBar;
+use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\xenialdan\apibossbar\BossBar;
 
 use function atan2;
 use function ceil;
@@ -328,11 +329,7 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	}
 
 	public function getDrops() : array{
-		$items = parent::getDrops();
-
-		$items[] = VanillaItems::NETHER_STAR();
-
-		return $items;
+		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_BOSS())];
 	}
 
 	public function getPickedItem() : ?Item{

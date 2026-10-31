@@ -23,14 +23,10 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster\slime;
 
-use Closure;
-use pocketmine\item\Item;
-use pocketmine\item\VanillaItems;
-use function mt_rand;
 use function spl_object_id;
 
 /**
- * @phpstan-type TMetadata array{0: float, 1: int, 2: float, 3: float, 4: ?SlimeType, 5: null|Closure() : Item[]}
+ * @phpstan-type TMetadata array{0: float, 1: int, 2: float, 3: float, 4: ?SlimeType}
  */
 enum SlimeType{
 	case SMALL;
@@ -38,7 +34,7 @@ enum SlimeType{
 	case LARGE;
 
 	/**
-	 * Scale, health, movement speed, attack damage, split type and drops generator.
+	 * Scale, health, movement speed, attack damage and split type.
 	 *
 	 * @phpstan-return TMetadata
 	 */
@@ -47,9 +43,9 @@ enum SlimeType{
 		static $cache = [];
 
 		return $cache[spl_object_id($this)] ??= match($this){
-			self::SMALL => [1, 1, 0.3, 0, null, static fn() => [VanillaItems::SLIMEBALL()->setCount(mt_rand(0, 2))]],
-			self::MEDIUM => [2, 4, 0.4, 2, self::SMALL, null],
-			self::LARGE => [4, 16, 0.6, 4, self::MEDIUM, null]
+			self::SMALL => [1, 1, 0.3, 0, null],
+			self::MEDIUM => [2, 4, 0.4, 2, self::SMALL],
+			self::LARGE => [4, 16, 0.6, 4, self::MEDIUM]
 		};
 	}
 
@@ -62,9 +58,4 @@ enum SlimeType{
 	public function getAttackDamage() : float{ return $this->getMetadata()[3]; }
 
 	public function getSplitType() : ?SlimeType{ return $this->getMetadata()[4]; }
-
-	/**
-	 * @phpstan-return null|Closure() : Item[]
-	 */
-	public function getDropsGenerator() : ?Closure{ return $this->getMetadata()[5]; }
 }

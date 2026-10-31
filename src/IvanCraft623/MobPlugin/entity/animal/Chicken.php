@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\EntityPlopSound;
 
 use pocketmine\entity\EntitySizeInfo;
@@ -182,15 +183,7 @@ class Chicken extends Animal {
 	}
 
 	public function getDrops() : array{
-		$drops = [];
-		if (!$this->isBaby()) {
-			$drops = [
-				VanillaItems::FEATHER()->setCount(mt_rand(0, 2)),
-				$this->shouldDropCookedItems() ? VanillaItems::COOKED_CHICKEN() : VanillaItems::RAW_CHICKEN()
-			];
-		}
-
-		return $drops;
+		return $this->isBaby() ? [] : $this->generateDeathLoot(VanillaLootTables::CHICKEN());
 	}
 
 	public function getPickedItem() : ?Item{

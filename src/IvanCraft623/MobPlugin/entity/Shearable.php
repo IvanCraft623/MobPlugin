@@ -23,9 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use pocketmine\entity\Entity;
+use pocketmine\item\Item;
+
 interface Shearable {
 
-	public function shear() : void;
+	/**
+	 * @param Entity|null $shearer who is shearing it, if anyone
+	 * @param Item|null   $shears  what they use
+	 */
+	public function shear(?Entity $shearer, ?Item $shears) : void;
 
 	public function setSheared(bool $sheared = true) : void;
 

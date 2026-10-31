@@ -28,6 +28,7 @@ use Closure;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
 use pocketmine\block\utils\MobHeadType;
@@ -36,11 +37,7 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
-
-use function mt_rand;
 
 class Skeleton extends AbstractSkeleton {
 
@@ -56,13 +53,8 @@ class Skeleton extends AbstractSkeleton {
 		return true;
 	}
 
-	protected function initEntity(CompoundTag $nbt) : void{
-		parent::initEntity($nbt);
-
-		if ($nbt->count() === 0) {
-			//TODO gear equipment
-			$this->inventory->setItemInHand(VanillaItems::BOW());
-		}
+	public function generateEquipment() : void{
+		$this->equipFromLootTable(VanillaLootTables::SKELETON_GEAR());
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool {
@@ -71,11 +63,7 @@ class Skeleton extends AbstractSkeleton {
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-
-		//TODO: looting enchantment logic
-		$drops[] = VanillaItems::ARROW()->setCount(mt_rand(0, 2));
-		$drops[] = VanillaItems::BONE()->setCount(mt_rand(0, 2));
+		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SKELETON())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
 			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()

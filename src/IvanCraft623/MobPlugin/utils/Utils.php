@@ -24,7 +24,10 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\utils;
 
 use DateTime;
+use IvanCraft623\MobPlugin\entity\Mob;
 
+use pocketmine\entity\Entity;
+use pocketmine\entity\Human;
 use pocketmine\item\Bow;
 use pocketmine\item\Durable;
 use pocketmine\item\Item;
@@ -36,11 +39,13 @@ use pocketmine\utils\Random;
 use pocketmine\world\particle\BlockBreakParticle;
 use pocketmine\world\Position;
 use pocketmine\world\World;
+use function abs;
 use function array_key_last;
 use function array_sum;
 use function cos;
 use function floor;
 use function fmod;
+use function intdiv;
 use function max;
 use function method_exists;
 use function min;
@@ -52,6 +57,12 @@ use function ucwords;
 use const M_PI;
 
 class Utils {
+
+	private const MOON_PHASES_COUNT = 8;
+	private const NEW_MOON_PHASE = 4; //the full moon is phase 0
+
+	private const REGIONAL_DIFFICULTY_NORMAL_BASE = 0.375; //on normal difficulty, with a new moon
+	private const REGIONAL_DIFFICULTY_MOON_FACTOR = 0.25; //multiplies the brightness of the moon
 
 	/**
 	 * Picks a key with a probability proportional to its weight, or null when no weight is
@@ -142,6 +153,36 @@ class Utils {
 			$vec3->y,
 			$vec3->z * $g + $vec3->x * $f
 		);
+	}
+
+	/**
+	 * Returns how bright the moon is at the given world time, from the new moon to the full moon.
+	 *
+	 * @return float 0.0-1.0
+	 */
+	public static function getMoonBrightness(int $time) : float{
+		return abs((intdiv($time, World::TIME_FULL) & (self::MOON_PHASES_COUNT - 1)) - self::NEW_MOON_PHASE) / self::NEW_MOON_PHASE;
+	}
+
+	/**
+	 * Returns the regional difficulty of a world: 0.0 on peaceful and easy, 1.0 on hard,
+	 * and on normal higher the brighter the moon.
+	 *
+	 * @return float 0.0-1.0
+	 */
+	public static function getRegionalDifficulty(World $world) : float{
+		return match($world->getDifficulty()){
+			World::DIFFICULTY_NORMAL => self::REGIONAL_DIFFICULTY_NORMAL_BASE + self::REGIONAL_DIFFICULTY_MOON_FACTOR * self::getMoonBrightness($world->getTime()),
+			World::DIFFICULTY_HARD => 1.0,
+			default => 0.0
+		};
+	}
+
+	/**
+	 * The item in the main hand of a player or a mob, or null for anything else.
+	 */
+	public static function getHeldItem(?Entity $entity) : ?Item{
+		return $entity instanceof Human || $entity instanceof Mob ? $entity->getInventory()->getItemInHand() : null;
 	}
 
 	public static function popItemInHand(Player $player, int $amount = 1) : void{

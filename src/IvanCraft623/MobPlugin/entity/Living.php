@@ -191,6 +191,10 @@ abstract class Living extends PMLiving {
 		$this->generateEquipment();
 	}
 
+	/**
+	 * Called when the entity is created to give it its starting gear.
+	 * Subclasses must equip the items themselves.
+	 */
 	public function generateEquipment() : void{}
 
 	/**
@@ -620,15 +624,6 @@ abstract class Living extends PMLiving {
 
 	public function hasBeenDamagedByPlayer() : bool{
 		return $this->hasBeenDamagedByPlayer;
-	}
-
-	protected function shouldDropCookedItems() : bool{
-		$deathCause = $this->getLastDamageCause()?->getCause() ?? null;
-		return $this->isOnFire() || (!$this->isAlive() && (
-			$deathCause === EntityDamageEvent::CAUSE_FIRE ||
-			$deathCause === EntityDamageEvent::CAUSE_FIRE_TICK ||
-			$deathCause === EntityDamageEvent::CAUSE_LAVA
-		));
 	}
 
 	protected function checkBlockIntersections() : void{

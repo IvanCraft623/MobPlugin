@@ -36,19 +36,19 @@ use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\Shearable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\utils\Colored;
 use pocketmine\block\utils\ColoredTrait;
 use pocketmine\block\utils\DyeColor;
-use pocketmine\block\VanillaBlocks;
 use pocketmine\data\bedrock\DyeColorIdMap;
+use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Dye;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -158,7 +158,7 @@ class Sheep extends Animal implements Shearable, Colored{
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$item = $player->getInventory()->getItemInHand();
 		if ($item->getTypeId() === ItemTypeIds::SHEARS && $this->isReadyForShearing()) {
-			$this->shear();
+			$this->shear($player, $item);
 			Utils::damageItemInHand($player);
 
 			return true;
@@ -183,14 +183,11 @@ class Sheep extends Animal implements Shearable, Colored{
 		return $this->traitSetColor($color);
 	}
 
-	public function shear() : void{
+	public function shear(?Entity $shearer, ?Item $shears) : void{
 		$this->broadcastSound(new ShearSound());
 		$this->setSheared();
 
-		$this->getWorld()->dropItem(
-			$this->location->add(0, $this->getSize()->getHeight(), 0),
-			VanillaBlocks::WOOL()->setColor($this->getColor())->asItem()->setCount(mt_rand(1, 3))
-		);
+		$this->dropLoot(VanillaLootTables::SHEEP_SHEAR(), $shearer, $shears);
 	}
 
 	public function setSheared(bool $sheared = true) : void{
@@ -222,16 +219,11 @@ class Sheep extends Animal implements Shearable, Colored{
 	}
 
 	public function getDrops() : array{
-		$drops = [];
-		if (!$this->isBaby()) {
-			$drops[] = ($this->shouldDropCookedItems() ? VanillaItems::COOKED_MUTTON() : VanillaItems::RAW_MUTTON())->setCount(mt_rand(1, 2));
-
-			if (!$this->isSheared()) {
-				$drops[] = VanillaBlocks::WOOL()->setColor($this->getColor())->asItem();
-			}
+		if ($this->isBaby()) {
+			return [];
 		}
 
-		return $drops;
+		return $this->generateDeathLoot($this->isSheared() ? VanillaLootTables::SHEEP_SHEARED() : VanillaLootTables::SHEEP());
 	}
 
 	public function getPickedItem() : ?Item{

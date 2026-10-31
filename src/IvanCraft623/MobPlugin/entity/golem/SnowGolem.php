@@ -33,6 +33,7 @@ use IvanCraft623\MobPlugin\entity\monster\Enemy;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\entity\Shearable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\EntityShootSound;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -60,7 +61,6 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
 
 use function floor;
-use function mt_rand;
 use function sqrt;
 
 class SnowGolem extends Golem implements RangedAttackMob, Shearable{
@@ -127,11 +127,7 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 	}
 
 	public function getDrops() : array{
-		$drops = parent::getDrops();
-
-		$drops[] = VanillaItems::SNOWBALL()->setCount(mt_rand(0, 15));
-
-		return $drops;
+		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SNOWMAN())];
 	}
 
 	public function getPickedItem() : ?Item{
@@ -213,7 +209,7 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$item = $player->getInventory()->getItemInHand();
 		if ($item->getTypeId() === ItemTypeIds::SHEARS && $this->isReadyForShearing()) {
-			$this->shear();
+			$this->shear($player, $item);
 			Utils::damageItemInHand($player);
 
 			return true;
@@ -222,14 +218,11 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 		return parent::onInteract($player, $clickPos);
 	}
 
-	public function shear() : void{
+	public function shear(?Entity $shearer, ?Item $shears) : void{
 		$this->broadcastSound(new ShearSound());
 		$this->setSheared();
 
-		$this->getWorld()->dropItem(
-			$this->location->add(0, $this->getSize()->getHeight(), 0),
-			VanillaBlocks::CARVED_PUMPKIN()->asItem()
-		);
+		$this->dropLoot(VanillaLootTables::SNOW_GOLEM_SHEAR(), $shearer, $shears);
 	}
 
 	public function setSheared(bool $sheared = true) : void{

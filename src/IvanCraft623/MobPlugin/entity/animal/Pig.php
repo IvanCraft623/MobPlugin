@@ -36,12 +36,12 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ItemSteerable;
 use IvanCraft623\MobPlugin\entity\Saddleable;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -49,7 +49,6 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\player\Player;
-use function mt_rand;
 
 class Pig extends Animal implements ItemSteerable, Saddleable {
 
@@ -153,13 +152,8 @@ class Pig extends Animal implements ItemSteerable, Saddleable {
 	}
 
 	public function getDrops() : array{
-		$drops = [];
-		if (!$this->isBaby()) {
-			//TODO: saddle
-			$drops[] = ($this->shouldDropCookedItems() ? VanillaItems::COOKED_PORKCHOP() : VanillaItems::RAW_PORKCHOP())->setCount(mt_rand(1, 3));
-		}
-
-		return $drops;
+		//TODO: saddle, VanillaLootTables::PIG_SADDLED() when saddled
+		return $this->isBaby() ? [] : $this->generateDeathLoot(VanillaLootTables::PIG());
 	}
 
 	public function getPickedItem() : ?Item{

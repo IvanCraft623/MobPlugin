@@ -23,17 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
-use pocketmine\world\World;
-use function intdiv;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 /**
  * The fuller the moon, the likelier it passes: always at full moon, never at new moon.
  */
 final class MoonPhaseChanceCondition implements SpawnCondition{
-	/** Chance by moon phase, from full moon. */
-	private const MOON_BRIGHTNESS = [1.0, 0.75, 0.5, 0.25, 0.0, 0.25, 0.5, 0.75];
-
 	public function test(SpawnConditionContext $ctx) : bool{
-		return self::MOON_BRIGHTNESS[intdiv($ctx->getTime(), World::TIME_FULL) & 7] > $ctx->getRandom()->nextFloat();
+		return Utils::getMoonBrightness($ctx->getTime()) > $ctx->getRandom()->nextFloat();
 	}
 }
