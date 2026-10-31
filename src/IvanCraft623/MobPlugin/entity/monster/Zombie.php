@@ -149,7 +149,6 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		parent::onFirstUpdate($currentTick);
 
 		$this->updatePickupItemsGoal($this->canPickupItems());
-		$this->updateBreakDoorGoal($this->canBreakDoors);
 	}
 
 	public function isBaby() : bool{

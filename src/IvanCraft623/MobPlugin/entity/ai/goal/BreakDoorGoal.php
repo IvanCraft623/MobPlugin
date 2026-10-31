@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\sound\DoorBumpSound;
 use IvanCraft623\MobPlugin\sound\DoorCrashSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\BlockTypeIds;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\types\LevelEvent;
 use function max;
@@ -53,19 +54,13 @@ class BreakDoorGoal extends DoorInteractGoal {
 	}
 
 	public function canUse() : bool{
-		if (!parent::canUse()) {
-			return false;
-		}
-
-		if (!$this->entity->getSettings()->isMobGriefingEnabled()) {
-			return false;
-		}
-
-		return $this->entity->getWorld()->getDifficulty() >= $this->minDifficulty && !$this->isDoorOpen();
+		return $this->entity->getSettings()->isMobGriefingEnabled() &&
+			$this->entity->getWorld()->getDifficulty() >= $this->minDifficulty &&
+			parent::canUse() &&
+			!$this->isDoorOpen();
 	}
 
 	public function start() : void{
-		parent::start();
 		$this->breakProgress = 0;
 
 		$this->entity->getWorld()->broadcastPacketToViewers($this->doorPosition, LevelEventPacket::create(
@@ -80,33 +75,29 @@ class BreakDoorGoal extends DoorInteractGoal {
 			$this->doorPosition,
 			LevelEventPacket::create(LevelEvent::BLOCK_STOP_BREAK, 0, $this->doorPosition)
 		);
-
-		parent::stop();
 	}
 
 	public function canContinueToUse() : bool{
-		return $this->breakProgress <= $this->maxProgress
-			&& !$this->isDoorOpen()
-			&& $this->doorPosition->distanceSquared($this->entity->getPosition()) < 4.0
-			&& $this->entity->getWorld()->getDifficulty() >= $this->minDifficulty;
+		return $this->breakProgress <= $this->maxProgress &&
+			!$this->isDoorOpen() &&
+			$this->doorPosition->distanceSquared($this->entity->getPosition()) < 4.0 &&
+			$this->entity->getWorld()->getDifficulty() >= $this->minDifficulty;
 	}
 
 	public function tick() : void{
-		parent::tick();
-
+		$world = $this->entity->getWorld();
 		if ($this->entity->getRandom()->nextBoundedInt(20) === 0) {
-			$this->entity->getWorld()->addSound($this->doorPosition->add(0.5, 0.5, 0.5), new DoorBumpSound());
+			$world->addSound($this->doorPosition->add(0.5, 0.5, 0.5), new DoorBumpSound());
 			$this->entity->doAttackAnimation();
 		}
 
 		$this->breakProgress++;
-		if ($this->breakProgress >= $this->maxProgress && $this->entity->getWorld()->getDifficulty() >= $this->minDifficulty) {
-			$world = $this->entity->getWorld();
-			$block = $world->getBlock($this->doorPosition);
-
-			$this->entity->getWorld()->addSound($this->doorPosition->add(0.5, 0.5, 0.5), new DoorCrashSound());
+		if ($this->breakProgress === $this->maxProgress &&
+			$world->getDifficulty() >= $this->minDifficulty &&
+			$world->getBlock($this->doorPosition)->getTypeId() !== BlockTypeIds::IRON_DOOR
+		) {
+			$world->addSound($this->doorPosition->add(0.5, 0.5, 0.5), new DoorCrashSound());
 			Utils::destroyBlock($world, $this->doorPosition);
-			//$world->useBreakOn(vector: $this->doorPosition, createParticles: true);
 		}
 	}
 
