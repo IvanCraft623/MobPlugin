@@ -45,8 +45,6 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class WitherSkeleton extends AbstractSkeleton {
@@ -82,13 +80,8 @@ class WitherSkeleton extends AbstractSkeleton {
 		//TODO: NearestAttackableGoal to piglins
 	}
 
-	protected function initEntity(CompoundTag $nbt) : void{
-		parent::initEntity($nbt);
-
-		if ($nbt->count() === 0) {
-			//TODO gear equipment
-			$this->inventory->setItemInHand(VanillaItems::STONE_SWORD());
-		}
+	public function generateEquipment() : void{
+		$this->equipFromLootTable(VanillaLootTables::WITHER_SKELETON_GEAR());
 	}
 
 	protected function initProperties() : void{

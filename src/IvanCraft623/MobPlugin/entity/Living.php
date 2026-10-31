@@ -191,6 +191,10 @@ abstract class Living extends PMLiving {
 		$this->generateEquipment();
 	}
 
+	/**
+	 * Called when the entity is created to give it its starting gear.
+	 * Subclasses must equip the items themselves.
+	 */
 	public function generateEquipment() : void{}
 
 	/**

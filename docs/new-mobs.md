@@ -495,6 +495,9 @@ public function getDrops() : array{
 The table's conditions read the killer, their held item and the difficulty. A drop that
 isn't a death names who caused it and what they used: `generateLoot($table, $shearer, $shears)`.
 
+Spawn gear is a loot table too: override `generateEquipment()`, which runs when the mob is
+created, and call `equipFromLootTable()`. Each item goes to the slot it fits.
+
 The data is `resources/bedrock/loot_tables.json`; `composer compile-loot-tables` regenerates
 it and `VanillaLootTables`. An item the server doesn't have drops nothing; call
 `LootTableRegistry::reload()` after registering one late. An enchantment registered as

@@ -259,6 +259,10 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		}
 	}
 
+	public function generateEquipment() : void{
+		$this->equipFromLootTable(VanillaLootTables::ZOMBIE_EQUIPMENT());
+	}
+
 	public function getDrops() : array {
 		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ZOMBIE())];
 

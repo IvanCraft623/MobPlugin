@@ -767,6 +767,16 @@ abstract class Mob extends Living {
 	}
 
 	/**
+	 * Rolls a table of gear for this mob and puts each item in its slot.
+	 */
+	protected function equipFromLootTable(LootTable $table) : void{
+		foreach ($this->generateLoot($table) as $item) {
+			$slot = 0;
+			$this->getEquipInventoryAndSlot($item, $slot)->setItem($slot, $item);
+		}
+	}
+
+	/**
 	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
 	 */
 	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{

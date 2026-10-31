@@ -37,8 +37,6 @@ use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\item\VanillaItems;
-use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class Skeleton extends AbstractSkeleton {
@@ -55,13 +53,8 @@ class Skeleton extends AbstractSkeleton {
 		return true;
 	}
 
-	protected function initEntity(CompoundTag $nbt) : void{
-		parent::initEntity($nbt);
-
-		if ($nbt->count() === 0) {
-			//TODO gear equipment
-			$this->inventory->setItemInHand(VanillaItems::BOW());
-		}
+	public function generateEquipment() : void{
+		$this->equipFromLootTable(VanillaLootTables::SKELETON_GEAR());
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool {
