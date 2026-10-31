@@ -24,11 +24,11 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\loot;
 
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\enchant\ItemEnchanter;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\function\EnchantWithLevelsLootFunction;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\function\LootFunction;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\IntRange;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\kostamax27\loottable\LootContext;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\kostamax27\loottable\enchant\ItemEnchanter;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\kostamax27\loottable\function\EnchantWithLevelsLootFunction;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\kostamax27\loottable\function\LootFunction;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\kostamax27\loottable\IntRange;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\kostamax27\loottable\LootContext;
 use pocketmine\item\Item;
 
 final class RandomGearEnchantLootFunction implements LootFunction{

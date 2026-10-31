@@ -25,20 +25,15 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use pocketmine\block\BlockTypeIds;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\Path;
 use pocketmine\block\Door;
 use pocketmine\math\Vector3;
+use function floor;
 use function min;
 
 abstract class DoorInteractGoal extends Goal {
 
 	protected Vector3 $doorPosition;
-
-	protected bool $isValidDoor = false;
-	protected bool $shouldStop = false;
-
-	private float $initialXOffset = 0.0;
-	private float $initialZOffset = 0.0;
 
 	public function __construct(protected PathfinderMob $entity) {
 		if (!$entity->getNavigation() instanceof GroundPathNavigation) {
@@ -47,35 +42,12 @@ abstract class DoorInteractGoal extends Goal {
 	}
 
 	protected function isDoorOpen() : bool {
-		if (!$this->isValidDoor) {
-			return false;
-		}
-
 		$block = $this->entity->getWorld()->getBlock($this->doorPosition);
-		if (!$block instanceof Door) {
-			$this->isValidDoor = false;
-			return false;
-		}
 
-		return $block->isOpen();
-	}
-
-	protected function setDoorOpen(bool $open) : void {
-		if (!$this->isValidDoor) {
-			return;
-		}
-
-		$world = $this->entity->getWorld();
-		$block = $world->getBlock($this->doorPosition);
-		if ($block instanceof Door) {
-			$world->setBlock($this->doorPosition, $block->setOpen($open));
-		}
+		return $block instanceof Door && $block->isOpen();
 	}
 
 	public function canUse() : bool {
-		if (!$this->entity->getNavigation() instanceof GroundPathNavigation) {
-			return false;
-		}
 		if (!$this->entity->isCollidedHorizontally) {
 			return false;
 		}
@@ -85,53 +57,54 @@ abstract class DoorInteractGoal extends Goal {
 			return false;
 		}
 
+		$doorPosition = $this->findDoor($path);
+		if ($doorPosition === null) {
+			return false;
+		}
+
+		$this->doorPosition = $doorPosition;
+
+		return true;
+	}
+
+	private function findDoor(Path $path) : ?Vector3 {
+		$world = $this->entity->getWorld();
+		$location = $this->entity->getLocation();
+
 		$length = min($path->getNodeCount(), $path->getNextNodeIndex() + 2);
 		for ($i = 0; $i < $length; $i++) {
 			$node = $path->getNode($i);
-			$doorPos = new Vector3((int) $node->x, (int) $node->y + 1, (int) $node->z);
-			if ($this->entity->getPosition()->distanceSquared($doorPos) <= 2.25) {
-				$block = $this->entity->getWorld()->getBlock($doorPos);
-				if ($block instanceof Door && $block->getTypeId() !== BlockTypeIds::IRON_DOOR) {
-					$this->doorPosition = $doorPos;
-					$this->isValidDoor = true;
-					return true;
-				}
+			$x = (int) $node->x;
+			$y = (int) $node->y + 1;
+			$z = (int) $node->z;
+
+			$dx = $x - $location->x;
+			$dz = $z - $location->z;
+			if ($dx * $dx + $dz * $dz > 2.25) {
+				continue;
+			}
+
+			$block = $world->getBlockAt($x, $y, $z);
+			if (!$block instanceof Door) {
+				continue;
+			}
+
+			// The door only counts if its panel is between the entity and the next node.
+			$next = $path->getNode(min($i + 1, $path->getNodeCount() - 1));
+			if ($block->calculateIntercept(
+				new Vector3($location->x, $y + 0.5, $location->z),
+				new Vector3($next->x + 0.5, $y + 0.5, $next->z + 0.5)
+			) !== null) {
+				return new Vector3($x, $y, $z);
 			}
 		}
 
-		$doorPos = $this->entity->getPosition()->add(0, 1, 0);
-		$block = $this->entity->getWorld()->getBlock($doorPos);
-		if ($block instanceof Door && $block->getTypeId() !== BlockTypeIds::IRON_DOOR) {
-			$this->doorPosition = $doorPos;
-			$this->isValidDoor = true;
-			return true;
-		}
+		// The door the entity is standing in.
+		$x = (int) floor($location->x);
+		$y = (int) floor($location->y) + 1;
+		$z = (int) floor($location->z);
 
-		return false;
-	}
-
-	public function canContinueToUse() : bool {
-		return !$this->shouldStop;
-	}
-
-	public function start() : void {
-		$this->shouldStop = false;
-		$this->initialXOffset = $this->doorPosition->x + 0.5 - $this->entity->getPosition()->x;
-		$this->initialZOffset = $this->doorPosition->z + 0.5 - $this->entity->getPosition()->z;
-	}
-
-	public function tick() : void {
-		$currentXOffset = $this->doorPosition->x + 0.5 - $this->entity->getPosition()->x;
-		$currentZOffset = $this->doorPosition->z + 0.5 - $this->entity->getPosition()->z;
-		$dot = $this->initialXOffset * $currentXOffset + $this->initialZOffset * $currentZOffset;
-
-		if ($dot < 0.0) {
-			$this->shouldStop = true;
-		}
-	}
-
-	public function stop() : void {
-		unset($this->doorPosition);
+		return $world->getBlockAt($x, $y, $z) instanceof Door ? new Vector3($x, $y, $z) : null;
 	}
 
 	public function requiresUpdateEveryTick() : bool {

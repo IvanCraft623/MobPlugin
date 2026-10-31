@@ -25,13 +25,13 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\PathFinder;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
-use IvanCraft623\MobPlugin\libs\_2ad1fd49155870ef\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\PathFinder;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
+use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\IvanCraft623\Pathfinder\world\SyncBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
