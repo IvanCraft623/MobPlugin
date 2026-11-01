@@ -43,12 +43,22 @@ serialized on the main thread at submission, which is expensive. So:
 - `moveToEntity()` can be called every tick: it requests again when the entity changes
   block, or when the path has ended and the last request is `ENTITY_REPATH_INTERVAL = 20`
   ticks old.
+- When the target moved at most `SPLICE_MAX_TARGET_MOVE = 4` blocks and the current path
+  reached the old one, the path is extended: the search starts at its remaining node closest
+  to the new target, with `SPLICE_NODE_BUDGET_FACTOR = 0.25` of the node budget, and is
+  spliced on. After `MAX_SPLICES_IN_A_ROW = 4` the next request searches from the mob; so
+  does an extension that can't reach the target or a path that changed meanwhile.
 
 `recomputePath()` runs at most every `MAX_TIME_RECOMPUTE = 20` ticks; an earlier call is
 deferred to the next eligible tick. `PathfinderMob::onBlockChanged()` triggers it when a
-changed block is one the search looked at for the nodes still to walk (`Path::isInCorridor()`).
-Block changes are only listened for in the chunks those blocks are in
-(`Path::getCorridorChunks()`).
+changed block is one the search looked at for the nodes still to walk (`Path::isInCorridor()`),
+and only listens in the chunks those blocks are in (`Path::getCorridorChunks()`).
+
+The recompute patches the path instead of searching from the mob: the invalidation of the changes
+(`Path::findInvalidation()`) is searched around between the node before it and the node after it,
+with the splice node budget and radius `REPAIR_MIN_RADIUS = 8` at least, and spliced into the
+old path, which is walked meanwhile. It searches from the mob when the invalidation reaches the
+node the mob just left, `MAX_SPLICES_IN_A_ROW` was hit, or the patch fails.
 
 ## Following a path
 

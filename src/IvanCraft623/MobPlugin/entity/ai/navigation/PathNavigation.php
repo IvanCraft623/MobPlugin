@@ -32,6 +32,8 @@ use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use IvanCraft623\Pathfinder\execution\PathSearch;
 use IvanCraft623\Pathfinder\MovementProfile;
 use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathInvalidation;
+use IvanCraft623\Pathfinder\PathRepair;
 use IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use IvanCraft623\Pathfinder\SearchRequest;
 use IvanCraft623\Pathfinder\world\BlockGetter;
@@ -49,6 +51,8 @@ use pocketmine\promise\PromiseResolver;
 use pocketmine\world\World;
 use function abs;
 use function floor;
+use function max;
+use function min;
 
 abstract class PathNavigation {
 
@@ -60,6 +64,15 @@ abstract class PathNavigation {
 
 	/** Ticks before asking again for a path to an entity that has not changed block */
 	public const ENTITY_REPATH_INTERVAL = 20;
+
+	/** Blocks a target may move for the path to it to be extended instead of searched again */
+	public const SPLICE_MAX_TARGET_MOVE = 4;
+	/** Extensions in a row before searching from the mob again, as they keep the old route */
+	public const MAX_SPLICES_IN_A_ROW = 4;
+	/** Part of the node budget an extension gets; one needing more is a new route, better searched from the mob */
+	public const SPLICE_NODE_BUDGET_FACTOR = 0.25;
+	/** Blocks around the node a repair starts from that it may search, at least; a detour needs room beyond the gap */
+	public const REPAIR_MIN_RADIUS = 8;
 
 	protected Mob $mob;
 
@@ -122,6 +135,12 @@ abstract class PathNavigation {
 
 	private int $pathComputationId = 0;
 
+	private int $splicesInARow = 0;
+
+	/** What block changes invalidated in $invalidatedPath since it was computed, to patch it instead of searching again */
+	private ?Path $invalidatedPath = null;
+	private ?PathInvalidation $pathInvalidation = null;
+
 	/**
 	 * Of the in-flight path computation; requests made meanwhile share its promise.
 	 *
@@ -175,18 +194,34 @@ abstract class PathNavigation {
 			return;
 		}
 
+		$base = $this->path;
+		$invalidation = $base !== null && $this->invalidatedPath === $base ? $this->pathInvalidation : null;
+		if ($invalidation !== null && $this->isPathComputationPending()) {
+			//Patching needs a free search, and the one running may not have seen the change
+			$this->hasDelayedRecomputation = true;
+			return;
+		}
+		$repair = $base !== null && $invalidation !== null && !$base->isDone() && $this->splicesInARow < self::MAX_SPLICES_IN_A_ROW ?
+			$base->planRepair($invalidation) :
+			null;
+
 		$this->timeLastRecompute = $time;
 		$this->hasDelayedRecomputation = false;
 
 		$targetPosition = clone $this->targetPosition;
 		$reachRange = $this->reachRange;
+		$this->invalidatedPath = null;
+		$this->pathInvalidation = null;
 
 		//Drop the current path, otherwise createPath() hands it back for the unchanged target.
-		$this->path = null;
+		//A repair keeps walking it meanwhile, the invalidated nodes are ahead.
+		if ($repair === null) {
+			$this->path = null;
+		}
 
-		//createPath() owns the path computation id and the pending state; if a computation is already
+		//requestPath() owns the path computation id and the pending state; if a computation is already
 		//running it will attach to it instead of starting a duplicate one.
-		$this->createPath($targetPosition, $reachRange)->onCompletion(
+		$this->requestPath($targetPosition, $reachRange, null, $base, $repair)->onCompletion(
 			function(Path $path) : void{
 				$this->path = $path;
 				$this->resetStuckTimeout();
@@ -222,6 +257,13 @@ abstract class PathNavigation {
 	 * @phpstan-return Promise<Path>
 	 */
 	public function createPath(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+		return $this->requestPath($position, $reach, $maxDistanceFromStart);
+	}
+
+	/**
+	 * @phpstan-return Promise<Path>
+	 */
+	private function requestPath(Vector3 $position, int $reach, ?float $maxDistanceFromStart, ?Path $repairBase = null, ?PathRepair $repair = null) : Promise{
 		/** @phpstan-var PromiseResolver<Path> $pathResolver */
 		$pathResolver = new PromiseResolver();
 		if ($this->mob->getPosition()->getY() < World::Y_MIN) {
@@ -233,7 +275,8 @@ abstract class PathNavigation {
 			return $pathResolver->getPromise();
 		}
 
-		if ($this->targetPosition !== null &&
+		if ($repair === null &&
+			$this->targetPosition !== null &&
 			$this->path !== null &&
 			!$this->path->isDone() &&
 			$this->sameBlock($this->targetPosition, $position)
@@ -262,37 +305,84 @@ abstract class PathNavigation {
 
 		$this->resetStuckTimeout();
 
-		$requestId = ++$this->pathComputationId;
 		$this->pendingResolver = $pathResolver;
-
-		$search = MobPlugin::getInstance()->getPathSearchExecutor()->search(
-			$this->nodeEvaluator,
-			$this->createMovementProfile(),
-			Terrain::fromWorld($this->mob->getWorld()),
-			new SearchRequest(
-				$this->mob->getPosition(),
-				$position,
-				(int) floor($this->maxVisitedNodes * $this->maxVisitedNodesMultiplier),
-				$maxDistanceFromStart ?? $this->mob->getFollowRange(),
-				$reach,
-				$this->mob->isOnGround()
-			)
+		$request = new PathRequest($position, $reach, $maxDistanceFromStart);
+		$this->startSearch($repairBase !== null && $repair !== null ?
+			$request->splicingOnto($repairBase, $repair->from, $repair->rejoin) :
+			$this->planSplice($request)
 		);
-		$this->pendingSearch = $search;
-		//The search outlives a stopped navigation, so it must not keep the navigation (and its mob) alive.
-		$navigation = \WeakReference::create($this);
-		$search->getPromise()->onCompletion(static function(Path $path) use ($navigation, $reach, $requestId) : void{
-			$navigation->get()?->onPathComputed($path, $reach, $requestId);
-		}, static function() : void{});
 
 		CustomTimings::$pathRequest->stopTiming();
 
 		return $pathResolver->getPromise();
 	}
 
-	private function onPathComputed(Path $path, int $reach, int $requestId) : void{
+	/**
+	 * The request extending the current path instead of searching from the mob, if the target only moved a bit.
+	 */
+	private function planSplice(PathRequest $request) : PathRequest{
+		$path = $this->path;
+		if ($path === null || $path->isDone() || !$path->canReach() ||
+			$this->targetPosition === null || $request->reach !== $this->reachRange ||
+			$this->splicesInARow >= self::MAX_SPLICES_IN_A_ROW ||
+			$this->targetPosition->distance($this->toBlockVector($request->target)) > self::SPLICE_MAX_TARGET_MOVE
+		) {
+			return $request;
+		}
+		return $request->splicingOnto($path, $path->getClosestNodeIndex($request->target));
+	}
+
+	private function startSearch(PathRequest $request) : void{
+		$requestId = ++$this->pathComputationId;
+		$maxVisitedNodes = (int) floor($this->maxVisitedNodes * $this->maxVisitedNodesMultiplier);
+		$maxDistanceFromStart = $request->maxDistanceFromStart ?? $this->mob->getFollowRange();
+		$searchRequest = $request->base === null ?
+			new SearchRequest($this->mob->getPosition(), $request->target, $maxVisitedNodes, $maxDistanceFromStart, $request->reach, $this->mob->isOnGround()) :
+			$this->createSpliceRequest($request->base, $request, $maxVisitedNodes, $maxDistanceFromStart);
+
+		$search = MobPlugin::getInstance()->getPathSearchExecutor()->search(
+			$this->nodeEvaluator,
+			$this->createMovementProfile(),
+			Terrain::fromWorld($this->mob->getWorld()),
+			$searchRequest
+		);
+		$this->pendingSearch = $search;
+		//The search outlives a stopped navigation, so it must not keep the navigation (and its mob) alive.
+		$navigation = \WeakReference::create($this);
+		$search->getPromise()->onCompletion(static function(Path $path) use ($navigation, $request, $requestId) : void{
+			$navigation->get()?->onPathComputed($path, $request, $requestId);
+		}, static function() : void{});
+	}
+
+	private function createSpliceRequest(Path $base, PathRequest $request, int $maxVisitedNodes, float $maxDistanceFromStart) : SearchRequest{
+		$start = $base->getNode($request->spliceIndex);
+		$rejoin = $request->rejoinIndex === null ? null : $base->getNode($request->rejoinIndex);
+		return new SearchRequest(
+			$start,
+			$rejoin ?? $request->target,
+			(int) floor($maxVisitedNodes * self::SPLICE_NODE_BUDGET_FACTOR),
+			$rejoin === null ? $maxDistanceFromStart : min($maxDistanceFromStart, max(self::REPAIR_MIN_RADIUS, 2 * $start->distance($rejoin))),
+			$rejoin === null ? $request->reach : 0,
+			startAtNode: true
+		);
+	}
+
+	private function onPathComputed(Path $path, PathRequest $request, int $requestId) : void{
 		if ($requestId !== $this->pathComputationId || $this->pendingResolver === null) {
 			//Stale result: the navigation was stopped since this computation was requested.
+			return;
+		}
+
+		$base = $request->base;
+		$index = $request->spliceIndex;
+		if ($base === null) {
+			$this->splicesInARow = 0;
+		} elseif ($base === $this->path && $path->canReach() && $base->canSplice($index, $path, $request->rejoinIndex)) {
+			$path = $base->splice($index, $path, $request->rejoinIndex);
+			++$this->splicesInARow;
+		} else {
+			//The path changed meanwhile or the target can't be reached from it: search from the mob
+			$this->startSearch($request->withoutSplice());
 			return;
 		}
 
@@ -301,7 +391,7 @@ abstract class PathNavigation {
 		$this->pendingSearch = null;
 
 		$this->targetPosition = $this->toBlockVector($path->getTarget());
-		$this->reachRange = $reach;
+		$this->reachRange = $request->reach;
 
 		//todo!
 		$pathResolver->resolve($path);
@@ -472,6 +562,14 @@ abstract class PathNavigation {
 
 		//The ground under the node being walked to may not be where it was
 		$this->wantedPosition = null;
+		$invalidation = $path->findInvalidation($position->getFloorX(), $position->getFloorY(), $position->getFloorZ());
+		if ($invalidation !== null) {
+			if ($this->invalidatedPath === $path && $this->pathInvalidation !== null) {
+				$invalidation = $this->pathInvalidation->union($invalidation);
+			}
+			$this->invalidatedPath = $path;
+			$this->pathInvalidation = $invalidation;
+		}
 		$this->recomputePath();
 	}
 
@@ -598,6 +696,8 @@ abstract class PathNavigation {
 
 	public function stop() : void{
 		$this->path = null;
+		$this->invalidatedPath = null;
+		$this->pathInvalidation = null;
 		$this->hasDelayedRecomputation = false;
 		$this->entityTargetBlock = null;
 		$this->entityTargetPath = null;

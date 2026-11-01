@@ -227,12 +227,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/IvanCraft623/Pahtfinder.git",
-                "reference": "a823d0c16c4ec7355b7c207214d71aa227db67ab"
+                "reference": "b7710ca9eec73d037ab34dcb7a444e38bf7c1f15"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/a823d0c16c4ec7355b7c207214d71aa227db67ab",
-                "reference": "a823d0c16c4ec7355b7c207214d71aa227db67ab",
+                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/b7710ca9eec73d037ab34dcb7a444e38bf7c1f15",
+                "reference": "b7710ca9eec73d037ab34dcb7a444e38bf7c1f15",
                 "shasum": ""
             },
             "require": {
@@ -275,7 +275,7 @@
                 "source": "https://github.com/IvanCraft623/Pahtfinder/tree/main",
                 "issues": "https://github.com/IvanCraft623/Pahtfinder/issues"
             },
-            "time": "2026-11-02T00:26:10+00:00"
+            "time": "2026-11-02T00:53:33+00:00"
         },
         {
             "name": "kostamax27/loottable",
