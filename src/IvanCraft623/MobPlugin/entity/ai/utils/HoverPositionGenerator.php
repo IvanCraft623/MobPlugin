@@ -24,8 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
@@ -72,7 +71,7 @@ class HoverPositionGenerator {
 				static fn(Vector3 $position) : bool => $world->getBlock($position)->isSolid()
 			);
 			return (!$world->getBlock($pos) instanceof Water &&
-				$entity->getPathfindingMalus(WalkNodeEvaluator::getBlockPathTypeStatic(new SyncBlockGetter($world), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+				$entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 			) ? $pos : null;
 		});
 	}

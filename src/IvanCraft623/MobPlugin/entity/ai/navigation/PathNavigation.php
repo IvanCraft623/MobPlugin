@@ -25,13 +25,18 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\Pathfinder\evaluator\EntityNodeEvaluator;
-use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\Pathfinder\execution\PathSearch;
+use IvanCraft623\Pathfinder\MovementProfile;
 use IvanCraft623\Pathfinder\Path;
-use IvanCraft623\Pathfinder\PathFinder;
-use IvanCraft623\Pathfinder\task\AsyncPathFinderTask;
-use IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\Pathfinder\SearchRequest;
+use IvanCraft623\Pathfinder\world\BlockGetter;
+use IvanCraft623\Pathfinder\world\Terrain;
+use IvanCraft623\Pathfinder\world\WorldBlockGetter;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\FillableCauldron;
@@ -82,7 +87,14 @@ abstract class PathNavigation {
 
 	protected int $timeLastRecompute = 0;
 
-	protected EntityNodeEvaluator $nodeEvaluator;
+	protected NodeEvaluator $nodeEvaluator;
+
+	private ?WorldBlockGetter $blockGetter = null;
+
+	protected bool $canFloat = false;
+	protected bool $canOpenDoors = false;
+	protected bool $canPassDoors = false;
+	protected bool $canWalkOverFences = false;
 
 	protected int $maxVisitedNodes;
 
@@ -106,8 +118,6 @@ abstract class PathNavigation {
 
 	protected float $maxVisitedNodesMultiplier = self::DEFAULT_MAX_VISITED_NODES_MULTIPLIER;
 
-	protected PathFinder $pathfinder;
-
 	protected bool $isStuck = false;
 
 	private int $pathComputationId = 0;
@@ -119,7 +129,7 @@ abstract class PathNavigation {
 	 */
 	private ?PromiseResolver $pendingResolver = null;
 
-	private ?AsyncPathFinderTask $pendingTask = null;
+	private ?PathSearch $pendingSearch = null;
 
 	public function __construct(Mob $mob) {
 		$this->mob = $mob;
@@ -251,24 +261,29 @@ abstract class PathNavigation {
 		CustomTimings::$pathRequest->startTiming();
 
 		$this->resetStuckTimeout();
-		$this->updateNodeEvaluatorAttributes();
 
 		$requestId = ++$this->pathComputationId;
 		$this->pendingResolver = $pathResolver;
 
-		//The task outlives a stopped navigation, so it must not keep the navigation (and its mob) alive.
-		$navigation = \WeakReference::create($this);
-		$this->pendingTask = PathFinder::findPathAsync(static function(Path $path) use ($navigation, $reach, $requestId) : void{
-				$navigation->get()?->onPathComputed($path, $reach, $requestId);
-			},
+		$search = MobPlugin::getInstance()->getPathSearchExecutor()->search(
 			$this->nodeEvaluator,
-			$this->mob->getWorld(),
-			$this->mob->getPosition(),
-			$position,
-			(int) floor($this->maxVisitedNodes * $this->maxVisitedNodesMultiplier),
-			$maxDistanceFromStart ?? $this->mob->getFollowRange(),
-			$reach
+			$this->createMovementProfile(),
+			Terrain::fromWorld($this->mob->getWorld()),
+			new SearchRequest(
+				$this->mob->getPosition(),
+				$position,
+				(int) floor($this->maxVisitedNodes * $this->maxVisitedNodesMultiplier),
+				$maxDistanceFromStart ?? $this->mob->getFollowRange(),
+				$reach,
+				$this->mob->isOnGround()
+			)
 		);
+		$this->pendingSearch = $search;
+		//The search outlives a stopped navigation, so it must not keep the navigation (and its mob) alive.
+		$navigation = \WeakReference::create($this);
+		$search->getPromise()->onCompletion(static function(Path $path) use ($navigation, $reach, $requestId) : void{
+			$navigation->get()?->onPathComputed($path, $reach, $requestId);
+		}, static function() : void{});
 
 		CustomTimings::$pathRequest->stopTiming();
 
@@ -283,7 +298,7 @@ abstract class PathNavigation {
 
 		$pathResolver = $this->pendingResolver;
 		$this->pendingResolver = null;
-		$this->pendingTask = null;
+		$this->pendingSearch = null;
 
 		$this->targetPosition = $this->toBlockVector($path->getTarget());
 		$this->reachRange = $reach;
@@ -302,12 +317,24 @@ abstract class PathNavigation {
 			(int) floor($a->getZ()) === (int) floor($b->getZ());
 	}
 
-	protected function updateNodeEvaluatorAttributes() : void{
-		$this->nodeEvaluator->setEntitySize($this->mob->getSize());
-		$this->nodeEvaluator->setEntityBoundingBox(clone $this->mob->getBoundingBox());
-		$this->nodeEvaluator->setEntityOnGround($this->mob->isOnGround());
-		$this->nodeEvaluator->setMaxUpStep($this->mob->getStepHeight());
-		$this->nodeEvaluator->setMaxFallDistance($this->mob->getMaxFallDistance());
+	protected function getSearchCostMap() : BlockPathTypeCostMap{
+		return $this->mob->getPathTypeCostMap();
+	}
+
+	protected function createMovementProfile() : MovementProfile{
+		$size = $this->mob->getSize();
+		return new MovementProfile(
+			width: $size->getWidth(),
+			height: $size->getHeight(),
+			maxUpStep: $this->mob->getStepHeight(),
+			maxFallDistance: $this->mob->getMaxFallDistance(),
+			costMap: $this->getSearchCostMap(),
+			canPassDoors: $this->canPassDoors,
+			canOpenDoors: $this->canOpenDoors,
+			canFloat: $this->canFloat,
+			canWalkOverFences: $this->canWalkOverFences,
+			eyeHeight: $size->getEyeHeight()
+		);
 	}
 
 	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier, int $reach = 1) : void{
@@ -413,7 +440,7 @@ abstract class PathNavigation {
 			$this->followThePath();
 		} else {
 			$tempPos = $this->getTempMobPosition();
-			$nextPos = $path->getNextEntityPosition($this->mob);
+			$nextPos = $path->getNextNodeCenter();
 			if ($tempPos->y > $nextPos->y &&
 				!$this->mob->isOnGround() &&
 				floor($tempPos->x) === floor($nextPos->x) &&
@@ -428,7 +455,7 @@ abstract class PathNavigation {
 		if ($path !== null && !$path->isDone()) {
 			$nodeIndex = $path->getNextNodeIndex();
 			if ($this->wantedPosition === null || $path !== $this->wantedPath || $nodeIndex !== $this->wantedNodeIndex) {
-				$nextPos = $path->getNextEntityPosition($this->mob);
+				$nextPos = $path->getNextNodeCenter();
 				$this->wantedPosition = new Vector3($nextPos->x, $this->getGroundY($nextPos), $nextPos->z);
 				$this->wantedPath = $path;
 				$this->wantedNodeIndex = $nodeIndex;
@@ -449,7 +476,7 @@ abstract class PathNavigation {
 	}
 
 	protected function getGroundY(Vector3 $position) : float{
-		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() === BlockTypeIds::AIR ? $position->y : WalkNodeEvaluator::getFloorLevelAt(new SyncBlockGetter($this->getWorld()), $position);
+		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() === BlockTypeIds::AIR ? $position->y : BlockClassifier::getFloorLevel($this->getBlockGetter(), $position);
 	}
 
 	protected function followThePath() : void{
@@ -490,7 +517,7 @@ abstract class PathNavigation {
 		if ($direction->distanceSquared($nodePos) > 4) {
 			return false;
 		}
-		if ($this->canMoveDirectly($direction, $this->path->getNextEntityPosition($this->mob))) {
+		if ($this->canMoveDirectly($direction, $this->path->getNextNodeCenter())) {
 			return true;
 		}
 
@@ -581,8 +608,8 @@ abstract class PathNavigation {
 		//stopped, and so a subsequent move can't be hijacked into an obsolete computation's promise.
 		$this->pathComputationId++;
 		$this->pendingResolver = null;
-		$this->pendingTask?->cancel();
-		$this->pendingTask = null;
+		$this->pendingSearch?->cancel();
+		$this->pendingSearch = null;
 	}
 
 	protected abstract function getTempMobPosition() : Vector3;
@@ -643,16 +670,58 @@ abstract class PathNavigation {
 		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->isSolid();
 	}
 
-	public function getNodeEvaluator() : EntityNodeEvaluator{
+	public function getNodeEvaluator() : NodeEvaluator{
 		return $this->nodeEvaluator;
 	}
 
+	/**
+	 * Reads the mob's world on the main thread.
+	 */
+	public function getBlockGetter() : BlockGetter{
+		$world = $this->getWorld();
+		if ($this->blockGetter === null || $this->blockGetter->getWorld() !== $world) {
+			$this->blockGetter = new WorldBlockGetter($world);
+		}
+		return $this->blockGetter;
+	}
+
+	/**
+	 * Type of the block for the locomotion's evaluator.
+	 */
+	public function getBlockPathType(int $x, int $y, int $z) : BlockPathType{
+		return $this->nodeEvaluator->getPathTypeResolver()->getBlockPathType($this->getBlockGetter(), $x, $y, $z, $this->mob->getPosition());
+	}
+
 	public function canFloat() : bool{
-		return $this->nodeEvaluator->canFloat();
+		return $this->canFloat;
 	}
 
 	public function setCanFloat(bool $value = true) : void{
-		$this->nodeEvaluator->setCanFloat($value);
+		$this->canFloat = $value;
+	}
+
+	public function canOpenDoors() : bool{
+		return $this->canOpenDoors;
+	}
+
+	public function setCanOpenDoors(bool $value = true) : void{
+		$this->canOpenDoors = $value;
+	}
+
+	public function canPassDoors() : bool{
+		return $this->canPassDoors;
+	}
+
+	public function setCanPassDoors(bool $value = true) : void{
+		$this->canPassDoors = $value;
+	}
+
+	public function canWalkOverFences() : bool{
+		return $this->canWalkOverFences;
+	}
+
+	public function setCanWalkOverFences(bool $value = true) : void{
+		$this->canWalkOverFences = $value;
 	}
 
 	public function getMaxDistanceToWaypoint() : float{

@@ -59,6 +59,8 @@ use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
+use IvanCraft623\Pathfinder\execution\SearchExecutor;
 
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
@@ -108,6 +110,8 @@ class MobPlugin extends PluginBase {
 	];
 
 	private ?Random $random = null;
+
+	private ?SearchExecutor $pathSearchExecutor = null;
 
 	private int $totalEntitiesCount = 0;
 
@@ -185,6 +189,10 @@ class MobPlugin extends PluginBase {
 			$this->random = new Random(mt_rand());
 		}
 		return $this->random;
+	}
+
+	public function getPathSearchExecutor() : SearchExecutor{
+		return $this->pathSearchExecutor ??= new AsyncSearchExecutor($this->getServer()->getAsyncPool(), $this->getLogger());
 	}
 
 	private function registerAttributes() : void{

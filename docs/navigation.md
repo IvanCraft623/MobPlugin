@@ -26,10 +26,10 @@ navigator.
 
 ## Requesting a path
 
-`PathNavigation::createPath()` is the only call into the pathfinder
-(`PathFinder::findPathAsync()`). `createPathToXYZ()`, `createPathToEntity()` and
-`createPathToPosition()` wrap it, and `moveToXYZ()` / `moveToEntity()` also start
-following the result.
+`PathNavigation::createPath()` is the only call into the pathfinder, through the
+plugin's shared `AsyncSearchExecutor` (`MobPlugin::getPathSearchExecutor()`).
+`createPathToXYZ()`, `createPathToEntity()` and `createPathToPosition()` wrap it, and
+`moveToXYZ()` / `moveToEntity()` also start following the result.
 
 Paths are computed on worker threads, but the chunks between start and target are
 serialized on the main thread at submission, which is expensive. So:

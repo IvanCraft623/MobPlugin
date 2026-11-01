@@ -40,8 +40,8 @@ class GroundPathNavigation extends PathNavigation{
 	private bool $avoidSun = false;
 
 	protected function createPathFinder() : void{
-		$this->nodeEvaluator = new WalkNodeEvaluator($this->mob->getPathTypeCostMap());
-		$this->nodeEvaluator->setCanPassDoors();
+		$this->nodeEvaluator = new WalkNodeEvaluator();
+		$this->canPassDoors = true;
 	}
 
 	public function canUpdatePath() : bool{
@@ -135,26 +135,10 @@ class GroundPathNavigation extends PathNavigation{
 	}
 
 	public function hasValidPathType(BlockPathType $pathType) : bool{
-		if ($pathType->equals(BlockPathType::WATER) || $pathType->equals(BlockPathType::LAVA)) {
+		if ($pathType === BlockPathType::WATER || $pathType === BlockPathType::LAVA) {
 			return false;
 		}
-		return !$pathType->equals(BlockPathType::OPEN);
-	}
-
-	public function setCanOpenDoors(bool $value = true) : void{
-		$this->nodeEvaluator->setCanOpenDoors($value);
-	}
-
-	public function canOpenDoors() : bool{
-		return $this->nodeEvaluator->canOpenDoors();
-	}
-
-	public function setCanPassDoors(bool $value = true) : void{
-		$this->nodeEvaluator->setCanPassDoors($value);
-	}
-
-	public function canPassDoors() : bool{
-		return $this->nodeEvaluator->canPassDoors();
+		return $pathType !== BlockPathType::OPEN;
 	}
 
 	public function setAvoidSun(bool $value = true) : void{
@@ -163,13 +147,5 @@ class GroundPathNavigation extends PathNavigation{
 
 	public function avoidSun() : bool{
 		return $this->avoidSun;
-	}
-
-	public function setCanWalkOverFences(bool $value = true) : void{
-		$this->nodeEvaluator->setCanWalkOverFences($value);
-	}
-
-	public function canWalkOverFences() : bool{
-		return $this->nodeEvaluator->canWalkOverFences();
 	}
 }

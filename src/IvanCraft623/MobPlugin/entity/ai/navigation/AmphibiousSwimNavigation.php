@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
+use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
@@ -30,8 +31,13 @@ use pocketmine\math\Vector3;
 class AmphibiousSwimNavigation extends PathNavigation {
 
 	protected function createPathFinder() : void{
-		$this->nodeEvaluator = new AmphibiousNodeEvaluator($this->mob->getPathTypeCostMap());
-		$this->nodeEvaluator->setCanPassDoors();
+		$this->nodeEvaluator = new AmphibiousNodeEvaluator();
+		$this->canPassDoors = true;
+	}
+
+	protected function getSearchCostMap() : BlockPathTypeCostMap{
+		//searches only, wander targets keep reading the mob's own map
+		return BlockPathTypeCostMap::amphibious()->merge($this->mob->getPathTypeCostMap());
 	}
 
 	public function canUpdatePath() : bool{

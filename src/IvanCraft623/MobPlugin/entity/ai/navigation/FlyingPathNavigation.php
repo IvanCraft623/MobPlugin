@@ -34,8 +34,8 @@ use pocketmine\math\Vector3;
 class FlyingPathNavigation extends PathNavigation{
 
 	protected function createPathFinder() : void{
-		$this->nodeEvaluator = new FlightNodeEvaluator(); //it ignores mob's path type map?
-		$this->nodeEvaluator->setCanPassDoors();
+		$this->nodeEvaluator = new FlightNodeEvaluator();
+		$this->canPassDoors = true;
 	}
 
 	protected function canMoveDirectly(Vector3 $from, Vector3 $to) : bool{
@@ -66,7 +66,7 @@ class FlyingPathNavigation extends PathNavigation{
 		if ($this->canUpdatePath()) {
 			$this->followThePath();
 		} else {
-			$nextPos = $path->getNextEntityPosition($this->mob);
+			$nextPos = $path->getNextNodeCenter();
 			if ($this->getTempMobPosition()->floor()->equals($nextPos->floor())) {
 				$path->advance();
 			}
@@ -76,26 +76,10 @@ class FlyingPathNavigation extends PathNavigation{
 		$path = $this->path;
 		if ($path !== null && !$path->isDone()) {
 			$this->mob->getMoveControl()->setWantedPosition(
-				$path->getNextEntityPosition($this->mob),
+				$path->getNextNodeCenter(),
 				$this->speedModifier
 			);
 		}
-	}
-
-	public function setCanOpenDoors(bool $value = true) : void{
-		$this->nodeEvaluator->setCanOpenDoors($value);
-	}
-
-	public function canOpenDoors() : bool{
-		return $this->nodeEvaluator->canOpenDoors();
-	}
-
-	public function setCanPassDoors(bool $value = true) : void{
-		$this->nodeEvaluator->setCanPassDoors($value);
-	}
-
-	public function canPassDoors() : bool{
-		return $this->nodeEvaluator->canPassDoors();
 	}
 
 	public function isStableDestination(Vector3 $position) : bool{
