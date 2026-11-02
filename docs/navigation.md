@@ -78,6 +78,11 @@ A `StuckDetector` says the mob is stuck when it moved less than a quarter of its
 `DISTANCE_CHECK_INTERVAL = 100` ticks, or stayed on one node for `TIMEOUT_FACTOR = 3` times the time getting
 there should take. The navigation then stops, and the goal decides whether to path again.
 
+When the mob stops getting closer to its next node for `BLOCKED_CHECKS = 20` ticks in a row, e.g.
+because it was pushed back behind a wall the path thinks it passed, the navigation searches again
+from where the mob is (the same recompute as after a block change, so at most every
+`RECOMPUTE_INTERVAL` ticks).
+
 ## Navigation
 
 A mob has one `PathNavigation` (`final`); what differs between mobs is its `Locomotion`, the way

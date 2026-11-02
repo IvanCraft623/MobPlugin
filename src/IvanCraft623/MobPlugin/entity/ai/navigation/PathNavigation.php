@@ -221,9 +221,12 @@ final class PathNavigation {
 		}
 
 		if ($this->locomotion->canFollowPath($this->mob, $this->rules)) {
-			if ($this->follower->follow($path, $this->locomotion, $this->rules, $this->tick) !== StuckResult::NONE) {
-				$this->stop();
-			}
+			match ($this->follower->follow($path, $this->locomotion, $this->rules, $this->tick)) {
+				//Not where the path thinks it is: search again from where the mob is
+				StuckResult::BLOCKED => $this->recomputePath(),
+				StuckResult::STUCK, StuckResult::TIMED_OUT => $this->stop(),
+				StuckResult::NONE => null
+			};
 		} else {
 			$this->locomotion->advanceWithoutFollowing($this->mob, $path, $this->locomotion->pathPosition($this->mob, $this->rules));
 		}

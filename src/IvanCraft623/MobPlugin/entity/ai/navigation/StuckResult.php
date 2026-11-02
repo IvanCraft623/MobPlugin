@@ -25,6 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 enum StuckResult{
 	case NONE;
+	/** Stopped getting closer to the next node (e.g. pushed behind a wall) */
+	case BLOCKED;
 	/** Moved much less than expected */
 	case STUCK;
 	/** Stayed on one node far too long */

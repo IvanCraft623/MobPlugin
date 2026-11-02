@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use pocketmine\math\Vector3;
+use const INF;
 
 /**
  * Tells when a mob is not getting anywhere along its path.
@@ -36,6 +37,10 @@ final class StuckDetector{
 	public const EXPECTED_DISTANCE_FACTOR = 0.25;
 	/** Times the expected time a mob may stay on a node */
 	public const TIMEOUT_FACTOR = 3;
+	/** Checks without getting closer to a node before the mob counts as blocked */
+	public const BLOCKED_CHECKS = 20;
+	/** Least progress, in blocks, that counts as getting closer */
+	public const PROGRESS_EPSILON = 0.05;
 
 	private int $lastCheckTick = 0;
 
@@ -48,6 +53,10 @@ final class StuckDetector{
 	private int $lastTime = 0;
 
 	private float $timeLimit = 0;
+
+	private float $closestDistance = INF;
+
+	private int $checksWithoutProgress = 0;
 
 	public function __construct(){
 		$this->lastCheckPosition = Vector3::zero();
@@ -69,6 +78,8 @@ final class StuckDetector{
 		$this->node = Vector3::zero();
 		$this->timeOnNode = 0;
 		$this->timeLimit = 0;
+		$this->closestDistance = INF;
+		$this->checksWithoutProgress = 0;
 	}
 
 	/**
@@ -77,27 +88,48 @@ final class StuckDetector{
 	 * @param int          $time     world time, which keeps running while the mob stands still
 	 */
 	public function check(int $tick, Vector3 $position, float $speed, ?Vector3 $nextNode, int $time) : StuckResult{
-		if ($tick - $this->lastCheckTick > self::DISTANCE_CHECK_INTERVAL) {
-			$expectedSpeed = $speed >= 1 ? $speed : $speed ** 2;
-			$stuck = $position->distanceSquared($this->lastCheckPosition) < (($expectedSpeed * 100 * self::EXPECTED_DISTANCE_FACTOR) ** 2);
-
-			$this->lastCheckTick = $tick;
-			$this->lastCheckPosition = $position;
-			if ($stuck) {
-				return StuckResult::STUCK;
-			}
+		if ($this->isStuck($tick, $position, $speed)) {
+			return StuckResult::STUCK;
 		}
 
-		if ($nextNode === null) {
-			return StuckResult::NONE;
+		return $nextNode === null ? StuckResult::NONE : $this->checkNode($position, $speed, $nextNode, $time);
+	}
+
+	/**
+	 * Whether the mob moved less than expected since the last check, once an interval has passed.
+	 */
+	private function isStuck(int $tick, Vector3 $position, float $speed) : bool{
+		if ($tick - $this->lastCheckTick <= self::DISTANCE_CHECK_INTERVAL) {
+			return false;
 		}
 
+		$expectedSpeed = $speed >= 1 ? $speed : $speed ** 2;
+		$stuck = $position->distanceSquared($this->lastCheckPosition) < (($expectedSpeed * 100 * self::EXPECTED_DISTANCE_FACTOR) ** 2);
+
+		$this->lastCheckTick = $tick;
+		$this->lastCheckPosition = $position;
+		return $stuck;
+	}
+
+	/**
+	 * Whether the mob is getting to the node it is walking to, and in time.
+	 */
+	private function checkNode(Vector3 $position, float $speed, Vector3 $nextNode, int $time) : StuckResult{
+		$distanceToNode = $position->distance($nextNode->add(0.5, 0, 0.5));
 		if ($nextNode->equals($this->node)) {
 			$this->timeOnNode += $time - $this->lastTime;
+			if ($distanceToNode < $this->closestDistance - self::PROGRESS_EPSILON) {
+				$this->closestDistance = $distanceToNode;
+				$this->checksWithoutProgress = 0;
+			} elseif (++$this->checksWithoutProgress > self::BLOCKED_CHECKS) {
+				$this->resetNode();
+				return StuckResult::BLOCKED;
+			}
 		} else {
 			$this->node = $nextNode;
-			$distanceToNode = $position->distance($nextNode->add(0.5, 0, 0.5));
 			$this->timeLimit = $speed > 0 ? $distanceToNode / $speed * 20 : 0;
+			$this->closestDistance = $distanceToNode;
+			$this->checksWithoutProgress = 0;
 		}
 
 		if ($this->timeLimit > 0 && $this->timeOnNode > $this->timeLimit * self::TIMEOUT_FACTOR) {

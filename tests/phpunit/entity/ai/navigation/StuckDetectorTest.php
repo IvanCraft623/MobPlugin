@@ -101,4 +101,72 @@ final class StuckDetectorTest extends TestCase{
 		$this->detector->check(1, $position, 0.0, $node, 0);
 		self::assertSame(StuckResult::NONE, $this->detector->check(2, $position, 0.0, $node, 1000000));
 	}
+
+	/**
+	 * Calls check() until it answers, at most $limit times.
+	 *
+	 * @return array{StuckResult, int} the result and how many calls it took
+	 */
+	private function checkUntilAnswered(Vector3 $node, Vector3 $position, int $limit) : array{
+		for ($call = 1; $call <= $limit; ++$call) {
+			$result = $this->detector->check($call, $position, self::SPEED, $node, 0);
+			if ($result !== StuckResult::NONE) {
+				return [$result, $call];
+			}
+		}
+		return [StuckResult::NONE, $limit];
+	}
+
+	public function testBlockedWhenItNeverGetsCloserToTheNode() : void{
+		[$result, $calls] = $this->checkUntilAnswered(new Vector3(10, 64, 0), new Vector3(0, 64, 0), 200);
+
+		self::assertSame(StuckResult::BLOCKED, $result);
+		self::assertSame(StuckDetector::BLOCKED_CHECKS + 2, $calls, "one to see the node, then the checks without progress");
+	}
+
+	public function testGettingCloserIsNeverBlocked() : void{
+		$node = new Vector3(100, 64, 0);
+		for ($i = 0; $i < 300; ++$i) {
+			self::assertSame(StuckResult::NONE, $this->detector->check($i, new Vector3($i * 0.1, 64, 0), self::SPEED, $node, 0));
+		}
+	}
+
+	public function testSlowProgressStillCounts() : void{
+		$node = new Vector3(100, 64, 0);
+		//0.06 closer per check, a little over the epsilon
+		for ($i = 0; $i < 300; ++$i) {
+			self::assertSame(StuckResult::NONE, $this->detector->check($i, new Vector3($i * 0.06, 64, 0), self::SPEED, $node, 0));
+		}
+	}
+
+	public function testPushedBackAndForthDoesNotCountAsProgress() : void{
+		$node = new Vector3(10, 64, 0);
+		$answered = StuckResult::NONE;
+		for ($i = 0; $i < 100 && $answered === StuckResult::NONE; ++$i) {
+			//wobbling around 5 blocks from it
+			$answered = $this->detector->check($i, new Vector3(5 - ($i % 2) * 0.03, 64, 0), self::SPEED, $node, 0);
+		}
+		self::assertSame(StuckResult::BLOCKED, $answered);
+	}
+
+	public function testANewNodeStartsProgressOver() : void{
+		$position = new Vector3(0, 64, 0);
+		for ($i = 0; $i < StuckDetector::BLOCKED_CHECKS; ++$i) {
+			$this->detector->check($i, $position, self::SPEED, new Vector3(10, 64, 0), 0);
+		}
+
+		[$result, $calls] = $this->checkUntilAnswered(new Vector3(11, 64, 0), $position, 200);
+		self::assertSame(StuckResult::BLOCKED, $result);
+		self::assertSame(StuckDetector::BLOCKED_CHECKS + 2, $calls);
+	}
+
+	public function testBlockedStartsOverAfterItIsReported() : void{
+		$node = new Vector3(10, 64, 0);
+		$position = new Vector3(0, 64, 0);
+		$this->checkUntilAnswered($node, $position, 200);
+
+		[$result, $calls] = $this->checkUntilAnswered($node, $position, 200);
+		self::assertSame(StuckResult::BLOCKED, $result);
+		self::assertSame(StuckDetector::BLOCKED_CHECKS + 2, $calls);
+	}
 }
