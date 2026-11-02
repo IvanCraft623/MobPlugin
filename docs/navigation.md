@@ -66,21 +66,26 @@ walked meanwhile. It searches from the mob when the invalidation reaches the nod
 
 `PathNavigation::tick()`:
 
-1. Runs a deferred `recomputePath()`.
-2. Returns if there is no path, or it is done.
-3. `followThePath()` advances to the next node when the mob is close enough, or when it
+1. Runs a deferred recompute.
+2. If there is no path (or it is done), lets the locomotion act (`tickWithoutPath()`, how a spider
+   keeps climbing) when nothing is being computed, and returns.
+3. `PathFollower::follow()` advances to the next node when the mob is close enough, or when it
    may cut the corner (never through fire, danger or door nodes), then checks for stuck.
-4. Gives `MoveControl` the next position, with Y dropped to the floor unless the mob is
-   falling.
+4. Gives `MoveControl` the next position, with Y set by the locomotion (dropped to the floor on the
+   ground).
 
-A mob is stuck when it moved less than a quarter of its expected distance in
-`STUCK_CHECK_INTERVAL = 100` ticks, or stayed on one node past its timeout. The navigation
-then stops, and the goal decides whether to path again.
+A `StuckDetector` says the mob is stuck when it moved less than a quarter of its expected distance in
+`DISTANCE_CHECK_INTERVAL = 100` ticks, or stayed on one node for `TIMEOUT_FACTOR = 3` times the time getting
+there should take. The navigation then stops, and the goal decides whether to path again.
 
 ## Navigation
 
 A mob has one `PathNavigation` (`final`); what differs between mobs is its `Locomotion`, the way
 it moves, and its `TraversalRules`.
+
+Behind it, one class per job: `PathRequester` (searches, with `RepathPolicy` choosing whether to
+search anew, extend or repair, and `EntityRepathThrottle` for entity chases), `PathFollower`
+(walks the path, with `StuckDetector`).
 
 | Locomotion | Node evaluator | Notes |
 |---|---|---|

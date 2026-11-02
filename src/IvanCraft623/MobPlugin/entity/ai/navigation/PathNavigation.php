@@ -38,7 +38,6 @@ use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
 use pocketmine\world\World;
-use function abs;
 use function floor;
 
 /**
@@ -47,26 +46,11 @@ use function floor;
  */
 final class PathNavigation {
 
-	public const STUCK_CHECK_INTERVAL = 100;
-	public const STUCK_THRESHOLD_DISTANCE_FACTOR = 0.25;
-
 	private ?Path $path = null;
 
 	private float $speedModifier = 1.0;
 
 	private int $tick = 0;
-
-	private int $lastStuckCheck = 0;
-
-	private Vector3 $lastStuckCheckPos;
-
-	private Vector3 $timeoutCachedNode;
-
-	private int $timeoutTimer = 0;
-
-	private int $lastTimeoutCheck = 0;
-
-	private float $timeoutLimit = 0;
 
 	private NodeEvaluator $evaluator;
 
@@ -74,12 +58,9 @@ final class PathNavigation {
 
 	private int $maxVisitedNodes;
 
-	/** Position handed to the move control for node $wantedNodeIndex of $wantedPath */
-	private ?Vector3 $wantedPosition = null;
-	private ?Path $wantedPath = null;
-	private int $wantedNodeIndex = -1;
-
 	private TraversalRules $rules;
+
+	private PathFollower $follower;
 
 	private PathRequester $requester;
 
@@ -93,8 +74,7 @@ final class PathNavigation {
 		$this->rules = $rules ?? new TraversalRules();
 		$this->evaluator = $locomotion->createEvaluator();
 		$this->maxVisitedNodes = (int) floor($mob->getFollowRange() * 16);
-		$this->lastStuckCheckPos = Vector3::zero();
-		$this->resetStuckTimeout();
+		$this->follower = new PathFollower($mob);
 
 		$this->entityThrottle = new EntityRepathThrottle();
 		$this->requester = new PathRequester(
@@ -112,7 +92,7 @@ final class PathNavigation {
 				$this->mob->getFollowRange(),
 				$this->maxVisitedNodes
 			),
-			onSearchStart: $this->resetStuckTimeout(...)
+			onSearchStart: $this->follower->resetNodeProgress(...)
 		);
 	}
 
@@ -151,7 +131,7 @@ final class PathNavigation {
 			$this->path = null;
 		})?->onCompletion(function(Path $path) : void{
 			$this->path = $path;
-			$this->resetStuckTimeout();
+			$this->follower->resetNodeProgress();
 		}, function() : void{
 			$this->path = null;
 		});
@@ -197,44 +177,29 @@ final class PathNavigation {
 		});
 	}
 
-	private function startFollowing(?Path $path, float $speedModifier) : bool{
-		if ($path === null) {
-			$this->path = null;
-			return false;
-		}
-
+	/**
+	 * Follows $path, unless it is (or equals) the current one.
+	 */
+	private function startFollowing(Path $path, float $speedModifier) : void{
 		if ($path !== $this->path) {
 			if ($this->path === null || !$path->equals($this->path)) {
 				$this->path = $path;
-				$this->resetStuckTimeout();
+				$this->follower->resetNodeProgress();
 			}
 		} elseif (!$this->isDone()) {
 			//Already following it, and adjusted
 			$this->speedModifier = $speedModifier;
-			$this->lastStuckCheckPos = $this->locomotion->pathPosition($this->mob, $this->rules);
-			$this->lastStuckCheck = $this->tick;
-
-			return $path->getNodeCount() > 0;
+			$this->follower->restartStuckCheck($this->tick, $this->locomotion->pathPosition($this->mob, $this->rules));
+			return;
 		}
 
 		if ($this->isDone()) {
-			return false;
+			return;
 		}
 
-		$path = $this->path;
-		if ($path === null) {
-			return false;
-		}
-		$this->locomotion->adjustPath($this->mob, $path, $this->rules);
-		if ($path->getNodeCount() <= 0) {
-			return false;
-		}
-
+		$this->locomotion->adjustPath($this->mob, $this->path, $this->rules);
 		$this->speedModifier = $speedModifier;
-		$this->lastStuckCheckPos = $this->locomotion->pathPosition($this->mob, $this->rules);
-		$this->lastStuckCheck = $this->tick;
-
-		return true;
+		$this->follower->restartStuckCheck($this->tick, $this->locomotion->pathPosition($this->mob, $this->rules));
 	}
 
 	public function getPath() : ?Path{
@@ -256,22 +221,20 @@ final class PathNavigation {
 		}
 
 		if ($this->locomotion->canFollowPath($this->mob, $this->rules)) {
-			$this->followThePath();
+			if ($this->follower->follow($path, $this->locomotion, $this->rules, $this->tick) !== StuckResult::NONE) {
+				$this->stop();
+			}
 		} else {
 			$this->locomotion->advanceWithoutFollowing($this->mob, $path, $this->locomotion->pathPosition($this->mob, $this->rules));
 		}
 
-		//followThePath() (or the async computation) may have stopped/invalidated the path.
+		//Following may have dropped the path
 		$path = $this->path;
 		if ($path !== null && !$path->isDone()) {
-			$nodeIndex = $path->getNextNodeIndex();
-			if ($this->wantedPosition === null || $path !== $this->wantedPath || $nodeIndex !== $this->wantedNodeIndex) {
-				$nextPos = $path->getNextNodeCenter();
-				$this->wantedPosition = new Vector3($nextPos->x, $this->locomotion->wantedY($this->mob, $this->getBlockGetter(), $nextPos), $nextPos->z);
-				$this->wantedPath = $path;
-				$this->wantedNodeIndex = $nodeIndex;
-			}
-			$this->mob->getMoveControl()->setWantedPosition($this->wantedPosition, $this->speedModifier);
+			$this->mob->getMoveControl()->setWantedPosition(
+				$this->follower->getWantedPosition($path, $this->locomotion, $this->getBlockGetter()),
+				$this->speedModifier
+			);
 		}
 	}
 
@@ -281,112 +244,8 @@ final class PathNavigation {
 			return;
 		}
 
-		//The ground under the node being walked to may not be where it was
-		$this->wantedPosition = null;
+		$this->follower->forgetWantedPosition();
 		$this->recomputePath();
-	}
-
-	private function followThePath() : void{
-		if ($this->path === null || $this->path->isDone()) {
-			return;
-		}
-
-		$tempPos = $this->locomotion->pathPosition($this->mob, $this->rules);
-		$width = $this->mob->getSize()->getWidth();
-		$maxDistanceToWaypoint = $width > 0.75 ? $width / 2 : 0.75 - $width / 2;
-		$nodePos = $this->path->getNextNodePos();
-		$mobPos = $this->mob->getPosition();
-
-		$dx = abs($mobPos->getX() - ($nodePos->getX() + 0.5));
-		$dy = abs($mobPos->getY() - $nodePos->getY());
-		$dz = abs($mobPos->getZ() - ($nodePos->getZ() + 0.5));
-
-		if (($dx < $maxDistanceToWaypoint && $dz < $maxDistanceToWaypoint && $dy < 1) ||
-			($this->locomotion->canCutCorner($this->path->getNextNode()->type) && $this->shouldTargetNextNodeInDirection($tempPos))
-		) {
-			$this->path->advance();
-		}
-
-		$this->doStuckDetection($tempPos);
-	}
-
-	private function shouldTargetNextNodeInDirection(Vector3 $direction) : bool{
-		if ($this->path === null) {
-			return false;
-		}
-
-		if ($this->path->getNextNodeIndex() + 1 >= $this->path->getNodeCount()) {
-			return false;
-		}
-
-		$nodePos = $this->path->getNextNodePos()->add(0.5, 0, 0.5);
-
-		if ($direction->distanceSquared($nodePos) > 4) {
-			return false;
-		}
-		if ($this->locomotion->canMoveDirectly($this->mob, $direction, $this->path->getNextNodeCenter())) {
-			return true;
-		}
-
-		$nextNodePos = $this->path->getNodePos($this->path->getNextNodeIndex() + 1)->add(0.5, 0, 0.5);
-
-		$currentNodeToDirection = $nodePos->subtractVector($direction);
-		$nextNodeToDirection = $nextNodePos->subtractVector($direction);
-
-		$currentNodeToDirectionLengthSqr = $currentNodeToDirection->lengthSquared();
-		$nextNodeToDirectionLengthSqr = $nextNodeToDirection->lengthSquared();
-
-		$nextIsCloser = $nextNodeToDirectionLengthSqr < $currentNodeToDirectionLengthSqr;
-		$currentIsVeryClose = $currentNodeToDirectionLengthSqr < 0.5;
-
-		if (!$nextIsCloser && !$currentIsVeryClose) {
-			return false;
-		}
-
-		return $nextNodeToDirection->normalize()->dot($currentNodeToDirection->normalize()) < 0;
-	}
-
-	private function doStuckDetection(Vector3 $position) : void{
-		$mobSpeed = $this->mob->getMotionSpeed();
-		if ($this->tick - $this->lastStuckCheck > self::STUCK_CHECK_INTERVAL) {
-			$speed = $mobSpeed >= 1 ? $mobSpeed : $mobSpeed ** 2;
-			if ($position->distanceSquared($this->lastStuckCheckPos) < (($speed * 100 * self::STUCK_THRESHOLD_DISTANCE_FACTOR) ** 2)) {
-				$this->stop();
-			}
-
-			$this->lastStuckCheck = $this->tick;
-			$this->lastStuckCheckPos = $position;
-		}
-
-		if ($this->path !== null && !$this->path->isDone()) {
-			$nextNodePos = $this->path->getNextNodePos();
-			$time = $this->mob->getWorld()->getTime();
-
-			if ($nextNodePos->equals($this->timeoutCachedNode)) {
-				$this->timeoutTimer += $time - $this->lastTimeoutCheck;
-			} else {
-				$this->timeoutCachedNode = $nextNodePos;
-				$distanceToNextNode = $position->distance($this->timeoutCachedNode->add(0.5, 0, 0.5));
-				$this->timeoutLimit = $mobSpeed > 0 ? $distanceToNextNode / $mobSpeed * 20 : 0;
-			}
-
-			if ($this->timeoutLimit > 0 && $this->timeoutTimer > $this->timeoutLimit * 3) {
-				$this->timeoutPath();
-			}
-
-			$this->lastTimeoutCheck = $time;
-		}
-	}
-
-	private function timeoutPath() : void{
-		$this->resetStuckTimeout();
-		$this->stop();
-	}
-
-	private function resetStuckTimeout() : void{
-		$this->timeoutCachedNode = Vector3::zero();
-		$this->timeoutTimer = 0;
-		$this->timeoutLimit = 0;
 	}
 
 	public function isDone() : bool{
@@ -401,8 +260,7 @@ final class PathNavigation {
 	public function stop() : void{
 		$this->path = null;
 		$this->entityThrottle->reset();
-		$this->wantedPosition = null;
-		$this->wantedPath = null;
+		$this->follower->forgetWantedPosition();
 		$this->locomotion->onStopped();
 
 		$this->requester->cancel();
