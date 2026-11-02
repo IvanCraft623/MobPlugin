@@ -88,7 +88,7 @@ use pocketmine\world\Explosion;
 use pocketmine\world\sound\BowShootSound;
 use pocketmine\world\World;
 
-use IvanCraft623\MobPlugin\libs\_4176b5460554c7da\xenialdan\apibossbar\BossBar;
+use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\xenialdan\apibossbar\BossBar;
 
 use function atan2;
 use function ceil;
