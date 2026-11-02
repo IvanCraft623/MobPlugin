@@ -49,8 +49,8 @@
         }
     },
     "autoload-dev": {
-        "psr-0": {
-            "IvanCraft623\\MobPlugin\\": "tests/phpunit"
+        "psr-4": {
+            "IvanCraft623\\MobPlugin\\": "tests/phpunit/"
         }
     },
     "scripts": {
