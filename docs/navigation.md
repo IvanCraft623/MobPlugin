@@ -26,10 +26,9 @@ navigator.
 
 ## Requesting a path
 
-`PathNavigation::createPath()` is the only call into the pathfinder, through the
-plugin's shared `AsyncSearchExecutor` (`MobPlugin::getPathSearchExecutor()`).
-`createPathToXYZ()`, `createPathToEntity()` and `createPathToPosition()` wrap it, and
-`moveToXYZ()` / `moveToEntity()` also start following the result.
+`moveToXYZ()` and `moveToEntity()` are the only calls into the pathfinder. They go through the
+navigation's `PathRequester`, which runs the searches on the plugin's shared `AsyncSearchExecutor`
+(`MobPlugin::getPathSearchExecutor()`) and returns the result to the navigation, which follows it.
 
 Paths are computed on worker threads, but the chunks between start and target are
 serialized on the main thread at submission, which is expensive. So:
@@ -40,25 +39,28 @@ serialized on the main thread at submission, which is expensive. So:
   the search.
 - `isDone()` is `false` while a computation is pending, so a goal doesn't cancel itself
   before its path arrives.
-- `moveToEntity()` can be called every tick: it requests again when the entity changes
-  block, or when the path has ended and the last request is `ENTITY_REPATH_INTERVAL = 20`
-  ticks old.
-- When the target moved at most `SPLICE_MAX_TARGET_MOVE = 4` blocks and the current path
-  reached the old one, the path is extended: the search starts at its remaining node closest
-  to the new target, with `SPLICE_NODE_BUDGET_FACTOR = 0.25` of the node budget, and is
-  spliced on. After `MAX_SPLICES_IN_A_ROW = 4` the next request searches from the mob; so
+- `moveToEntity()` can be called every tick: `EntityRepathThrottle` requests again only when the
+  entity changes block, or when the path has ended and the last request is
+  `EntityRepathThrottle::INTERVAL = 20` ticks old.
+
+`RepathPolicy` decides how to get a path again, without a mob or a world:
+
+- When the target moved at most `SPLICE_MAX_TARGET_MOVE = 4` blocks and the current path reached
+  the old one, the path is extended: the search starts at its remaining node closest to the new
+  target, with `SPLICE_NODE_BUDGET_FACTOR = 0.25` of the node budget, and is spliced on.
+- After `MAX_SPLICES_IN_A_ROW = 4` extensions or repairs the next request searches from the mob; so
   does an extension that can't reach the target or a path that changed meanwhile.
 
-`recomputePath()` runs at most every `MAX_TIME_RECOMPUTE = 20` ticks; an earlier call is
-deferred to the next eligible tick. `PathfinderMob::onBlockChanged()` triggers it when a
-changed block is one the search looked at for the nodes still to walk (`Path::isInCorridor()`),
-and only listens in the chunks those blocks are in (`Path::getCorridorChunks()`).
+`PathRequester::recompute()` runs at most every `RECOMPUTE_INTERVAL = 20` ticks; an earlier call is
+deferred to the next eligible tick. `PathfinderMob::onBlockChanged()` triggers it when a changed block
+is one the search looked at for the nodes still to walk (`Path::findInvalidation()`), and only listens
+in the chunks those blocks are in (`Path::getCorridorChunks()`).
 
-The recompute patches the path instead of searching from the mob: the invalidation of the changes
-(`Path::findInvalidation()`) is searched around between the node before it and the node after it,
-with the splice node budget and radius `REPAIR_MIN_RADIUS = 8` at least, and spliced into the
-old path, which is walked meanwhile. It searches from the mob when the invalidation reaches the
-node the mob just left, `MAX_SPLICES_IN_A_ROW` was hit, or the patch fails.
+The recompute patches the path instead of searching from the mob: the invalidated nodes of all the
+changes are searched around, between the node before them and the node after them, with the splice
+node budget and a radius of `REPAIR_MIN_RADIUS = 8` at least, and spliced into the old path, which is
+walked meanwhile. It searches from the mob when the invalidation reaches the node the mob just left,
+`MAX_SPLICES_IN_A_ROW` was hit, or the patch fails.
 
 ## Following a path
 

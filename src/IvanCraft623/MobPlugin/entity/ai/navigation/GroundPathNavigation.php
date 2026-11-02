@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
 use IvanCraft623\Pathfinder\Path;
 
@@ -32,7 +31,6 @@ use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\promise\Promise;
-use pocketmine\world\World;
 use function floor;
 
 class GroundPathNavigation extends PathNavigation{
@@ -56,20 +54,20 @@ class GroundPathNavigation extends PathNavigation{
 	/**
 	 * @phpstan-return Promise<Path>
 	 */
-	public function createPathToPosition(Vector3 $position, int $maxVisitedNodes, ?float $range = null) : Promise{
+	public function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		$world = $this->getWorld();
 		if ($world->getBlock($position)->getTypeId() === BlockTypeIds::AIR) {
 			$currentPos = $position->down();
 
-			while ($currentPos->y > World::Y_MIN && $world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
+			while ($currentPos->y > $world->getMinY() && $world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
 				$currentPos = $currentPos->down();
 			}
 
-			if ($currentPos->getY() > World::Y_MIN) {
-				return parent::createPathToPosition($currentPos->up(), $maxVisitedNodes, $range);
+			if ($currentPos->getY() > $world->getMinY()) {
+				return parent::requestPathTo($currentPos->up(), $reach, $maxDistanceFromStart);
 			}
 
-			while($currentPos->getY() < World::Y_MAX && $world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
+			while($currentPos->getY() < $world->getMaxY() && $world->getBlock($currentPos)->getTypeId() === BlockTypeIds::AIR) {
 				$currentPos = $currentPos->up();
 			}
 
@@ -77,21 +75,21 @@ class GroundPathNavigation extends PathNavigation{
 		}
 
 		if (!$world->getBlock($position)->isSolid()) {
-			return parent::createPathToPosition($position, $maxVisitedNodes, $range);
+			return parent::requestPathTo($position, $reach, $maxDistanceFromStart);
 		}
 
 		$currentPos = $position->up();
 
-		while($currentPos->getY() < World::Y_MAX && $world->getBlock($currentPos)->isSolid()) {
+		while($currentPos->getY() < $world->getMaxY() && $world->getBlock($currentPos)->isSolid()) {
 			$currentPos = $currentPos->up();
 		}
 
-		return parent::createPathToPosition($currentPos, $maxVisitedNodes, $range);
+		return parent::requestPathTo($currentPos, $reach, $maxDistanceFromStart);
 	}
 
-	public function getSurfaceY() : int{
+	protected function getSurfaceY() : int{
 		$mobPos = $this->mob->getPosition();
-		if ($this->mob->isInWater() && $this->canFloat()) {
+		if ($this->mob->isInWater() && $this->canFloat) {
 			$y = (int) $mobPos->getY();
 			$world = $this->getWorld();
 			$block = $world->getBlock($mobPos);
@@ -134,18 +132,8 @@ class GroundPathNavigation extends PathNavigation{
 		}
 	}
 
-	public function hasValidPathType(BlockPathType $pathType) : bool{
-		if ($pathType === BlockPathType::WATER || $pathType === BlockPathType::LAVA) {
-			return false;
-		}
-		return $pathType !== BlockPathType::OPEN;
-	}
-
 	public function setAvoidSun(bool $value = true) : void{
 		$this->avoidSun = $value;
 	}
 
-	public function avoidSun() : bool{
-		return $this->avoidSun;
-	}
 }

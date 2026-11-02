@@ -36,11 +36,11 @@ class WallClimberNavigation extends GroundPathNavigation{
 	/**
 	 * @phpstan-return Promise<Path>
 	 */
-	public function createPathToPosition(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+	public function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		$this->pathToPosition = $position->floor();
 		$this->speedModifier = 1;
 
-		return parent::createPathToPosition($position, $reach, $maxDistanceFromStart);
+		return parent::requestPathTo($position, $reach, $maxDistanceFromStart);
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 0) : void{

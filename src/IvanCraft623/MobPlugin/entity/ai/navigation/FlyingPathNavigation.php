@@ -43,7 +43,7 @@ class FlyingPathNavigation extends PathNavigation{
 	}
 
 	public function canUpdatePath() : bool{
-		return $this->canFloat() || $this->isInLiquid()/* || $this->mob->isPassenger()*/;
+		return $this->canFloat || $this->isInLiquid()/* || $this->mob->isPassenger()*/;
 	}
 
 	public function getTempMobPosition() : Vector3 {
@@ -52,9 +52,7 @@ class FlyingPathNavigation extends PathNavigation{
 
 	public function tick() : void{
 		$this->tick++;
-		if ($this->hasDelayedRecomputation) {
-			$this->recomputePath();
-		}
+		$this->recomputeIfDelayed();
 
 		//Either the current path has been fully walked, or an async computation is still in flight
 		//(path === null). There is nothing followable yet; wait for the path to arrive.
