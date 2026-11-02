@@ -30,7 +30,7 @@ class SlimeFloatGoal extends Goal {
 
 	public function __construct(protected Slime $mob) {
 		$this->setFlags(Goal::FLAG_JUMP, Goal::FLAG_MOVE);
-		$mob->getNavigation()->setCanFloat();
+		$mob->getNavigation()->getRules()->canFloat = true;
 	}
 
 	public function canUse() : bool{

@@ -38,7 +38,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomSwimmingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\SwimIdleGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
-use IvanCraft623\MobPlugin\entity\ai\navigation\AmphibiousSwimNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\AmphibiousLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\Bucketable;
 use IvanCraft623\MobPlugin\entity\BucketableTrait;
@@ -131,7 +131,7 @@ class Axolotl extends Animal implements Bucketable{
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new AmphibiousSwimNavigation($this);
+		return new PathNavigation($this, new AmphibiousLocomotion());
 	}
 
 	protected function registerGoals() : void{

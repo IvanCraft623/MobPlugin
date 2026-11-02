@@ -375,11 +375,12 @@ with `new` and `spawnToAll()`, and don't add it to `ALL_ENTITIES`.
 
 ### Different movement
 
-Override `createNavigation()`: `WallClimberNavigation` (`Spider`), `FlyingPathNavigation`
-(`Wither`). A flying mob also uses `Flyable`/`FlyableTrait`, replaces `$this->moveControl`
+Override `createNavigation()` to pass another `Locomotion` to the `PathNavigation`:
+`WallClimberLocomotion` (`Spider`), `FlyingLocomotion` (`Wither`), `AmphibiousLocomotion` (`Axolotl`);
+`TraversalRules` set what the mob may do. A flying mob also uses `Flyable`/`FlyableTrait`, replaces `$this->moveControl`
 with `FlightMoveControl` right after `parent::initEntity()`, and uses
-`WaterAvoidingRandomFlyingGoal`. `BreakDoorGoal` and `AvoidSunlightGoal` need
-`GroundPathNavigation`.
+`WaterAvoidingRandomFlyingGoal`. `BreakDoorGoal` and `AvoidSunlightGoal` need a ground-based
+locomotion.
 
 Path costs: `setPathfindingMalus(BlockPathType::DANGER_FIRE, 16)` in `initProperties()`.
 

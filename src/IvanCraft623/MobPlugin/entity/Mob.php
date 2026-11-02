@@ -29,7 +29,7 @@ use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
-use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
@@ -196,7 +196,7 @@ abstract class Mob extends Living {
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new GroundPathNavigation($this);
+		return new PathNavigation($this, new GroundLocomotion());
 	}
 
 	public function getLookControl() : LookControl {

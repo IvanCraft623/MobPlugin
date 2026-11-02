@@ -35,8 +35,9 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomFlyingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\wither\WitherAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\wither\WitherExplodeOnHalfLifeGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WrappedGoal;
-use IvanCraft623\MobPlugin\entity\ai\navigation\FlyingPathNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\FlyingLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\DamageTracker;
 use IvanCraft623\MobPlugin\entity\DamageTrackerTrait;
@@ -197,11 +198,7 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	}
 
 	public function createNavigation() : PathNavigation{
-		$navigation = new FlyingPathNavigation($this);
-		$navigation->setCanPassDoors(false);
-		$navigation->setCanOpenDoors(true);
-		$navigation->setCanFloat(true);
-		return $navigation;
+		return new PathNavigation($this, new FlyingLocomotion(), new TraversalRules(canFloat: true, canOpenDoors: true, canPassDoors: false));
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{

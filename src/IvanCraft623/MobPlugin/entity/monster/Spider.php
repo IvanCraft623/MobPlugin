@@ -32,7 +32,8 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
-use IvanCraft623\MobPlugin\entity\ai\navigation\WallClimberNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\WallClimberLocomotion;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\MobType;
 
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
@@ -118,8 +119,8 @@ class Spider extends Monster {
 		return 0.3;
 	}
 
-	public function createNavigation() : WallClimberNavigation{
-		return new WallClimberNavigation($this);
+	public function createNavigation() : PathNavigation{
+		return new PathNavigation($this, new WallClimberLocomotion());
 	}
 
 	public function getXpDropAmount() : int{

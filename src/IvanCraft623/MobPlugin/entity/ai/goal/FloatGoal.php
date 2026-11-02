@@ -29,7 +29,7 @@ class FloatGoal extends Goal {
 
 	public function __construct(protected Mob $mob) {
 		$this->setFlags(Goal::FLAG_JUMP);
-		$mob->getNavigation()->setCanFloat();
+		$mob->getNavigation()->getRules()->canFloat = true;
 	}
 
 	public function canUse() : bool{

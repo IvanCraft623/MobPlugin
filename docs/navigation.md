@@ -20,9 +20,9 @@ travel(...)              apply the speeds as motion
 ```
 
 Goals never move a mob directly: they ask the navigation, and the navigation drives the
-controls. A mob gets a `GroundPathNavigation`, `MoveControl`, `LookControl` and
+controls. A mob gets a `PathNavigation` with a `GroundLocomotion`, `MoveControl`, `LookControl` and
 `JumpControl` in `Mob::initEntity()`, and overrides `createNavigation()` for another
-navigator.
+locomotion or other rules.
 
 ## Requesting a path
 
@@ -77,22 +77,26 @@ A mob is stuck when it moved less than a quarter of its expected distance in
 `STUCK_CHECK_INTERVAL = 100` ticks, or stayed on one node past its timeout. The navigation
 then stops, and the goal decides whether to path again.
 
-## Navigators
+## Navigation
 
-```
-PathNavigation
-├── GroundPathNavigation     default
-│   └── WallClimberNavigation   Spider
-├── FlyingPathNavigation     Wither
-└── AmphibiousSwimNavigation   Axolotl
-```
+A mob has one `PathNavigation` (`final`); what differs between mobs is its `Locomotion`, the way
+it moves, and its `TraversalRules`.
 
-| Navigator | Node evaluator | Notes |
+| Locomotion | Node evaluator | Notes |
 |---|---|---|
-| `GroundPathNavigation` | `WalkNodeEvaluator` | Snaps an air or solid target to the nearest walkable block. `setAvoidSun(true)` truncates paths that step into full light. |
-| `WallClimberNavigation` | inherited | Keeps pushing `MoveControl` toward the target after the path ends, which is how spiders climb. |
-| `FlyingPathNavigation` | `FlightNodeEvaluator` | Steers in 3D and cuts corners through open air. |
-| `AmphibiousSwimNavigation` | `AmphibiousNodeEvaluator` | Swims in 3D through water, walks on land; always updates its path. Pair with `AquaticMoveControl`. |
+| `GroundLocomotion` | `WalkNodeEvaluator` | Default. Snaps an air or solid target to the nearest walkable block. With `avoidSun`, paths stop before the first node in full light. |
+| `WallClimberLocomotion` | inherited | Keeps pushing `MoveControl` toward the target after the path ends, which is how spiders climb. |
+| `FlyingLocomotion` | `FlightNodeEvaluator` | Steers in 3D and cuts corners through open air. |
+| `AmphibiousLocomotion` | `AmphibiousNodeEvaluator` | Swims in 3D through water, walks on land; always updates its path. Pair with `AquaticMoveControl`. |
+
+`TraversalRules` (`getRules()`) are what the mob may do: `canFloat`, `canOpenDoors`, `canPassDoors`
+(default true), `canWalkOverFences` and `avoidSun`. Goals change them while the mob lives, e.g.
+`FloatGoal` sets `canFloat`.
+
+A new way of moving is a subclass of `Locomotion` overriding the hooks that differ from a walker's:
+evaluator, `canFollowPath()`, `pathPosition()`, `isStableDestination()` and the optional `wantedY()`,
+`adjustTarget()`, `adjustPath()`, `canMoveDirectly()`, `advanceWithoutFollowing()` and
+`tickWithoutPath()`. `PathNavigation::setLocomotion()` changes it for a living mob, dropping its path.
 
 Path costs per block type come from `Mob::getPathTypeCostMap()`; set them with
 `Mob::setPathfindingMalus()`.

@@ -24,89 +24,89 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\CustomTimings;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\Locomotion;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\Pathfinder\MovementProfile;
 use IvanCraft623\Pathfinder\Path;
-use IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use IvanCraft623\Pathfinder\world\BlockGetter;
 use IvanCraft623\Pathfinder\world\Terrain;
 use IvanCraft623\Pathfinder\world\WorldBlockGetter;
 
-use pocketmine\block\BlockTypeIds;
-use pocketmine\block\FillableCauldron;
-use pocketmine\block\Liquid;
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
-use pocketmine\math\VoxelRayTrace;
 use pocketmine\promise\Promise;
 use pocketmine\world\World;
 use function abs;
 use function floor;
 
-abstract class PathNavigation {
+/**
+ * Takes a mob where its goals send it. How it moves is its {@link Locomotion}, what it may do
+ * its {@link TraversalRules}.
+ */
+final class PathNavigation {
 
 	public const STUCK_CHECK_INTERVAL = 100;
 	public const STUCK_THRESHOLD_DISTANCE_FACTOR = 0.25;
 
-	protected Mob $mob;
+	private ?Path $path = null;
 
-	protected ?Path $path = null;
+	private float $speedModifier = 1.0;
 
-	protected float $speedModifier;
+	private int $tick = 0;
 
-	protected int $tick = 0;
+	private int $lastStuckCheck = 0;
 
-	protected int $lastStuckCheck;
+	private Vector3 $lastStuckCheckPos;
 
-	protected Vector3 $lastStuckCheckPos;
+	private Vector3 $timeoutCachedNode;
 
-	protected Vector3 $timeoutCachedNode;
+	private int $timeoutTimer = 0;
 
-	protected int $timeoutTimer;
+	private int $lastTimeoutCheck = 0;
 
-	protected int $lastTimeoutCheck;
+	private float $timeoutLimit = 0;
 
-	protected float $timeoutLimit;
-
-	protected NodeEvaluator $nodeEvaluator;
+	private NodeEvaluator $evaluator;
 
 	private ?WorldBlockGetter $blockGetter = null;
 
-	protected bool $canFloat = false;
-	protected bool $canOpenDoors = false;
-	protected bool $canPassDoors = false;
-	protected bool $canWalkOverFences = false;
-
-	protected int $maxVisitedNodes;
+	private int $maxVisitedNodes;
 
 	/** Position handed to the move control for node $wantedNodeIndex of $wantedPath */
 	private ?Vector3 $wantedPosition = null;
 	private ?Path $wantedPath = null;
 	private int $wantedNodeIndex = -1;
 
+	private TraversalRules $rules;
+
 	private PathRequester $requester;
 
 	private EntityRepathThrottle $entityThrottle;
 
-	public function __construct(Mob $mob) {
-		$this->mob = $mob;
-		$this->maxVisitedNodes = (int) floor($this->mob->getFollowRange() * 16);
-		$this->createPathFinder();
+	public function __construct(
+		private Mob $mob,
+		private Locomotion $locomotion,
+		?TraversalRules $rules = null
+	) {
+		$this->rules = $rules ?? new TraversalRules();
+		$this->evaluator = $locomotion->createEvaluator();
+		$this->maxVisitedNodes = (int) floor($mob->getFollowRange() * 16);
+		$this->lastStuckCheckPos = Vector3::zero();
+		$this->resetStuckTimeout();
 
 		$this->entityThrottle = new EntityRepathThrottle();
 		$this->requester = new PathRequester(
 			MobPlugin::getInstance()->getPathSearchExecutor(),
 			new RepathPolicy(),
 			currentPath: fn() : ?Path => $this->path,
-			canSearch: fn() : bool => $this->mob->getPosition()->getY() >= $this->getWorld()->getMinY() && $this->canUpdatePath(),
+			canSearch: fn() : bool => $this->mob->getPosition()->getY() >= $this->mob->getWorld()->getMinY() &&
+				$this->locomotion->canFollowPath($this->mob, $this->rules),
 			createSetup: fn() : SearchSetup => new SearchSetup(
-				$this->nodeEvaluator,
-				$this->createMovementProfile(),
-				Terrain::fromWorld($this->getWorld()),
+				$this->evaluator,
+				$this->locomotion->createProfile($this->mob, $this->rules),
+				Terrain::fromWorld($this->mob->getWorld()),
 				$this->mob->getPosition(),
 				$this->mob->isOnGround(),
 				$this->mob->getFollowRange(),
@@ -116,24 +116,38 @@ abstract class PathNavigation {
 		);
 	}
 
-	public function getWorld() : World{
-		return $this->mob->getWorld();
+	public function getRules() : TraversalRules{
+		return $this->rules;
+	}
+
+	public function getLocomotion() : Locomotion{
+		return $this->locomotion;
+	}
+
+	/**
+	 * Changes the way the mob moves; whatever it was doing is dropped.
+	 */
+	public function setLocomotion(Locomotion $locomotion) : void{
+		if ($locomotion === $this->locomotion) {
+			return;
+		}
+		$this->stop();
+		$this->locomotion = $locomotion;
+		$this->evaluator = $locomotion->createEvaluator();
 	}
 
 	public function isPathComputationPending() : bool{
 		return $this->requester->isPending();
 	}
 
-	protected abstract function createPathFinder() : void;
-
-	protected function recomputeIfDelayed() : void{
+	private function recomputeIfDelayed() : void{
 		if ($this->requester->hasDelayedRecompute()) {
 			$this->recomputePath();
 		}
 	}
 
-	protected function recomputePath() : void{
-		$this->requester->recompute($this->path, $this->getWorld()->getServer()->getTick(), function() : void{
+	private function recomputePath() : void{
+		$this->requester->recompute($this->path, $this->mob->getWorld()->getServer()->getTick(), function() : void{
 			$this->path = null;
 		})?->onCompletion(function(Path $path) : void{
 			$this->path = $path;
@@ -146,43 +160,27 @@ abstract class PathNavigation {
 	/**
 	 * @phpstan-return Promise<Path>
 	 */
-	protected function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+	private function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		CustomTimings::$pathRequest->startTiming();
-		$promise = $this->requester->request($position, $reach, $this->path, $maxDistanceFromStart);
+		$promise = $this->requester->request($this->locomotion->adjustTarget($this->mob, $position), $reach, $this->path, $maxDistanceFromStart);
 		CustomTimings::$pathRequest->stopTiming();
 
 		return $promise;
 	}
 
-	protected function getSearchCostMap() : BlockPathTypeCostMap{
-		return $this->mob->getPathTypeCostMap();
-	}
-
-	protected function createMovementProfile() : MovementProfile{
-		$size = $this->mob->getSize();
-		return new MovementProfile(
-			width: $size->getWidth(),
-			height: $size->getHeight(),
-			maxUpStep: $this->mob->getStepHeight(),
-			maxFallDistance: $this->mob->getMaxFallDistance(),
-			costMap: $this->getSearchCostMap(),
-			canPassDoors: $this->canPassDoors,
-			canOpenDoors: $this->canOpenDoors,
-			canFloat: $this->canFloat,
-			canWalkOverFences: $this->canWalkOverFences,
-			eyeHeight: $size->getEyeHeight()
-		);
-	}
-
 	public function moveToXYZ(float $x, float $y, float $z, float $speedModifier, int $reach = 1) : void{
 		$this->entityThrottle->reset();
-		$this->requestPathTo(new Vector3($x, $y, $z), $reach)->onCompletion(function(Path $path) use ($speedModifier){
+		$target = new Vector3($x, $y, $z);
+		$this->locomotion->onMoveRequested($target, $speedModifier);
+		$this->requestPathTo($target, $reach)->onCompletion(function(Path $path) use ($speedModifier){
 			$this->startFollowing($path, $speedModifier);
 		}, static function(){});
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 1) : void{
 		$targetPosition = $target->getPosition();
+		$this->locomotion->onMoveRequested($targetPosition, $speedModifier);
+
 		$targetBlock = World::blockHash((int) floor($targetPosition->x), (int) floor($targetPosition->y), (int) floor($targetPosition->z));
 		$pending = $this->isPathComputationPending();
 		if (!$this->entityThrottle->shouldRequest($targetBlock, $pending, $this->path, $this->tick)) {
@@ -211,9 +209,9 @@ abstract class PathNavigation {
 				$this->resetStuckTimeout();
 			}
 		} elseif (!$this->isDone()) {
-			//Already following it, and trimmed
+			//Already following it, and adjusted
 			$this->speedModifier = $speedModifier;
-			$this->lastStuckCheckPos = $this->getTempMobPosition();
+			$this->lastStuckCheckPos = $this->locomotion->pathPosition($this->mob, $this->rules);
 			$this->lastStuckCheck = $this->tick;
 
 			return $path->getNodeCount() > 0;
@@ -223,18 +221,17 @@ abstract class PathNavigation {
 			return false;
 		}
 
-		$this->trimPath();
-
-		/**
-		 * @var Path $path
-		 */
 		$path = $this->path;
+		if ($path === null) {
+			return false;
+		}
+		$this->locomotion->adjustPath($this->mob, $path, $this->rules);
 		if ($path->getNodeCount() <= 0) {
 			return false;
 		}
 
 		$this->speedModifier = $speedModifier;
-		$this->lastStuckCheckPos = $this->getTempMobPosition();
+		$this->lastStuckCheckPos = $this->locomotion->pathPosition($this->mob, $this->rules);
 		$this->lastStuckCheck = $this->tick;
 
 		return true;
@@ -252,21 +249,16 @@ abstract class PathNavigation {
 		//Walked, or still being computed
 		$path = $this->path;
 		if ($path === null || $path->isDone()) {
+			if ($this->isDone()) {
+				$this->locomotion->tickWithoutPath($this->mob);
+			}
 			return;
 		}
 
-		if ($this->canUpdatePath()) {
+		if ($this->locomotion->canFollowPath($this->mob, $this->rules)) {
 			$this->followThePath();
 		} else {
-			$tempPos = $this->getTempMobPosition();
-			$nextPos = $path->getNextNodeCenter();
-			if ($tempPos->y > $nextPos->y &&
-				!$this->mob->isOnGround() &&
-				floor($tempPos->x) === floor($nextPos->x) &&
-				floor($tempPos->z) === floor($nextPos->z)
-			) {
-				$path->advance();
-			}
+			$this->locomotion->advanceWithoutFollowing($this->mob, $path, $this->locomotion->pathPosition($this->mob, $this->rules));
 		}
 
 		//followThePath() (or the async computation) may have stopped/invalidated the path.
@@ -275,7 +267,7 @@ abstract class PathNavigation {
 			$nodeIndex = $path->getNextNodeIndex();
 			if ($this->wantedPosition === null || $path !== $this->wantedPath || $nodeIndex !== $this->wantedNodeIndex) {
 				$nextPos = $path->getNextNodeCenter();
-				$this->wantedPosition = new Vector3($nextPos->x, $this->getGroundY($nextPos), $nextPos->z);
+				$this->wantedPosition = new Vector3($nextPos->x, $this->locomotion->wantedY($this->mob, $this->getBlockGetter(), $nextPos), $nextPos->z);
 				$this->wantedPath = $path;
 				$this->wantedNodeIndex = $nodeIndex;
 			}
@@ -294,16 +286,12 @@ abstract class PathNavigation {
 		$this->recomputePath();
 	}
 
-	protected function getGroundY(Vector3 $position) : float{
-		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() === BlockTypeIds::AIR ? $position->y : BlockClassifier::getFloorLevel($this->getBlockGetter(), $position);
-	}
-
-	protected function followThePath() : void{
+	private function followThePath() : void{
 		if ($this->path === null || $this->path->isDone()) {
 			return;
 		}
 
-		$tempPos = $this->getTempMobPosition();
+		$tempPos = $this->locomotion->pathPosition($this->mob, $this->rules);
 		$width = $this->mob->getSize()->getWidth();
 		$maxDistanceToWaypoint = $width > 0.75 ? $width / 2 : 0.75 - $width / 2;
 		$nodePos = $this->path->getNextNodePos();
@@ -314,7 +302,7 @@ abstract class PathNavigation {
 		$dz = abs($mobPos->getZ() - ($nodePos->getZ() + 0.5));
 
 		if (($dx < $maxDistanceToWaypoint && $dz < $maxDistanceToWaypoint && $dy < 1) ||
-			($this->canCutCorner($this->path->getNextNode()->type) && $this->shouldTargetNextNodeInDirection($tempPos))
+			($this->locomotion->canCutCorner($this->path->getNextNode()->type) && $this->shouldTargetNextNodeInDirection($tempPos))
 		) {
 			$this->path->advance();
 		}
@@ -336,7 +324,7 @@ abstract class PathNavigation {
 		if ($direction->distanceSquared($nodePos) > 4) {
 			return false;
 		}
-		if ($this->canMoveDirectly($direction, $this->path->getNextNodeCenter())) {
+		if ($this->locomotion->canMoveDirectly($this->mob, $direction, $this->path->getNextNodeCenter())) {
 			return true;
 		}
 
@@ -372,7 +360,7 @@ abstract class PathNavigation {
 
 		if ($this->path !== null && !$this->path->isDone()) {
 			$nextNodePos = $this->path->getNextNodePos();
-			$time = $this->getWorld()->getTime();
+			$time = $this->mob->getWorld()->getTime();
 
 			if ($nextNodePos->equals($this->timeoutCachedNode)) {
 				$this->timeoutTimer += $time - $this->lastTimeoutCheck;
@@ -415,73 +403,24 @@ abstract class PathNavigation {
 		$this->entityThrottle->reset();
 		$this->wantedPosition = null;
 		$this->wantedPath = null;
+		$this->locomotion->onStopped();
 
 		$this->requester->cancel();
 	}
 
-	protected abstract function getTempMobPosition() : Vector3;
-
-	protected abstract function canUpdatePath() : bool;
-
-	protected function trimPath() : void{
-		if ($this->path !== null) {
-			$world = $this->getWorld();
-			for ($i = 0; $i < $this->path->getNodeCount(); $i++) {
-				$node = $this->path->getNode($i);
-				if ($world->getBlockAt($node->x(), $node->y(), $node->z()) instanceof FillableCauldron) {
-					$this->path->replaceNode($i, $node->cloneAndMove($node->x(), $node->y() + 1, $node->z()));
-
-					$nextNode = $i + 1 < $this->path->getNodeCount() ? $this->path->getNode($i + 1) : null;
-					if ($nextNode !== null && $node->y >= $nextNode->y) {
-						$this->path->replaceNode($i + 1, $node->cloneAndMove($nextNode->x(), $node->y() + 1, $nextNode->z()));
-					}
-				}
-			}
-		}
-	}
-
-	protected function canMoveDirectly(Vector3 $from, Vector3 $to) : bool{
-		return false;
-	}
-
-	protected function canCutCorner(BlockPathType $pathType) : bool{
-		return $pathType !== BlockPathType::DANGER_FIRE &&
-			$pathType !== BlockPathType::DANGER_OTHER &&
-			$pathType !== BlockPathType::WALKABLE_DOOR;
-	}
-
 	public function isInLiquid() : bool{
-		//Water and lava don't have collision boxes, so they never show up in getCollisionBlocks().
-		return $this->mob->isInWater() || $this->mob->isInLava();
-	}
-
-	protected static function isClearForMovementBetween(Mob $mob, Vector3 $from, Vector3 $to, bool $detectLiquids) : bool{
-		$to = $to->add(0, $mob->getSize()->getHeight() / 2, 0);
-
-		foreach (VoxelRayTrace::betweenPoints($from, $to) as $pos) {
-			$block = $mob->getWorld()->getBlockAt((int) $pos->x, (int) $pos->y, (int) $pos->z);
-
-			if ($block instanceof Liquid && !$detectLiquids) {
-				continue;
-			}
-
-			if ($block->calculateIntercept($from, $to) !== null) {
-				return false;
-			}
-		}
-
-		return true;
+		return Locomotion::isInLiquid($this->mob);
 	}
 
 	public function isStableDestination(Vector3 $position) : bool{
-		return $this->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->isSolid();
+		return $this->locomotion->isStableDestination($this->mob, $position);
 	}
 
 	/**
 	 * Reads the mob's world on the main thread.
 	 */
 	public function getBlockGetter() : BlockGetter{
-		$world = $this->getWorld();
+		$world = $this->mob->getWorld();
 		if ($this->blockGetter === null || $this->blockGetter->getWorld() !== $world) {
 			$this->blockGetter = new WorldBlockGetter($world);
 		}
@@ -492,23 +431,6 @@ abstract class PathNavigation {
 	 * Type of the block for the locomotion's evaluator.
 	 */
 	public function getBlockPathType(int $x, int $y, int $z) : BlockPathType{
-		return $this->nodeEvaluator->getPathTypeResolver()->getBlockPathType($this->getBlockGetter(), $x, $y, $z, $this->mob->getPosition());
+		return $this->evaluator->getPathTypeResolver()->getBlockPathType($this->getBlockGetter(), $x, $y, $z, $this->mob->getPosition());
 	}
-
-	public function setCanFloat(bool $value = true) : void{
-		$this->canFloat = $value;
-	}
-
-	public function setCanOpenDoors(bool $value = true) : void{
-		$this->canOpenDoors = $value;
-	}
-
-	public function setCanPassDoors(bool $value = true) : void{
-		$this->canPassDoors = $value;
-	}
-
-	public function setCanWalkOverFences(bool $value = true) : void{
-		$this->canWalkOverFences = $value;
-	}
-
 }
