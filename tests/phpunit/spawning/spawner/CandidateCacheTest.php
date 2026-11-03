@@ -38,6 +38,7 @@ use IvanCraft623\MobPlugin\spawning\SpawnBand;
 use IvanCraft623\MobPlugin\spawning\SpawnLiquid;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleGroup;
 use IvanCraft623\MobPlugin\spawning\SpawnRules;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
@@ -132,9 +133,8 @@ final class CandidateCacheTest extends TestCase{
 	/**
 	 * Keys with equal results share them, so the keys are resolved in two orders: the
 	 * outcome of a key must not depend on what was resolved before it.
-	 *
-	 * @dataProvider keyOrders
 	 */
+	#[DataProvider('keyOrders')]
 	public function testEveryKeyMatchesPlainEvaluation(bool $reversed) : void{
 		$rules = self::rules();
 		$keys = $reversed ? array_reverse(self::keys()) : self::keys();
