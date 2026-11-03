@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\loot;
 
-use IvanCraft623\MobPlugin\libs\_63b6169c3716cf30\kostamax27\loottable\function\LootFunction;
-use IvanCraft623\MobPlugin\libs\_63b6169c3716cf30\kostamax27\loottable\LootContext;
+use IvanCraft623\MobPlugin\libs\_f0e3cb97e8f8441b\kostamax27\loottable\function\LootFunction;
+use IvanCraft623\MobPlugin\libs\_f0e3cb97e8f8441b\kostamax27\loottable\LootContext;
 use pocketmine\block\utils\Colored;
 use pocketmine\item\Item;
 use pocketmine\item\ItemBlock;
