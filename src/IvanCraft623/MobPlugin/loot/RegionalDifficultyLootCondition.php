@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\loot;
 
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_d231130ad4236385\kostamax27\loottable\condition\LootCondition;
-use IvanCraft623\MobPlugin\libs\_d231130ad4236385\kostamax27\loottable\LootContext;
+use IvanCraft623\MobPlugin\libs\_63b6169c3716cf30\kostamax27\loottable\condition\LootCondition;
+use IvanCraft623\MobPlugin\libs\_63b6169c3716cf30\kostamax27\loottable\LootContext;
 
 final class RegionalDifficultyLootCondition implements LootCondition{
 
