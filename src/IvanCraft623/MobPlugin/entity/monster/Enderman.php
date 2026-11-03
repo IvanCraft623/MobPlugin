@@ -106,7 +106,7 @@ class Enderman extends Monster implements NeutralMob{
 		BlockTypeIds::CORNFLOWER => true,
 		BlockTypeIds::LILY_OF_THE_VALLEY => true,
 		BlockTypeIds::WITHER_ROSE => true,
-		//BlockTypeIds::TORCHFLOWER => true,
+		BlockTypeIds::TORCHFLOWER => true,
 
 		//dirts...
 		BlockTypeIds::DIRT => true,
@@ -128,13 +128,13 @@ class Enderman extends Monster implements NeutralMob{
 		BlockTypeIds::CLAY => true,
 		BlockTypeIds::PUMPKIN => true,
 		BlockTypeIds::CARVED_PUMPKIN => true,
-		BlockTypeIds::MELON => true
-		//TODO: crimson fungus
-		//TODO: crimson nylium
-		//BlockTypeIds::CRIMSON_ROOTS => true,
-		//TODO: warped fungus
-		//TODO: warped nylium
-		//BlockTypeIds::WARPED_ROOTS => true
+		BlockTypeIds::MELON => true,
+		BlockTypeIds::CRIMSON_FUNGUS => true,
+		BlockTypeIds::CRIMSON_NYLIUM => true,
+		BlockTypeIds::CRIMSON_ROOTS => true,
+		BlockTypeIds::WARPED_FUNGUS => true,
+		BlockTypeIds::WARPED_NYLIUM => true,
+		BlockTypeIds::WARPED_ROOTS => true
 	];
 
 	public const MIN_ANGER_TICKS = 20 * 20;
