@@ -26,8 +26,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 use IvanCraft623\Pathfinder\Node;
 use IvanCraft623\Pathfinder\Path;
 use IvanCraft623\Pathfinder\PathResult;
-use pocketmine\promise\Promise;
 use pocketmine\math\Vector3;
+use pocketmine\promise\Promise;
 
 final class PathRequesterTest extends NavigationTestCase{
 	private FakeSearchExecutor $executor;

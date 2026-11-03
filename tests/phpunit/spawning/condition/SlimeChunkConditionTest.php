@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\spawning\condition;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class SlimeChunkConditionTest extends TestCase{
@@ -48,9 +49,7 @@ final class SlimeChunkConditionTest extends TestCase{
 		yield "32-bit extremes, not slimy" => [-2147483648, 2147483647, false];
 	}
 
-	/**
-	 * @dataProvider chunks
-	 */
+	#[DataProvider('chunks')]
 	public function testMatchesReferenceImplementation(int $chunkX, int $chunkZ, bool $slimy) : void{
 		self::assertSame($slimy, SlimeChunkCondition::isSlimeChunk($chunkX, $chunkZ));
 	}

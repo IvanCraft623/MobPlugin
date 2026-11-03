@@ -19,7 +19,7 @@ jobs:
       - name: Set up PHP
         uses: pmmp/setup-php-action@3.2.0
         with:
-          php-version: 8.2
+          php-version: 8.4
           install-path: ./bin
 
       - name: Install Composer dependencies

@@ -1,5 +1,6 @@
 parameters:
     level: 9
+    phpVersion: 80200
     checkMissingCallableSignature: true
     rememberPossiblyImpureFunctionValues: false #risky to remember these, better for performance to avoid repeated calls anyway
     treatPhpDocTypesAsCertain: false
