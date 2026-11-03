@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\loot;
 
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\kostamax27\loottable\item\ItemResolver;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\kostamax27\loottable\item\ItemResolver;
 use pocketmine\block\MobHead;
 use pocketmine\block\utils\MobHeadType;
 use pocketmine\item\Item;

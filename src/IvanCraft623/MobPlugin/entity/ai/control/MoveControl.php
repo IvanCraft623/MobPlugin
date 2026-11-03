@@ -25,8 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\control;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\math\Vector3;
 use function atan2;
@@ -157,12 +156,11 @@ class MoveControl implements Control {
 
 	private function isWalkable(float $x, float $z) : bool {
 		$location = $this->mob->getLocation();
-		if (!$this->mob->getNavigation()->getNodeEvaluator()->getBlockPathType(
-			new SyncBlockGetter($this->mob->getWorld()),
+		if ($this->mob->getNavigation()->getBlockPathType(
 			(int) floor($location->x + $x),
 			(int) floor($location->y),
 			(int) floor($location->z + $z)
-		)->equals(BlockPathType::WALKABLE)) {
+		) !== BlockPathType::WALKABLE) {
 			return false;
 		}
 		return true;

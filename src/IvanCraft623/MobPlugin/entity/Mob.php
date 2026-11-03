@@ -29,7 +29,7 @@ use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
-use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
@@ -38,10 +38,10 @@ use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\kostamax27\loottable\LootContext;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\kostamax27\loottable\LootDifficulty;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\kostamax27\loottable\LootContext;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\kostamax27\loottable\LootDifficulty;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -196,7 +196,7 @@ abstract class Mob extends Living {
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new GroundPathNavigation($this);
+		return new PathNavigation($this, new GroundLocomotion());
 	}
 
 	public function getLookControl() : LookControl {

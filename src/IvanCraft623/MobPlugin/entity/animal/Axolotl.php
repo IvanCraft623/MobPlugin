@@ -38,14 +38,14 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomSwimmingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\SwimIdleGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
-use IvanCraft623\MobPlugin\entity\ai\navigation\AmphibiousSwimNavigation;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\AmphibiousLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\Bucketable;
 use IvanCraft623\MobPlugin\entity\BucketableTrait;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
@@ -131,7 +131,7 @@ class Axolotl extends Animal implements Bucketable{
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new AmphibiousSwimNavigation($this);
+		return new PathNavigation($this, new AmphibiousLocomotion());
 	}
 
 	protected function registerGoals() : void{

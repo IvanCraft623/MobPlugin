@@ -23,9 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\IvanCraft623\Pathfinder\Path;
 use pocketmine\block\Door;
 use pocketmine\math\Vector3;
 use function floor;
@@ -36,7 +35,7 @@ abstract class DoorInteractGoal extends Goal {
 	protected Vector3 $doorPosition;
 
 	public function __construct(protected PathfinderMob $entity) {
-		if (!$entity->getNavigation() instanceof GroundPathNavigation) {
+		if (!$entity->getNavigation()->getLocomotion()->isGroundBased()) {
 			throw new \InvalidArgumentException("This entity type does not support path navigation");
 		}
 	}

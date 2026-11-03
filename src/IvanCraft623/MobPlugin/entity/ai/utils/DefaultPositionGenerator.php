@@ -24,8 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_bad3ae3792f83ce1\IvanCraft623\Pathfinder\world\SyncBlockGetter;
+use IvanCraft623\MobPlugin\libs\_d231130ad4236385\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;
@@ -121,7 +120,7 @@ class DefaultPositionGenerator {
 		return ($entity->getWorld()->isInWorld((int) $pos->x, (int) $pos->y, (int) $pos->z) &&
 			!($isConstrained && $entity->isWithinRestriction($pos)) &&
 			$entity->getNavigation()->isStableDestination($pos) &&
-			$entity->getPathfindingMalus(WalkNodeEvaluator::getBlockPathTypeStatic(new SyncBlockGetter($entity->getWorld()), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+			$entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 		) ? $pos : null;
 	}
 }

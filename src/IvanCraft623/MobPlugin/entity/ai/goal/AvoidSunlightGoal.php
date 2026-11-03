@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\Mob;
 
 use pocketmine\world\World;
@@ -36,18 +35,14 @@ class AvoidSunlightGoal extends Goal {
 		$time = $this->entity->getWorld()->getTimeOfDay();
 			return !($time >= World::TIME_NIGHT && $time < World::TIME_SUNRISE) && //is day check
 				$this->entity->getArmorInventory()->getHelmet()->isNull() &&
-				$this->entity->getNavigation() instanceof GroundPathNavigation;
+				$this->entity->getNavigation()->getLocomotion()->isGroundBased();
 	}
 
 	public function start() : void{
-		if (($navigation = $this->entity->getNavigation()) instanceof GroundPathNavigation) {
-			$navigation->setAvoidSun(true);
-		}
+		$this->entity->getNavigation()->getRules()->avoidSun = true;
 	}
 
 	public function stop() : void{
-		if (($navigation = $this->entity->getNavigation()) instanceof GroundPathNavigation) {
-			$navigation->setAvoidSun(false);
-		}
+		$this->entity->getNavigation()->getRules()->avoidSun = false;
 	}
 }

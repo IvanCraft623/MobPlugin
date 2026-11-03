@@ -37,7 +37,6 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
-use IvanCraft623\MobPlugin\entity\ai\navigation\GroundPathNavigation;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
@@ -66,7 +65,6 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
 use pocketmine\world\World;
 
-use function assert;
 use function count;
 use function mt_rand;
 
@@ -187,8 +185,7 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		if ($this->canBreakDoors !== $value) {
 			$this->canBreakDoors = $value;
 
-			assert($this->navigation instanceof GroundPathNavigation);
-			$this->navigation->setCanOpenDoors($value);
+			$this->navigation->getRules()->canOpenDoors = $value;
 			$this->updateBreakDoorGoal($value);
 		}
 		return $this;
