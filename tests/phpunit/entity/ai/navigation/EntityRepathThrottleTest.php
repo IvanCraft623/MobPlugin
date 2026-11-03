@@ -23,7 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-
 final class EntityRepathThrottleTest extends NavigationTestCase{
 	public function testFirstRequestAndANewBlockAreRequested() : void{
 		$throttle = new EntityRepathThrottle();
