@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\control\MovementInput;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
@@ -78,13 +79,17 @@ use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
 use function assert;
 use function basename;
+use function cos;
 use function count;
 use function debug_backtrace;
 use function implode;
 use function max;
 use function round;
+use function sin;
+use function sqrt;
 use function str_replace;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
+use const M_PI;
 
 abstract class Mob extends Living {
 	use DespawnPersistenceTrait {
@@ -122,13 +127,7 @@ abstract class Mob extends Living {
 
 	protected Sensing $sensing;
 
-	protected float $forwardSpeed = 0;
-
-	protected float $upwardSpeed = 0;
-
-	protected float $sidewaysSpeed = 0;
-
-	protected float $motionSpeed = 0;
+	protected MovementInput $movementInput;
 
 	protected bool $hasAi = true;
 
@@ -187,6 +186,7 @@ abstract class Mob extends Living {
 		$this->goalSelector = new GoalSelector();
 		$this->targetSelector = new GoalSelector();
 		$this->lookControl = new LookControl($this);
+		$this->movementInput = new MovementInput();
 		$this->moveControl = new MoveControl($this);
 		$this->jumpControl = new JumpControl($this);
 		$this->sensing = new Sensing($this);
@@ -243,32 +243,8 @@ abstract class Mob extends Living {
 		return MobType::UNDEFINED();
 	}
 
-	public function setForwardSpeed(float $forwardSpeed) : void {
-		$this->forwardSpeed = $forwardSpeed;
-	}
-
-	public function setUpwardSpeed(float $upwardSpeed) : void {
-		$this->upwardSpeed = $upwardSpeed;
-	}
-
-	public function setSidewaysSpeed(float $sidewaysSpeed) : void {
-		$this->sidewaysSpeed = $sidewaysSpeed;
-	}
-
-	/**
-	 * The speed MoveControl wants to apply this tick, used to drive forwardSpeed.
-	 * Not to be confused with getMovementSpeed(), which reads the MOVEMENT_SPEED attribute.
-	 */
-	public function getMotionSpeed() : float {
-		return $this->motionSpeed;
-	}
-
-	/**
-	 * Sets the speed MoveControl wants to apply this tick and pushes it as forwardSpeed.
-	 */
-	public function setMotionSpeed(float $motionSpeed) : void {
-		$this->motionSpeed = $motionSpeed;
-		$this->setForwardSpeed($motionSpeed);
+	public function getMovementInput() : MovementInput{
+		return $this->movementInput;
 	}
 
 	/**
@@ -566,12 +542,11 @@ abstract class Mob extends Living {
 		CustomTimings::$entityControls->stopTiming();
 
 		// Movement update
-		$this->sidewaysSpeed *= 0.98;
-		$this->forwardSpeed *= 0.98;
+		$this->movementInput->decay(0.98);
 		//TODO: is being controlled by passenger check!
-		if ($this->sidewaysSpeed !== 0.0 || $this->upwardSpeed !== 0.0 || $this->forwardSpeed !== 0.0 || $this->isCollidedHorizontally) {
+		if (!$this->movementInput->isIdle() || $this->isCollidedHorizontally) {
 			CustomTimings::$entityTravel->startTiming();
-			$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
+			$this->travel($this->movementInput->getSideways(), $this->movementInput->getUpward(), $this->movementInput->getForward());
 			CustomTimings::$entityTravel->stopTiming();
 		}
 
@@ -585,7 +560,7 @@ abstract class Mob extends Living {
 	protected function tickState() : void{
 	}
 
-	public function travel(Vector3 $movementInput) : void{
+	public function travel(float $sideways, float $upward, float $forward) : void{
 		// TODO: More complex movement suff :P
 
 		if ($this->isInWater()) {
@@ -595,14 +570,25 @@ abstract class Mob extends Living {
 				$this->getMovementSpeed() : $this->getAirMovementSpeed();
 		}
 
-		$motion = Utils::movementInputToMotion($movementInput, $this->location->yaw, $accel);
+		$motionX = $motionY = $motionZ = 0.0;
+		$lengthSquared = ($sideways ** 2) + ($upward ** 2) + ($forward ** 2);
+		if ($lengthSquared >= 1.0E-7) {
+			$scale = $lengthSquared > 1 ? $accel / sqrt($lengthSquared) : $accel;
+			$sideways *= $scale;
+			$forward *= $scale;
+			$sin = sin($this->location->yaw * (M_PI / 180));
+			$cos = cos($this->location->yaw * (M_PI / 180));
+			$motionX = $sideways * $cos - $forward * $sin;
+			$motionY = $upward * $scale;
+			$motionZ = $forward * $cos + $sideways * $sin;
+		}
 
 		//Climb stuff
 		if ($this->isCollidedHorizontally && $this->onClimbable()) {
-			$motion->y = 0.2 - $this->motion->y;
+			$motionY = 0.2 - $this->motion->y;
 		}
 
-		$this->addMotion($motion->x, $motion->y, $motion->z);
+		$this->addMotion($motionX, $motionY, $motionZ);
 	}
 
 	public function canUseReleasable(Releasable $item) : bool{

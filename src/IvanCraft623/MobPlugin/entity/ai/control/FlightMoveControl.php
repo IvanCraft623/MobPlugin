@@ -57,8 +57,8 @@ class FlightMoveControl extends MoveControl {
 			$distanceSquared = ($dx * $dx) + ($dy * $dy) + ($dz * $dz);
 
 			if ($distanceSquared < 2.5E-7) { // 0.0005 ** 2
-				$this->mob->setUpwardSpeed(0);
-				$this->mob->setForwardSpeed(0);
+				$this->mob->getMovementInput()->setUpward(0);
+				$this->mob->getMovementInput()->setForward(0);
 				return;
 			}
 
@@ -74,7 +74,7 @@ class FlightMoveControl extends MoveControl {
 			$distanceXZ = sqrt(($dx * $dx) + ($dz * $dz));
 			if ($distanceXZ > 1.0E-5) {
 				$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
-				$this->mob->setMotionSpeed($speed);
+				$this->mob->getMovementInput()->walk($speed);
 			}
 
 			if (abs($dy) > 1.0E-5) {
@@ -83,7 +83,7 @@ class FlightMoveControl extends MoveControl {
 					-atan2($dy, $distanceXZ) * 180 / M_PI,
 					$this->maxPitchChange
 				);
-				$this->mob->setUpwardSpeed($dy > 0 ? $speed : -$speed);
+				$this->mob->getMovementInput()->setUpward($dy > 0 ? $speed : -$speed);
 			}
 			$this->mob->setRotation($yaw, $pitch);
 		} else {
@@ -91,9 +91,9 @@ class FlightMoveControl extends MoveControl {
 				$this->mob->setHasGravity(true);
 			}
 
-			$this->mob->setUpwardSpeed(0);
-			$this->mob->setForwardSpeed(0);
-			$this->mob->setMotionSpeed(0);
+			$this->mob->getMovementInput()->setUpward(0);
+			$this->mob->getMovementInput()->setForward(0);
+			$this->mob->getMovementInput()->walk(0);
 		}
 	}
 }

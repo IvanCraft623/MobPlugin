@@ -66,7 +66,7 @@ class AquaticMoveControl extends MoveControl {
 			$this->mob->addMotion(0, self::BUOYANCY, 0);
 		}
 
-		$this->mob->setUpwardSpeed(0);
+		$this->mob->getMovementInput()->setUpward(0);
 
 		match ($this->operation) {
 			MoveOperation::MOVE_TO => $this->tickMoveTo($inWater),
@@ -78,7 +78,7 @@ class AquaticMoveControl extends MoveControl {
 
 	private function idle() : void {
 		$this->operation = MoveOperation::WAIT;
-		$this->mob->setMotionSpeed(0);
+		$this->mob->getMovementInput()->walk(0);
 	}
 
 	private function tickMoveTo(bool $inWater) : void {
@@ -95,7 +95,7 @@ class AquaticMoveControl extends MoveControl {
 		$dz = $this->wantedPosition->z - $location->z;
 		$distance = sqrt(($dx ** 2) + ($dy ** 2) + ($dz ** 2));
 		if ($distance < self::ARRIVAL_DISTANCE) {
-			$this->mob->setMotionSpeed(0);
+			$this->mob->getMovementInput()->walk(0);
 			return;
 		}
 
@@ -110,7 +110,7 @@ class AquaticMoveControl extends MoveControl {
 			}
 		} else {
 			$this->mob->setRotation($yaw, $location->pitch);
-			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed() * $this->landSpeed);
+			$this->mob->getMovementInput()->walk($this->speedModifier * $this->mob->getMovementSpeed() * $this->landSpeed);
 			$this->jumpIfNeeded($dx, $dy, $dz);
 		}
 	}
@@ -131,7 +131,7 @@ class AquaticMoveControl extends MoveControl {
 	 */
 	private function swim(float $yaw, float $yawError, float $pitch, float $dx, float $dy, float $dz, float $distance) : void {
 		$speed = $this->speedModifier * $this->mob->getWaterMovementSpeed() * $this->waterSpeed;
-		$this->mob->setMotionSpeed($speed);
+		$this->mob->getMovementInput()->walk($speed);
 
 		$distanceXZ = sqrt(($dx ** 2) + ($dz ** 2));
 		if (abs($dy) > self::EPSILON || $distanceXZ > self::EPSILON) {
@@ -144,7 +144,7 @@ class AquaticMoveControl extends MoveControl {
 		}
 		$this->mob->setRotation($yaw, $pitch);
 
-		$this->mob->setForwardSpeed($speed * ($distanceXZ / $distance) * self::getTurnPenalty($yawError));
-		$this->mob->setUpwardSpeed($speed * ($dy / $distance));
+		$this->mob->getMovementInput()->setForward($speed * ($distanceXZ / $distance) * self::getTurnPenalty($yawError));
+		$this->mob->getMovementInput()->setUpward($speed * ($dy / $distance));
 	}
 }

@@ -74,7 +74,7 @@ final class PathFollower{
 		return $this->stuckDetector->check(
 			$tick,
 			$position,
-			$this->mob->getMotionSpeed(),
+			$this->mob->getMovementInput()->getSpeed(),
 			$path->isDone() ? null : $path->getNextNodePos(),
 			$this->mob->getWorld()->getTime()
 		);

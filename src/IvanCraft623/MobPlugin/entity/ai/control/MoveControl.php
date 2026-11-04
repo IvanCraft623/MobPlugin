@@ -82,7 +82,7 @@ class MoveControl implements Control {
 			MoveOperation::STRAFE => $this->tickStrafe(),
 			MoveOperation::MOVE_TO => $this->tickMoveTo(),
 			MoveOperation::JUMPING => $this->tickJumping(),
-			MoveOperation::WAIT => $this->mob->setForwardSpeed(0),
+			MoveOperation::WAIT => $this->mob->getMovementInput()->setForward(0),
 		};
 	}
 
@@ -109,9 +109,9 @@ class MoveControl implements Control {
 			$this->sidewaysMovement = 0;
 		}
 
-		$this->mob->setMotionSpeed($speed);
-		$this->mob->setForwardSpeed($this->forwardMovement);
-		$this->mob->setSidewaysSpeed($this->sidewaysMovement);
+		$this->mob->getMovementInput()->walk($speed);
+		$this->mob->getMovementInput()->setForward($this->forwardMovement);
+		$this->mob->getMovementInput()->setSideways($this->sidewaysMovement);
 
 		$this->operation = MoveOperation::WAIT;
 	}
@@ -126,13 +126,13 @@ class MoveControl implements Control {
 		$distanceSquared = ($dx ** 2) + ($dy ** 2) + ($dz ** 2);
 
 		if ($distanceSquared < 2.5E-7) { // 0.0005 ** 2
-			$this->mob->setForwardSpeed(0);
+			$this->mob->getMovementInput()->setForward(0);
 			return;
 		}
 
 		$yaw = $this->rotateLerp($location->yaw, (atan2($dz, $dx) * 180 / M_PI) - 90, 90);
 		$this->mob->setRotation($yaw, $location->pitch);
-		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+		$this->mob->getMovementInput()->walk($this->speedModifier * $this->mob->getMovementSpeed());
 
 		$this->jumpIfNeeded($dx, $dy, $dz);
 	}
@@ -148,7 +148,7 @@ class MoveControl implements Control {
 	}
 
 	protected function tickJumping() : void {
-		$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+		$this->mob->getMovementInput()->walk($this->speedModifier * $this->mob->getMovementSpeed());
 		if ($this->mob->onGround || $this->mob->getNavigation()->isInLiquid()) {
 			$this->operation = MoveOperation::WAIT;
 		}
