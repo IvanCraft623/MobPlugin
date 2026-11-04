@@ -309,7 +309,7 @@ class Creeper extends Monster implements Explosive, Powerable{
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::CREEPER())];
+		return $this->generateDeathLoot(VanillaLootTables::CREEPER());
 	}
 
 	public function getPickedItem() : ?Item{

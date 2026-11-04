@@ -159,7 +159,7 @@ class IronGolem extends Golem implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::IRON_GOLEM())];
+		return $this->generateDeathLoot(VanillaLootTables::IRON_GOLEM());
 	}
 
 	public function getPickedItem() : ?Item{

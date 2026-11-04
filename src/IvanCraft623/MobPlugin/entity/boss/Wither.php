@@ -326,7 +326,7 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_BOSS())];
+		return $this->generateDeathLoot(VanillaLootTables::WITHER_BOSS());
 	}
 
 	public function getPickedItem() : ?Item{

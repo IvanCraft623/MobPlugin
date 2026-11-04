@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use pocketmine\entity\object\ItemEntity;
 
@@ -53,7 +54,7 @@ class PickupItemsGoal extends Goal {
 	protected int $wantedCount = 0;
 
 	public function __construct(
-		protected PathfinderMob $entity,
+		protected PathfinderMob&ItemPickupCapable $entity,
 		protected float $speedMultiplier = 1.0,
 		protected float $goalRadius = 2,
 		protected float $maxDist = 8.0,

@@ -159,11 +159,11 @@ class Silverfish extends Monster{
   Anything a goal reads at construction must be set here, because `registerGoals()` runs
   inside `initEntity()`. Fields assigned after `parent::initEntity()` don't exist yet
   (see how `Slime` sets its type before calling the parent).
-- Drops: see [Drops](#drops). `Mob` already drops equipment.
+- Drops: see [Drops](#drops). A mob that wears or holds items (`Zombie`, skeletons) uses `EquipmentTrait`, which drops them.
 - `getPickedItem()` returns the spawn egg.
 
-Other `Mob` hooks: `createNavigation()`, `getAmbientSoundInterval()`,
-`getEquipmentDropProbability()`, `generateEquipment()`, `canStandAt()`.
+Other `Mob` hooks: `createNavigation()` (`PathfinderMob`), `createMoveControl()`, `getAmbientSoundInterval()`,
+`generateEquipment()`, `canStandAt()`, and `getEquipmentDropProbability()` from `EquipmentTrait`.
 
 ## Goals
 
@@ -497,7 +497,7 @@ The table's conditions read the killer, their held item and the difficulty. A dr
 isn't a death names who caused it and what they used: `generateLoot($table, $shearer, $shears)`.
 
 Spawn gear is a loot table too: override `generateEquipment()`, which runs when the mob is
-created, and call `equipFromLootTable()`. Each item goes to the slot it fits.
+created, and call `equipFromLootTable()` (`EquipmentTrait`). Each item goes to the slot it fits.
 
 The data is `resources/bedrock/loot_tables.json`; `composer compile-loot-tables` regenerates
 it and `VanillaLootTables`. An item the server doesn't have drops nothing; call

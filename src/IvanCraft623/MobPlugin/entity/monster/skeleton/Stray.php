@@ -49,7 +49,7 @@ class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton 
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::STRAY())];
+		return [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::STRAY())];
 	}
 
 	public function getPickedItem() : ?Item{

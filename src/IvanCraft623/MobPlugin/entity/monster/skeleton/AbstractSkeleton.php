@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RangedBowAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
@@ -61,6 +62,7 @@ use function mt_rand;
 use function sqrt;
 
 abstract class AbstractSkeleton extends Monster implements RangedAttackMob, ItemPickupCapable {
+	use EquipmentTrait;
 	use ItemPickupCapableTrait {
 		initEntity as initEntityPickupTrait;
 		saveNBT as saveNBTPickupTrait;

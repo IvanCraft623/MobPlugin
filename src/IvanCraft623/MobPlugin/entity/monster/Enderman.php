@@ -264,7 +264,7 @@ class Enderman extends Monster implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ENDERMAN())];
+		$drops = $this->generateDeathLoot(VanillaLootTables::ENDERMAN());
 
 		if ($this->carryBlock !== null) {
 			$drops = array_merge($drops, $this->carryBlock->getSilkTouchDrops(VanillaItems::DIAMOND_AXE()));

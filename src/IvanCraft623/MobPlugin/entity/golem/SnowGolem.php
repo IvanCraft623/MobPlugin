@@ -127,7 +127,7 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SNOWMAN())];
+		return $this->generateDeathLoot(VanillaLootTables::SNOWMAN());
 	}
 
 	public function getPickedItem() : ?Item{

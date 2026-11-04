@@ -128,7 +128,7 @@ class Spider extends Monster {
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SPIDER())];
+		return $this->generateDeathLoot(VanillaLootTables::SPIDER());
 	}
 
 	public function getPickedItem() : ?Item{

@@ -32,7 +32,6 @@ use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
-use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
@@ -41,7 +40,6 @@ use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
-use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
@@ -52,31 +50,21 @@ use pocketmine\entity\effect\PoisonEffect;
 use pocketmine\entity\effect\RegenerationEffect;
 use pocketmine\entity\effect\WitherEffect;
 use pocketmine\entity\Entity;
-use pocketmine\entity\object\ItemEntity;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
-use pocketmine\event\entity\EntityItemPickupEvent;
 use pocketmine\event\entity\EntityRegainHealthEvent;
-use pocketmine\inventory\ArmorInventory;
-use pocketmine\inventory\Inventory;
-use pocketmine\item\Armor;
 use pocketmine\item\Durable;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\MeleeWeaponEnchantment;
-use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\Item;
-use pocketmine\item\ItemTypeIds;
 use pocketmine\item\Releasable;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\EntityEventBroadcaster;
-use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\utils\AssumptionFailedError;
-use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\particle\DustParticle;
 use pocketmine\world\sound\ItemBreakSound;
 use function assert;
@@ -85,7 +73,6 @@ use function count;
 use function debug_backtrace;
 use function implode;
 use function max;
-use function min;
 use function round;
 use function str_replace;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
@@ -657,32 +644,6 @@ abstract class Mob extends Living {
 		return false;
 	}
 
-	public function getEquipmentDropProbability() : float{
-		return 0.25;
-	}
-
-	/**
-	 * @return Item[]
-	 */
-	public function getEquipmentDrops() : array{
-		$drops = [];
-
-		$dropChance = $this->getEquipmentDropProbability();
-		foreach ([$this->inventory, $this->armorInventory] as $inventory) {
-			foreach ($inventory->getContents() as $item) {
-				if (!$item->hasEnchantment(VanillaEnchantments::VANISHING()) && PMUtils::getRandomFloat() <= $dropChance) {
-					if ($item instanceof Durable) {
-						$maxDurability = $item->getMaxDurability();
-						$item->setDamage($maxDurability - $this->random->nextBoundedInt(1 + $this->random->nextBoundedInt(max($maxDurability - 3, 1))));
-					}
-					$drops[] = $item;
-				}
-			}
-		}
-
-		return $drops;
-	}
-
 	/**
 	 * Rolls a table for this mob's death, credited to whoever killed it.
 	 *
@@ -704,16 +665,6 @@ abstract class Mob extends Living {
 	}
 
 	/**
-	 * Rolls a table of gear for this mob and puts each item in its slot.
-	 */
-	protected function equipFromLootTable(LootTable $table) : void{
-		foreach ($this->generateLoot($table) as $item) {
-			$slot = 0;
-			$this->getEquipInventoryAndSlot($item, $slot)->setItem($slot, $item);
-		}
-	}
-
-	/**
 	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
 	 */
 	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{
@@ -723,126 +674,11 @@ abstract class Mob extends Living {
 		}
 	}
 
-	public function getDrops() : array {
-		return $this->getEquipmentDrops();
-	}
-
 	public function onEat() : void{
 	}
 
 	public function onLightningBoltHit() : bool{
 		return false;
-	}
-
-	public function pickupItem(ItemEntity $entity, int $count) : void {
-		$item = $entity->getItem();
-		if ($count > $item->getCount()) {
-			throw new \InvalidArgumentException("Pickup take count cannot be larger than item count");
-		}
-
-		$equipSlot = 0;
-		$equipInventory = $this->getEquipInventoryAndSlot($item, $equipSlot);
-
-		$equippedItem = $equipInventory->getItem($equipSlot);
-		$originalCount = $item->getCount();
-
-		// How many units fit in the target slot
-		// in vanilla bedrock they actually don't care, mobs will equip one stack of
-		// carved pumpkins even if armor inventory stack size is 1.
-		$canStack = !$equippedItem->isNull() && $equippedItem->canStackWith($item);
-		$maxStackSize = min($equipInventory->getMaxStackSize(), $item->getMaxStackSize());
-		$canAdd = max(0, $maxStackSize - ($canStack ? $equippedItem->getCount() : 0));
-		$pickupCount = min($count, $canAdd);
-
-		if ($pickupCount <= 0) {
-			return;
-		}
-		$item->setCount($pickupCount);
-
-		$ev = new EntityItemPickupEvent($this, $entity, $item, $equipInventory);
-		$ev->call();
-		if ($ev->isCancelled()) {
-			return;
-		}
-
-		$evItem = $ev->getItem();
-
-		if ($evItem->getCount() <= 0) {
-			$entity->flagForDespawn();
-			return;
-		}
-
-		$equipInventory = $ev->getInventory();
-		if ($equipInventory === null || !$equipInventory->slotExists($equipSlot)) {
-			$entity->flagForDespawn();
-			return;
-		}
-
-		// Re-read slot since inventory may have changed, re-evaluate stackability once
-		$equippedItem = $equipInventory->getItem($equipSlot);
-		$canStack = !$equippedItem->isNull() && $equippedItem->canStackWith($evItem);
-
-		if (!$canStack && !$equippedItem->isNull()) {
-			$this->getWorld()->dropItem($this->location, $equippedItem);
-			$equipInventory->clear($equipSlot);
-		}
-
-		// Reclamp count in case plugins increased it beyond what fits
-		$currentCount = $canStack ? $equippedItem->getCount() : 0;
-		$canAddAfterEv = max(0, min($equipInventory->getMaxStackSize(), $evItem->getMaxStackSize()) - $currentCount);
-		$finalCount = min($evItem->getCount(), $canAddAfterEv);
-
-		if ($finalCount <= 0) {
-			return;
-		}
-		$evItem->setCount($finalCount);
-
-		// Visual and sound effects
-		NetworkBroadcastUtils::broadcastEntityEvent($this->getViewers(),
-			fn(EntityEventBroadcaster $broadcaster, array $recipients) =>
-				$broadcaster->onPickUpItem($recipients, $this, $entity)
-		);
-		if ($equipInventory instanceof ArmorInventory &&
-			$evItem instanceof Armor &&
-			($equipSound = $evItem->getMaterial()->getEquipSound()) !== null
-		) {
-			$this->broadcastSound($equipSound);
-		}
-
-		$slotItem = $equipInventory->getItem($equipSlot);
-		if ($slotItem->isNull()) {
-			$equipInventory->setItem($equipSlot, $evItem);
-		} else {
-			$slotItem->setCount($slotItem->getCount() + $evItem->getCount());
-			$equipInventory->setItem($equipSlot, $slotItem);
-		}
-
-		$remaining = $originalCount - $finalCount;
-		if ($remaining > 0) {
-			$entity->getWorld()->dropItem($entity->getLocation(), (clone $item)->setCount($remaining), Vector3::zero(), 0);
-		}
-		$entity->flagForDespawn();
-	}
-
-	public function getEquipInventoryAndSlot(Item $item, int &$slot) : Inventory{
-		if ($item instanceof Armor) {
-			$slot = $item->getArmorSlot();
-			return $this->getArmorInventory();
-		}
-
-		$typeId = $item->getTypeId();
-		if ($typeId === ItemTypeIds::fromBlockTypeId(BlockTypeIds::CARVED_PUMPKIN) ||
-			$typeId === ItemTypeIds::fromBlockTypeId(BlockTypeIds::MOB_HEAD)
-		) {
-			$slot = ArmorInventory::SLOT_HEAD;
-			return $this->getArmorInventory();
-		}
-
-		//TODO: other items like elytra may be equiped on an armor slot
-		//TODO: it could be items equiped on offhand
-
-		$slot = MobInventory::SLOT_MAIN_HAND;
-		return $this->getInventory();
 	}
 
 	protected function syncNetworkData(EntityMetadataCollection $properties) : void{
