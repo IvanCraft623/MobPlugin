@@ -80,8 +80,8 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		$properties->setGenericFlag(EntityMetadataFlags::INLOVE, $this->inLoveTicks > 0);
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		if ($this->getAge() !== AgeableMob::ADULT_AGE) {
 			$this->setInLoveTicks(0);

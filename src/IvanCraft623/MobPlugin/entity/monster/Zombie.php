@@ -233,8 +233,8 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		return true;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		if (!$this->isAlive()) {
 			return;

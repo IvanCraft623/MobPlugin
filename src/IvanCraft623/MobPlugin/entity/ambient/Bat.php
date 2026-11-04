@@ -129,8 +129,8 @@ class Bat extends Ambient {
 		return $hasUpdate;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		if ($this->isResting()) {
 			if (!$this->canRest()) {

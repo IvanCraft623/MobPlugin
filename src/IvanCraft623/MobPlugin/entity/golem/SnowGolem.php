@@ -154,8 +154,8 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 		return $hasUpdate;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		$pos = $this->getPosition();
 		$world = $this->getWorld();

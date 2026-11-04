@@ -106,8 +106,8 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 		$this->setAge($currentAge);
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		if ($this->isAlive()) {
 			$currentAge = $this->getAge();

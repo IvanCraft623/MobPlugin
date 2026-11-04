@@ -539,7 +539,10 @@ abstract class Mob extends Living {
 		return $data;
 	}
 
-	public function tickAi() : void{
+	/**
+	 * The AI pipeline, then tickState(). Runs every tick while the mob has AI.
+	 */
+	final protected function tickAi() : void{
 		$this->sensing->tick();
 
 		CustomTimings::$goalSelector->startTiming();
@@ -574,6 +577,15 @@ abstract class Mob extends Living {
 			$this->travel(new Vector3($this->sidewaysSpeed, $this->upwardSpeed, $this->forwardSpeed));
 			CustomTimings::$entityTravel->stopTiming();
 		}
+
+		$this->tickState();
+	}
+
+	/**
+	 * The mob's own timers and reactions to its surroundings (aging, love, sun burning...), run after the AI
+	 * pipeline. Call the parent first.
+	 */
+	protected function tickState() : void{
 	}
 
 	public function travel(Vector3 $movementInput) : void{

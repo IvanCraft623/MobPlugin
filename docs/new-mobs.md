@@ -386,7 +386,7 @@ Path costs: `setPathfindingMalus(BlockPathType::DANGER_FIRE, 16)` in `initProper
 
 ### Sun-sensitive undead
 
-Burning is `Monster::isSunSensitive()` returning `true`: `Monster::tickAi()` then sets the
+Burning is `Monster::isSunSensitive()` returning `true`: `Monster::tickState()` then sets the
 mob on fire in daylight with sky access and no helmet (`Zombie`, `Skeleton`). Fleeing the
 sun is separate: `FleeSunlightGoal` and `AvoidSunlightGoal`. Pair it with `getMobType()`
 returning `MobType::UNDEAD()`: undead are healed by harming and hurt by healing.

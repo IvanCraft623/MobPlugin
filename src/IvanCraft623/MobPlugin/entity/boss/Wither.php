@@ -549,8 +549,8 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		return $hasUpdate;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		//Randomly shot a wither skull in a 12s average.
 		if ($this->invulnerableTicks <= 0 && mt_rand(1, 240) === 1) {
