@@ -69,6 +69,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
+use pocketmine\network\mcpe\protocol\types\entity\IntMetadataProperty;
 use pocketmine\player\Player;
 use pocketmine\world\BlockTransaction;
 use pocketmine\world\format\io\GlobalBlockStateHandlers;
@@ -229,14 +230,22 @@ class Enderman extends Monster implements NeutralMob{
 		return $nbt;
 	}
 
+	protected function sendSpawnPacket(Player $player) : void{
+		parent::sendSpawnPacket($player);
+
+		$this->sendCarriedBlock($player);
+	}
+
+	private function sendCarriedBlock(Player $player) : void{
+		$networkId = $player->getNetworkSession()->getTypeConverter()->getBlockTranslator()->internalIdToNetworkId(
+			($this->carryBlock ?? VanillaBlocks::AIR())->getStateId()
+		);
+
+		$this->sendData([$player], [EntityMetadataProperties::ENDERMAN_HELD_ITEM_ID => new IntMetadataProperty($networkId)]);
+	}
+
 	protected function syncNetworkData(EntityMetadataCollection $properties) : void{
 		parent::syncNetworkData($properties);
-
-		$properties->setInt(EntityMetadataProperties::ENDERMAN_HELD_ITEM_ID,
-			TypeConverter::getInstance()->getBlockTranslator()->internalIdToNetworkId(
-				($this->carryBlock ?? VanillaBlocks::AIR())->getStateId()
-			)
-		);
 
 		$properties->setGenericFlag(EntityMetadataFlags::ANGRY, $this->isAngry());
 	}
@@ -325,7 +334,10 @@ class Enderman extends Monster implements NeutralMob{
 
 	public function setCarriedBlock(?Block $block) : void{
 		$this->carryBlock = $block;
-		$this->networkPropertiesDirty = true;
+
+		foreach($this->getViewers() as $player){
+			$this->sendCarriedBlock($player);
+		}
 	}
 
 	public function onBeingStaredAt() : void{
