@@ -138,10 +138,6 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 		return 0;
 	}
 
-	public function isSensitiveToWater() : bool{
-		return true;
-	}
-
 	protected function calculateFallDamage(float $fallDistance) : float{
 		return 0;
 	}

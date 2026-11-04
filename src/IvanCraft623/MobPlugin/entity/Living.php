@@ -229,10 +229,6 @@ abstract class Living extends PMLiving {
 		return 0.25;
 	}
 
-	public function getMaxUpStep() : float {
-		return $this->stepHeight;
-	}
-
 	public function getInventory() : MobInventory{
 		return $this->inventory;
 	}
@@ -259,10 +255,6 @@ abstract class Living extends PMLiving {
 		}
 
 		return true;
-	}
-
-	public function isSensitiveToWater() : bool{
-		return false;
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{

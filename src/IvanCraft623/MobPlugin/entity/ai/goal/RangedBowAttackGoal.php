@@ -82,12 +82,7 @@ class RangedBowAttackGoal extends Goal {
 		return ($this->canUse() || !$this->entity->getNavigation()->isDone()) && $this->isHoldingBow();
 	}
 
-	public function start() : void {
-		$this->entity->setAggressive(true);
-	}
-
 	public function stop() : void {
-		$this->entity->setAggressive(false);
 		$this->targetVisibilityTicks = 0;
 		$this->attackCooldown = -1;
 		$this->inCombat = false;

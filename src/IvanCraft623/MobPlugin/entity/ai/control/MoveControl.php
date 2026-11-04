@@ -141,7 +141,7 @@ class MoveControl implements Control {
 	 * Jumps when the wanted position is more than a step up and close.
 	 */
 	protected function jumpIfNeeded(float $dx, float $dy, float $dz) : void {
-		if ($dy > $this->mob->getMaxUpStep() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
+		if ($dy > $this->mob->getStepHeight() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 			$this->mob->getJumpControl()->jump();
 			$this->operation = MoveOperation::JUMPING;
 		}

@@ -104,7 +104,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		//TODO: attack baby turtles
 
 		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, self::MIN_ATTACK_INTERVAL, self::MAX_ATTACK_INTERVAL, 15);
-		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25, false);
+		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25);
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(function(Inventory $inventory, int $slot, Item $oldItem) : void {
 			if ($slot !== MobInventory::SLOT_MAIN_HAND) {
 				return;

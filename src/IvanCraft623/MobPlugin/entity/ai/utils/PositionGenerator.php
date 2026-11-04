@@ -31,7 +31,6 @@ use function abs;
 use function atan2;
 use function cos;
 use function floor;
-use function intdiv;
 use function sin;
 use function sqrt;
 use const INF;
@@ -211,48 +210,18 @@ class PositionGenerator {
 	}
 
 	/**
-	 * Generates a random Vector3 towards a target position, with a specified radius.
+	 * Offsets the entity's position by the given direction, flooring each axis.
 	 *
 	 * @param PathfinderMob $entity    entity that will be moving towards the target position.
-	 * @param int           $radius    maximum radius that the Vector3 can be generated from the target position.
-	 * @param Random        $random    source of randomness used for generating the new Vector3.
-	 * @param Vector3       $targetPos target Vector3 that the new Vector3 will be generated towards.
-	 *
-	 * Returns a random generated Vector3.
+	 * @param Vector3       $targetPos direction offset from the entity's position.
 	 */
-	public static function generateRandomPosTowardDirection(PathfinderMob $entity, int $radius, Random $random, Vector3 $targetPos) : Vector3{
-		$targetX = $targetPos->x;
-		$targetZ = $targetPos->z;
-
+	public static function generateRandomPosTowardDirection(PathfinderMob $entity, Vector3 $targetPos) : Vector3{
 		$entityPos = $entity->getPosition();
 
-		if ($entity->hasRestriction() && $radius > 1) {
-			$restrictionCenter = $entity->getRestrictCenter();
-			$halfRadius = intdiv($radius, 2);
-
-			if ($entityPos->x > $restrictionCenter->x) {
-				$targetX -= $random->nextBoundedInt($halfRadius);
-			} else {
-				$targetX += $random->nextBoundedInt($halfRadius);
-			}
-
-			if ($entityPos->z > $restrictionCenter->z) {
-				$targetZ -= $random->nextBoundedInt($halfRadius);
-			} else {
-				$targetZ += $random->nextBoundedInt($halfRadius);
-			}
-		}
-
 		return new Vector3(
-			floor($targetX + $entityPos->x),
+			floor($targetPos->x + $entityPos->x),
 			floor($targetPos->y + $entityPos->y),
-			floor($targetZ + $entityPos->z)
+			floor($targetPos->z + $entityPos->z)
 		);
-	}
-
-	public static function isRestricted(PathfinderMob $entity, int $xzRadius) : bool{
-		return $entity->hasRestriction() &&
-			$entity->getRestrictCenter()->floor()->add(0.5, 0.5, 0.5)
-				->distanceSquared($entity->getPosition()) < ($entity->getRestrictRadius() + $xzRadius + 1) ** 2;
 	}
 }

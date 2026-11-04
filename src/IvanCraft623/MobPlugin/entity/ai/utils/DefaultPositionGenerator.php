@@ -47,12 +47,10 @@ class DefaultPositionGenerator {
 	 * Returns a Vector3 representing the random position, or null if none was found.
 	 */
 	public static function getPos(PathfinderMob $entity, int $horizontalRange, int $verticalRange) : ?Vector3{
-		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
-
 		return PositionGenerator::generateRandomPosForEntity($entity,
-			static function() use ($entity, $horizontalRange, $verticalRange, $isRestricted) : ?Vector3{
+			static function() use ($entity, $horizontalRange, $verticalRange) : ?Vector3{
 				$pos = PositionGenerator::generateRandomDirection($entity->getRandom(), $horizontalRange, $verticalRange);
-				return self::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $pos);
+				return self::generateRandomPosTowardDirection($entity, $pos);
 			}
 		);
 	}
@@ -71,12 +69,11 @@ class DefaultPositionGenerator {
 	 */
 	public static function getPosTowards(PathfinderMob $entity, int $horizontalRange, int $verticalRange, Vector3 $target, float $maxAngle) : ?Vector3{
 		$diff = $target->subtractVector($entity->getPosition());
-		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
 
 		return PositionGenerator::generateRandomPosForEntity($entity,
-			static function() use ($entity, $horizontalRange, $verticalRange, $maxAngle, $diff, $isRestricted) : ?Vector3{
+			static function() use ($entity, $horizontalRange, $verticalRange, $maxAngle, $diff) : ?Vector3{
 				$direction = PositionGenerator::generateRandomDirectionWithinRadians($entity->getRandom(), $horizontalRange, $verticalRange, 0, $diff->x, $diff->z, $maxAngle);
-				return $direction === null ? null : self::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
+				return $direction === null ? null : self::generateRandomPosTowardDirection($entity, $direction);
 			}
 		);
 	}
@@ -94,12 +91,11 @@ class DefaultPositionGenerator {
 	 */
 	public static function getPosAway(PathfinderMob $entity, int $horizontalRange, int $verticalRange, Vector3 $awayFrom) : ?Vector3{
 		$diff = $entity->getPosition()->subtractVector($awayFrom);
-		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
 
 		return PositionGenerator::generateRandomPosForEntity($entity,
-			static function() use ($entity, $horizontalRange, $verticalRange, $diff, $isRestricted) : ?Vector3{
+			static function() use ($entity, $horizontalRange, $verticalRange, $diff) : ?Vector3{
 				$direction = PositionGenerator::generateRandomDirectionWithinRadians($entity->getRandom(), $horizontalRange, $verticalRange, 0, $diff->x, $diff->z, M_PI_2);
-				return $direction === null ? null : self::generateRandomPosTowardDirection($entity, $horizontalRange, $isRestricted, $direction);
+				return $direction === null ? null : self::generateRandomPosTowardDirection($entity, $direction);
 			}
 		);
 	}
@@ -108,17 +104,14 @@ class DefaultPositionGenerator {
 	 * Generates a random position towards the specified direction for the given entity to move to.
 	 * The entity may be constrained by its movement properties.
 	 *
-	 * @param PathfinderMob $entity          The entity for which to generate a random position.
-	 * @param int           $horizontalRange The maximum horizontal range from the entity's current position.
-	 * @param bool          $isConstrained   Whether the entity is constrained by its movement goals.
-	 * @param Vector3       $direction       The direction towards which the entity should move.
+	 * @param PathfinderMob $entity    The entity for which to generate a random position.
+	 * @param Vector3       $direction The direction towards which the entity should move.
 	 *
 	 * Returns Vector3 representing the random position, or null if none was found.
 	 */
-	private static function generateRandomPosTowardDirection(PathfinderMob $entity, int $horizontalRange, bool $isConstrained, Vector3 $direction) : ?Vector3{
-		$pos = PositionGenerator::generateRandomPosTowardDirection($entity, $horizontalRange, $entity->getRandom(), $direction);
+	private static function generateRandomPosTowardDirection(PathfinderMob $entity, Vector3 $direction) : ?Vector3{
+		$pos = PositionGenerator::generateRandomPosTowardDirection($entity, $direction);
 		return ($entity->getWorld()->isInWorld((int) $pos->x, (int) $pos->y, (int) $pos->z) &&
-			!($isConstrained && $entity->isWithinRestriction($pos)) &&
 			$entity->getNavigation()->isStableDestination($pos) &&
 			$entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 		) ? $pos : null;

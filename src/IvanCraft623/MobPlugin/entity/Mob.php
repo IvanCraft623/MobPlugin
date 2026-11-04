@@ -122,12 +122,6 @@ abstract class Mob extends Living {
 
 	protected float $motionSpeed = 0;
 
-	protected Vector3 $restrictCenter;
-
-	protected float $restrictRadius = -1;
-
-	protected bool $aggressive = false;
-
 	protected bool $hasAi = true;
 
 	protected Attribute $attackDamageAttr;
@@ -371,11 +365,6 @@ abstract class Mob extends Living {
 
 		//TODO: leash check
 
-		/*if ($this->ticksLived % 5 === 0) {
-			$this->updateControlFlags();
-			$hasUpdate = true;
-		}*/
-
 		return $hasUpdate;
 	}
 
@@ -453,10 +442,6 @@ abstract class Mob extends Living {
 		$this->addMotion($motion->x, $motion->y, $motion->z);
 	}
 
-	protected function updateControlFlags() : void{
-		// TODO!
-	}
-
 	public function getPathTypeCostMap() : BlockPathTypeCostMap{
 		if (!isset($this->pathTypeCostMap)) {
 			$this->pathTypeCostMap = new BlockPathTypeCostMap();
@@ -475,46 +460,6 @@ abstract class Mob extends Living {
 
 	public function canUseReleasable(Releasable $item) : bool{
 		return false;
-	}
-
-	public function isWithinRestriction(?Vector3 $pos = null) : bool{
-		$pos = $pos ?? $this->location;
-		if ($this->restrictRadius === -1.0) {
-			return true;
-		}
-		return $this->restrictCenter->distanceSquared($pos) < ($this->restrictRadius ** 2);
-	}
-
-	public function restrictTo(Vector3 $center, float $radius) : void{
-		$this->restrictCenter = $center;
-		$this->restrictRadius = $radius;
-	}
-
-	public function getRestrictCenter() : Vector3{
-		if (!isset($this->restrictCenter)) {
-			$this->restrictCenter = Vector3::zero();
-		}
-		return $this->restrictCenter;
-	}
-
-	public function getRestrictRadius() : float{
-		return $this->restrictRadius;
-	}
-
-	public function clearRestriction() : void{
-		$this->restrictRadius = -1;
-	}
-
-	public function hasRestriction() : bool{
-		return $this->restrictRadius !== -1.0;
-	}
-
-	public function isAggressive() : bool{
-		return $this->aggressive;
-	}
-
-	public function setAggressive(bool $aggressive = true) : void{
-		$this->aggressive = $aggressive;
 	}
 
 	public function getPerceivedDistanceSqrForMeleeAttack(Entity $target) : float{

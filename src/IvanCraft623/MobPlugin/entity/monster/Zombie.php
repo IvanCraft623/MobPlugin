@@ -128,7 +128,7 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		$this->pickupItemsGoal = (new PickupItemsGoal($this, 1, 2, 4))->setWantedItems(self::getWantedItems());
 
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(7, new WaterAvoidingRandomStrollGoal($this, 1));
 		//$this->goalSelector->addGoal(4, new DestroyEggGoal($this, 1.0, 3)); //TODO!
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 8));

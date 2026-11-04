@@ -168,7 +168,7 @@ class Enderman extends Monster implements NeutralMob{
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(3, ($this->teleportGoal = new RandomTeleportGoal(entity: $this,
 			randomTeleportRange: new Vector3(32, 32, 32),
 			maxTeleportInterval: 30 * 20)
@@ -313,10 +313,6 @@ class Enderman extends Monster implements NeutralMob{
 		$this->updateAnger(true);
 
 		return $hasUpdate;
-	}
-
-	public function isSensitiveToWater() : bool{
-		return true;
 	}
 
 	public function getCarriedBlock() : ?Block{

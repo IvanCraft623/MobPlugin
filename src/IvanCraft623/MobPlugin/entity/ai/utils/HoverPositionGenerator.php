@@ -48,9 +48,7 @@ class HoverPositionGenerator {
 	 * Returns a random position towards a given direction, or null if none could be generated.
 	 */
 	public static function getPos(PathfinderMob $entity, int $xzRadius, int $yRadius, float $directionX, float $directionZ, float $angle, int $maxHeight, int $minHeight) : ?Vector3{
-		$isRestricted = PositionGenerator::isRestricted($entity, $xzRadius);
-
-		return PositionGenerator::generateRandomPosForEntity($entity, static function() use ($entity, $xzRadius, $yRadius, $directionX, $directionZ, $angle, $minHeight, $maxHeight, $isRestricted) : ?Vector3{
+		return PositionGenerator::generateRandomPosForEntity($entity, static function() use ($entity, $xzRadius, $yRadius, $directionX, $directionZ, $angle, $minHeight, $maxHeight) : ?Vector3{
 			$direction = PositionGenerator::generateRandomDirectionWithinRadians(
 				$entity->getRandom(), $xzRadius, $yRadius, 0, $directionX, $directionZ, $angle
 			);
@@ -58,7 +56,7 @@ class HoverPositionGenerator {
 				return null;
 			}
 
-			$pos = LandPositionGenerator::generateRandomPosTowardDirection($entity, $xzRadius, $isRestricted, $direction);
+			$pos = LandPositionGenerator::generateRandomPosTowardDirection($entity, $direction);
 			if ($pos === null) {
 				return null;
 			}

@@ -46,8 +46,7 @@ class MeleeAttackGoal extends Goal {
 
 	public function __construct(
 		protected PathfinderMob $mob,
-		protected float $speedModifier,
-		protected bool $alwaysFollowTarget
+		protected float $speedModifier
 	) {
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
@@ -65,20 +64,14 @@ class MeleeAttackGoal extends Goal {
 			return false;
 		}
 
-		if (!$this->mob->canAttack($target)) {
-			return false;
-		}
-
-		return $this->alwaysFollowTarget || $this->mob->isWithinRestriction($target->getPosition());
+		return $this->mob->canAttack($target);
 	}
 
 	public function start() : void{
-		$this->mob->setAggressive();
 		$this->ticksToRepath = 0;
 	}
 
 	public function stop() : void{
-		$this->mob->setAggressive(false);
 		$this->mob->getNavigation()->stop();
 	}
 

@@ -73,7 +73,7 @@ class Spider extends Monster {
 
 		$this->goalSelector->addGoal(4, new class($this) extends MeleeAttackGoal {
 			public function __construct(Spider $mob) {
-				parent::__construct($mob, 1, true);
+				parent::__construct($mob, 1);
 			}
 
 			public function canUse() : bool{
