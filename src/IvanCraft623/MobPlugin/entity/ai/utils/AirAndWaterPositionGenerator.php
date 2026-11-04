@@ -77,7 +77,7 @@ class AirAndWaterPositionGenerator {
 				static fn($position) : bool => $world->getBlock($position)->isSolid()
 			);
 
-			return ($entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+			return ($entity->getNavigation()->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 			) ? $pos : null;
 		}
 

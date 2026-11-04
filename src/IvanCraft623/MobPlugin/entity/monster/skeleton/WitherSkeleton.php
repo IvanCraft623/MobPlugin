@@ -89,9 +89,9 @@ class WitherSkeleton extends AbstractSkeleton {
 
 		$this->setScale(1.2); //why? bedrock...
 
-		$this->setPathfindingMalus(BlockPathType::LAVA, 8);
-		$this->setPathfindingMalus(BlockPathType::DANGER_FIRE, BlockPathType::OPEN_MALUS);
-		$this->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, BlockPathType::OPEN_MALUS);
+		$this->navigation->setPathfindingMalus(BlockPathType::LAVA, 8);
+		$this->navigation->setPathfindingMalus(BlockPathType::DANGER_FIRE, BlockPathType::OPEN_MALUS);
+		$this->navigation->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, BlockPathType::OPEN_MALUS);
 	}
 
 	public function getDrops() : array{

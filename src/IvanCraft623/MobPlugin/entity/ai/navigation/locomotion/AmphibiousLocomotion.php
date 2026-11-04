@@ -38,7 +38,7 @@ class AmphibiousLocomotion extends Locomotion{
 
 	public function searchCostMap(Mob $mob) : BlockPathTypeCostMap{
 		//searches only, wander targets keep reading the mob's own map
-		return BlockPathTypeCostMap::amphibious()->merge($mob->getPathTypeCostMap());
+		return BlockPathTypeCostMap::amphibious()->merge($mob->getNavigation()->getCostMap());
 	}
 
 	public function canFollowPath(Mob $mob, TraversalRules $rules) : bool{

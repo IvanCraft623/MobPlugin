@@ -69,7 +69,7 @@ class HoverPositionGenerator {
 				static fn(Vector3 $position) : bool => $world->getBlock($position)->isSolid()
 			);
 			return (!$world->getBlock($pos) instanceof Water &&
-				$entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+				$entity->getNavigation()->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 			) ? $pos : null;
 		});
 	}

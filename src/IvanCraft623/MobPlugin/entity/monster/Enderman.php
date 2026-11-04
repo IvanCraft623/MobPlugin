@@ -248,7 +248,7 @@ class Enderman extends Monster implements NeutralMob{
 		$this->setAttackDamage(7);
 		$this->setFollowRange(64);
 
-		$this->setPathfindingMalus(BlockPathType::WATER, -1);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, -1);
 	}
 
 	public function getDefaultMovementSpeed() : float{

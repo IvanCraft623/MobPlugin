@@ -39,9 +39,7 @@ use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\Pathfinder\BlockPathType;
 
-use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Liquid;
 use pocketmine\color\Color;
@@ -124,8 +122,6 @@ abstract class Mob extends Living {
 
 	protected Sensing $sensing;
 
-	protected BlockPathTypeCostMap $pathTypeCostMap;
-
 	protected float $forwardSpeed = 0;
 
 	protected float $upwardSpeed = 0;
@@ -165,6 +161,8 @@ abstract class Mob extends Living {
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
+		$this->navigation = $this->createNavigation();
+
 		$this->initProperties();
 
 		$this->initDespawnPersistence($nbt);
@@ -191,7 +189,6 @@ abstract class Mob extends Living {
 		$this->lookControl = new LookControl($this);
 		$this->moveControl = new MoveControl($this);
 		$this->jumpControl = new JumpControl($this);
-		$this->navigation = $this->createNavigation();
 		$this->sensing = new Sensing($this);
 
 		$this->brain = $this->makeBrain();
@@ -606,22 +603,6 @@ abstract class Mob extends Living {
 		}
 
 		$this->addMotion($motion->x, $motion->y, $motion->z);
-	}
-
-	public function getPathTypeCostMap() : BlockPathTypeCostMap{
-		if (!isset($this->pathTypeCostMap)) {
-			$this->pathTypeCostMap = new BlockPathTypeCostMap();
-		}
-		return $this->pathTypeCostMap;
-	}
-
-	public function getPathfindingMalus(BlockPathType $pathType) : float{
-		// TODO: vehicle checks
-		return $this->getPathTypeCostMap()->getPathfindingMalus($pathType);
-	}
-
-	public function setPathfindingMalus(BlockPathType $pathType, float $malus) : void{
-		$this->getPathTypeCostMap()->setPathfindingMalus($pathType, $malus);
 	}
 
 	public function canUseReleasable(Releasable $item) : bool{

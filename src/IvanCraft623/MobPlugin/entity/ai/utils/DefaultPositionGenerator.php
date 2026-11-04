@@ -113,7 +113,7 @@ class DefaultPositionGenerator {
 		$pos = PositionGenerator::generateRandomPosTowardDirection($entity, $direction);
 		return ($entity->getWorld()->isInWorld((int) $pos->x, (int) $pos->y, (int) $pos->z) &&
 			$entity->getNavigation()->isStableDestination($pos) &&
-			$entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+			$entity->getNavigation()->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 		) ? $pos : null;
 	}
 }

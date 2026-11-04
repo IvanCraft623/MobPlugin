@@ -56,7 +56,7 @@ abstract class Locomotion{
 	 * Costs for searches; wander targets read the mob's own map.
 	 */
 	public function searchCostMap(Mob $mob) : BlockPathTypeCostMap{
-		return $mob->getPathTypeCostMap();
+		return $mob->getNavigation()->getCostMap();
 	}
 
 	final public function createProfile(Mob $mob, TraversalRules $rules) : MovementProfile{

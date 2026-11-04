@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\Locomotion;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use IvanCraft623\Pathfinder\Path;
 use IvanCraft623\Pathfinder\world\BlockGetter;
@@ -56,9 +57,9 @@ final class PathNavigation {
 
 	private ?WorldBlockGetter $blockGetter = null;
 
-	private int $maxVisitedNodes;
-
 	private TraversalRules $rules;
+
+	private BlockPathTypeCostMap $costMap;
 
 	private PathFollower $follower;
 
@@ -72,8 +73,8 @@ final class PathNavigation {
 		?TraversalRules $rules = null
 	) {
 		$this->rules = $rules ?? new TraversalRules();
+		$this->costMap = new BlockPathTypeCostMap();
 		$this->evaluator = $locomotion->createEvaluator();
-		$this->maxVisitedNodes = (int) floor($mob->getFollowRange() * 16);
 		$this->follower = new PathFollower($mob);
 
 		$this->entityThrottle = new EntityRepathThrottle();
@@ -90,7 +91,7 @@ final class PathNavigation {
 				$this->mob->getPosition(),
 				$this->mob->isOnGround(),
 				$this->mob->getFollowRange(),
-				$this->maxVisitedNodes
+				(int) floor($this->mob->getFollowRange() * 16)
 			),
 			onSearchStart: $this->follower->resetNodeProgress(...)
 		);
@@ -98,6 +99,22 @@ final class PathNavigation {
 
 	public function getRules() : TraversalRules{
 		return $this->rules;
+	}
+
+	/**
+	 * What the mob pays to path through each kind of block.
+	 */
+	public function getCostMap() : BlockPathTypeCostMap{
+		return $this->costMap;
+	}
+
+	public function getPathfindingMalus(BlockPathType $pathType) : float{
+		// TODO: vehicle checks
+		return $this->costMap->getPathfindingMalus($pathType);
+	}
+
+	public function setPathfindingMalus(BlockPathType $pathType, float $malus) : void{
+		$this->costMap->setPathfindingMalus($pathType, $malus);
 	}
 
 	public function getLocomotion() : Locomotion{

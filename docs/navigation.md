@@ -47,7 +47,7 @@ A mob has one `PathNavigation`; `Mob::createNavigation()` gives it a `Locomotion
 `canWalkOverFences` and `avoidSun`. Goals change them at runtime, e.g. `FloatGoal` sets `canFloat`.
 
 A new way of moving is a `Locomotion` subclass overriding what differs from a walker's (the hooks
-are documented in the class). `PathNavigation::setLocomotion()` swaps it, dropping the path.
+are documented in the class).
 
 ## Requesting a path
 
@@ -89,8 +89,8 @@ sent to the next node.
   `TIMED_OUT`: stayed on a node `TIMEOUT_FACTOR = 3` times too long. The navigation stops and the goal
   decides whether to path again.
 
-Path costs per block type come from `Mob::getPathTypeCostMap()`; set them with
-`Mob::setPathfindingMalus()`.
+Path costs per block type come from `PathNavigation::getCostMap()`; set them with
+`PathNavigation::setPathfindingMalus()`.
 
 ## Controls
 

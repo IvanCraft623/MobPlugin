@@ -382,7 +382,7 @@ with `FlightMoveControl` right after `parent::initEntity()`, and uses
 `WaterAvoidingRandomFlyingGoal`. `BreakDoorGoal` and `AvoidSunlightGoal` need a ground-based
 locomotion.
 
-Path costs: `setPathfindingMalus(BlockPathType::DANGER_FIRE, 16)` in `initProperties()`.
+Path costs: `$this->navigation->setPathfindingMalus(BlockPathType::DANGER_FIRE, 16)` in `initProperties()`.
 
 ### Sun-sensitive undead
 

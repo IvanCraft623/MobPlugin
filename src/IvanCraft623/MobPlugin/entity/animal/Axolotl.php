@@ -111,7 +111,7 @@ class Axolotl extends Animal implements Bucketable{
 
 		$this->setMaxHealth(14);
 		$this->setAttackDamage(2);
-		$this->setPathfindingMalus(BlockPathType::WATER, 0);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
 	}
 
 	public function getDefaultMovementSpeed() : float{
