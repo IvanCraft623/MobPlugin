@@ -24,9 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
 use Closure;
-use IvanCraft623\MobPlugin\entity\Living;
-
 use IvanCraft623\MobPlugin\entity\Mob;
+
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\player\Player;
 use function max;
@@ -110,7 +109,7 @@ class TargetingConditions {
 		}
 		if ($entity !== null) {
 			if (!$this->allowNonAttackable) {
-				if ($entity instanceof Living && !$entity->canAttack($target)) {
+				if ($entity instanceof Mob && !$entity->canAttack($target)) {
 					return false;
 				}
 			}

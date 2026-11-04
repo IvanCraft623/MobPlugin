@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\despawning\DespawnPersistenceTrait;
+use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
@@ -35,11 +36,14 @@ use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
+use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
 use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 
+use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use pocketmine\block\BlockTypeIds;
+use pocketmine\block\Liquid;
 use pocketmine\color\Color;
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
@@ -50,6 +54,7 @@ use pocketmine\entity\effect\PoisonEffect;
 use pocketmine\entity\effect\RegenerationEffect;
 use pocketmine\entity\effect\WitherEffect;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntityFactory;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityRegainHealthEvent;
@@ -59,14 +64,20 @@ use pocketmine\item\enchantment\MeleeWeaponEnchantment;
 use pocketmine\item\Item;
 use pocketmine\item\Releasable;
 use pocketmine\math\Vector3;
+use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
+use pocketmine\player\Player;
 use pocketmine\utils\AssumptionFailedError;
+use pocketmine\utils\Random;
 use pocketmine\world\particle\DustParticle;
+use pocketmine\world\Position;
 use pocketmine\world\sound\ItemBreakSound;
+use pocketmine\world\World;
 use function assert;
 use function basename;
 use function count;
@@ -80,8 +91,24 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 abstract class Mob extends Living {
 	use DespawnPersistenceTrait {
 		initEntity as initDespawnPersistence;
+		saveNBT as saveDespawnPersistenceNBT;
 	}
 	//TODO!
+
+	private const TAG_COMPONENT_GROUPS = "definitions"; //TAG_List
+
+	protected Random $random;
+
+	protected ComponentGroups $componentGroups;
+
+	/** Latest hit by an entity, forgotten after 100 ticks. Not DamageTracker's per-entity totals. */
+	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
+
+	protected int $lastDamageByEntityTick = -1; //server tick
+
+	protected bool $hasBeenDamagedByPlayer = false;
+
+	protected Brain $brain;
 
 	protected PathNavigation $navigation;
 
@@ -142,6 +169,21 @@ abstract class Mob extends Living {
 
 		$this->initDespawnPersistence($nbt);
 
+		$this->random = MobPlugin::getInstance()->getRandom();
+
+		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
+			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
+		} else {
+			$this->componentGroups = new ComponentGroups();
+			if ($this->canSaveWithChunk()) {
+				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
+			}
+		}
+
+		if ($nbt->count() === 0) { //Entity just created!
+			$this->onCreate();
+		}
+
 		MobPlugin::getInstance()->trackEntity($this);
 
 		$this->goalSelector = new GoalSelector();
@@ -151,6 +193,8 @@ abstract class Mob extends Living {
 		$this->jumpControl = new JumpControl($this);
 		$this->navigation = $this->createNavigation();
 		$this->sensing = new Sensing($this);
+
+		$this->brain = $this->makeBrain();
 
 		$this->registerGoals();
 	}
@@ -311,8 +355,125 @@ abstract class Mob extends Living {
 		$this->followRangeAttr->setValue($range);
 	}
 
+	protected function makeBrain() : Brain{
+		return new Brain([], [], []);
+	}
+
+	public function getBrain() : Brain{
+		return $this->brain;
+	}
+
+	public function getRandom() : Random {
+		return $this->random;
+	}
+
+	public function getDefaultMovementSpeed() : float {
+		return 0.25;
+	}
+
+	public function canAttack(Entity $target) : bool {
+		if (!$target->isAlive()) {
+			return false;
+		}
+
+		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL) {
+			return false;
+		}
+
+		if ($target instanceof Player && $target->isCreative()) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public function canSee(Entity $entity) : bool{
+		$start = $this->getEyePos();
+		$end = $entity->getEyePos();
+		if ($start->distanceSquared($end) > 0.01) {
+			foreach(VoxelRayTrace::betweenPoints($start, $end) as $vector3){
+				$block = $this->getWorld()->getBlockAt((int) $vector3->x, (int) $vector3->y, (int) $vector3->z);
+
+				if($block->getTypeId() !== BlockTypeIds::AIR && $block->calculateIntercept($start, $end) !== null){
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	public function getFluidJumpThreshold() : float{
+		return $this->getEyeHeight() < 0.4 ? 0 : 0.4;
+	}
+
+	public function canStandOnFluid(Liquid $liquid) : bool{
+		return false;
+	}
+
+	public function setLastDamageCause(EntityDamageEvent $type) : void{
+		parent::setLastDamageCause($type);
+
+		if ($type instanceof EntityDamageByEntityEvent) {
+			$this->setLastDamageByEntity($type);
+
+			if ($type->getDamager() instanceof Player) {
+				$this->hasBeenDamagedByPlayer = true;
+			}
+		}
+	}
+
+	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
+		return $this->lastDamageByEntity;
+	}
+
+	public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void{
+		$this->lastDamageByEntity = $type;
+		if ($type === null) {
+			$this->lastDamageByEntityTick = -1;
+		} else {
+			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
+		}
+	}
+
+	public function getLastDamageByEntityTick() : int{
+		return $this->lastDamageByEntityTick;
+	}
+
+	public function hasBeenDamagedByPlayer() : bool{
+		return $this->hasBeenDamagedByPlayer;
+	}
+
+	public function getLightLevelDependentMagicValue() : float{
+		return Utils::getLightLevelDependentMagicValue(Position::fromObject($this->getEyePos(), $this->location->world));
+	}
+
+	public function spawnTo(Player $player) : void{
+		parent::spawnTo($player);
+		$this->playSpawnSound([$player]);
+	}
+
+	/**
+	 * Called when this entity has just been created and is completely clean.
+	 */
+	public function onCreate() : void{
+		$this->generateEquipment();
+	}
+
+	/**
+	 * Called when the entity is created to give it its starting gear.
+	 * Subclasses must equip the items themselves.
+	 */
+	public function generateEquipment() : void{}
+
+	/**
+	 * @param Player[]|null $targets
+	 */
+	public function playSpawnSound(?array $targets = null) : void{
+		$this->broadcastSound(new EntitySpawnSound($this), $targets);
+	}
+
 	public function getMaxFallDistance() : int{
-		$defaultMax = parent::getMaxFallDistance();
+		$defaultMax = 3;
 		if ($this->targetId === null) {
 			return $defaultMax;
 		}
@@ -335,6 +496,14 @@ abstract class Mob extends Living {
 		}
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
+
+		if ($this->lastDamageByEntity !== null &&
+			$this->lastDamageByEntityTick !== -1 &&
+			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
+		) {
+			//The last damager is only remembered for a limited time.
+			$this->setLastDamageByEntity(null);
+		}
 
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
 			$this->networkPropertiesDirty = true; // the debug info is sent in place of the name tag
@@ -463,7 +632,7 @@ abstract class Mob extends Living {
 			return false;
 		}
 
-		return parent::canAddEffect($effect);
+		return true;
 	}
 
 	/**
@@ -704,7 +873,17 @@ abstract class Mob extends Living {
 		parent::onDispose();
 	}
 
+	public function saveNBT() : CompoundTag{
+		$nbt = $this->saveDespawnPersistenceNBT();
+
+		$nbt->setTag(self::TAG_COMPONENT_GROUPS, $this->componentGroups->toListTag());
+
+		return $nbt;
+	}
+
 	protected function destroyCycles() : void{
+		$this->lastDamageByEntity = null;
+		unset($this->brain);
 		$this->navigation->stop();
 		$this->goalSelector->stopRunningGoals();
 		$this->targetSelector->stopRunningGoals();
