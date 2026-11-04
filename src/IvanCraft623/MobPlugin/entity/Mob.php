@@ -40,8 +40,6 @@ use IvanCraft623\MobPlugin\sound\MobWarningSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
-use kostamax27\loottable\LootContext;
-use kostamax27\loottable\LootDifficulty;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\color\Color;
@@ -702,13 +700,7 @@ abstract class Mob extends Living {
 	 * @return Item[]
 	 */
 	protected function generateLoot(LootTable $table, ?Entity $source = null, ?Item $tool = null) : array{
-		return $table->generate(new LootContext(
-			random: $this->random,
-			entity: $this,
-			killer: $source,
-			tool: $tool ?? Utils::getHeldItem($source),
-			difficulty: LootDifficulty::fromWorld($this->getWorld())
-		));
+		return $table->generateFor($this, $this->random, $source, $tool);
 	}
 
 	/**
