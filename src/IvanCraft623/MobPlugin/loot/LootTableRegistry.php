@@ -24,10 +24,9 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\loot;
 
 use InvalidArgumentException;
-use kostamax27\loottable\condition\LootCondition;
 use kostamax27\loottable\condition\LootConditionRegistry;
-use kostamax27\loottable\function\LootFunction;
 use kostamax27\loottable\function\LootFunctionRegistry;
+use kostamax27\loottable\item\AirFallbackItemResolver;
 use kostamax27\loottable\item\ChainedItemResolver;
 use kostamax27\loottable\LootData;
 use kostamax27\loottable\looting\EnchantmentLootingEvaluator;
@@ -58,12 +57,6 @@ final class LootTableRegistry implements LootTableResolver{
 
 	private const LOOTING_ENCHANTMENT = "looting";
 
-	private const COLOR_FUNCTION = "set_data_from_color_index";
-
-	private const GEAR_ENCHANT_FUNCTION = "enchant_random_gear";
-
-	private const REGIONAL_DIFFICULTY_CONDITION = "random_regional_difficulty_chance";
-
 	/** @phpstan-var array<array-key, mixed> table name => table as written in the data */
 	private array $data = [];
 
@@ -75,7 +68,8 @@ final class LootTableRegistry implements LootTableResolver{
 
 	private ?LootTableFactory $factory = null;
 
-	private ?AirFallbackItemResolver $items = null;
+	/** @phpstan-var array<string, true> */
+	private array $missing = [];
 
 	/**
 	 * @throws \RuntimeException if the file can't be read
@@ -98,7 +92,7 @@ final class LootTableRegistry implements LootTableResolver{
 	public function reload() : void{
 		$this->tables = [];
 		$this->factory = null;
-		$this->items = null;
+		$this->missing = [];
 	}
 
 	/**
@@ -115,7 +109,7 @@ final class LootTableRegistry implements LootTableResolver{
 				$problems[] = "Loot table \"$name\" is unavailable: " . $e->getMessage();
 			}
 		}
-		$missing = $this->items?->getMissing() ?? [];
+		$missing = array_keys($this->missing);
 		if(count($missing) !== 0){
 			$problems[] = count($missing) . " item(s) named by loot tables are not available, so their drops are skipped: " . implode(", ", $missing);
 		}
@@ -149,11 +143,10 @@ final class LootTableRegistry implements LootTableResolver{
 		}
 
 		$looting = StringToEnchantmentParser::getInstance()->parse(self::LOOTING_ENCHANTMENT);
-		$this->items = $this->createItemResolver();
 		$factory = new LootTableFactory(
-			$this->createFunctions(),
-			$this->createConditions(),
-			$this->items,
+			LootFunctionRegistry::createDefault(),
+			LootConditionRegistry::createDefault(),
+			$this->createItemResolver(),
 			$looting !== null ? new EnchantmentLootingEvaluator($looting) : NullLootingEvaluator::instance()
 		);
 		$factory->setTableResolver($this);
@@ -162,27 +155,11 @@ final class LootTableRegistry implements LootTableResolver{
 	}
 
 	private function createItemResolver() : AirFallbackItemResolver{
-		return new AirFallbackItemResolver(new MobHeadItemResolver(ChainedItemResolver::createDefault()));
-	}
-
-	private function createFunctions() : LootFunctionRegistry{
-		$functions = LootFunctionRegistry::createDefault();
-		$functions->unregister(self::COLOR_FUNCTION);
-		$functions->register(self::COLOR_FUNCTION, static fn() : LootFunction => new EntityColorLootFunction());
-		$functions->unregister(self::GEAR_ENCHANT_FUNCTION);
-		$functions->register(self::GEAR_ENCHANT_FUNCTION, static fn(LootData $data, LootTableFactory $factory) : LootFunction => new RandomGearEnchantLootFunction(
-			$factory->item_enchanter,
-			$data->floatOr("chance", 1.0)
-		));
-
-		return $functions;
-	}
-
-	private function createConditions() : LootConditionRegistry{
-		$conditions = LootConditionRegistry::createDefault();
-		$conditions->unregister(self::REGIONAL_DIFFICULTY_CONDITION);
-		$conditions->register(self::REGIONAL_DIFFICULTY_CONDITION, static fn(LootData $data) : LootCondition => new RegionalDifficultyLootCondition($data->floatOr("max_chance", 0.0)));
-
-		return $conditions;
+		return new AirFallbackItemResolver(
+			ChainedItemResolver::createDefault(),
+			function(string $name) : void{
+				$this->missing[$name] = true;
+			}
+		);
 	}
 }
