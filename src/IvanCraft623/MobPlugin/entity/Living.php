@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
 use pocketmine\block\Lava;
@@ -40,18 +41,22 @@ use pocketmine\math\Vector3;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
+use pocketmine\network\mcpe\protocol\MoveActorAbsolutePacket;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
 use function abs;
+use function atan2;
 use function floor;
 use function get_class;
 use function max;
 use function min;
 use function sqrt;
+use const M_PI;
 
 /**
  * Patches for PocketMine-MP's Living (5.44.2): what it gets wrong or lacks. Mob AI lives in Mob.
@@ -78,6 +83,14 @@ abstract class Living extends PMLiving {
 
 	protected MobInventory $inventory;
 
+	/**
+	 * PM only has the body yaw; this is where the head looks, sent in the movement packets.
+	 * Remove when PocketMine supports it, see https://github.com/pmmp/PocketMine-MP/issues/6503
+	 */
+	protected float $headYaw;
+
+	private float $lastHeadYaw;
+
 	/** Server tick the liquid immersion was computed for */
 	private int $immersionTick = -1;
 	private float $waterImmersion = 0.0;
@@ -93,6 +106,7 @@ abstract class Living extends PMLiving {
 		$this->inventory = new MobInventory($this);
 
 		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
+		$this->headYaw = $this->lastHeadYaw = $this->location->yaw;
 
 		$syncHeldItem = function() : void{
 			foreach($this->getViewers() as $viewer){
@@ -122,6 +136,10 @@ abstract class Living extends PMLiving {
 
 	protected function sendSpawnPacket(Player $player) : void{
 		parent::sendSpawnPacket($player);
+		if (abs(Utils::wrapDegrees($this->headYaw - $this->location->yaw)) > 1.0) {
+			//The spawn packet gives the head the body yaw
+			$player->getNetworkSession()->sendDataPacket($this->createMovementPacket());
+		}
 		if (!$this->inventory->getMainHand()->isNull() || !$this->inventory->getOffHand()->isNull()) {
 			$this->sendHeldItemsPacket($player);
 		}
@@ -241,6 +259,93 @@ abstract class Living extends PMLiving {
 		$this->timings->stopTiming();
 
 		return ($hasUpdate || $this->hasMovementUpdate());
+	}
+
+	public function getHeadYaw() : float{
+		return $this->headYaw;
+	}
+
+	public function setHeadYaw(float $headYaw) : void{
+		$this->headYaw = Utils::normalizeDegrees($headYaw);
+	}
+
+	/**
+	 * Keeps the yaw in [0, 360), as PM's lookAt() does.
+	 */
+	public function setRotation(float $yaw, float $pitch) : void{
+		parent::setRotation(Utils::normalizeDegrees($yaw), $pitch);
+	}
+
+	/**
+	 * Turns the whole mob toward $target, not just the head like LookControl. Without limits it turns instantly, head
+	 * included, as PM does. With them it turns at most that many degrees per tick and leaves the head alone, which
+	 * mobs that move relative to their facing, like bow strafing, need.
+	 */
+	public function lookAt(Vector3 $target, ?float $maxYawChange = null, ?float $maxPitchChange = null) : void{
+		if ($maxYawChange === null && $maxPitchChange === null) {
+			parent::lookAt($target);
+
+			$this->headYaw = $this->location->yaw;
+			return;
+		}
+
+		$xDist = $target->x - $this->location->x;
+		$zDist = $target->z - $this->location->z;
+		$yaw = (atan2($zDist, $xDist) * (180 / M_PI)) - 90;
+		$pitch = -(atan2($target->y - ($this->location->y + $this->getEyeHeight()), sqrt($xDist ** 2 + $zDist ** 2)) * (180 / M_PI));
+
+		if ($maxYawChange !== null) {
+			$yaw = $this->location->yaw + Utils::clamp(Utils::degreesDifference($this->location->yaw, $yaw), -$maxYawChange, $maxYawChange);
+		}
+		if ($maxPitchChange !== null) {
+			$pitch = $this->location->pitch + Utils::clamp(Utils::degreesDifference($this->location->pitch, $pitch), -$maxPitchChange, $maxPitchChange);
+		}
+
+		$this->setRotation($yaw, $pitch);
+	}
+
+	/**
+	 * A teleported mob's head faces the same way as its body.
+	 */
+	protected function setPositionAndRotation(Vector3 $pos, float $yaw, float $pitch) : bool{
+		if (!parent::setPositionAndRotation($pos, $yaw, $pitch)) {
+			return false;
+		}
+
+		$this->setHeadYaw($yaw);
+
+		return true;
+	}
+
+	/**
+	 * PM only sends a movement packet when the body moves or turns.
+	 */
+	protected function updateMovement(bool $teleport = false) : void{
+		parent::updateMovement($teleport);
+
+		if (abs(Utils::wrapDegrees($this->headYaw - $this->lastHeadYaw)) > 1.0) {
+			$this->broadcastMovement($teleport);
+		}
+	}
+
+	/**
+	 * Entity::broadcastMovement() sends the body yaw as the head yaw.
+	 */
+	protected function broadcastMovement(bool $teleport = false) : void{
+		$this->lastHeadYaw = $this->headYaw;
+
+		NetworkBroadcastUtils::broadcastPackets($this->hasSpawned, [$this->createMovementPacket()]);
+	}
+
+	private function createMovementPacket() : MoveActorAbsolutePacket{
+		return MoveActorAbsolutePacket::create(
+			$this->id,
+			$this->getOffsetPosition($this->location),
+			$this->location->pitch,
+			$this->location->yaw,
+			$this->headYaw,
+			$this->onGround ? MoveActorAbsolutePacket::FLAG_GROUND : 0
+		);
 	}
 
 	/**

@@ -100,6 +100,17 @@ class Utils {
 		return $result;
 	}
 
+	/**
+	 * @return float the angle in [0, 360), like PocketMine's yaw
+	 */
+	public static function normalizeDegrees(float $degrees) : float {
+		$result = fmod($degrees, 360);
+		if ($result < 0) {
+			$result += 360;
+		}
+		return $result >= 360 ? 0.0 : $result;
+	}
+
 	public static function degreesDifference(float $degrees1, float $degrees2) : float {
 		return self::wrapDegrees($degrees2 - $degrees1);
 	}
