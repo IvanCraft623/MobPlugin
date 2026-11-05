@@ -27,7 +27,7 @@ use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
-use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\color\Color;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
@@ -46,7 +46,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	 */
 	protected array $usedChunks = [];
 
-	private ?Path $listenedPath = null;
+	private ?PathCursor $listenedCursor = null;
 
 	protected PathNavigation $navigation;
 
@@ -68,8 +68,8 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 		parent::initEntity($nbt);
 	}
 
-	private function listenToPathChunks(?Path $path) : void{
-		$chunks = $path?->getCorridorChunks() ?? [];
+	private function listenToPathChunks(?PathCursor $cursor) : void{
+		$chunks = $cursor?->getPath()->getCorridorChunks() ?? [];
 
 		$world = $this->getWorld();
 		foreach($chunks as $hash => $_){
@@ -91,21 +91,21 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		$path = $this->navigation->getPath();
+		$cursor = $this->navigation->getCursor();
 
-		if($path !== null && $this->ticksLived % 10 === 0 && $this->getSettings()->isDebugModeEnabled()){
+		if($cursor !== null && $this->ticksLived % 10 === 0 && $this->getSettings()->isDebugModeEnabled()){
 			$world = $this->getWorld();
-			foreach($path->getNodes() as $node){
+			foreach($cursor->getPath()->getNodes() as $node){
 				$world->addParticle($node->add(0.5, 0.5, 0.5), new DustParticle(new Color(255, 0, 0))); //red particle
 			}
 		}
 
-		if($path !== null && $path->isDone()){
-			$path = null;
+		if($cursor !== null && $cursor->isDone()){
+			$cursor = null;
 		}
-		if($path !== $this->listenedPath){
-			$this->listenedPath = $path;
-			$this->listenToPathChunks($path);
+		if($cursor !== $this->listenedCursor){
+			$this->listenedCursor = $cursor;
+			$this->listenToPathChunks($cursor);
 		}
 
 		return $hasUpdate;
@@ -114,7 +114,7 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	protected function setPosition(Vector3 $pos) : bool{
 		if(!$this->closed && $pos instanceof Position && $pos->getWorld() !== $this->getWorld()){
 			//The chunks listened belong to the world being left
-			$this->listenedPath = null;
+			$this->listenedCursor = null;
 			$this->listenToPathChunks(null);
 		}
 

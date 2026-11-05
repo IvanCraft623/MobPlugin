@@ -27,6 +27,7 @@ use Closure;
 use IvanCraft623\Pathfinder\execution\PathSearch;
 use IvanCraft623\Pathfinder\execution\SearchExecutor;
 use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use IvanCraft623\Pathfinder\PathInvalidation;
 use IvanCraft623\Pathfinder\PathRepair;
 use pocketmine\math\Vector3;
@@ -56,14 +57,14 @@ final class PathRequester{
 	/**
 	 * Of the in-flight computation; requests made meanwhile share its promise.
 	 *
-	 * @phpstan-var PromiseResolver<Path>|null
+	 * @phpstan-var PromiseResolver<PathCursor>|null
 	 */
 	private ?PromiseResolver $pendingResolver = null;
 
 	private ?PathSearch $pendingSearch = null;
 
-	/** Block changes that invalidated $invalidatedPath since it was computed */
-	private ?Path $invalidatedPath = null;
+	/** Block changes that invalidated $invalidatedCursor since it was computed */
+	private ?PathCursor $invalidatedCursor = null;
 	private ?PathInvalidation $invalidation = null;
 
 	private int $lastRecomputeTick = 0;
@@ -71,14 +72,14 @@ final class PathRequester{
 	private bool $recomputeDelayed = false;
 
 	/**
-	 * @phpstan-param Closure() : ?Path       $currentPath   the path being followed
+	 * @phpstan-param Closure() : ?PathCursor $currentCursor   the path being followed
 	 * @phpstan-param Closure() : SearchSetup $createSetup   read each time a search starts
 	 * @phpstan-param Closure() : void        $onSearchStart
 	 */
 	public function __construct(
 		private SearchExecutor $executor,
 		private RepathPolicy $policy,
-		private Closure $currentPath,
+		private Closure $currentCursor,
 		private Closure $createSetup,
 		private Closure $onSearchStart
 	){
@@ -95,24 +96,24 @@ final class PathRequester{
 	/**
 	 * The path to $target; the current path if it already goes there.
 	 *
-	 * @phpstan-return Promise<Path>
+	 * @phpstan-return Promise<PathCursor>
 	 */
-	public function request(Vector3 $target, int $reach, ?Path $current, ?float $maxDistanceFromStart = null) : Promise{
+	public function request(Vector3 $target, int $reach, ?PathCursor $current, ?float $maxDistanceFromStart = null) : Promise{
 		return $this->startRequest(new PathRequest($target, $reach, $maxDistanceFromStart), $current, null);
 	}
 
 	/**
 	 * Records a changed block; returns whether it matters to the nodes left to walk.
 	 */
-	public function invalidate(Path $path, int $x, int $y, int $z) : bool{
-		$invalidation = $path->findInvalidation($x, $y, $z);
+	public function invalidate(PathCursor $cursor, int $x, int $y, int $z) : bool{
+		$invalidation = $cursor->findInvalidation($x, $y, $z);
 		if ($invalidation === null) {
 			return false;
 		}
-		if ($this->invalidatedPath === $path && $this->invalidation !== null) {
+		if ($this->invalidatedCursor === $cursor && $this->invalidation !== null) {
 			$invalidation = $this->invalidation->union($invalidation);
 		}
-		$this->invalidatedPath = $path;
+		$this->invalidatedCursor = $cursor;
 		$this->invalidation = $invalidation;
 		return true;
 	}
@@ -122,9 +123,9 @@ final class PathRequester{
 	 * Null when it must wait (too soon, or a search is running); see {@link hasDelayedRecompute()}.
 	 *
 	 * @phpstan-param Closure() : void $dropCurrent called when $current can't be kept meanwhile
-	 * @phpstan-return Promise<Path>|null
+	 * @phpstan-return Promise<PathCursor>|null
 	 */
-	public function recompute(?Path $current, int $tick, Closure $dropCurrent) : ?Promise{
+	public function recompute(?PathCursor $current, int $tick, Closure $dropCurrent) : ?Promise{
 		if ($tick - $this->lastRecomputeTick <= self::RECOMPUTE_INTERVAL) {
 			$this->recomputeDelayed = true;
 			return null;
@@ -134,7 +135,7 @@ final class PathRequester{
 			return null;
 		}
 
-		$invalidation = $current !== null && $this->invalidatedPath === $current ? $this->invalidation : null;
+		$invalidation = $current !== null && $this->invalidatedCursor === $current ? $this->invalidation : null;
 		if ($invalidation !== null && $this->pendingResolver !== null) {
 			//Patching needs a free search, and the one running may not have seen the change
 			$this->recomputeDelayed = true;
@@ -144,7 +145,7 @@ final class PathRequester{
 
 		$this->lastRecomputeTick = $tick;
 		$this->recomputeDelayed = false;
-		$this->invalidatedPath = null;
+		$this->invalidatedCursor = null;
 		$this->invalidation = null;
 
 		//A repair keeps walking the current path
@@ -168,7 +169,7 @@ final class PathRequester{
 	 */
 	public function cancel() : void{
 		$this->recomputeDelayed = false;
-		$this->invalidatedPath = null;
+		$this->invalidatedCursor = null;
 		$this->invalidation = null;
 
 		$this->computationId++;
@@ -178,10 +179,10 @@ final class PathRequester{
 	}
 
 	/**
-	 * @phpstan-return Promise<Path>
+	 * @phpstan-return Promise<PathCursor>
 	 */
-	private function startRequest(PathRequest $request, ?Path $current, ?PathRepair $repair) : Promise{
-		/** @phpstan-var PromiseResolver<Path> $resolver */
+	private function startRequest(PathRequest $request, ?PathCursor $current, ?PathRepair $repair) : Promise{
+		/** @phpstan-var PromiseResolver<PathCursor> $resolver */
 		$resolver = new PromiseResolver();
 
 		if ($repair === null && $current !== null && !$current->isDone() &&
@@ -194,8 +195,8 @@ final class PathRequester{
 		if ($this->pendingResolver !== null) {
 			//Share the running search: starting another one serializes the chunks again on the main thread
 			$this->pendingResolver->getPromise()->onCompletion(
-				static function(Path $path) use ($resolver) : void{
-					$resolver->resolve($path);
+				static function(PathCursor $cursor) use ($resolver) : void{
+					$resolver->resolve($cursor);
 				},
 				static function() use ($resolver) : void{
 					$resolver->reject();
@@ -242,7 +243,7 @@ final class PathRequester{
 			return;
 		}
 
-		if (!$this->policy->isResultUsable($request, $path, ($this->currentPath)())) {
+		if (!$this->policy->isResultUsable($request, $path, ($this->currentCursor)())) {
 			//Path changed or target unreachable from it: search from the mob
 			$this->startSearch($request->withoutSplice());
 			return;
@@ -250,18 +251,19 @@ final class PathRequester{
 
 		if ($request->base === null) {
 			$this->splicesInARow = 0;
+			$followed = new PathCursor($path);
 		} else {
-			$path = $request->base->splice($request->spliceIndex, $path, $request->rejoinIndex);
+			$followed = $request->base->splice($request->spliceIndex, $path, $request->rejoinIndex);
 			++$this->splicesInARow;
 		}
 
 		$this->pendingResolver = null;
 		$this->pendingSearch = null;
 
-		$this->target = $path->getTarget()->floor();
+		$this->target = $followed->getPath()->getTarget()->floor();
 		$this->reach = $request->reach;
 
-		$resolver->resolve($path);
+		$resolver->resolve($followed);
 	}
 
 	private function sameBlock(Vector3 $a, Vector3 $b) : bool{

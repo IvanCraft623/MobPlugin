@@ -30,7 +30,7 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\Pathfinder\evaluator\FlightNodeEvaluator;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
@@ -66,9 +66,9 @@ class FlyingLocomotion extends Locomotion{
 		return self::isClearForMovementBetween($mob, $from, $to, true);
 	}
 
-	public function advanceWithoutFollowing(PathfinderMob $mob, Path $path, Vector3 $position) : void{
-		if ($position->floor()->equals($path->getNextNodeCenter()->floor())) {
-			$path->advance();
+	public function advanceWithoutFollowing(PathfinderMob $mob, PathCursor $cursor, Vector3 $position) : void{
+		if ($position->floor()->equals($cursor->getNextNodeCenter()->floor())) {
+			$cursor->advance();
 		}
 	}
 }

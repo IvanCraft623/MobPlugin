@@ -34,11 +34,13 @@ use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use IvanCraft623\Pathfinder\MovementProfile;
 use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\block\FillableCauldron;
 use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
+use function count;
 use function floor;
 
 /**
@@ -101,21 +103,27 @@ abstract class Locomotion{
 	}
 
 	/**
-	 * Fits a computed path to the mob.
+	 * The computed path fitted to the mob: the same one when nothing needs to change.
 	 */
-	public function adjustPath(PathfinderMob $mob, Path $path, TraversalRules $rules) : void{
+	public function adjustPath(PathfinderMob $mob, Path $path, TraversalRules $rules) : Path{
 		$world = $mob->getWorld();
-		for ($i = 0; $i < $path->getNodeCount(); $i++) {
-			$node = $path->getNode($i);
+		$nodes = $path->getNodes();
+		$count = count($nodes);
+		$changed = false;
+		for ($i = 0; $i < $count; $i++) {
+			$node = $nodes[$i];
 			if ($world->getBlockAt($node->x(), $node->y(), $node->z()) instanceof FillableCauldron) {
-				$path->replaceNode($i, $node->cloneAndMove($node->x(), $node->y() + 1, $node->z()));
+				$nodes[$i] = $node->cloneAndMove($node->x(), $node->y() + 1, $node->z());
 
-				$nextNode = $i + 1 < $path->getNodeCount() ? $path->getNode($i + 1) : null;
+				$nextNode = $i + 1 < $count ? $nodes[$i + 1] : null;
 				if ($nextNode !== null && $node->y >= $nextNode->y) {
-					$path->replaceNode($i + 1, $node->cloneAndMove($nextNode->x(), $node->y() + 1, $nextNode->z()));
+					$nodes[$i + 1] = $node->cloneAndMove($nextNode->x(), $node->y() + 1, $nextNode->z());
 				}
+				$changed = true;
 			}
 		}
+
+		return $changed ? $path->withNodes($nodes) : $path;
 	}
 
 	/**
@@ -134,14 +142,14 @@ abstract class Locomotion{
 	/**
 	 * Advances along the path for a mob that can't follow it (e.g. airborne).
 	 */
-	public function advanceWithoutFollowing(PathfinderMob $mob, Path $path, Vector3 $position) : void{
-		$nextPosition = $path->getNextNodeCenter();
+	public function advanceWithoutFollowing(PathfinderMob $mob, PathCursor $cursor, Vector3 $position) : void{
+		$nextPosition = $cursor->getNextNodeCenter();
 		if ($position->y > $nextPosition->y &&
 			!$mob->isOnGround() &&
 			floor($position->x) === floor($nextPosition->x) &&
 			floor($position->z) === floor($nextPosition->z)
 		) {
-			$path->advance();
+			$cursor->advance();
 		}
 	}
 

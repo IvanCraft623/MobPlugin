@@ -33,6 +33,7 @@ use IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
+use function array_slice;
 use function floor;
 
 class GroundLocomotion extends Locomotion{
@@ -90,24 +91,25 @@ class GroundLocomotion extends Locomotion{
 		return $current;
 	}
 
-	public function adjustPath(PathfinderMob $mob, Path $path, TraversalRules $rules) : void{
-		parent::adjustPath($mob, $path, $rules);
+	public function adjustPath(PathfinderMob $mob, Path $path, TraversalRules $rules) : Path{
+		$path = parent::adjustPath($mob, $path, $rules);
 
 		if (!$rules->avoidSun) {
-			return;
+			return $path;
 		}
 		$position = $mob->getPosition();
 		$world = $mob->getWorld();
 		if ($world->getRealBlockSkyLightAt((int) floor($position->x), (int) floor($position->y + 0.5), (int) floor($position->z)) >= 15) {
-			return;
+			return $path;
 		}
 		for ($i = 0; $i < $path->getNodeCount(); ++$i) {
 			$node = $path->getNode($i);
 			if ($world->getRealBlockSkyLightAt($node->x(), $node->y(), $node->z()) >= 15) {
-				$path->truncateNodes($i);
-				return;
+				return $path->withNodes(array_slice($path->getNodes(), 0, $i));
 			}
 		}
+
+		return $path;
 	}
 
 	protected function getSurfaceY(PathfinderMob $mob, TraversalRules $rules) : int{

@@ -31,6 +31,7 @@ use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use IvanCraft623\Pathfinder\world\BlockGetter;
 use IvanCraft623\Pathfinder\world\Terrain;
 use IvanCraft623\Pathfinder\world\WorldBlockGetter;
@@ -46,8 +47,6 @@ use function floor;
  * its {@link TraversalRules}.
  */
 final class PathNavigation {
-
-	private ?Path $path = null;
 
 	private float $speedModifier = 1.0;
 
@@ -77,23 +76,25 @@ final class PathNavigation {
 		$this->rules = $rules ?? new TraversalRules();
 		$this->costMap = new BlockPathTypeCostMap();
 		$this->evaluator = $locomotion->createEvaluator();
-		$this->follower = new PathFollower($mob);
+		$this->follower = $follower = new PathFollower($mob);
+		$evaluator = $this->evaluator;
+		$rules = $this->rules;
 
 		$this->entityThrottle = new EntityRepathThrottle();
 		$this->requester = new PathRequester(
 			MobPlugin::getInstance()->getPathSearchExecutor(),
 			new RepathPolicy(),
-			currentPath: fn() : ?Path => $this->path,
-			createSetup: fn() : SearchSetup => new SearchSetup(
-				$this->evaluator,
-				$this->locomotion->createProfile($this->mob, $this->rules),
-				Terrain::fromWorld($this->mob->getWorld()),
-				$this->mob->getPosition(),
-				$this->mob->isOnGround(),
-				$this->mob->getFollowRange(),
-				(int) floor($this->mob->getFollowRange() * 16)
+			currentCursor: $follower->getCursor(...),
+			createSetup: static fn() : SearchSetup => new SearchSetup(
+				$evaluator,
+				$locomotion->createProfile($mob, $rules),
+				Terrain::fromWorld($mob->getWorld()),
+				$mob->getPosition(),
+				$mob->isOnGround(),
+				$mob->getFollowRange(),
+				(int) floor($mob->getFollowRange() * 16)
 			),
-			onSearchStart: $this->follower->resetNodeProgress(...)
+			onSearchStart: $follower->resetNodeProgress(...)
 		);
 	}
 
@@ -156,22 +157,20 @@ final class PathNavigation {
 			return;
 		}
 
-		$this->requester->recompute($this->path, $this->mob->getWorld()->getServer()->getTick(), function() : void{
-			$this->path = null;
-		})?->onCompletion(function(Path $path) : void{
-			$this->path = $path;
-			$this->follower->resetNodeProgress();
-		}, function() : void{
-			$this->path = null;
-		});
+		$this->requester->recompute($this->follower->getCursor(), $this->mob->getWorld()->getServer()->getTick(), $this->dropPath(...))
+			?->onCompletion($this->follower->setCursor(...), $this->dropPath(...));
+	}
+
+	private function dropPath() : void{
+		$this->follower->setCursor(null);
 	}
 
 	/**
-	 * @phpstan-return Promise<Path>
+	 * @phpstan-return Promise<PathCursor>
 	 */
 	private function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		CustomTimings::$pathRequest->startTiming();
-		$promise = $this->requester->request($this->locomotion->adjustTarget($this->mob, $position), $reach, $this->path, $maxDistanceFromStart);
+		$promise = $this->requester->request($this->locomotion->adjustTarget($this->mob, $position), $reach, $this->follower->getCursor(), $maxDistanceFromStart);
 		CustomTimings::$pathRequest->stopTiming();
 
 		return $promise;
@@ -184,9 +183,10 @@ final class PathNavigation {
 		if (!$this->canRequestPath()) {
 			return;
 		}
-		$this->requestPathTo($target, $reach)->onCompletion(function(Path $path) use ($speedModifier){
-			$this->startFollowing($path, $speedModifier);
-		}, static function(){});
+		$this->requestPathTo($target, $reach)->onCompletion(
+			fn(PathCursor $cursor) => $this->startFollowing($cursor, $speedModifier),
+			static function() : void{}
+		);
 	}
 
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 1) : void{
@@ -198,28 +198,31 @@ final class PathNavigation {
 
 		$targetBlock = World::blockHash((int) floor($targetPosition->x), (int) floor($targetPosition->y), (int) floor($targetPosition->z));
 		$pending = $this->isPathComputationPending();
-		if (!$this->entityThrottle->shouldRequest($targetBlock, $pending, $this->path, $this->tick)) {
+		if (!$this->entityThrottle->shouldRequest($targetBlock, $pending, $this->follower->getCursor(), $this->tick)) {
 			$this->speedModifier = $speedModifier;
 			return;
 		}
 		$this->entityThrottle->requested($targetBlock, $pending, $this->tick);
 
-		$this->requestPathTo($targetPosition, $reach)->onCompletion(function(Path $path) use ($speedModifier, $targetBlock) : void{
-			$this->startFollowing($path, $speedModifier);
-			$this->entityThrottle->resolved($targetBlock, $this->path);
-		}, function() : void{
-			$this->entityThrottle->reset();
-		});
+		$this->requestPathTo($targetPosition, $reach)->onCompletion(
+			fn(PathCursor $cursor) => $this->followEntityPath($cursor, $speedModifier, $targetBlock),
+			$this->entityThrottle->reset(...)
+		);
+	}
+
+	private function followEntityPath(PathCursor $cursor, float $speedModifier, int $targetBlock) : void{
+		$this->startFollowing($cursor, $speedModifier);
+		$this->entityThrottle->resolved($targetBlock, $this->follower->getCursor());
 	}
 
 	/**
-	 * Follows $path, unless it is (or equals) the current one.
+	 * Follows $cursor, unless it is (or equals) the current one.
 	 */
-	private function startFollowing(Path $path, float $speedModifier) : void{
-		if ($path !== $this->path) {
-			if ($this->path === null || !$path->equals($this->path)) {
-				$this->path = $path;
-				$this->follower->resetNodeProgress();
+	private function startFollowing(PathCursor $cursor, float $speedModifier) : void{
+		$current = $this->follower->getCursor();
+		if ($cursor !== $current) {
+			if ($current === null || !$cursor->getPath()->equals($current->getPath())) {
+				$this->follower->setCursor($cursor);
 			}
 		} elseif (!$this->isDone()) {
 			//Already following it, and adjusted
@@ -228,17 +231,31 @@ final class PathNavigation {
 			return;
 		}
 
-		if ($this->isDone()) {
+		$current = $this->follower->getCursor();
+		if ($current === null || $this->isDone()) {
 			return;
 		}
 
-		$this->locomotion->adjustPath($this->mob, $this->path, $this->rules);
+		$adjusted = $this->locomotion->adjustPath($this->mob, $current->getPath(), $this->rules);
+		if ($adjusted !== $current->getPath()) {
+			$this->follower->setCursor($current->withPath($adjusted));
+		}
 		$this->speedModifier = $speedModifier;
 		$this->follower->restartStuckCheck($this->tick, $this->locomotion->pathPosition($this->mob, $this->rules));
 	}
 
+	/**
+	 * The path being followed, and how far along it the mob is.
+	 */
+	public function getCursor() : ?PathCursor{
+		return $this->follower->getCursor();
+	}
+
+	/**
+	 * The path being followed, without the progress.
+	 */
 	public function getPath() : ?Path{
-		return $this->path;
+		return $this->follower->getCursor()?->getPath();
 	}
 
 	public function tick() : void{
@@ -254,8 +271,8 @@ final class PathNavigation {
 		$this->recomputeIfDelayed();
 
 		//Walked, or still being computed
-		$path = $this->path;
-		if ($path === null || $path->isDone()) {
+		$cursor = $this->follower->getCursor();
+		if ($cursor === null || $cursor->isDone()) {
 			if ($this->isDone()) {
 				$this->locomotion->tickWithoutPath($this->mob);
 			}
@@ -263,26 +280,23 @@ final class PathNavigation {
 		}
 
 		if ($this->locomotion->canFollowPath($this->mob, $this->rules)) {
-			match ($this->follower->follow($path, $this->locomotion, $this->rules, $this->tick)) {
+			match ($this->follower->follow($this->locomotion, $this->rules, $this->tick)) {
 				//Not where the path thinks it is: search again from where the mob is
 				StuckResult::BLOCKED => $this->recomputePath(),
 				StuckResult::STUCK, StuckResult::TIMED_OUT => $this->stop(),
 				StuckResult::NONE => null
 			};
 		} else {
-			$this->locomotion->advanceWithoutFollowing($this->mob, $path, $this->locomotion->pathPosition($this->mob, $this->rules));
+			$this->locomotion->advanceWithoutFollowing($this->mob, $cursor, $this->locomotion->pathPosition($this->mob, $this->rules));
 		}
 
 		//Following may have dropped the path
-		$path = $this->path;
-		if ($path !== null && !$path->isDone()) {
-			$this->wantedPosition = $this->follower->getWantedPosition($path, $this->locomotion, $this->getBlockGetter());
-		}
+		$this->wantedPosition = $this->follower->getWantedPosition($this->locomotion, $this->getBlockGetter());
 	}
 
 	public function onBlockChanged(Vector3 $position) : void{
-		$path = $this->path;
-		if ($path === null || $path->isDone() || !$this->requester->invalidate($path, $position->getFloorX(), $position->getFloorY(), $position->getFloorZ())) {
+		$cursor = $this->follower->getCursor();
+		if ($cursor === null || $cursor->isDone() || !$this->requester->invalidate($cursor, $position->getFloorX(), $position->getFloorY(), $position->getFloorZ())) {
 			return;
 		}
 
@@ -292,7 +306,9 @@ final class PathNavigation {
 
 	public function isDone() : bool{
 		//Not done while a path is being computed, or the goal would stop and cancel it
-		return ($this->path === null || $this->path->isDone()) && !$this->isPathComputationPending();
+		$cursor = $this->follower->getCursor();
+
+		return ($cursor === null || $cursor->isDone()) && !$this->isPathComputationPending();
 	}
 
 	public function isInProgress() : bool{
@@ -300,9 +316,8 @@ final class PathNavigation {
 	}
 
 	public function stop() : void{
-		$this->path = null;
+		$this->follower->setCursor(null);
 		$this->entityThrottle->reset();
-		$this->follower->forgetWantedPosition();
 		$this->locomotion->onStopped();
 
 		$this->requester->cancel();
