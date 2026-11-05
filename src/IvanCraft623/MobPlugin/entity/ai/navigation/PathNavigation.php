@@ -314,6 +314,6 @@ final class PathNavigation {
 	 * Type of the block for the locomotion's evaluator.
 	 */
 	public function getBlockPathType(int $x, int $y, int $z) : BlockPathType{
-		return $this->evaluator->getPathTypeResolver()->getBlockPathType($this->getBlockGetter(), $x, $y, $z, $this->mob->getPosition());
+		return $this->evaluator->getPathTypeResolver()->getBlockPathType($this->getBlockGetter(), $x, $y, $z);
 	}
 }
