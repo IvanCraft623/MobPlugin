@@ -36,20 +36,16 @@ final class PathRequesterTest extends NavigationTestCase{
 
 	private ?Path $current = null;
 
-	private bool $canSearch = true;
-
 	private int $searchStarts = 0;
 
 	protected function setUp() : void{
 		$this->executor = new FakeSearchExecutor();
 		$this->current = null;
-		$this->canSearch = true;
 		$this->searchStarts = 0;
 		$this->requester = new PathRequester(
 			$this->executor,
 			new RepathPolicy(),
 			fn() : ?Path => $this->current,
-			fn() : bool => $this->canSearch,
 			fn() : SearchSetup => self::searchSetup(),
 			function() : void{
 				++$this->searchStarts;
@@ -125,16 +121,6 @@ final class PathRequesterTest extends NavigationTestCase{
 		$this->executor->finish(self::path(0, 10));
 		self::assertNull($result);
 		self::assertFalse($this->requester->isPending());
-	}
-
-	public function testRejectedWhenTheMobCantSearch() : void{
-		$this->canSearch = false;
-		$result = null;
-		$rejected = false;
-		self::watch($this->requester->request(new Vector3(10, 64, 0), 1, null), $result, $rejected);
-
-		self::assertTrue($rejected);
-		self::assertCount(0, $this->executor->requests);
 	}
 
 	public function testMovedTargetExtendsTheCurrentPath() : void{

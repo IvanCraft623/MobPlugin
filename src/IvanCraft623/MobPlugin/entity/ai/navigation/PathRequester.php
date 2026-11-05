@@ -72,7 +72,6 @@ final class PathRequester{
 
 	/**
 	 * @phpstan-param Closure() : ?Path       $currentPath   the path being followed
-	 * @phpstan-param Closure() : bool        $canSearch     whether the mob can be asked for a path now
 	 * @phpstan-param Closure() : SearchSetup $createSetup   read each time a search starts
 	 * @phpstan-param Closure() : void        $onSearchStart
 	 */
@@ -80,7 +79,6 @@ final class PathRequester{
 		private SearchExecutor $executor,
 		private RepathPolicy $policy,
 		private Closure $currentPath,
-		private Closure $canSearch,
 		private Closure $createSetup,
 		private Closure $onSearchStart
 	){
@@ -159,6 +157,13 @@ final class PathRequester{
 	}
 
 	/**
+	 * Asks {@link hasDelayedRecompute()} to keep the recompute for later, when it can't be made now.
+	 */
+	public function postponeRecompute() : void{
+		$this->recomputeDelayed = true;
+	}
+
+	/**
 	 * Forgets the computation in flight, so a late result can't revive a stopped navigation.
 	 */
 	public function cancel() : void{
@@ -178,10 +183,6 @@ final class PathRequester{
 	private function startRequest(PathRequest $request, ?Path $current, ?PathRepair $repair) : Promise{
 		/** @phpstan-var PromiseResolver<Path> $resolver */
 		$resolver = new PromiseResolver();
-		if (!($this->canSearch)()) {
-			$resolver->reject();
-			return $resolver->getPromise();
-		}
 
 		if ($repair === null && $current !== null && !$current->isDone() &&
 			$this->target !== null && $this->sameBlock($this->target, $request->target)

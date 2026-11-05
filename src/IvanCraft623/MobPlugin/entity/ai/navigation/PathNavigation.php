@@ -84,8 +84,6 @@ final class PathNavigation {
 			MobPlugin::getInstance()->getPathSearchExecutor(),
 			new RepathPolicy(),
 			currentPath: fn() : ?Path => $this->path,
-			canSearch: fn() : bool => $this->mob->getPosition()->getY() >= $this->mob->getWorld()->getMinY() &&
-				$this->locomotion->canFollowPath($this->mob, $this->rules),
 			createSetup: fn() : SearchSetup => new SearchSetup(
 				$this->evaluator,
 				$this->locomotion->createProfile($this->mob, $this->rules),
@@ -144,7 +142,20 @@ final class PathNavigation {
 		}
 	}
 
+	/**
+	 * Whether the mob is somewhere a path can be asked for: in the world and in a state to follow it.
+	 */
+	private function canRequestPath() : bool{
+		return $this->mob->getPosition()->getY() >= $this->mob->getWorld()->getMinY() &&
+			$this->locomotion->canFollowPath($this->mob, $this->rules);
+	}
+
 	private function recomputePath() : void{
+		if (!$this->canRequestPath()) {
+			$this->requester->postponeRecompute();
+			return;
+		}
+
 		$this->requester->recompute($this->path, $this->mob->getWorld()->getServer()->getTick(), function() : void{
 			$this->path = null;
 		})?->onCompletion(function(Path $path) : void{
@@ -170,6 +181,9 @@ final class PathNavigation {
 		$this->entityThrottle->reset();
 		$target = new Vector3($x, $y, $z);
 		$this->locomotion->onMoveRequested($target, $speedModifier);
+		if (!$this->canRequestPath()) {
+			return;
+		}
 		$this->requestPathTo($target, $reach)->onCompletion(function(Path $path) use ($speedModifier){
 			$this->startFollowing($path, $speedModifier);
 		}, static function(){});
@@ -178,6 +192,9 @@ final class PathNavigation {
 	public function moveToEntity(Entity $target, float $speedModifier, int $reach = 1) : void{
 		$targetPosition = $target->getPosition();
 		$this->locomotion->onMoveRequested($targetPosition, $speedModifier);
+		if (!$this->canRequestPath()) {
+			return;
+		}
 
 		$targetBlock = World::blockHash((int) floor($targetPosition->x), (int) floor($targetPosition->y), (int) floor($targetPosition->z));
 		$pending = $this->isPathComputationPending();
