@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
@@ -47,9 +47,8 @@ class AirAndWaterPositionGenerator {
 	 * Returns a random position in air or water towards the specified direction, or null if no position could be generated
 	 */
 	public static function getPos(PathfinderMob $entity, int $horizontalRange, int $verticalRange, int $yCenter, float $directionX, float $directionZ, float $maxAngle) : ?Vector3{
-		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
 		return PositionGenerator::generateRandomPosForEntity($entity,
-			fn() : ?Vector3 => static::generateRandomPos($entity, $horizontalRange, $verticalRange, $yCenter, $directionX, $directionZ, $maxAngle, $isRestricted)
+			fn() : ?Vector3 => static::generateRandomPos($entity, $horizontalRange, $verticalRange, $yCenter, $directionX, $directionZ, $maxAngle)
 		);
 	}
 
@@ -61,27 +60,24 @@ class AirAndWaterPositionGenerator {
 	 * @param float         $directionX      the x component of the direction towards which the position is generated
 	 * @param float         $directionZ      the z component of the direction towards which the position is generated
 	 * @param float         $maxAngle        the maximum angle, in radians, between the generated position and the direction
-	 * @param bool          $isRestricted    whether the entity is restricted from moving to certain positions
 	 *
 	 * Returns a random position air or water towards the specified direction, or null if no position could be generated
 	 */
-	public static function generateRandomPos(PathfinderMob $entity, int $horizontalRange, int $verticalRange, int $yCenter, float $directionX, float $directionZ, float $maxAngle, bool $isRestricted) : ?Vector3{
+	public static function generateRandomPos(PathfinderMob $entity, int $horizontalRange, int $verticalRange, int $yCenter, float $directionX, float $directionZ, float $maxAngle) : ?Vector3{
 		$direction = PositionGenerator::generateRandomDirectionWithinRadians($entity->getRandom(), $horizontalRange, $verticalRange, $yCenter, $directionX, $directionZ, $maxAngle);
 		if ($direction === null) {
 			return null;
 		}
 
-		$pos = PositionGenerator::generateRandomPosTowardDirection($entity, $horizontalRange, $entity->getRandom(), $direction);
+		$pos = PositionGenerator::generateRandomPosTowardDirection($entity, $direction);
 		$world = $entity->getWorld();
 
-		if ($world->isInWorld((int) $pos->x, (int) $pos->y, (int) $pos->z) &&
-			!($isRestricted && $entity->isWithinRestriction($pos))
-		) {
+		if ($world->isInWorld((int) $pos->x, (int) $pos->y, (int) $pos->z)) {
 			$pos = PositionGenerator::moveUpOutOfSolid($pos, $world->getMaxY(),
 				static fn($position) : bool => $world->getBlock($position)->isSolid()
 			);
 
-			return ($entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+			return ($entity->getNavigation()->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 			) ? $pos : null;
 		}
 

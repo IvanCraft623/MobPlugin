@@ -30,7 +30,7 @@ use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
@@ -89,13 +89,13 @@ class WitherSkeleton extends AbstractSkeleton {
 
 		$this->setScale(1.2); //why? bedrock...
 
-		$this->setPathfindingMalus(BlockPathType::LAVA, 8);
-		$this->setPathfindingMalus(BlockPathType::DANGER_FIRE, BlockPathType::OPEN_MALUS);
-		$this->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, BlockPathType::OPEN_MALUS);
+		$this->navigation->setPathfindingMalus(BlockPathType::LAVA, 8);
+		$this->navigation->setPathfindingMalus(BlockPathType::DANGER_FIRE, BlockPathType::OPEN_MALUS);
+		$this->navigation->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, BlockPathType::OPEN_MALUS);
 	}
 
 	public function getDrops() : array{
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_SKELETON())];
+		$drops = [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_SKELETON())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
 			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()

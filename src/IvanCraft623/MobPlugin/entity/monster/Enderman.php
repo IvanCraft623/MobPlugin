@@ -41,7 +41,7 @@ use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -168,7 +168,7 @@ class Enderman extends Monster implements NeutralMob{
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(3, ($this->teleportGoal = new RandomTeleportGoal(entity: $this,
 			randomTeleportRange: new Vector3(32, 32, 32),
 			maxTeleportInterval: 30 * 20)
@@ -248,7 +248,7 @@ class Enderman extends Monster implements NeutralMob{
 		$this->setAttackDamage(7);
 		$this->setFollowRange(64);
 
-		$this->setPathfindingMalus(BlockPathType::WATER, -1);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, -1);
 	}
 
 	public function getDefaultMovementSpeed() : float{
@@ -264,7 +264,7 @@ class Enderman extends Monster implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ENDERMAN())];
+		$drops = $this->generateDeathLoot(VanillaLootTables::ENDERMAN());
 
 		if ($this->carryBlock !== null) {
 			$drops = array_merge($drops, $this->carryBlock->getSilkTouchDrops(VanillaItems::DIAMOND_AXE()));
@@ -313,10 +313,6 @@ class Enderman extends Monster implements NeutralMob{
 		$this->updateAnger(true);
 
 		return $hasUpdate;
-	}
-
-	public function isSensitiveToWater() : bool{
-		return true;
 	}
 
 	public function getCarriedBlock() : ?Block{

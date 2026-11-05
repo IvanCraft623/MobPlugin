@@ -23,10 +23,11 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\PathInvalidation;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\PathRepair;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\SearchRequest;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathInvalidation;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathRepair;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\SearchRequest;
 use pocketmine\math\Vector3;
 use function floor;
 use function max;
@@ -50,8 +51,8 @@ final class RepathPolicy{
 	/**
 	 * Extends $current to a target that moved a little, if it can.
 	 */
-	public function extend(PathRequest $request, ?Path $current, ?Vector3 $lastTarget, int $lastReach, int $splicesInARow) : PathRequest{
-		if ($current === null || $current->isDone() || !$current->canReach() ||
+	public function extend(PathRequest $request, ?PathCursor $current, ?Vector3 $lastTarget, int $lastReach, int $splicesInARow) : PathRequest{
+		if ($current === null || $current->isDone() || !$current->getPath()->canReach() ||
 			$lastTarget === null || $request->reach !== $lastReach ||
 			$splicesInARow >= self::MAX_SPLICES_IN_A_ROW ||
 			$lastTarget->distance($request->target->floor()) > self::SPLICE_MAX_TARGET_MOVE
@@ -62,13 +63,13 @@ final class RepathPolicy{
 	}
 
 	/**
-	 * How to patch $path around its invalidated nodes, if worth it.
+	 * How to patch $cursor around its invalidated nodes, if worth it.
 	 */
-	public function repair(?Path $path, ?PathInvalidation $invalidation, int $splicesInARow) : ?PathRepair{
-		if ($path === null || $invalidation === null || $path->isDone() || $splicesInARow >= self::MAX_SPLICES_IN_A_ROW) {
+	public function repair(?PathCursor $cursor, ?PathInvalidation $invalidation, int $splicesInARow) : ?PathRepair{
+		if ($cursor === null || $invalidation === null || $cursor->isDone() || $splicesInARow >= self::MAX_SPLICES_IN_A_ROW) {
 			return null;
 		}
-		return $path->planRepair($invalidation);
+		return $cursor->planRepair($invalidation);
 	}
 
 	public function createSearchRequest(PathRequest $request, SearchSetup $setup) : SearchRequest{
@@ -78,8 +79,9 @@ final class RepathPolicy{
 			return new SearchRequest($setup->start, $request->target, $setup->maxVisitedNodes, $maxDistanceFromStart, $request->reach, $setup->onGround);
 		}
 
-		$start = $base->getNode($request->spliceIndex);
-		$rejoin = $request->rejoinIndex === null ? null : $base->getNode($request->rejoinIndex);
+		$basePath = $base->getPath();
+		$start = $basePath->getNode($request->spliceIndex);
+		$rejoin = $request->rejoinIndex === null ? null : $basePath->getNode($request->rejoinIndex);
 		return new SearchRequest(
 			$start,
 			$rejoin ?? $request->target,
@@ -93,7 +95,7 @@ final class RepathPolicy{
 	/**
 	 * Whether the result still fits the path being followed.
 	 */
-	public function isResultUsable(PathRequest $request, Path $result, ?Path $current) : bool{
+	public function isResultUsable(PathRequest $request, Path $result, ?PathCursor $current) : bool{
 		$base = $request->base;
 		return $base === null || (
 			$base === $current && $result->canReach() && $base->canSplice($request->spliceIndex, $result, $request->rejoinIndex)

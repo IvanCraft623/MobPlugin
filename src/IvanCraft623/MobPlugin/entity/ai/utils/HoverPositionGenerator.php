@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
@@ -48,9 +48,7 @@ class HoverPositionGenerator {
 	 * Returns a random position towards a given direction, or null if none could be generated.
 	 */
 	public static function getPos(PathfinderMob $entity, int $xzRadius, int $yRadius, float $directionX, float $directionZ, float $angle, int $maxHeight, int $minHeight) : ?Vector3{
-		$isRestricted = PositionGenerator::isRestricted($entity, $xzRadius);
-
-		return PositionGenerator::generateRandomPosForEntity($entity, static function() use ($entity, $xzRadius, $yRadius, $directionX, $directionZ, $angle, $minHeight, $maxHeight, $isRestricted) : ?Vector3{
+		return PositionGenerator::generateRandomPosForEntity($entity, static function() use ($entity, $xzRadius, $yRadius, $directionX, $directionZ, $angle, $minHeight, $maxHeight) : ?Vector3{
 			$direction = PositionGenerator::generateRandomDirectionWithinRadians(
 				$entity->getRandom(), $xzRadius, $yRadius, 0, $directionX, $directionZ, $angle
 			);
@@ -58,7 +56,7 @@ class HoverPositionGenerator {
 				return null;
 			}
 
-			$pos = LandPositionGenerator::generateRandomPosTowardDirection($entity, $xzRadius, $isRestricted, $direction);
+			$pos = LandPositionGenerator::generateRandomPosTowardDirection($entity, $direction);
 			if ($pos === null) {
 				return null;
 			}
@@ -71,7 +69,7 @@ class HoverPositionGenerator {
 				static fn(Vector3 $position) : bool => $world->getBlock($position)->isSolid()
 			);
 			return (!$world->getBlock($pos) instanceof Water &&
-				$entity->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
+				$entity->getNavigation()->getPathfindingMalus(BlockClassifier::getType($entity->getNavigation()->getBlockGetter(), (int) $pos->x, (int) $pos->y, (int) $pos->z)) === 0.0
 			) ? $pos : null;
 		});
 	}

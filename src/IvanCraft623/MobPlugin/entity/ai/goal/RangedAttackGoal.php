@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\Entity;
@@ -41,7 +41,7 @@ class RangedAttackGoal extends Goal {
 	protected int $attackTime = -1;
 
 	public function __construct(
-		protected Mob $mob,
+		protected PathfinderMob $mob,
 		protected float $speedModifier,
 		protected int $minAttackInterval,
 		protected int $maxAttackInterval,

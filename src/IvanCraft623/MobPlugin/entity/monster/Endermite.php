@@ -64,7 +64,7 @@ class Endermite extends Monster {
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(1, new FloatGoal($this));
 		//TODO: powder snow climb goal
-		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(3, new WaterAvoidingRandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(7, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));

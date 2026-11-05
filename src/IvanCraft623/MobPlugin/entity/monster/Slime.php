@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster;
 
 use Closure;
 use IvanCraft623\MobPlugin\data\bedrock\SlimeTypeIdMap;
+use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeFloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeKeepOnJumpingGoal;
@@ -100,8 +101,6 @@ class Slime extends Mob implements Enemy {
 		$this->setType($slimeType);
 
 		parent::initEntity($nbt);
-
-		$this->moveControl = new SlimeMoveControl($this);
 	}
 
 	public function saveNBT() : CompoundTag{
@@ -134,6 +133,10 @@ class Slime extends Mob implements Enemy {
 		$this->setHealth($this->type->getHealth());
 		$this->setMovementSpeed($this->getDefaultMovementSpeed());
 		$this->setAttackDamage($this->type->getAttackDamage());
+	}
+
+	protected function createMoveControl() : MoveControl{
+		return new SlimeMoveControl($this);
 	}
 
 	public function getMoveControl() : SlimeMoveControl{

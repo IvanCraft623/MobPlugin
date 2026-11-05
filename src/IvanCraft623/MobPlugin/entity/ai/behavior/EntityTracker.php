@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\math\Vector3;
@@ -53,7 +53,7 @@ class EntityTracker implements PosTracker {
 		return $this->target->getPosition()->floor();
 	}
 
-	public function isVisibleBy(Living $entity) : bool{
+	public function isVisibleBy(Mob $entity) : bool{
 		if ($this->target instanceof PMLiving) {
 			if (!$this->target->isAlive()) {
 				return false;

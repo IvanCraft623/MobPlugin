@@ -24,41 +24,58 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\Locomotion;
-use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\world\BlockGetter;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\math\Vector3;
 use function abs;
 
 /**
- * Walks a mob along its path and notices when it gets nowhere.
+ * The path a mob is following: advances it, gives the next position to reach and notices when the mob gets
+ * nowhere.
  *
  * @internal
  */
 final class PathFollower{
-	/** Move control target for node $wantedNodeIndex of $wantedPath */
+	private ?PathCursor $cursor = null;
+
+	/** Move control target for node $wantedNodeIndex of $wantedCursor */
 	private ?Vector3 $wantedPosition = null;
-	private ?Path $wantedPath = null;
+	private ?PathCursor $wantedCursor = null;
 	private int $wantedNodeIndex = -1;
 
 	private StuckDetector $stuckDetector;
 
-	public function __construct(private Mob $mob){
+	public function __construct(private PathfinderMob $mob){
 		$this->stuckDetector = new StuckDetector();
 	}
 
+	public function getCursor() : ?PathCursor{
+		return $this->cursor;
+	}
+
 	/**
-	 * Advances $path when the mob reaches its next node or can cut the corner.
+	 * Follows $cursor from its first node, or nothing for null.
 	 */
-	public function follow(Path $path, Locomotion $locomotion, TraversalRules $rules, int $tick) : StuckResult{
-		if ($path->isDone()) {
+	public function setCursor(?PathCursor $cursor) : void{
+		$this->cursor = $cursor;
+		$this->forgetWantedPosition();
+		$this->resetNodeProgress();
+	}
+
+	/**
+	 * Advances the path when the mob reaches its next node or can cut the corner.
+	 */
+	public function follow(Locomotion $locomotion, TraversalRules $rules, int $tick) : StuckResult{
+		$cursor = $this->cursor;
+		if ($cursor === null || $cursor->isDone()) {
 			return StuckResult::NONE;
 		}
 
 		$position = $locomotion->pathPosition($this->mob, $rules);
 		$width = $this->mob->getSize()->getWidth();
 		$maxDistanceToWaypoint = $width > 0.75 ? $width / 2 : 0.75 - $width / 2;
-		$nodePos = $path->getNextNodePos();
+		$nodePos = $cursor->getNextNodePos();
 		$mobPos = $this->mob->getPosition();
 
 		$dx = abs($mobPos->getX() - ($nodePos->getX() + 0.5));
@@ -66,26 +83,33 @@ final class PathFollower{
 		$dz = abs($mobPos->getZ() - ($nodePos->getZ() + 0.5));
 
 		if (($dx < $maxDistanceToWaypoint && $dz < $maxDistanceToWaypoint && $dy < 1) ||
-			($locomotion->canCutCorner($path->getNextNode()->type) && $this->shouldTargetNextNodeInDirection($path, $locomotion, $position))
+			($locomotion->canCutCorner($cursor->getNextNode()->type) && $this->shouldTargetNextNodeInDirection($cursor, $locomotion, $position))
 		) {
-			$path->advance();
+			$cursor->advance();
 		}
 
 		return $this->stuckDetector->check(
 			$tick,
 			$position,
-			$this->mob->getMotionSpeed(),
-			$path->isDone() ? null : $path->getNextNodePos(),
+			$this->mob->getMovementInput()->getSpeed(),
+			$cursor->isDone() ? null : $cursor->getNextNodePos(),
 			$this->mob->getWorld()->getTime()
 		);
 	}
 
-	public function getWantedPosition(Path $path, Locomotion $locomotion, BlockGetter $blockGetter) : Vector3{
-		$nodeIndex = $path->getNextNodeIndex();
-		if ($this->wantedPosition === null || $path !== $this->wantedPath || $nodeIndex !== $this->wantedNodeIndex) {
-			$nextPos = $path->getNextNodeCenter();
+	/**
+	 * Where the mob goes next, null without a path left to walk.
+	 */
+	public function getWantedPosition(Locomotion $locomotion, BlockGetter $blockGetter) : ?Vector3{
+		$cursor = $this->cursor;
+		if ($cursor === null || $cursor->isDone()) {
+			return null;
+		}
+		$nodeIndex = $cursor->getNextNodeIndex();
+		if ($this->wantedPosition === null || $cursor !== $this->wantedCursor || $nodeIndex !== $this->wantedNodeIndex) {
+			$nextPos = $cursor->getNextNodeCenter();
 			$this->wantedPosition = new Vector3($nextPos->x, $locomotion->wantedY($this->mob, $blockGetter, $nextPos), $nextPos->z);
-			$this->wantedPath = $path;
+			$this->wantedCursor = $cursor;
 			$this->wantedNodeIndex = $nodeIndex;
 		}
 		return $this->wantedPosition;
@@ -96,7 +120,7 @@ final class PathFollower{
 	 */
 	public function forgetWantedPosition() : void{
 		$this->wantedPosition = null;
-		$this->wantedPath = null;
+		$this->wantedCursor = null;
 	}
 
 	public function restartStuckCheck(int $tick, Vector3 $position) : void{
@@ -107,21 +131,21 @@ final class PathFollower{
 		$this->stuckDetector->resetNode();
 	}
 
-	private function shouldTargetNextNodeInDirection(Path $path, Locomotion $locomotion, Vector3 $direction) : bool{
-		if ($path->getNextNodeIndex() + 1 >= $path->getNodeCount()) {
+	private function shouldTargetNextNodeInDirection(PathCursor $cursor, Locomotion $locomotion, Vector3 $direction) : bool{
+		if ($cursor->getNextNodeIndex() + 1 >= $cursor->getPath()->getNodeCount()) {
 			return false;
 		}
 
-		$nodePos = $path->getNextNodePos()->add(0.5, 0, 0.5);
+		$nodePos = $cursor->getNextNodePos()->add(0.5, 0, 0.5);
 
 		if ($direction->distanceSquared($nodePos) > 4) {
 			return false;
 		}
-		if ($locomotion->canMoveDirectly($this->mob, $direction, $path->getNextNodeCenter())) {
+		if ($locomotion->canMoveDirectly($this->mob, $direction, $cursor->getNextNodeCenter())) {
 			return true;
 		}
 
-		$nextNodePos = $path->getNodePos($path->getNextNodeIndex() + 1)->add(0.5, 0, 0.5);
+		$nextNodePos = $cursor->getPath()->getNodePos($cursor->getNextNodeIndex() + 1)->add(0.5, 0, 0.5);
 
 		$currentNodeToDirection = $nodePos->subtractVector($direction);
 		$nextNodeToDirection = $nextNodePos->subtractVector($direction);

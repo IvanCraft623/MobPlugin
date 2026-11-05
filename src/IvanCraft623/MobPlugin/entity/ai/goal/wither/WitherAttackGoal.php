@@ -366,7 +366,7 @@ class WitherAttackGoal extends Goal {
 		);
 
 		// Estimate dash timeout
-		$this->countdown = (int) ceil($this->dashAttackRange / ($this->dashSpeedModifier * $this->mob->getFlyingSpeed()));
+		$this->countdown = (int) ceil($this->dashAttackRange / ($this->dashSpeedModifier * $this->mob->getAirMovementSpeed()));
 	}
 
 	private function tickDashing() : void {

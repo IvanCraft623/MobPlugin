@@ -82,7 +82,7 @@ class WitherExplodeOnHalfLifeGoal extends Goal {
 
 		$this->mob->addMotion(
 			0,
-			-$this->speedModifier * $this->mob->getFlyingSpeed(),
+			-$this->speedModifier * $this->mob->getAirMovementSpeed(),
 			0
 		);
 

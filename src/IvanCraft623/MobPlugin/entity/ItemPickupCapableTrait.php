@@ -26,12 +26,20 @@ namespace IvanCraft623\MobPlugin\entity;
 use Closure;
 
 use pocketmine\entity\object\ItemEntity;
+use pocketmine\event\entity\EntityItemPickupEvent;
+use pocketmine\inventory\ArmorInventory;
 use pocketmine\inventory\Inventory;
+use pocketmine\item\Armor;
 use pocketmine\item\Item;
+use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\network\mcpe\EntityEventBroadcaster;
+use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\utils\Utils as PMUtils;
 use pocketmine\world\World;
 use function exp;
+use function max;
+use function min;
 use function pow;
 
 trait ItemPickupCapableTrait {
@@ -95,9 +103,98 @@ trait ItemPickupCapableTrait {
 		return $nbt;
 	}
 
+	public function pickupItem(ItemEntity $entity, int $count) : void {
+		$item = $entity->getItem();
+		if ($count > $item->getCount()) {
+			throw new \InvalidArgumentException("Pickup take count cannot be larger than item count");
+		}
+
+		$equipSlot = 0;
+		$equipInventory = $this->getEquipInventoryAndSlot($item, $equipSlot);
+
+		$equippedItem = $equipInventory->getItem($equipSlot);
+		$originalCount = $item->getCount();
+
+		// How many units fit in the target slot
+		// in vanilla bedrock they actually don't care, mobs will equip one stack of
+		// carved pumpkins even if armor inventory stack size is 1.
+		$canStack = !$equippedItem->isNull() && $equippedItem->canStackWith($item);
+		$maxStackSize = min($equipInventory->getMaxStackSize(), $item->getMaxStackSize());
+		$canAdd = max(0, $maxStackSize - ($canStack ? $equippedItem->getCount() : 0));
+		$pickupCount = min($count, $canAdd);
+
+		if ($pickupCount <= 0) {
+			return;
+		}
+		$item->setCount($pickupCount);
+
+		$ev = new EntityItemPickupEvent($this, $entity, $item, $equipInventory);
+		$ev->call();
+		if ($ev->isCancelled()) {
+			return;
+		}
+
+		$evItem = $ev->getItem();
+
+		if ($evItem->getCount() <= 0) {
+			$entity->flagForDespawn();
+			return;
+		}
+
+		$equipInventory = $ev->getInventory();
+		if ($equipInventory === null || !$equipInventory->slotExists($equipSlot)) {
+			$entity->flagForDespawn();
+			return;
+		}
+
+		// Re-read slot since inventory may have changed, re-evaluate stackability once
+		$equippedItem = $equipInventory->getItem($equipSlot);
+		$canStack = !$equippedItem->isNull() && $equippedItem->canStackWith($evItem);
+
+		if (!$canStack && !$equippedItem->isNull()) {
+			$this->getWorld()->dropItem($this->location, $equippedItem);
+			$equipInventory->clear($equipSlot);
+		}
+
+		// Reclamp count in case plugins increased it beyond what fits
+		$currentCount = $canStack ? $equippedItem->getCount() : 0;
+		$canAddAfterEv = max(0, min($equipInventory->getMaxStackSize(), $evItem->getMaxStackSize()) - $currentCount);
+		$finalCount = min($evItem->getCount(), $canAddAfterEv);
+
+		if ($finalCount <= 0) {
+			return;
+		}
+		$evItem->setCount($finalCount);
+
+		// Visual and sound effects
+		NetworkBroadcastUtils::broadcastEntityEvent($this->getViewers(),
+			fn(EntityEventBroadcaster $broadcaster, array $recipients) =>
+				$broadcaster->onPickUpItem($recipients, $this, $entity)
+		);
+		if ($equipInventory instanceof ArmorInventory &&
+			$evItem instanceof Armor &&
+			($equipSound = $evItem->getMaterial()->getEquipSound()) !== null
+		) {
+			$this->broadcastSound($equipSound);
+		}
+
+		$slotItem = $equipInventory->getItem($equipSlot);
+		if ($slotItem->isNull()) {
+			$equipInventory->setItem($equipSlot, $evItem);
+		} else {
+			$slotItem->setCount($slotItem->getCount() + $evItem->getCount());
+			$equipInventory->setItem($equipSlot, $slotItem);
+		}
+
+		$remaining = $originalCount - $finalCount;
+		if ($remaining > 0) {
+			$entity->getWorld()->dropItem($entity->getLocation(), (clone $item)->setCount($remaining), Vector3::zero(), 0);
+		}
+		$entity->flagForDespawn();
+	}
+
 	abstract public function getWorld() : World;
 	abstract protected function updatePickupItemsGoal(bool $enabled) : void;
-	abstract public function pickupItem(ItemEntity $entity, int $count) : void;
 	abstract public function getEquipInventoryAndSlot(Item $item, int &$slot) : Inventory;
 
 	/**

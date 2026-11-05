@@ -30,7 +30,7 @@ use pocketmine\entity\Entity;
 class AxolotlAttackGoal extends MeleeAttackGoal{
 
 	public function __construct(private Axolotl $axolotl){
-		parent::__construct($axolotl, 1, true);
+		parent::__construct($axolotl, 1);
 	}
 
 	protected function attackEntity(Entity $target) : bool{

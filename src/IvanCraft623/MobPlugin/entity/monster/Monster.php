@@ -41,8 +41,8 @@ abstract class Monster extends PathfinderMob implements Enemy {
 		return false;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		if (!$this->isOnFire() && $this->isSunSensitive()) {
 			$world = $this->getWorld();

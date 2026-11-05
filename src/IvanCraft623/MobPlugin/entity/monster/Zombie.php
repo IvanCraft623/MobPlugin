@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
@@ -69,6 +70,7 @@ use function count;
 use function mt_rand;
 
 class Zombie extends Monster implements Ageable, ItemPickupCapable {
+	use EquipmentTrait;
 	use ItemPickupCapableTrait {
 		initEntity as initEntityPickupTrait;
 		saveNBT as saveNBTPickupTrait;
@@ -128,7 +130,7 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		$this->pickupItemsGoal = (new PickupItemsGoal($this, 1, 2, 4))->setWantedItems(self::getWantedItems());
 
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(7, new WaterAvoidingRandomStrollGoal($this, 1));
 		//$this->goalSelector->addGoal(4, new DestroyEggGoal($this, 1.0, 3)); //TODO!
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 8));
@@ -231,8 +233,8 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 		return true;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		if (!$this->isAlive()) {
 			return;
@@ -260,7 +262,7 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 	}
 
 	public function getDrops() : array {
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ZOMBIE())];
+		$drops = [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::ZOMBIE())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
 			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()

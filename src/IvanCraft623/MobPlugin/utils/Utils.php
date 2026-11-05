@@ -42,19 +42,16 @@ use pocketmine\world\World;
 use function abs;
 use function array_key_last;
 use function array_sum;
-use function cos;
 use function floor;
 use function fmod;
 use function intdiv;
 use function max;
 use function method_exists;
 use function min;
-use function sin;
 use function str_replace;
 use function strtolower;
 use function trim;
 use function ucwords;
-use const M_PI;
 
 class Utils {
 
@@ -103,6 +100,17 @@ class Utils {
 		return $result;
 	}
 
+	/**
+	 * @return float the angle in [0, 360), like PocketMine's yaw
+	 */
+	public static function normalizeDegrees(float $degrees) : float {
+		$result = fmod($degrees, 360);
+		if ($result < 0) {
+			$result += 360;
+		}
+		return $result >= 360 ? 0.0 : $result;
+	}
+
 	public static function degreesDifference(float $degrees1, float $degrees2) : float {
 		return self::wrapDegrees($degrees2 - $degrees1);
 	}
@@ -137,22 +145,6 @@ class Utils {
 		}
 
 		return false;
-	}
-
-	public static function movementInputToMotion(Vector3 $movementInput, float $yaw, float $speed) : Vector3{
-		$length = $movementInput->lengthSquared();
-		if ($length < 1.0E-7) {
-			return Vector3::zero();
-		}
-
-		$vec3 = (($length > 1) ? $movementInput->normalize() : $movementInput)->multiply($speed);
-		$f = sin($yaw * (M_PI / 180));
-		$g = cos($yaw * (M_PI / 180));
-		return new Vector3(
-			$vec3->x * $g - $vec3->z * $f,
-			$vec3->y,
-			$vec3->z * $g + $vec3->x * $f
-		);
 	}
 
 	/**

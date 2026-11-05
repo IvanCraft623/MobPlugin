@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\ai\memory\WalkTarget;
-use IvanCraft623\MobPlugin\entity\Living;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -38,39 +37,39 @@ use function is_array;
 
 class BehaviorUtils {
 
-	public static function lockGazeAndWalkToEachOther(Living $entity1, Living $entity2, float $speedModifier) : void {
+	public static function lockGazeAndWalkToEachOther(Mob $entity1, Mob $entity2, float $speedModifier) : void {
 		self::lookAtEachOther($entity1, $entity2);
 		self::setWalkAndLookTargetMemoriesToEachOther($entity1, $entity2, $speedModifier);
 	}
 
-	private static function lookAtEachOther(Living $entity1, Living $entity2) : void {
+	private static function lookAtEachOther(Mob $entity1, Mob $entity2) : void {
 		self::lookAtEntity($entity1, $entity2);
 		self::lookAtEntity($entity2, $entity1);
 	}
 
-	public static function lookAtEntity(Living $entity, PMLiving $target) : void {
+	public static function lookAtEntity(Mob $entity, PMLiving $target) : void {
 		$entity->getBrain()->setMemory(MemoryModuleType::LOOK_TARGET(), new EntityTracker($target, true));
 	}
 
-	private static function setWalkAndLookTargetMemoriesToEachOther(Living $entity1, Living $entity2, float $speedModifier) : void {
+	private static function setWalkAndLookTargetMemoriesToEachOther(Mob $entity1, Mob $entity2, float $speedModifier) : void {
 		$closeEnoughDist = 2;
 		self::setWalkToEntityAndLookTargetMemories($entity1, $entity2, $speedModifier, $closeEnoughDist);
 		self::setWalkToEntityAndLookTargetMemories($entity2, $entity1, $speedModifier, $closeEnoughDist);
 	}
 
-	public static function setWalkToEntityAndLookTargetMemories(Living $entity, Entity $target, float $speedModifier, int $closeEnoughDist) : void {
+	public static function setWalkToEntityAndLookTargetMemories(Mob $entity, Entity $target, float $speedModifier, int $closeEnoughDist) : void {
 		$walkTarget = new WalkTarget(new EntityTracker($target, false), $speedModifier, $closeEnoughDist);
 		$entity->getBrain()->setMemory(MemoryModuleType::LOOK_TARGET(), new EntityTracker($target, true));
 		$entity->getBrain()->setMemory(MemoryModuleType::WALK_TARGET(), $walkTarget);
 	}
 
-	public static function setWalkToPositionAndLookTargetMemories(Living $entity, Position $target, float $speedModifier, int $closeEnoughDist) : void {
+	public static function setWalkToPositionAndLookTargetMemories(Mob $entity, Position $target, float $speedModifier, int $closeEnoughDist) : void {
 		$walkTarget = new WalkTarget(new PositionTracker($target), $speedModifier, $closeEnoughDist);
 		$entity->getBrain()->setMemory(MemoryModuleType::LOOK_TARGET(), new PositionTracker($target));
 		$entity->getBrain()->setMemory(MemoryModuleType::WALK_TARGET(), $walkTarget);
 	}
 
-	public static function dropItem(Living $entity, Item $item) : void {
+	public static function dropItem(Mob $entity, Item $item) : void {
 		$entity->getWorld()->dropItem($entity->getLocation()->add(0, $entity->getEyeHeight() - 0.3, 0), $item, $entity->getDirectionVector()->multiply(0.4), 40);
 	}
 
@@ -88,7 +87,7 @@ class BehaviorUtils {
 		return $distanceSquared <= $maximumMeleeAttackDistance;
 	}
 
-	public static function canSee(Living $entity, PMLiving $target) : bool {
+	public static function canSee(Mob $entity, PMLiving $target) : bool {
 		$brain = $entity->getBrain();
 		if ($brain->hasMemoryValue(MemoryModuleType::VISIBLE_LIVING_ENTITIES())) {
 			$value = $brain->getMemory(MemoryModuleType::VISIBLE_LIVING_ENTITIES());

@@ -24,51 +24,44 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
-use IvanCraft623\MobPlugin\MobPlugin;
-use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
-use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Lava;
 use pocketmine\block\Liquid;
 use pocketmine\block\Water;
-use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
-use pocketmine\entity\EntityFactory;
 use pocketmine\entity\Living as PMLiving;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
-use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
-use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
+use pocketmine\network\mcpe\protocol\MoveActorAbsolutePacket;
 use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
 use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
-use pocketmine\utils\Random;
-use pocketmine\world\Position;
-use pocketmine\world\World;
 use function abs;
+use function atan2;
 use function floor;
 use function get_class;
 use function max;
 use function min;
 use function sqrt;
+use const M_PI;
 
+/**
+ * Patches for PocketMine-MP's Living (5.44.2): what it gets wrong or lacks. Mob AI lives in Mob.
+ */
 abstract class Living extends PMLiving {
-	//TODO!
-
 	/** Strength of a single push between two entities. */
 	public const ENTITY_PUSH_FORCE = 0.05;
 	/** Entities whose box is this close (x and z) to ours push us. */
@@ -84,25 +77,19 @@ abstract class Living extends PMLiving {
 	public const LEVITATION_MOTION_PER_LEVEL = 0.05;
 	public const LEVITATION_LERP_FACTOR = 0.2;
 
-	private const TAG_COMPONENT_GROUPS = "definitions"; //TAG_List
-
-	protected Random $random;
-
-	protected ComponentGroups $componentGroups;
-
 	protected float $stepHeight = 0.6;
 
 	protected float $verticalDrag;
 
 	protected MobInventory $inventory;
 
-	protected Brain $brain;
+	/**
+	 * PM only has the body yaw; this is where the head looks, sent in the movement packets.
+	 * Remove when PocketMine supports it, see https://github.com/pmmp/PocketMine-MP/issues/6503
+	 */
+	protected float $headYaw;
 
-	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
-
-	protected int $lastDamageByEntityTick = -1; //server tick
-
-	protected bool $hasBeenDamagedByPlayer = false;
+	private float $lastHeadYaw;
 
 	/** Server tick the liquid immersion was computed for */
 	private int $immersionTick = -1;
@@ -116,19 +103,11 @@ abstract class Living extends PMLiving {
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->random = MobPlugin::getInstance()->getRandom();
 		$this->inventory = new MobInventory($this);
 
 		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
+		$this->headYaw = $this->lastHeadYaw = $this->location->yaw;
 
-		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
-			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
-		} else {
-			$this->componentGroups = new ComponentGroups();
-			if ($this->canSaveWithChunk()) {
-				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
-			}
-		}
 		$syncHeldItem = function() : void{
 			foreach($this->getViewers() as $viewer){
 				$this->sendHeldItemsPacket($viewer);
@@ -153,17 +132,17 @@ abstract class Living extends PMLiving {
 			self::populateInventoryFromListTag($this->inventory, $inventoryItems);
 			self::populateInventoryFromListTag($this->armorInventory, $armorInventoryItems);
 		}
-
-		if ($nbt->count() === 0) { //Entity just created!
-			$this->onCreate();
-		}
-
-		$this->brain = $this->makeBrain();
 	}
 
 	protected function sendSpawnPacket(Player $player) : void{
 		parent::sendSpawnPacket($player);
-		$this->sendHeldItemsPacket($player);
+		if (abs(Utils::wrapDegrees($this->headYaw - $this->location->yaw)) > 1.0) {
+			//The spawn packet gives the head the body yaw
+			$player->getNetworkSession()->sendDataPacket($this->createMovementPacket());
+		}
+		if (!$this->inventory->getMainHand()->isNull() || !$this->inventory->getOffHand()->isNull()) {
+			$this->sendHeldItemsPacket($player);
+		}
 	}
 
 	protected function sendHeldItemsPacket(Player $player) : void{
@@ -185,30 +164,6 @@ abstract class Living extends PMLiving {
 	}
 
 	/**
-	 * Called when this entity has just been created and is completely clean.
-	 */
-	public function onCreate() : void{
-		$this->generateEquipment();
-	}
-
-	/**
-	 * Called when the entity is created to give it its starting gear.
-	 * Subclasses must equip the items themselves.
-	 */
-	public function generateEquipment() : void{}
-
-	/**
-	 * @param Player[]|null $targets
-	 */
-	public function playSpawnSound(?array $targets = null) : void{
-		$this->broadcastSound(new EntitySpawnSound($this), $targets);
-	}
-
-	protected function makeBrain() : Brain{
-		return new Brain([], [], []);
-	}
-
-	/**
 	 * @param Item[] $items
 	 * @phpstan-param array<int, Item> $items
 	 */
@@ -221,48 +176,12 @@ abstract class Living extends PMLiving {
 		$inventory->getListeners()->add(...$listeners);
 	}
 
-	public function getRandom() : Random {
-		return $this->random;
-	}
-
-	public function getDefaultMovementSpeed() : float {
-		return 0.25;
-	}
-
-	public function getMaxUpStep() : float {
-		return $this->stepHeight;
-	}
-
 	public function getInventory() : MobInventory{
 		return $this->inventory;
 	}
 
-	public function getBrain() : Brain{
-		return $this->brain;
-	}
-
 	public function getServer() : Server{
 		return $this->location->getWorld()->getServer();
-	}
-
-	public function canAttack(Entity $target) : bool {
-		if (!$target->isAlive()) {
-			return false;
-		}
-
-		if ($this->getWorld()->getDifficulty() === World::DIFFICULTY_PEACEFUL) {
-			return false;
-		}
-
-		if ($target instanceof Player && $target->isCreative()) {
-			return false;
-		}
-
-		return true;
-	}
-
-	public function isSensitiveToWater() : bool{
-		return false;
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
@@ -272,19 +191,12 @@ abstract class Living extends PMLiving {
 		$hasUpdate = $this->pushOutOfEntities() || $hasUpdate;
 		CustomTimings::$entityPush->stopTiming();
 
-		if ($this->lastDamageByEntity !== null &&
-			$this->lastDamageByEntityTick !== -1 &&
-			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
-		) {
-			//The last damager is only remembered for a limited time.
-			$this->setLastDamageByEntity(null);
-		}
-
 		return $hasUpdate;
 	}
 
 	/**
-	 * Entity::onUpdate() with the motion reductions (tryChangeMovement()) moved after the move.
+	 * Copy of Entity::onUpdate() (PocketMine-MP 5.44.2) with the motion reductions (tryChangeMovement()) moved after
+	 * the move. Re-check it against Entity::onUpdate() when updating PocketMine-MP.
 	 */
 	public function onUpdate(int $currentTick) : bool{
 		if($this->closed){
@@ -349,6 +261,96 @@ abstract class Living extends PMLiving {
 		return ($hasUpdate || $this->hasMovementUpdate());
 	}
 
+	public function getHeadYaw() : float{
+		return $this->headYaw;
+	}
+
+	public function setHeadYaw(float $headYaw) : void{
+		$this->headYaw = Utils::normalizeDegrees($headYaw);
+	}
+
+	/**
+	 * Keeps the yaw in [0, 360), as PM's lookAt() does.
+	 */
+	public function setRotation(float $yaw, float $pitch) : void{
+		parent::setRotation(Utils::normalizeDegrees($yaw), $pitch);
+	}
+
+	/**
+	 * Turns the whole mob toward $target, not just the head like LookControl. Without limits it turns instantly, head
+	 * included, as PM does. With them it turns at most that many degrees per tick and leaves the head alone, which
+	 * mobs that move relative to their facing, like bow strafing, need.
+	 */
+	public function lookAt(Vector3 $target, ?float $maxYawChange = null, ?float $maxPitchChange = null) : void{
+		if ($maxYawChange === null && $maxPitchChange === null) {
+			parent::lookAt($target);
+
+			$this->headYaw = $this->location->yaw;
+			return;
+		}
+
+		$xDist = $target->x - $this->location->x;
+		$zDist = $target->z - $this->location->z;
+		$yaw = (atan2($zDist, $xDist) * (180 / M_PI)) - 90;
+		$pitch = -(atan2($target->y - ($this->location->y + $this->getEyeHeight()), sqrt($xDist ** 2 + $zDist ** 2)) * (180 / M_PI));
+
+		if ($maxYawChange !== null) {
+			$yaw = $this->location->yaw + Utils::clamp(Utils::degreesDifference($this->location->yaw, $yaw), -$maxYawChange, $maxYawChange);
+		}
+		if ($maxPitchChange !== null) {
+			$pitch = $this->location->pitch + Utils::clamp(Utils::degreesDifference($this->location->pitch, $pitch), -$maxPitchChange, $maxPitchChange);
+		}
+
+		$this->setRotation($yaw, $pitch);
+	}
+
+	/**
+	 * A teleported mob's head faces the same way as its body.
+	 */
+	protected function setPositionAndRotation(Vector3 $pos, float $yaw, float $pitch) : bool{
+		if (!parent::setPositionAndRotation($pos, $yaw, $pitch)) {
+			return false;
+		}
+
+		$this->setHeadYaw($yaw);
+
+		return true;
+	}
+
+	/**
+	 * PM only sends a movement packet when the body moves or turns.
+	 */
+	protected function updateMovement(bool $teleport = false) : void{
+		parent::updateMovement($teleport);
+
+		if (abs(Utils::wrapDegrees($this->headYaw - $this->lastHeadYaw)) > 1.0) {
+			$this->broadcastMovement($teleport);
+		}
+	}
+
+	/**
+	 * Entity::broadcastMovement() sends the body yaw as the head yaw.
+	 */
+	protected function broadcastMovement(bool $teleport = false) : void{
+		$this->lastHeadYaw = $this->headYaw;
+
+		NetworkBroadcastUtils::broadcastPackets($this->hasSpawned, [$this->createMovementPacket()]);
+	}
+
+	private function createMovementPacket() : MoveActorAbsolutePacket{
+		return MoveActorAbsolutePacket::create(
+			$this->id,
+			$this->getOffsetPosition($this->location),
+			$this->location->pitch,
+			$this->location->yaw,
+			$this->headYaw,
+			$this->onGround ? MoveActorAbsolutePacket::FLAG_GROUND : 0
+		);
+	}
+
+	/**
+	 * PM does not force a movement update on teleports.
+	 */
 	protected function setPosition(Vector3 $pos) : bool{
 		//The floor is only known for where move() left the mob
 		$this->setForceMovementUpdate();
@@ -356,6 +358,9 @@ abstract class Living extends PMLiving {
 		return parent::setPosition($pos);
 	}
 
+	/**
+	 * Replaces Living::tryChangeMovement(): water drag and gravity, levitation, and climbing.
+	 */
 	protected function tryChangeMovement() : void{
 		$inWater = $this->isInWater();
 		$motionX = $this->motion->x;
@@ -403,6 +408,9 @@ abstract class Living extends PMLiving {
 		return $this->canClimbWalls() && $this->getWorld()->getBlock($this->location)->canClimb();
 	}
 
+	/**
+	 * PM has no entity pushing.
+	 */
 	protected function pushOutOfEntities() : bool {
 		if(!$this->canBePushed()){
 			return false;
@@ -451,21 +459,9 @@ abstract class Living extends PMLiving {
 		return $other instanceof PMLiving; //TODO: other not be a vehicle
 	}
 
-	public function canSee(Entity $entity) : bool{
-		$start = $this->getEyePos();
-		$end = $entity->getEyePos();
-		if ($start->distanceSquared($end) > 0.01) {
-			foreach(VoxelRayTrace::betweenPoints($start, $end) as $vector3){
-				$block = $this->getWorld()->getBlockAt((int) $vector3->x, (int) $vector3->y, (int) $vector3->z);
-
-				if($block->getTypeId() !== BlockTypeIds::AIR && $block->calculateIntercept($start, $end) !== null){
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
+	/**
+	 * PM's jump() ignores liquids.
+	 */
 	public function jump() : void{
 		if ($this->getWorld()->getBlock($this->location) instanceof Liquid) {
 			//Hardcode liquid friction because PM doesn't implement it yet :(
@@ -475,6 +471,9 @@ abstract class Living extends PMLiving {
 		}
 	}
 
+	/**
+	 * PM ignores jump boost.
+	 */
 	public function getJumpVelocity() : float{
 		if (!$this->onGround) {
 			return $this->jumpVelocity;
@@ -506,6 +505,9 @@ abstract class Living extends PMLiving {
 		return $this->lavaImmersion;
 	}
 
+	/**
+	 * PM only knows whether the mob is in a liquid block; this measures how deep, at most once per tick.
+	 */
 	private function updateImmersion() : void{
 		$tick = $this->server->getTick();
 		if ($this->immersionTick === $tick) {
@@ -534,18 +536,6 @@ abstract class Living extends PMLiving {
 		$this->lavaImmersion = $lavaTop === null ? 0.0 : min(1.0, ($lavaTop - $this->location->y) / $entityHeight);
 	}
 
-	public function getFluidJumpThreshold() : float{
-		return $this->getEyeHeight() < 0.4 ? 0 : 0.4;
-	}
-
-	public function canStandOnFluid(Liquid $liquid) : bool{
-		return false;
-	}
-
-	public function getMaxFallDistance() : int{
-		return 3;
-	}
-
 	public function getKnockbackResistance() : float{
 		return $this->knockbackResistanceAttr->getValue();
 	}
@@ -560,8 +550,6 @@ abstract class Living extends PMLiving {
 
 	public function saveNBT() : CompoundTag {
 		$nbt = parent::saveNBT();
-
-		$nbt->setTag(self::TAG_COMPONENT_GROUPS, $this->componentGroups->toListTag());
 
 		$inventoryTag = new ListTag([], NBT::TAG_Compound);
 		$nbt->setTag("Inventory", $inventoryTag);
@@ -585,47 +573,9 @@ abstract class Living extends PMLiving {
 		return $nbt;
 	}
 
-	public function setLastDamageCause(EntityDamageEvent $type) : void{
-		parent::setLastDamageCause($type);
-
-		if ($type instanceof EntityDamageByEntityEvent) {
-			$this->setLastDamageByEntity($type);
-
-			if ($type->getDamager() instanceof Player) {
-				$this->hasBeenDamagedByPlayer = true;
-			}
-		}
-	}
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
-		return $this->lastDamageByEntity;
-	}
-
-	public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void{
-		$this->lastDamageByEntity = $type;
-		if ($type === null) {
-			$this->lastDamageByEntityTick = -1;
-		} else {
-			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
-		}
-	}
-
-	public function getExpirableLastDamageByEntity() : ?EntityDamageByEntityEvent{
-		if ($this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100) {
-			return null;
-		}
-
-		return $this->lastDamageByEntity;
-	}
-
-	public function getLastDamageByEntityTick() : int{
-		return $this->lastDamageByEntityTick;
-	}
-
-	public function hasBeenDamagedByPlayer() : bool{
-		return $this->hasBeenDamagedByPlayer;
-	}
-
+	/**
+	 * Adds onInsideBlock(), for blocks that act on a mob inside them.
+	 */
 	protected function checkBlockIntersections() : void{
 		$hasUpdate = false;
 		foreach($this->getBlocksAroundWithEntityInsideActions() as $block){
@@ -645,23 +595,8 @@ abstract class Living extends PMLiving {
 		return false;
 	}
 
-	public function canAddEffect(EffectInstance $effect) : bool{
-		return true;
-	}
-
-	public function getLightLevelDependentMagicValue() : float{
-		return Utils::getLightLevelDependentMagicValue(Position::fromObject($this->getEyePos(), $this->location->world));
-	}
-
-	public function spawnTo(Player $player) : void{
-		parent::spawnTo($player);
-		$this->playSpawnSound([$player]);
-	}
-
 	protected function destroyCycles() : void{
-		$this->lastDamageByEntity = null;
-
-		unset($this->inventory, $this->brain);
+		unset($this->inventory);
 		parent::destroyCycles();
 	}
 }

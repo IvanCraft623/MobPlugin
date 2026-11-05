@@ -23,13 +23,13 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 use pocketmine\world\World;
 
 class AvoidSunlightGoal extends Goal {
 
-	public function __construct(protected Mob $entity) { }
+	public function __construct(protected PathfinderMob $entity) { }
 
 	public function canUse() : bool{
 		$time = $this->entity->getWorld()->getTimeOfDay();

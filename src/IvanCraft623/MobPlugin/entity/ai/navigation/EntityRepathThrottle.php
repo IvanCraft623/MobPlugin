@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathCursor;
 
 /**
  * Keeps goals that chase an entity from requesting a path every tick.
@@ -38,15 +38,15 @@ final class EntityRepathThrottle{
 	private ?int $block = null;
 
 	/** Path that request resolved to */
-	private ?Path $path = null;
+	private ?PathCursor $cursor = null;
 
 	private int $tick = 0;
 
-	public function shouldRequest(int $block, bool $pending, ?Path $current, int $tick) : bool{
+	public function shouldRequest(int $block, bool $pending, ?PathCursor $current, int $tick) : bool{
 		if ($block !== $this->block) {
 			return true;
 		}
-		if ($pending || ($current !== null && $current === $this->path && !$current->isDone())) {
+		if ($pending || ($current !== null && $current === $this->cursor && !$current->isDone())) {
 			return false;
 		}
 		//The path ended: retry only now and then
@@ -56,18 +56,18 @@ final class EntityRepathThrottle{
 	public function requested(int $block, bool $pending, int $tick) : void{
 		//It would get the running search's path, not its own
 		$this->block = $pending ? null : $block;
-		$this->path = null;
+		$this->cursor = null;
 		$this->tick = $tick;
 	}
 
-	public function resolved(int $block, ?Path $path) : void{
+	public function resolved(int $block, ?PathCursor $cursor) : void{
 		if ($this->block === $block) {
-			$this->path = $path;
+			$this->cursor = $cursor;
 		}
 	}
 
 	public function reset() : void{
 		$this->block = null;
-		$this->path = null;
+		$this->cursor = null;
 	}
 }

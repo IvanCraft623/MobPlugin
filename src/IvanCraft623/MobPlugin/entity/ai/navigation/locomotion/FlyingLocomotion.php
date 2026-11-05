@@ -23,39 +23,52 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
+use IvanCraft623\MobPlugin\entity\ai\control\FlightMoveControl;
+use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
-use IvanCraft623\MobPlugin\entity\Mob;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\evaluator\FlightNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\evaluator\FlightNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\block\utils\SupportType;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 
 class FlyingLocomotion extends Locomotion{
+	public function __construct(
+		private int $maxPitchChange = 10,
+		private bool $noGravity = false
+	) {
+	}
+
+	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
+		return new FlightMoveControl($mob, $navigation, $this->maxPitchChange, $this->noGravity);
+	}
+
 	public function createEvaluator() : NodeEvaluator{
 		return new FlightNodeEvaluator();
 	}
 
-	public function canFollowPath(Mob $mob, TraversalRules $rules) : bool{
+	public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool{
 		return $rules->canFloat || self::isInLiquid($mob);
 	}
 
-	public function pathPosition(Mob $mob, TraversalRules $rules) : Vector3{
+	public function pathPosition(PathfinderMob $mob, TraversalRules $rules) : Vector3{
 		return $mob->getPosition();
 	}
 
-	public function isStableDestination(Mob $mob, Vector3 $position) : bool{
+	public function isStableDestination(PathfinderMob $mob, Vector3 $position) : bool{
 		return $mob->getWorld()->getBlock($position)->getSupportType(Facing::UP) === SupportType::FULL;
 	}
 
-	public function canMoveDirectly(Mob $mob, Vector3 $from, Vector3 $to) : bool{
+	public function canMoveDirectly(PathfinderMob $mob, Vector3 $from, Vector3 $to) : bool{
 		return self::isClearForMovementBetween($mob, $from, $to, true);
 	}
 
-	public function advanceWithoutFollowing(Mob $mob, Path $path, Vector3 $position) : void{
-		if ($position->floor()->equals($path->getNextNodeCenter()->floor())) {
-			$path->advance();
+	public function advanceWithoutFollowing(PathfinderMob $mob, PathCursor $cursor, Vector3 $position) : void{
+		if ($position->floor()->equals($cursor->getNextNodeCenter()->floor())) {
+			$cursor->advance();
 		}
 	}
 }

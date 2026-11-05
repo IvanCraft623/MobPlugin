@@ -26,7 +26,6 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\data\bedrock\AxolotlVariantIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
-use IvanCraft623\MobPlugin\entity\ai\control\AquaticMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\axolotl\AxolotlAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\axolotl\HuntPreyGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\axolotl\PlayDeadGoal;
@@ -45,7 +44,7 @@ use IvanCraft623\MobPlugin\entity\BucketableTrait;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
@@ -111,7 +110,7 @@ class Axolotl extends Animal implements Bucketable{
 
 		$this->setMaxHealth(14);
 		$this->setAttackDamage(2);
-		$this->setPathfindingMalus(BlockPathType::WATER, 0);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
 	}
 
 	public function getDefaultMovementSpeed() : float{
@@ -151,8 +150,6 @@ class Axolotl extends Animal implements Bucketable{
 
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
-
-		$this->moveControl = new AquaticMoveControl($this, maxPitchChange: 85, maxYawChange: 10, waterSpeed: 1, landSpeed: 1, buoyant: false);
 
 		$this->variant = AxolotlVariantIdMap::getInstance()->fromId($nbt->getInt(self::TAG_VARIANT, -1)) ?? AxolotlVariant::getRandomNatural();
 

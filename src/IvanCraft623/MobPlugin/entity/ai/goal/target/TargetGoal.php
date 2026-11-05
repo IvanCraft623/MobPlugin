@@ -82,14 +82,7 @@ abstract class TargetGoal extends Goal {
 	}
 
 	public function canAttack(?Living $victim, TargetingConditions $conditions) : bool{
-		if ($victim === null ||
-			!$conditions->test($this->entity, $victim) ||
-			!$this->entity->isWithinRestriction($victim->getPosition())
-		) {
-			return false;
-		}
-
-		return true;
+		return $victim !== null && $conditions->test($this->entity, $victim);
 	}
 
 	public function setUnseenMemoryTicks(int $ticks) : self{

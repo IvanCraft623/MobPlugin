@@ -48,10 +48,9 @@ class AirPositionGenerator {
 	 */
 	public static function getPosTowards(PathfinderMob $entity, int $horizontalRange, int $verticalRange, int $yCenter, Vector3 $target, float $maxAngle) : ?Vector3{
 		$diff = $target->subtractVector($entity->getPosition());
-		$isRestricted = PositionGenerator::isRestricted($entity, $horizontalRange);
 
 		return PositionGenerator::generateRandomPosForEntity($entity,
-			static function() use ($entity, $horizontalRange, $verticalRange, $yCenter, $maxAngle, $diff, $isRestricted) : ?Vector3{
+			static function() use ($entity, $horizontalRange, $verticalRange, $yCenter, $maxAngle, $diff) : ?Vector3{
 				$pos = AirAndWaterPositionGenerator::generateRandomPos(
 					$entity,
 					$horizontalRange,
@@ -59,8 +58,7 @@ class AirPositionGenerator {
 					$yCenter,
 					$diff->x,
 					$diff->z,
-					$maxAngle,
-					$isRestricted
+					$maxAngle
 				);
 
 				return ($pos !== null && !$entity->getWorld()->getBlock($pos) instanceof Water) ? $pos : null;

@@ -63,7 +63,7 @@ class Skeleton extends AbstractSkeleton {
 	}
 
 	public function getDrops() : array{
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SKELETON())];
+		$drops = [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::SKELETON())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
 			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()

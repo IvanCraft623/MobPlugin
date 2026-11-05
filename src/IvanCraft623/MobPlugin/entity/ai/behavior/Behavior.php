@@ -25,7 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryStatus;
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 
 class Behavior {
 
@@ -48,7 +48,7 @@ class Behavior {
 		return $this->status;
 	}
 
-	public function tryStart(Living $entity, int $time) : bool {
+	public function tryStart(Mob $entity, int $time) : bool {
 		if ($this->hasRequiredMemories($entity) && $this->checkExtraStartConditions($entity)) {
 			$this->status = BehaviorStatus::RUNNING();
 			$duration = $this->minDuration + $entity->getRandom()->nextBoundedInt($this->maxDuration + 1 - $this->minDuration);
@@ -59,10 +59,10 @@ class Behavior {
 		return false;
 	}
 
-	protected function start(Living $entity, int $time) : void {
+	protected function start(Mob $entity, int $time) : void {
 	}
 
-	public function tickOrStop(Living $entity, int $time) : void {
+	public function tickOrStop(Mob $entity, int $time) : void {
 		if (!$this->timedOut($time) && $this->canStillUse($entity, $time)) {
 			$this->tick($entity, $time);
 		} else {
@@ -70,18 +70,18 @@ class Behavior {
 		}
 	}
 
-	protected function tick(Living $entity, int $time) : void {
+	protected function tick(Mob $entity, int $time) : void {
 	}
 
-	public function doStop(Living $entity, int $time) : void {
+	public function doStop(Mob $entity, int $time) : void {
 		$this->status = BehaviorStatus::STOPPED();
 		$this->stop($entity, $time);
 	}
 
-	protected function stop(Living $entity, int $time) : void {
+	protected function stop(Mob $entity, int $time) : void {
 	}
 
-	protected function canStillUse(Living $entity, int $time) : bool {
+	protected function canStillUse(Mob $entity, int $time) : bool {
 		return false;
 	}
 
@@ -89,11 +89,11 @@ class Behavior {
 		return $timestamp > $this->endTimestamp;
 	}
 
-	protected function checkExtraStartConditions(Living $entity) : bool {
+	protected function checkExtraStartConditions(Mob $entity) : bool {
 		return true;
 	}
 
-	protected function hasRequiredMemories(Living $entity) : bool {
+	protected function hasRequiredMemories(Mob $entity) : bool {
 		foreach ($this->entryCondition as $key => $data) {
 			if (!$entity->getBrain()->checkMemory($data[0], $data[1])) {
 				return false;

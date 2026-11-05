@@ -23,7 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\control;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Water;
 
@@ -32,7 +33,7 @@ use function atan2;
 use function sqrt;
 use const M_PI;
 
-class AquaticMoveControl extends MoveControl {
+class AquaticMoveControl extends PathMoveControl {
 
 	private const BUOYANCY = 0.005;
 	private const PITCH_STEP = 15.0;
@@ -49,24 +50,25 @@ class AquaticMoveControl extends MoveControl {
 	 * @param bool  $buoyant    whether water pushes the mob up
 	 */
 	public function __construct(
-		Mob $mob,
+		PathfinderMob $mob,
+		PathNavigation $navigation,
 		private int $maxPitchChange,
 		private int $maxYawChange,
 		private float $waterSpeed,
 		private float $landSpeed,
 		private bool $buoyant
 	) {
-		parent::__construct($mob);
+		parent::__construct($mob, $navigation);
 	}
 
-	public function tick() : void {
+	protected function drive() : void {
 		$inWater = $this->mob->isInWater();
 		$this->mob->setHasGravity(!$inWater);
 		if ($this->buoyant && $inWater) {
 			$this->mob->addMotion(0, self::BUOYANCY, 0);
 		}
 
-		$this->mob->setUpwardSpeed(0);
+		$this->mob->getMovementInput()->setUpward(0);
 
 		match ($this->operation) {
 			MoveOperation::MOVE_TO => $this->tickMoveTo($inWater),
@@ -78,11 +80,11 @@ class AquaticMoveControl extends MoveControl {
 
 	private function idle() : void {
 		$this->operation = MoveOperation::WAIT;
-		$this->mob->setMotionSpeed(0);
+		$this->mob->getMovementInput()->walk(0);
 	}
 
 	private function tickMoveTo(bool $inWater) : void {
-		if ($this->mob->getNavigation()->isDone()) {
+		if ($this->navigation->isDone()) {
 			$this->idle();
 			return;
 		}
@@ -95,7 +97,7 @@ class AquaticMoveControl extends MoveControl {
 		$dz = $this->wantedPosition->z - $location->z;
 		$distance = sqrt(($dx ** 2) + ($dy ** 2) + ($dz ** 2));
 		if ($distance < self::ARRIVAL_DISTANCE) {
-			$this->mob->setMotionSpeed(0);
+			$this->mob->getMovementInput()->walk(0);
 			return;
 		}
 
@@ -110,7 +112,7 @@ class AquaticMoveControl extends MoveControl {
 			}
 		} else {
 			$this->mob->setRotation($yaw, $location->pitch);
-			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed() * $this->landSpeed);
+			$this->mob->getMovementInput()->walk($this->speedModifier * $this->mob->getMovementSpeed() * $this->landSpeed);
 			$this->jumpIfNeeded($dx, $dy, $dz);
 		}
 	}
@@ -131,7 +133,7 @@ class AquaticMoveControl extends MoveControl {
 	 */
 	private function swim(float $yaw, float $yawError, float $pitch, float $dx, float $dy, float $dz, float $distance) : void {
 		$speed = $this->speedModifier * $this->mob->getWaterMovementSpeed() * $this->waterSpeed;
-		$this->mob->setMotionSpeed($speed);
+		$this->mob->getMovementInput()->walk($speed);
 
 		$distanceXZ = sqrt(($dx ** 2) + ($dz ** 2));
 		if (abs($dy) > self::EPSILON || $distanceXZ > self::EPSILON) {
@@ -144,7 +146,7 @@ class AquaticMoveControl extends MoveControl {
 		}
 		$this->mob->setRotation($yaw, $pitch);
 
-		$this->mob->setForwardSpeed($speed * ($distanceXZ / $distance) * self::getTurnPenalty($yawError));
-		$this->mob->setUpwardSpeed($speed * ($dy / $distance));
+		$this->mob->getMovementInput()->setForward($speed * ($distanceXZ / $distance) * self::getTurnPenalty($yawError));
+		$this->mob->getMovementInput()->setUpward($speed * ($dy / $distance));
 	}
 }

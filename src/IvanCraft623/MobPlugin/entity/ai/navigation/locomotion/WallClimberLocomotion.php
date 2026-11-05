@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use pocketmine\math\Vector3;
 
 /**
@@ -44,7 +44,7 @@ class WallClimberLocomotion extends GroundLocomotion{
 		$this->target = null;
 	}
 
-	public function tickWithoutPath(Mob $mob) : void{
+	public function tickWithoutPath(PathfinderMob $mob) : void{
 		if ($this->target === null) {
 			return;
 		}

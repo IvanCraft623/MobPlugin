@@ -90,7 +90,7 @@ class IronGolem extends Golem implements NeutralMob{
 	}
 
 	protected function registerGoals() : void{
-		$this->goalSelector->addGoal(1, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(1, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(2, new MoveTowardsTargetGoal($this, 0.9, 32));
 		$this->goalSelector->addGoal(4, new RandomStrollGoal($this, 0.6, 240));
 		$this->goalSelector->addGoal(5, new OfferFlowerGoal($this));
@@ -159,7 +159,7 @@ class IronGolem extends Golem implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::IRON_GOLEM())];
+		return $this->generateDeathLoot(VanillaLootTables::IRON_GOLEM());
 	}
 
 	public function getPickedItem() : ?Item{

@@ -29,6 +29,9 @@ use pocketmine\event\entity\EntityDamageEvent;
 use function array_keys;
 use function count;
 
+/**
+ * Implements DamageTracker.
+ */
 trait DamageTrackerTrait {
 
 	/**

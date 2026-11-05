@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\block\Door;
 use pocketmine\math\Vector3;
 use function floor;
@@ -51,12 +51,12 @@ abstract class DoorInteractGoal extends Goal {
 			return false;
 		}
 
-		$path = $this->entity->getNavigation()->getPath();
-		if ($path === null || $path->isDone()) {
+		$cursor = $this->entity->getNavigation()->getCursor();
+		if ($cursor === null || $cursor->isDone()) {
 			return false;
 		}
 
-		$doorPosition = $this->findDoor($path);
+		$doorPosition = $this->findDoor($cursor);
 		if ($doorPosition === null) {
 			return false;
 		}
@@ -66,11 +66,12 @@ abstract class DoorInteractGoal extends Goal {
 		return true;
 	}
 
-	private function findDoor(Path $path) : ?Vector3 {
+	private function findDoor(PathCursor $cursor) : ?Vector3 {
+		$path = $cursor->getPath();
 		$world = $this->entity->getWorld();
 		$location = $this->entity->getLocation();
 
-		$length = min($path->getNodeCount(), $path->getNextNodeIndex() + 2);
+		$length = min($path->getNodeCount(), $cursor->getNextNodeIndex() + 2);
 		for ($i = 0; $i < $length; $i++) {
 			$node = $path->getNode($i);
 			$x = (int) $node->x;

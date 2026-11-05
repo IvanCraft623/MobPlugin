@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RangedBowAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
@@ -61,6 +62,7 @@ use function mt_rand;
 use function sqrt;
 
 abstract class AbstractSkeleton extends Monster implements RangedAttackMob, ItemPickupCapable {
+	use EquipmentTrait;
 	use ItemPickupCapableTrait {
 		initEntity as initEntityPickupTrait;
 		saveNBT as saveNBTPickupTrait;
@@ -104,7 +106,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		//TODO: attack baby turtles
 
 		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, self::MIN_ATTACK_INTERVAL, self::MAX_ATTACK_INTERVAL, 15);
-		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25, false);
+		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25);
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(function(Inventory $inventory, int $slot, Item $oldItem) : void {
 			if ($slot !== MobInventory::SLOT_MAIN_HAND) {
 				return;

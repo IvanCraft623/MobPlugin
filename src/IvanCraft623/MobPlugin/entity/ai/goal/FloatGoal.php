@@ -23,11 +23,11 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 class FloatGoal extends Goal {
 
-	public function __construct(protected Mob $mob) {
+	public function __construct(protected PathfinderMob $mob) {
 		$this->setFlags(Goal::FLAG_JUMP);
 		$mob->getNavigation()->getRules()->canFloat = true;
 	}

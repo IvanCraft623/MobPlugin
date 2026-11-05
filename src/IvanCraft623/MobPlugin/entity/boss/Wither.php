@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\boss;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
-use IvanCraft623\MobPlugin\entity\ai\control\FlightMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
@@ -41,8 +40,6 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\DamageTracker;
 use IvanCraft623\MobPlugin\entity\DamageTrackerTrait;
-use IvanCraft623\MobPlugin\entity\Flyable;
-use IvanCraft623\MobPlugin\entity\FlyableTrait;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\MobType;
 use IvanCraft623\MobPlugin\entity\monster\Monster;
@@ -89,7 +86,7 @@ use pocketmine\world\Explosion;
 use pocketmine\world\sound\BowShootSound;
 use pocketmine\world\World;
 
-use IvanCraft623\MobPlugin\libs\_3dcccc563fec16aa\xenialdan\apibossbar\BossBar;
+use IvanCraft623\MobPlugin\libs\_f85971d879c01168\xenialdan\apibossbar\BossBar;
 
 use function atan2;
 use function ceil;
@@ -107,8 +104,7 @@ use const INF;
 use const M_PI;
 use const M_PI_2;
 
-class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, RangedAttackMob, DamageTracker{
-	use FlyableTrait;
+class Wither extends Monster implements Boss, Explosive, Powerable, RangedAttackMob, DamageTracker{
 	use DamageTrackerTrait {
 		attack as attackDamageTracker;
 	}
@@ -203,8 +199,6 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
-
-		$this->moveControl = new FlightMoveControl($this, 10, false);
 
 		$this->bossBar = BossBar::createForEntity($this)
 			->setTitle($this->getDisplayName())
@@ -326,7 +320,7 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_BOSS())];
+		return $this->generateDeathLoot(VanillaLootTables::WITHER_BOSS());
 	}
 
 	public function getPickedItem() : ?Item{
@@ -549,8 +543,8 @@ class Wither extends Monster implements Boss, Flyable, Explosive, Powerable, Ran
 		return $hasUpdate;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		//Randomly shot a wither skull in a 12s average.
 		if ($this->invulnerableTicks <= 0 && mt_rand(1, 240) === 1) {

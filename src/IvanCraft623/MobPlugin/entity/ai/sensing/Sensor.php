@@ -25,7 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\sensing;
 
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\MobPlugin;
 
 use pocketmine\entity\Living as PMLiving;
@@ -41,7 +41,7 @@ abstract class Sensor {
 		$this->timeToTick = MobPlugin::getInstance()->getRandom()->nextBoundedInt($rate);
 	}
 
-	public function tick(Living $entity) : void {
+	public function tick(Mob $entity) : void {
 		$timeToTick = $this->timeToTick - 1;
 		$this->timeToTick = $timeToTick;
 		if ($timeToTick <= 0) {
@@ -50,14 +50,14 @@ abstract class Sensor {
 		}
 	}
 
-	abstract protected function doTick(Living $entity) : void;
+	abstract protected function doTick(Mob $entity) : void;
 
 	/**
 	 * @return MemoryModuleType[]
 	 */
 	abstract public function requires() : array;
 
-	protected function isEntityTargetable(Living $entity, PMLiving $target) : bool {
+	protected function isEntityTargetable(Mob $entity, PMLiving $target) : bool {
 		if ($entity->getBrain()->isMemoryValue(MemoryModuleType::ATTACK_TARGET(), $target)) {
 			return self::TARGET_CONDITIONS_IGNORE_INVISIBILITY_TESTING()->test($entity, $target);
 		}
