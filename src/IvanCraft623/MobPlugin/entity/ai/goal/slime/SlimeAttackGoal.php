@@ -77,7 +77,7 @@ class SlimeAttackGoal extends Goal {
 
 		$target = $this->mob->getTargetEntity();
 		if ($target !== null) {
-			$this->mob->getLookControl()->setLookAt($target, 10, 10);
+			$this->mob->lookAt($target->getEyePos(), 10, 10);
 
 			if ($this->attackTimer <= 0 &&
 				$this->mob->getAttackDamage() > 0 &&

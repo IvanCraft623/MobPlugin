@@ -269,18 +269,6 @@ abstract class Mob extends Living {
 		$this->networkPropertiesDirty = true;
 	}
 
-	public function getMaxPitchRot() : int {
-		return 40;
-	}
-
-	public function getMaxYawRot() : int {
-		return 75;
-	}
-
-	public function getRotSpeed() : int {
-		return 10;
-	}
-
 	public function getAmbientSoundInterval() : float{
 		return 8;
 	}

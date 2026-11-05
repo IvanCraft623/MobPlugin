@@ -28,11 +28,22 @@ use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
+use function abs;
 use function atan2;
 use function sqrt;
 use const M_PI;
 
+/**
+ * Turns the head and pitch toward a look target. The body turns with the movement; Living::lookAt() with limits
+ * turns it too.
+ */
 class LookControl implements Control {
+
+	/** Degrees per tick the head turns back to the body when there is nothing to look at */
+	private const HEAD_RECENTER_SPEED = 10.0;
+
+	/** Horizontal motion squared above which the mob counts as moving */
+	private const MOVING_MOTION_SQUARED = 2.5E-7;
 
 	protected Mob $mob;
 
@@ -46,37 +57,63 @@ class LookControl implements Control {
 
 	protected bool $resetPitchOnTick = true;
 
-	public function __construct(Mob $mob) {
+	/**
+	 * @param int $rotSpeed    default yaw degrees per tick when looking at something
+	 * @param int $maxYawRot   most degrees the head can be away from the body
+	 * @param int $maxPitchRot default pitch degrees per tick when looking at something
+	 */
+	public function __construct(
+		Mob $mob,
+		private int $rotSpeed = 10,
+		private int $maxYawRot = 75,
+		private int $maxPitchRot = 40
+	) {
 		$this->mob = $mob;
+	}
+
+	public function getMaxYawRot() : int {
+		return $this->maxYawRot;
 	}
 
 	public function setLookAt(Entity|Vector3 $lookAt, ?float $yawMaxRotationAngle = null, ?float $pitchMaxRotationAngle = null) : void {
 		$this->wanted = $lookAt instanceof Entity ? $lookAt->getEyePos() : $lookAt;
-		$this->yawMaxRotationAngle = $yawMaxRotationAngle ?? $this->mob->getRotSpeed();
-		$this->pitchMaxRotationAngle = $pitchMaxRotationAngle ?? $this->mob->getMaxPitchRot();
+		$this->yawMaxRotationAngle = $yawMaxRotationAngle ?? $this->rotSpeed;
+		$this->pitchMaxRotationAngle = $pitchMaxRotationAngle ?? $this->maxPitchRot;
 		$this->lookAtTimer = 2;
 	}
 
 	public function tick() : void {
 		$location = $this->mob->getLocation();
 		$pitch = $this->resetPitchOnTick() ? 0.0 : $location->pitch;
+		$headYaw = $this->mob->getHeadYaw();
+
 		if ($this->lookAtTimer > 0) {
 			$this->lookAtTimer--;
 
-			$diff = $this->wanted->subtractVector($this->mob->getEyePos());
-			$this->mob->setRotation(
-				static::rotateTowards($location->yaw, (atan2($diff->z, $diff->x) * (180 / M_PI)) - 90, $this->yawMaxRotationAngle),
-				static::rotateTowards($pitch, -(atan2($diff->y, sqrt(($diff->x ** 2) + ($diff->z ** 2))) * (180 / M_PI)), $this->pitchMaxRotationAngle)
-			);
-		} elseif ($pitch !== $location->pitch) {
-			$this->mob->setRotation($location->yaw, $pitch);
-		}/* else {
-			$this->mob->setRotation(static::rotateTowards($location->yaw, $location->bodyYaw, 10.0), $location->pitch);
+			$dx = $this->wanted->x - $location->x;
+			$dy = $this->wanted->y - ($location->y + $this->mob->getEyeHeight());
+			$dz = $this->wanted->z - $location->z;
+			$headYaw = static::rotateTowards($headYaw, (atan2($dz, $dx) * (180 / M_PI)) - 90, $this->yawMaxRotationAngle);
+			$pitch = static::rotateTowards($pitch, -(atan2($dy, sqrt(($dx ** 2) + ($dz ** 2))) * (180 / M_PI)), $this->pitchMaxRotationAngle);
+		} else {
+			$headYaw = static::rotateTowards($headYaw, $location->yaw, self::HEAD_RECENTER_SPEED);
 		}
-		if (!$this->mob->getNavigation()->isDone()) {
-			$this->mob->setRotation(Utils::rotateIfNecessary($location->yaw, $location->bodyYaw, $this->mob->getMaxYawRot()), $location->pitch);
-		}*/
-		//TODO: Body yaw rotation!!!
+
+		//The head can't turn too far from the body: it drags the body along when standing, and stops at the limit when moving
+		$bodyYaw = $location->yaw;
+		if (abs(Utils::degreesDifference($bodyYaw, $headYaw)) > $this->maxYawRot) {
+			$motion = $this->mob->getMotion();
+			if (($motion->x ** 2) + ($motion->z ** 2) > self::MOVING_MOTION_SQUARED) {
+				$headYaw = Utils::rotateIfNecessary($headYaw, $bodyYaw, $this->maxYawRot);
+			} else {
+				$bodyYaw = Utils::rotateIfNecessary($bodyYaw, $headYaw, $this->maxYawRot);
+			}
+		}
+
+		$this->mob->setHeadYaw($headYaw);
+		if ($bodyYaw !== $location->yaw || $pitch !== $location->pitch) {
+			$this->mob->setRotation($bodyYaw, $pitch);
+		}
 	}
 
 	public function resetPitchOnTick() : bool {

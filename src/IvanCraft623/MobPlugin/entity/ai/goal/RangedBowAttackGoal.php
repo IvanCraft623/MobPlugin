@@ -149,6 +149,9 @@ class RangedBowAttackGoal extends Goal {
 				$this->moveBackward ? -$speed : $speed,
 				$this->strafeLeft ? $speed : -$speed
 			);
+
+			// Strafing is relative to the facing, so the whole body keeps facing the target.
+			$this->entity->lookAt($target->getEyePos(), 30, 30);
 		}
 
 		// TODO: handle controlling vehicle, when this entity rides another Mob,

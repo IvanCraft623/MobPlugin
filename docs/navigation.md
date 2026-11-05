@@ -110,7 +110,10 @@ and jumps when the target is more than a step up and close. `FlightMoveControl` 
 steers pitch and vertical speed, and turns gravity off while flying.
 
 **`LookControl`**: `setLookAt()` holds a look target for 2 ticks, so goals call it every
-tick. Body-yaw syncing is still a TODO.
+tick. It turns the head (`Living::getHeadYaw()`, which PocketMine lacks and `Living` sends in the movement
+packets) and pitch. The body yaw, which is the movement direction, follows the movement, and is only dragged
+along when the head is more than `maxYawRot` away while standing. A goal that needs the whole mob to face
+something, like bow strafing, calls `Living::lookAt()` with limits.
 
 **`JumpControl`**: `jump()` sets a flag; the next tick jumps once and clears it.
 
