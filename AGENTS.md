@@ -5,8 +5,8 @@ Guidance for AI coding agents (and humans) working on **MobPlugin**.
 ## What this project is
 
 A [PocketMine-MP](https://github.com/pmmp/PocketMine-MP) API 5 plugin (PHP) that
-implements vanilla mob AI for Minecraft: **Bedrock Edition**. It mirrors the architecture
-of Java Edition's mob AI (goals, senses, memories, navigation).
+implements vanilla mob behavior for Minecraft: **Bedrock Edition**, on its own AI framework
+(goals, sensing, navigation, movement controls).
 
 ## Layout
 
@@ -62,7 +62,8 @@ API.
   Use `@phpstan-param` / `@phpstan-return` where native types can't express it.
 - Mob behavior goes through the goal FSM, not inline in entity tick methods. Port a mob by
   composing goals.
-- Port vanilla AI faithfully, adapting to PocketMine-MP's APIs.
+- Match vanilla Bedrock behavior, adapting to PocketMine-MP's APIs. The AI framework is our own design, not
+  a port of another edition's.
 - A new mob needs its despawn rule in `DespawnRuleRegistry`; without one it never despawns.
 
 ## Before finishing

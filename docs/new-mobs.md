@@ -32,8 +32,7 @@ The pinned `mojang/bedrock-samples` is in `vendor/mojang/bedrock-samples/`. A mo
 | `minecraft:collision_box` | `VanillaEntitySizes`, generated |
 
 The behaviors are **not** a 1:1 source for `registerGoals()`. Bedrock's priorities are
-not copied, several goals are Java-derived (`MeleeAttackGoal` is documented as not a
-vanilla port), and a few goals are registered that the JSON doesn't declare. Start from
+not copied, some goals (`MeleeAttackGoal`) aren't vanilla ports, and a few goals are registered that the JSON doesn't declare. Start from
 `registerGoals()` of the closest existing mob and use the JSON to check what the mob does.
 
 Where Bedrock's model and ours differ:
