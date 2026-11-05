@@ -43,8 +43,9 @@ use pocketmine\world\World;
 use function floor;
 
 /**
- * Takes a mob where its goals send it. How it moves is its {@link Locomotion}, what it may do
- * its {@link TraversalRules}.
+ * Takes one mob along a path: requests searches, keeps the path valid, advances along it and exposes the next
+ * position to reach, which the mob's move control steers toward. How the mob moves is its {@link Locomotion},
+ * what it may do its {@link TraversalRules}. See docs/navigation.md.
  */
 final class PathNavigation {
 

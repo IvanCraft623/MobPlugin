@@ -30,7 +30,8 @@ use pocketmine\math\Vector3;
 use function max;
 
 /**
- * Drives a mob toward what its goals want. How it does so depends on how the mob moves: see the subclasses.
+ * Turns a wanted position and speed into rotation and a MovementInput, with the physics of one kind of
+ * movement. It knows nothing about paths: see PathMoveControl.
  */
 abstract class MoveControl implements Control {
 

@@ -44,7 +44,8 @@ use function count;
 use function floor;
 
 /**
- * A way of moving: walking, flying, swimming. The hooks default to a walker's.
+ * How a kind of mover (walker, flier, swimmer) differs: its node evaluator, how targets and paths are fitted
+ * to it, and the control that steers it. The hooks default to a walker's.
  */
 abstract class Locomotion{
 	abstract public function createEvaluator() : NodeEvaluator;
