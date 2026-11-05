@@ -76,8 +76,8 @@ Living → Mob → PathfinderMob → Monster      hostile, implements Enemy
 
 | Base | Adds |
 |---|---|
-| `Mob` | goal selectors, controls, navigation, equipment, drops, settings |
-| `PathfinderMob` | path-chunk listening, `getWalkTargetValue()`. Most goals require it. |
+| `Mob` | goal selectors, controls, sensing, drops, settings |
+| `PathfinderMob` | the navigation, path-chunk listening, `getWalkTargetValue()`. Most goals require it. |
 | `Monster` | 5 XP when hurt by a player, `isSunSensitive()`, the block-light-0 spawn condition |
 | `Animal` | age, love and breeding, fire path costs, grass preference. You implement `isFood()` and `getBreedOffspring()`. |
 | `Golem` | ambient sound interval only |
@@ -95,7 +95,6 @@ Optional capabilities. Each is an interface; the canonical example shows how to 
 | `RangedAttackMob` | `performRangedAttack()`, needed by the ranged goals | `SnowGolem`, `AbstractSkeleton` |
 | `NeutralMob` + `NeutralMobTrait` | angry for a while after provocation | `Enderman`, `IronGolem` |
 | `ItemPickupCapable` + `ItemPickupCapableTrait` | picks up and equips loot | `Zombie` |
-| `Flyable` + `FlyableTrait` | flying | `Wither` |
 | `DamageTracker` + `DamageTrackerTrait` | `TargetHighestDamagerGoal` | `Wither` |
 
 ## A minimal mob
@@ -377,9 +376,8 @@ with `new` and `spawnToAll()`, and don't add it to `ALL_ENTITIES`.
 
 Override `createNavigation()` to pass another `Locomotion` to the `PathNavigation`:
 `WallClimberLocomotion` (`Spider`), `FlyingLocomotion` (`Wither`), `AmphibiousLocomotion` (`Axolotl`);
-`TraversalRules` set what the mob may do. A flying mob also uses `Flyable`/`FlyableTrait`, replaces `$this->moveControl`
-with `FlightMoveControl` right after `parent::initEntity()`, and uses
-`WaterAvoidingRandomFlyingGoal`. `BreakDoorGoal` and `AvoidSunlightGoal` need a ground-based
+`TraversalRules` set what the mob may do. The locomotion also creates the control that steers it (`FlightMoveControl` for
+`FlyingLocomotion`). A flying mob uses `WaterAvoidingRandomFlyingGoal`. `BreakDoorGoal` and `AvoidSunlightGoal` need a ground-based
 locomotion.
 
 Path costs: `$this->navigation->setPathfindingMalus(BlockPathType::DANGER_FIRE, 16)` in `initProperties()`.

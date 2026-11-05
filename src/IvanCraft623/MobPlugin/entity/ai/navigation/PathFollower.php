@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\Locomotion;
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\Pathfinder\Path;
 use IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\math\Vector3;
@@ -43,7 +43,7 @@ final class PathFollower{
 
 	private StuckDetector $stuckDetector;
 
-	public function __construct(private Mob $mob){
+	public function __construct(private PathfinderMob $mob){
 		$this->stuckDetector = new StuckDetector();
 	}
 

@@ -23,30 +23,28 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\control;
 
-use IvanCraft623\MobPlugin\entity\Flyable;
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 use function abs;
-use function assert;
 use function atan2;
 use function sqrt;
 use const M_PI;
 
-class FlightMoveControl extends MoveControl {
+class FlightMoveControl extends PathMoveControl {
 
 	public function __construct(
-		Mob&Flyable $mob,
+		PathfinderMob $mob,
+		PathNavigation $navigation,
 		private int $maxPitchChange,
 		private bool $noGravity
 	) {
-		parent::__construct($mob);
+		parent::__construct($mob, $navigation);
 	}
 
-	public function tick() : void {
-		assert($this->mob instanceof Flyable);
-
-		$location = $this->mob->getLocation();
+	protected function drive() : void {
 		if ($this->operation === MoveOperation::MOVE_TO) {
+			$location = $this->mob->getLocation();
 			$this->operation = MoveOperation::WAIT;
 
 			$this->mob->setHasGravity(false);
@@ -65,7 +63,7 @@ class FlightMoveControl extends MoveControl {
 			if ($this->mob->onGround) {
 				$speed = $this->speedModifier * $this->mob->getMovementSpeed();
 			} else {
-				$speed = $this->speedModifier * $this->mob->getFlyingSpeed();
+				$speed = $this->speedModifier * $this->mob->getAirMovementSpeed();
 			}
 
 			$yaw = $location->yaw;

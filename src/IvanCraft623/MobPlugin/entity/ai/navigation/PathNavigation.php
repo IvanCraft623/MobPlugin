@@ -25,7 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\Locomotion;
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
@@ -65,10 +65,12 @@ final class PathNavigation {
 
 	private PathRequester $requester;
 
+	private ?Vector3 $wantedPosition = null;
+
 	private EntityRepathThrottle $entityThrottle;
 
 	public function __construct(
-		private Mob $mob,
+		private PathfinderMob $mob,
 		private Locomotion $locomotion,
 		?TraversalRules $rules = null
 	) {
@@ -117,20 +119,19 @@ final class PathNavigation {
 		$this->costMap->setPathfindingMalus($pathType, $malus);
 	}
 
-	public function getLocomotion() : Locomotion{
-		return $this->locomotion;
+	/**
+	 * Where the mob goes next, set by tick(). Null without a path left to walk.
+	 */
+	public function getWantedPosition() : ?Vector3{
+		return $this->wantedPosition;
 	}
 
-	/**
-	 * Changes the way the mob moves; whatever it was doing is dropped.
-	 */
-	public function setLocomotion(Locomotion $locomotion) : void{
-		if ($locomotion === $this->locomotion) {
-			return;
-		}
-		$this->stop();
-		$this->locomotion = $locomotion;
-		$this->evaluator = $locomotion->createEvaluator();
+	public function getSpeedModifier() : float{
+		return $this->speedModifier;
+	}
+
+	public function getLocomotion() : Locomotion{
+		return $this->locomotion;
 	}
 
 	public function isPathComputationPending() : bool{
@@ -224,7 +225,14 @@ final class PathNavigation {
 	}
 
 	public function tick() : void{
+		CustomTimings::$navigation->startTiming();
+		$this->advance();
+		CustomTimings::$navigation->stopTiming();
+	}
+
+	private function advance() : void{
 		$this->tick++;
+		$this->wantedPosition = null;
 
 		$this->recomputeIfDelayed();
 
@@ -251,10 +259,7 @@ final class PathNavigation {
 		//Following may have dropped the path
 		$path = $this->path;
 		if ($path !== null && !$path->isDone()) {
-			$this->mob->getMoveControl()->setWantedPosition(
-				$this->follower->getWantedPosition($path, $this->locomotion, $this->getBlockGetter()),
-				$this->speedModifier
-			);
+			$this->wantedPosition = $this->follower->getWantedPosition($path, $this->locomotion, $this->getBlockGetter());
 		}
 	}
 

@@ -26,7 +26,6 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\data\bedrock\AxolotlVariantIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
-use IvanCraft623\MobPlugin\entity\ai\control\AquaticMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\axolotl\AxolotlAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\axolotl\HuntPreyGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\axolotl\PlayDeadGoal;
@@ -151,8 +150,6 @@ class Axolotl extends Animal implements Bucketable{
 
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
-
-		$this->moveControl = new AquaticMoveControl($this, maxPitchChange: 85, maxYawChange: 10, waterSpeed: 1, landSpeed: 1, buoyant: false);
 
 		$this->variant = AxolotlVariantIdMap::getInstance()->fromId($nbt->getInt(self::TAG_VARIANT, -1)) ?? AxolotlVariant::getRandomNatural();
 

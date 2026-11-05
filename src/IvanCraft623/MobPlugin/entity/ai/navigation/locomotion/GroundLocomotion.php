@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
 use IvanCraft623\Pathfinder\Path;
@@ -40,16 +40,16 @@ class GroundLocomotion extends Locomotion{
 		return new WalkNodeEvaluator();
 	}
 
-	public function canFollowPath(Mob $mob, TraversalRules $rules) : bool{
+	public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool{
 		return $mob->isOnGround() || self::isInLiquid($mob);
 	}
 
-	public function pathPosition(Mob $mob, TraversalRules $rules) : Vector3{
+	public function pathPosition(PathfinderMob $mob, TraversalRules $rules) : Vector3{
 		$position = $mob->getPosition();
 		return new Vector3($position->getX(), $this->getSurfaceY($mob, $rules), $position->getZ());
 	}
 
-	public function isStableDestination(Mob $mob, Vector3 $position) : bool{
+	public function isStableDestination(PathfinderMob $mob, Vector3 $position) : bool{
 		return $mob->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->isSolid();
 	}
 
@@ -57,7 +57,7 @@ class GroundLocomotion extends Locomotion{
 		return true;
 	}
 
-	public function wantedY(Mob $mob, BlockGetter $blockGetter, Vector3 $position) : float{
+	public function wantedY(PathfinderMob $mob, BlockGetter $blockGetter, Vector3 $position) : float{
 		$below = $mob->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ());
 		return $below->getTypeId() === BlockTypeIds::AIR ? $position->y : BlockClassifier::getFloorLevel($blockGetter, $position);
 	}
@@ -65,7 +65,7 @@ class GroundLocomotion extends Locomotion{
 	/**
 	 * Moves a target in the air down to the ground, and one inside solid blocks up out of them.
 	 */
-	public function adjustTarget(Mob $mob, Vector3 $target) : Vector3{
+	public function adjustTarget(PathfinderMob $mob, Vector3 $target) : Vector3{
 		$world = $mob->getWorld();
 		if ($world->getBlock($target)->getTypeId() === BlockTypeIds::AIR) {
 			$current = $target->down();
@@ -90,7 +90,7 @@ class GroundLocomotion extends Locomotion{
 		return $current;
 	}
 
-	public function adjustPath(Mob $mob, Path $path, TraversalRules $rules) : void{
+	public function adjustPath(PathfinderMob $mob, Path $path, TraversalRules $rules) : void{
 		parent::adjustPath($mob, $path, $rules);
 
 		if (!$rules->avoidSun) {
@@ -110,7 +110,7 @@ class GroundLocomotion extends Locomotion{
 		}
 	}
 
-	protected function getSurfaceY(Mob $mob, TraversalRules $rules) : int{
+	protected function getSurfaceY(PathfinderMob $mob, TraversalRules $rules) : int{
 		$position = $mob->getPosition();
 		if ($mob->isInWater() && $rules->canFloat) {
 			$y = (int) $position->getY();

@@ -26,13 +26,12 @@ namespace IvanCraft623\MobPlugin\entity;
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\despawning\DespawnPersistenceTrait;
 use IvanCraft623\MobPlugin\entity\ai\Brain;
+use IvanCraft623\MobPlugin\entity\ai\control\IdleMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MovementInput;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
-use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
-use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
 use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
@@ -43,7 +42,6 @@ use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Liquid;
-use pocketmine\color\Color;
 use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Attribute;
 use pocketmine\entity\AttributeFactory;
@@ -73,7 +71,6 @@ use pocketmine\network\mcpe\protocol\types\LevelSoundEvent;
 use pocketmine\player\Player;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
-use pocketmine\world\particle\DustParticle;
 use pocketmine\world\Position;
 use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
@@ -112,8 +109,6 @@ abstract class Mob extends Living {
 	protected bool $hasBeenDamagedByPlayer = false;
 
 	protected Brain $brain;
-
-	protected PathNavigation $navigation;
 
 	protected LookControl $lookControl;
 
@@ -160,8 +155,6 @@ abstract class Mob extends Living {
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
-		$this->navigation = $this->createNavigation();
-
 		$this->initProperties();
 
 		$this->initDespawnPersistence($nbt);
@@ -187,7 +180,7 @@ abstract class Mob extends Living {
 		$this->targetSelector = new GoalSelector();
 		$this->lookControl = new LookControl($this);
 		$this->movementInput = new MovementInput();
-		$this->moveControl = new MoveControl($this);
+		$this->moveControl = $this->createMoveControl();
 		$this->jumpControl = new JumpControl($this);
 		$this->sensing = new Sensing($this);
 
@@ -215,12 +208,15 @@ abstract class Mob extends Living {
 		;
 	}
 
-	public function createNavigation() : PathNavigation{
-		return new PathNavigation($this, new GroundLocomotion());
-	}
-
 	public function getLookControl() : LookControl {
 		return $this->lookControl;
+	}
+
+	/**
+	 * How this mob moves toward the position its goals want. Idle for mobs that don't.
+	 */
+	protected function createMoveControl() : MoveControl{
+		return new IdleMoveControl($this);
 	}
 
 	public function getMoveControl() : MoveControl {
@@ -229,10 +225,6 @@ abstract class Mob extends Living {
 
 	public function getJumpControl() : JumpControl {
 		return $this->jumpControl;
-	}
-
-	public function getNavigation() : PathNavigation{
-		return $this->navigation;
 	}
 
 	public function getSensing() : Sensing {
@@ -480,14 +472,6 @@ abstract class Mob extends Living {
 
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
 			$this->networkPropertiesDirty = true; // the debug info is sent in place of the name tag
-
-			$path = $this->navigation->getPath();
-			if ($path !== null) {
-				$world = $this->getWorld();
-				foreach ($path->getNodes() as $node) {
-					$world->addParticle($node->add(0.5, 0.5, 0.5), new DustParticle(new Color(255, 0, 0))); //red particle
-				}
-			}
 		}
 
 		//TODO: leash check
@@ -530,10 +514,6 @@ abstract class Mob extends Living {
 		}
 
 		CustomTimings::$goalSelector->stopTiming();
-
-		CustomTimings::$navigation->startTiming();
-		$this->navigation->tick();
-		CustomTimings::$navigation->stopTiming();
 
 		CustomTimings::$entityControls->startTiming();
 		$this->moveControl->tick();
@@ -782,16 +762,6 @@ abstract class Mob extends Living {
 		parent::setTargetEntity($target);
 	}
 
-	public function teleport(Vector3 $pos, ?float $yaw = null, ?float $pitch = null) : bool{
-		if (parent::teleport($pos, $yaw, $pitch)) {
-			$this->navigation->stop();
-
-			return true;
-		}
-
-		return false;
-	}
-
 	/**
 	 * Rolls a table for this mob's death, credited to whoever killed it.
 	 *
@@ -863,7 +833,6 @@ abstract class Mob extends Living {
 	protected function destroyCycles() : void{
 		$this->lastDamageByEntity = null;
 		unset($this->brain);
-		$this->navigation->stop();
 		$this->goalSelector->stopRunningGoals();
 		$this->targetSelector->stopRunningGoals();
 		unset(
@@ -872,7 +841,6 @@ abstract class Mob extends Living {
 			$this->lookControl,
 			$this->moveControl,
 			$this->jumpControl,
-			$this->navigation,
 			$this->sensing
 		);
 

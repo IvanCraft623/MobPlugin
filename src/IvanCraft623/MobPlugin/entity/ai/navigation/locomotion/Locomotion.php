@@ -23,8 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
+use IvanCraft623\MobPlugin\entity\ai\control\GroundMoveControl;
+use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\Pathfinder\BlockPathType;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
@@ -43,23 +47,30 @@ use function floor;
 abstract class Locomotion{
 	abstract public function createEvaluator() : NodeEvaluator;
 
-	abstract public function canFollowPath(Mob $mob, TraversalRules $rules) : bool;
+	/**
+	 * The control that steers a mob along paths of this kind.
+	 */
+	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
+		return new GroundMoveControl($mob, $navigation);
+	}
+
+	abstract public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool;
 
 	/**
 	 * Where the mob is for following a path.
 	 */
-	abstract public function pathPosition(Mob $mob, TraversalRules $rules) : Vector3;
+	abstract public function pathPosition(PathfinderMob $mob, TraversalRules $rules) : Vector3;
 
-	abstract public function isStableDestination(Mob $mob, Vector3 $position) : bool;
+	abstract public function isStableDestination(PathfinderMob $mob, Vector3 $position) : bool;
 
 	/**
 	 * Costs for searches; wander targets read the mob's own map.
 	 */
-	public function searchCostMap(Mob $mob) : BlockPathTypeCostMap{
+	public function searchCostMap(PathfinderMob $mob) : BlockPathTypeCostMap{
 		return $mob->getNavigation()->getCostMap();
 	}
 
-	final public function createProfile(Mob $mob, TraversalRules $rules) : MovementProfile{
+	final public function createProfile(PathfinderMob $mob, TraversalRules $rules) : MovementProfile{
 		$size = $mob->getSize();
 		return new MovementProfile(
 			width: $size->getWidth(),
@@ -78,21 +89,21 @@ abstract class Locomotion{
 	/**
 	 * Y the move control is sent to for the node at $position.
 	 */
-	public function wantedY(Mob $mob, BlockGetter $blockGetter, Vector3 $position) : float{
+	public function wantedY(PathfinderMob $mob, BlockGetter $blockGetter, Vector3 $position) : float{
 		return $position->y;
 	}
 
 	/**
 	 * The target to search to, e.g. snapped to the ground.
 	 */
-	public function adjustTarget(Mob $mob, Vector3 $target) : Vector3{
+	public function adjustTarget(PathfinderMob $mob, Vector3 $target) : Vector3{
 		return $target;
 	}
 
 	/**
 	 * Fits a computed path to the mob.
 	 */
-	public function adjustPath(Mob $mob, Path $path, TraversalRules $rules) : void{
+	public function adjustPath(PathfinderMob $mob, Path $path, TraversalRules $rules) : void{
 		$world = $mob->getWorld();
 		for ($i = 0; $i < $path->getNodeCount(); $i++) {
 			$node = $path->getNode($i);
@@ -110,7 +121,7 @@ abstract class Locomotion{
 	/**
 	 * Whether the mob can skip the nodes between two points and go straight.
 	 */
-	public function canMoveDirectly(Mob $mob, Vector3 $from, Vector3 $to) : bool{
+	public function canMoveDirectly(PathfinderMob $mob, Vector3 $from, Vector3 $to) : bool{
 		return false;
 	}
 
@@ -123,7 +134,7 @@ abstract class Locomotion{
 	/**
 	 * Advances along the path for a mob that can't follow it (e.g. airborne).
 	 */
-	public function advanceWithoutFollowing(Mob $mob, Path $path, Vector3 $position) : void{
+	public function advanceWithoutFollowing(PathfinderMob $mob, Path $path, Vector3 $position) : void{
 		$nextPosition = $path->getNextNodeCenter();
 		if ($position->y > $nextPosition->y &&
 			!$mob->isOnGround() &&
@@ -150,7 +161,7 @@ abstract class Locomotion{
 	/**
 	 * Called every tick with no path to follow or being computed.
 	 */
-	public function tickWithoutPath(Mob $mob) : void{
+	public function tickWithoutPath(PathfinderMob $mob) : void{
 	}
 
 	public static function isInLiquid(Mob $mob) : bool{
@@ -158,7 +169,7 @@ abstract class Locomotion{
 		return $mob->isInWater() || $mob->isInLava();
 	}
 
-	protected static function isClearForMovementBetween(Mob $mob, Vector3 $from, Vector3 $to, bool $detectLiquids) : bool{
+	protected static function isClearForMovementBetween(PathfinderMob $mob, Vector3 $from, Vector3 $to, bool $detectLiquids) : bool{
 		$to = $to->add(0, $mob->getSize()->getHeight() / 2, 0);
 
 		foreach (VoxelRayTrace::betweenPoints($from, $to) as $pos) {

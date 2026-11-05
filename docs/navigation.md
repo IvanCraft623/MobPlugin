@@ -12,20 +12,21 @@ virion `ivancraft623/pathfinder`, a port of Java Edition's.
 sensing->tick()          line of sight
 targetSelector->tick()   target goals
 goalSelector->tick()     behavior goals
-navigation->tick()       follow the path, feed MoveControl
-moveControl->tick()      wanted position → rotation and speeds
+moveControl->tick()      a path-following control first ticks the navigation (follow the path, set the
+                         wanted position), then turns the wanted position into rotation and speeds
 lookControl->tick()      wanted look target → yaw and pitch
 jumpControl->tick()      one-shot jumps
 travel(...)              apply the speeds as motion
 ```
 
 Goals never move a mob directly: they ask the navigation, and the navigation drives the
-controls. A mob gets a `PathNavigation`, `MoveControl`, `LookControl` and `JumpControl` in
-`Mob::initEntity()`.
+controls. A `PathfinderMob` gets a `PathNavigation` in `PathfinderMob::initEntity()`, and its `Locomotion`
+creates the `MoveControl` that follows it. Other mobs get theirs from `createMoveControl()`. Every mob gets a
+`LookControl` and `JumpControl` in `Mob::initEntity()`.
 
 ## Navigation
 
-A mob has one `PathNavigation`; `Mob::createNavigation()` gives it a `Locomotion` (how it moves) and
+A `PathfinderMob` has one `PathNavigation`; `PathfinderMob::createNavigation()` gives it a `Locomotion` (how it moves) and
 `TraversalRules` (what it may do). One class per job behind it:
 
 | Class | Job |
@@ -41,7 +42,7 @@ A mob has one `PathNavigation`; `Mob::createNavigation()` gives it a `Locomotion
 | `GroundLocomotion` | `WalkNodeEvaluator` | Default. Snaps targets to the ground. |
 | `WallClimberLocomotion` | inherited | Keeps pushing toward the target after the path ends (spiders). |
 | `FlyingLocomotion` | `FlightNodeEvaluator` | Steers in 3D, cuts corners through open air. |
-| `AmphibiousLocomotion` | `AmphibiousNodeEvaluator` | Swims in 3D, walks on land. Pair with `AquaticMoveControl`. |
+| `AmphibiousLocomotion` | `AmphibiousNodeEvaluator` | Swims in 3D, walks on land. Creates an `AquaticMoveControl`. |
 
 `TraversalRules` (`getRules()`): `canFloat`, `canOpenDoors`, `canPassDoors` (default true),
 `canWalkOverFences` and `avoidSun`. Goals change them at runtime, e.g. `FloatGoal` sets `canFloat`.
@@ -78,8 +79,8 @@ their chunks (`Path::getCorridorChunks()`). Recomputes run at most every
 
 `PathNavigation::tick()` runs a waiting recompute; with no path, lets the locomotion act
 (`tickWithoutPath()`, how spiders keep climbing); otherwise `PathFollower::follow()` advances the nodes
-(cutting corners, except through fire, danger or doors) and checks `StuckDetector`, and `MoveControl` is
-sent to the next node.
+(cutting corners, except through fire, danger or doors) and checks `StuckDetector`, and the navigation's
+`MoveControl` is sent to the next node.
 
 `StuckDetector` reports:
 
@@ -94,7 +95,8 @@ Path costs per block type come from `PathNavigation::getCostMap()`; set them wit
 
 ## Controls
 
-**`MoveControl`** has four operations:
+**`MoveControl`** is abstract: `GroundMoveControl` (default for a `PathfinderMob`), `FlightMoveControl`,
+`AquaticMoveControl`, `SlimeMoveControl`, and `IdleMoveControl` for mobs that don't steer. It has four operations:
 
 | Operation | Meaning |
 |---|---|
@@ -132,7 +134,7 @@ public function stop() : void{
   `RandomPos`).
 - Don't call the pathfinder or `MoveControl::setWantedPosition()` from a goal unless you mean
   to bypass the navigation, as the slime and spider goals do.
-- `Mob::teleport()` stops the navigation.
+- `PathfinderMob::teleport()` stops the navigation.
 - Debug mode (`Settings::isDebugModeEnabled()`) draws the current path and shows the
   running goals in the nametag.
 

@@ -23,7 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\control;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Water;
 
@@ -32,7 +33,7 @@ use function atan2;
 use function sqrt;
 use const M_PI;
 
-class AquaticMoveControl extends MoveControl {
+class AquaticMoveControl extends PathMoveControl {
 
 	private const BUOYANCY = 0.005;
 	private const PITCH_STEP = 15.0;
@@ -49,17 +50,18 @@ class AquaticMoveControl extends MoveControl {
 	 * @param bool  $buoyant    whether water pushes the mob up
 	 */
 	public function __construct(
-		Mob $mob,
+		PathfinderMob $mob,
+		PathNavigation $navigation,
 		private int $maxPitchChange,
 		private int $maxYawChange,
 		private float $waterSpeed,
 		private float $landSpeed,
 		private bool $buoyant
 	) {
-		parent::__construct($mob);
+		parent::__construct($mob, $navigation);
 	}
 
-	public function tick() : void {
+	protected function drive() : void {
 		$inWater = $this->mob->isInWater();
 		$this->mob->setHasGravity(!$inWater);
 		if ($this->buoyant && $inWater) {
@@ -82,7 +84,7 @@ class AquaticMoveControl extends MoveControl {
 	}
 
 	private function tickMoveTo(bool $inWater) : void {
-		if ($this->mob->getNavigation()->isDone()) {
+		if ($this->navigation->isDone()) {
 			$this->idle();
 			return;
 		}
