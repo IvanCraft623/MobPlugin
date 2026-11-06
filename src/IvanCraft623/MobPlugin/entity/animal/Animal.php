@@ -32,7 +32,7 @@ use IvanCraft623\MobPlugin\event\MobFeedEvent;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\entity\Living;

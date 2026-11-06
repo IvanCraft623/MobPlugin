@@ -28,9 +28,9 @@ use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
-use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_f85971d879c01168\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
 
