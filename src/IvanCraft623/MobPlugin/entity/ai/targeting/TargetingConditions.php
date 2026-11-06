@@ -45,6 +45,10 @@ class TargetingConditions {
 	) {
 	}
 
+	public function getRange() : float{
+		return $this->range;
+	}
+
 	public function setRange(float $range) : self{
 		$this->range = $range;
 		return $this;
@@ -91,6 +95,10 @@ class TargetingConditions {
 		if (!$this->allowInvulnerable && ($target instanceof Player && $target->isCreative())) {
 			return false;
 		}
+		//Cheaper than the distance test below, and most candidates fail it
+		if ($this->validator !== null && !($this->validator)($target)) {
+			return false;
+		}
 		if ($entity !== null && $this->range > 0) {
 			$distanceSquare = $entity->getLocation()->distanceSquared($target->getLocation());
 			$visibility = max($this->range, 2.0);
@@ -103,9 +111,6 @@ class TargetingConditions {
 					return false;
 				}
 			}
-		}
-		if ($this->validator !== null && !($this->validator)($target)) {
-			return false;
 		}
 		if ($entity !== null) {
 			if (!$this->allowNonAttackable) {

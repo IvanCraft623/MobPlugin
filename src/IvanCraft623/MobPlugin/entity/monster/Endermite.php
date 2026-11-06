@@ -35,7 +35,6 @@ use IvanCraft623\MobPlugin\entity\MobType;
 
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use pocketmine\entity\EntitySizeInfo;
-use pocketmine\entity\Living as PMLiving;
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
@@ -70,7 +69,8 @@ class Endermite extends Monster {
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
 
 		$this->targetSelector->addGoal(1, (new HurtByTargetGoal($this))->setAlertOthers());
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, PMLiving::class, NearestAttackableGoal::DEFAULT_RANDOM_INTERVAL, true, static fn(PMLiving $e) => $e instanceof Player || $e instanceof Enderman));
+		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, Player::class));
+		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, Enderman::class));
 	}
 
 	protected function initProperties() : void{
