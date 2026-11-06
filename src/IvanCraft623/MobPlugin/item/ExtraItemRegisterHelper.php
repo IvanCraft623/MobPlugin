@@ -66,6 +66,7 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::WITHER_SPAWN_EGG, ExtraVanillaItems::WITHER_SPAWN_EGG(), ["wither_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::AXOLOTL_SPAWN_EGG, ExtraVanillaItems::AXOLOTL_SPAWN_EGG(), ["axolotl_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::HUSK_SPAWN_EGG, ExtraVanillaItems::HUSK_SPAWN_EGG(), ["husk_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::VINDICATOR_SPAWN_EGG, ExtraVanillaItems::VINDICATOR_SPAWN_EGG(), ["vindicator_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::ZOMBIE_PIGMAN_SPAWN_EGG, ExtraVanillaItems::ZOMBIE_PIGMAN_SPAWN_EGG(), ["zombie_pigman_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::AXOLOTL_BUCKET, ExtraVanillaItems::AXOLOTL_BUCKET(), ["axolotl_bucket"]);
 		self::registerSimpleItem(ItemTypeNames::TROPICAL_FISH_BUCKET, ExtraVanillaItems::TROPICAL_FISH_BUCKET(), ["tropical_fish_bucket"]);

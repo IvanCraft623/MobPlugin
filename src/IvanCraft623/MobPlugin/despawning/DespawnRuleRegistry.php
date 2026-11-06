@@ -36,6 +36,7 @@ use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
+use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
@@ -90,6 +91,7 @@ final class DespawnRuleRegistry{
 			Stray::class,
 			WitherSkeleton::class,
 			Husk::class,
+			Vindicator::class,
 			Zombie::class,
 			ZombifiedPiglin::class
 		] as $entityClass){
