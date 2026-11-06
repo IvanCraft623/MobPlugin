@@ -75,6 +75,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 
 	protected RangedBowAttackGoal $bowAttackGoal;
 	protected MeleeAttackGoal $meleeAttackGoal;
+	private bool $wasUnderwater = false;
 
 	protected PickupItemsGoal $pickupItemsGoal;
 
@@ -162,11 +163,25 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		}
 	}
 
+	protected function tickState() : void{
+		parent::tickState();
+
+		$underwater = $this->getSensing()->isUnderwater();
+		if ($underwater !== $this->wasUnderwater) {
+			$this->wasUnderwater = $underwater;
+			$this->updateAttackType();
+		}
+	}
+
 	public function updateAttackType() : void {
-		$useMeleeAttackGoal = $this->inventory->getMainHand()->getTypeId() !== ItemTypeIds::BOW;
+		$useMeleeAttackGoal = !$this->canUseBow();
 
 		$this->goalSelector->removeGoal($useMeleeAttackGoal ? $this->bowAttackGoal : $this->meleeAttackGoal);
 		$this->goalSelector->addGoal(0, $useMeleeAttackGoal ? $this->meleeAttackGoal : $this->bowAttackGoal);
+	}
+
+	protected function canUseBow() : bool {
+		return !$this->getSensing()->isUnderwater() && $this->inventory->getMainHand()->getTypeId() === ItemTypeIds::BOW;
 	}
 
 	public function performRangedAttack(Entity $target, float $force) : void {

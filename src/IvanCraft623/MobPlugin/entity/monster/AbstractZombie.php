@@ -228,7 +228,7 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 				$this->convertInWater();
 			}
 		} elseif ($this->getWaterConversionType() !== null) {
-			if ($this->isUnderwater()) {
+			if ($this->getSensing()->isUnderwater()) {
 				$this->inWaterTime++;
 				if ($this->inWaterTime >= self::MAX_WATER_TIME_BEFORE_CONVERSION) {
 					$this->setTicksUntilWaterConversion(self::WATER_CONVERSION_TIME);

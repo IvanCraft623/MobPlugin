@@ -126,7 +126,7 @@ class Axolotl extends Animal implements Bucketable{
 	}
 
 	public function getAmbientSoundEvent() : string{
-		return $this->isUnderwater() ? LevelSoundEvent::AMBIENT_IN_WATER : LevelSoundEvent::AMBIENT;
+		return $this->getSensing()->isUnderwater() ? LevelSoundEvent::AMBIENT_IN_WATER : LevelSoundEvent::AMBIENT;
 	}
 
 	public function createNavigation() : PathNavigation{
