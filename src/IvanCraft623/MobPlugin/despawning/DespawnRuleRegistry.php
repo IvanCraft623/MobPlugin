@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
+use IvanCraft623\MobPlugin\entity\monster\MagmaCube;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
@@ -104,6 +105,7 @@ final class DespawnRuleRegistry{
 			persistentWhile: static fn(Enderman $enderman) : bool => $enderman->getCarriedBlock() !== null
 		));
 		$this->register(DespawnRule::monster(Endermite::class, maxLifetime: 2400));
+		$this->register(DespawnRule::monster(MagmaCube::class));
 		$this->register(DespawnRule::monster(
 			Slime::class,
 			difficultyCondition: static fn(Slime $slime) : bool => $slime->getAttackDamage() > 0 // the smallest are harmless

@@ -39,6 +39,7 @@ use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
+use IvanCraft623\MobPlugin\entity\monster\MagmaCube;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
@@ -61,6 +62,7 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static MobBucket AXOLOTL_BUCKET()
  * @method static \pocketmine\item\SpawnEgg AXOLOTL_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg HUSK_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg MAGMA_CUBE_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg BOGGED_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg VINDICATOR_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ZOMBIE_PIGMAN_SPAWN_EGG()
@@ -132,6 +134,7 @@ final class ExtraVanillaItems{
 		self::register("wither_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg", Wither::class));
 		self::register("axolotl_spawn_egg", new MobSpawnEgg(new IID(Ids::AXOLOTL_SPAWN_EGG()), "Axolotl Spawn Egg", Axolotl::class));
 		self::register("husk_spawn_egg", new MobSpawnEgg(new IID(Ids::HUSK_SPAWN_EGG()), "Husk Spawn Egg", Husk::class));
+		self::register("magma_cube_spawn_egg", new MobSpawnEgg(new IID(Ids::MAGMA_CUBE_SPAWN_EGG()), "Magma Cube Spawn Egg", MagmaCube::class));
 		self::register("bogged_spawn_egg", new MobSpawnEgg(new IID(Ids::BOGGED_SPAWN_EGG()), "Bogged Spawn Egg", Bogged::class));
 		self::register("vindicator_spawn_egg", new MobSpawnEgg(new IID(Ids::VINDICATOR_SPAWN_EGG()), "Vindicator Spawn Egg", Vindicator::class));
 		self::register("zombie_pigman_spawn_egg", new MobSpawnEgg(new IID(Ids::ZOMBIE_PIGMAN_SPAWN_EGG()), "Zombified Piglin Spawn Egg", ZombifiedPiglin::class));
