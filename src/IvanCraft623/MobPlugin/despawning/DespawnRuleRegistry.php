@@ -42,6 +42,7 @@ use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
+use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Squid;
 use pocketmine\utils\SingletonTrait;
@@ -90,6 +91,7 @@ final class DespawnRuleRegistry{
 			WitherSkeleton::class,
 			Husk::class,
 			Zombie::class,
+			ZombifiedPiglin::class
 		] as $entityClass){
 			$this->register(DespawnRule::monster($entityClass));
 		}

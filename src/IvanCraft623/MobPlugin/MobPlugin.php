@@ -54,6 +54,7 @@ use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
+use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\loot\LootTableRegistry;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
@@ -105,6 +106,7 @@ class MobPlugin extends PluginBase {
 		Spider::class,
 		Zombie::class,
 		Husk::class,
+		ZombifiedPiglin::class,
 		Skeleton::class,
 		Stray::class,
 		WitherSkeleton::class,
