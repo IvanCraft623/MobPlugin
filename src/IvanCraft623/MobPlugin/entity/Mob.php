@@ -33,7 +33,6 @@ use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MovementInput;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
-use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
@@ -89,6 +88,7 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const M_PI;
 
 abstract class Mob extends Living {
+	use LootRollingTrait;
 	use DespawnPersistenceTrait {
 		initEntity as initDespawnPersistence;
 		saveNBT as saveDespawnPersistenceNBT;
@@ -748,36 +748,6 @@ abstract class Mob extends Living {
 		}
 
 		parent::setTargetEntity($target);
-	}
-
-	/**
-	 * Rolls a table for this mob's death, credited to whoever killed it.
-	 *
-	 * @return Item[]
-	 */
-	protected function generateDeathLoot(LootTable $table) : array{
-		$cause = $this->getLastDamageCause();
-
-		return $this->generateLoot($table, $cause instanceof EntityDamageByEntityEvent ? $cause->getDamager() : null);
-	}
-
-	/**
-	 * Rolls a table for a drop that $source caused with $tool (its held item if null).
-	 *
-	 * @return Item[]
-	 */
-	protected function generateLoot(LootTable $table, ?Entity $source = null, ?Item $tool = null) : array{
-		return $table->generateFor($this, $this->random, $source, $tool);
-	}
-
-	/**
-	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
-	 */
-	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{
-		$position = $this->location->add(0, $this->getSize()->getHeight(), 0);
-		foreach ($this->generateLoot($table, $source, $tool) as $item) {
-			$this->getWorld()->dropItem($position, $item);
-		}
 	}
 
 	public function onEat() : void{

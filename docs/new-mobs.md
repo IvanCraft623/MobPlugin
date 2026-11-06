@@ -492,7 +492,7 @@ public function getDrops() : array{
 }
 ```
 
-The table's conditions read the killer, their held item and the difficulty. A drop that
+The table's conditions read the killer, their held item and the difficulty. An entity that doesn't extend `Mob` (the glow squid extends PocketMine's squid) gets the same helpers from `LootRollingTrait`. A drop that
 isn't a death names who caused it and what they used: `generateLoot($table, $shearer, $shears)`.
 
 Spawn gear is a loot table too: override `generateEquipment()`, which runs when the mob is
