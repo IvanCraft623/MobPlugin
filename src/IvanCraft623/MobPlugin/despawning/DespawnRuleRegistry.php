@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
+use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
@@ -84,6 +85,7 @@ final class DespawnRuleRegistry{
 			$this->register(new DespawnRule($entityClass));
 		}
 		foreach([
+			Bogged::class,
 			CaveSpider::class,
 			Creeper::class,
 			Skeleton::class,

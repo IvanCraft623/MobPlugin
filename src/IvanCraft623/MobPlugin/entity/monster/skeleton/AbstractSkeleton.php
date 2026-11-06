@@ -106,7 +106,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
 		//TODO: attack baby turtles
 
-		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, self::MIN_ATTACK_INTERVAL, self::MAX_ATTACK_INTERVAL, 15);
+		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, static::MIN_ATTACK_INTERVAL, static::MAX_ATTACK_INTERVAL, 15);
 		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25);
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(function(Inventory $inventory, int $slot, Item $oldItem) : void {
 			if ($slot !== MobInventory::SLOT_MAIN_HAND) {
@@ -184,11 +184,15 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		return !$this->getSensing()->isUnderwater() && $this->inventory->getMainHand()->getTypeId() === ItemTypeIds::BOW;
 	}
 
+	protected function createArrow(Location $location) : Arrow {
+		return new Arrow($location, $this, false);
+	}
+
 	public function performRangedAttack(Entity $target, float $force) : void {
 		$eyePos = $this->getEyePos();
 		$world = $this->getWorld();
 
-		$projectile = new Arrow(Location::fromObject($eyePos, $world), $this, false);
+		$projectile = $this->createArrow(Location::fromObject($eyePos, $world));
 		$projectile->setPickupMode(Arrow::PICKUP_NONE);
 
 		$targetPosition = $target->getPosition();

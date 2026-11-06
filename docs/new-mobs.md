@@ -435,7 +435,8 @@ $this->networkPropertiesDirty = true;
   JSON (`minecraft:variant` in the component groups: slime 1, 2, 4; mooshroom 0, 1).
 - Reuse PocketMine's maps where they exist: `Sheep` colour goes through `DyeColorIdMap`.
 - Baby, sheared and saddled are the mob's own NBT keys plus metadata flags (`AgeableMob`
-  `Age`, `Sheep` `Sheared`, `Pig` `Saddled`), never component groups.
+  `Age`, `Sheep` `Sheared`, `Pig` `Saddled`), not component groups. The one exception is `Bogged`, whose
+  vanilla save stores the sheared state in the `minecraft:bogged_sheared` group.
 - Offspring, splits and conversions pick the variant in code (`getOffspringType()`,
   `SlimeType::getSplitType()`). A natural spawn doesn't choose one: a new entity picks its
   default in `initEntity()` when there is no NBT.
@@ -444,7 +445,7 @@ $this->networkPropertiesDirty = true;
 
 **Component groups** are for save compatibility only. Some vanilla entities store state in
 the `definitions` NBT list (a creeper's charged and forced-ignite states, a zombie's
-`can_break_doors`, an iron golem's `player_created`/`village_created`). There is no
+`can_break_doors`, a bogged's `minecraft:bogged_sheared`, an iron golem's `player_created`/`village_created`). There is no
 component runtime: `$this->componentGroups` is read for whether a group is present, to
 restore our own field, and the minimum is written back, so vanilla worlds round-trip. Read
 after `parent::initEntity()`, add before `parent::saveNBT()`:
