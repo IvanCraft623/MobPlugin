@@ -79,9 +79,10 @@ class SlimeAttackGoal extends Goal {
 		if ($target !== null) {
 			$this->mob->lookAt($target->getEyePos(), 10, 10);
 
+			//Entity pushing keeps the boxes apart by up to its reach, so touching must include it.
 			if ($this->attackTimer <= 0 &&
 				$this->mob->getAttackDamage() > 0 &&
-				($bb = $this->mob->getBoundingBox())->intersectsWith($target->getBoundingBox())
+				($bb = $this->mob->getBoundingBox()->expandedCopy(Slime::ENTITY_PUSH_REACH, 0, Slime::ENTITY_PUSH_REACH))->intersectsWith($target->getBoundingBox())
 			) {
 				$attackValidator = $this->mob->getAttackableValidator();
 				foreach ($this->mob->getWorld()->getCollidingEntities($bb, $this->mob) as $entity) {
