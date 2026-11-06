@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
@@ -56,6 +57,7 @@ use pocketmine\utils\CloningRegistryTrait;
  *
  * @method static MobBucket AXOLOTL_BUCKET()
  * @method static \pocketmine\item\SpawnEgg AXOLOTL_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg HUSK_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg BAT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CAVE_SPIDER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CHICKEN_SPAWN_EGG()
@@ -123,6 +125,7 @@ final class ExtraVanillaItems{
 		self::register("wither_skeleton_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg", WitherSkeleton::class));
 		self::register("wither_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg", Wither::class));
 		self::register("axolotl_spawn_egg", new MobSpawnEgg(new IID(Ids::AXOLOTL_SPAWN_EGG()), "Axolotl Spawn Egg", Axolotl::class));
+		self::register("husk_spawn_egg", new MobSpawnEgg(new IID(Ids::HUSK_SPAWN_EGG()), "Husk Spawn Egg", Husk::class));
 	}
 
 	private static function registerBuckets() : void{

@@ -47,6 +47,7 @@ use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
@@ -103,6 +104,7 @@ class MobPlugin extends PluginBase {
 		Slime::class,
 		Spider::class,
 		Zombie::class,
+		Husk::class,
 		Skeleton::class,
 		Stray::class,
 		WitherSkeleton::class,
