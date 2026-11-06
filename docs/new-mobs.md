@@ -94,6 +94,7 @@ Optional capabilities. Each is an interface; the canonical example shows how to 
 | `RangedAttackMob` | `performRangedAttack()`, needed by the ranged goals | `SnowGolem`, `AbstractSkeleton` |
 | `NeutralMob` + `NeutralMobTrait` | angry for a while after provocation | `Enderman`, `IronGolem` |
 | `ItemPickupCapable` + `ItemPickupCapableTrait` | picks up and equips loot | `Zombie` |
+| `DoorBreaker` + `DoorBreakerTrait` | a share of the spawns break doors | `Zombie`, `Husk` |
 | `DamageTracker` + `DamageTrackerTrait` | `TargetHighestDamagerGoal` | `Wither` |
 
 ## A minimal mob
