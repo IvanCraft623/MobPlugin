@@ -132,7 +132,7 @@ class Slime extends Mob implements Enemy {
 		$this->setMaxHealth($this->type->getHealth());
 		$this->setHealth($this->type->getHealth());
 		$this->setMovementSpeed($this->getDefaultMovementSpeed());
-		$this->setAttackDamage($this->type->getAttackDamage());
+		$this->setAttackDamage($this->getTypeAttackDamage());
 	}
 
 	protected function createMoveControl() : MoveControl{
@@ -145,7 +145,23 @@ class Slime extends Mob implements Enemy {
 	}
 
 	public function getDefaultMovementSpeed() : float{
-		return $this->type->getDefaultMovementSpeed();
+		return match($this->type){
+			SlimeType::SMALL => 0.3,
+			SlimeType::MEDIUM => 0.4,
+			SlimeType::LARGE => 0.6
+		};
+	}
+
+	protected function createSplit() : Slime{
+		return new Slime($this->getLocation());
+	}
+
+	protected function getTypeAttackDamage() : float{
+		return match($this->type){
+			SlimeType::SMALL => 0,
+			SlimeType::MEDIUM => 2,
+			SlimeType::LARGE => 4
+		};
 	}
 
 	public function getType() : SlimeType{
@@ -198,7 +214,7 @@ class Slime extends Mob implements Enemy {
 		if ($shouldDespawn && ($slimeType = $this->type->getSplitType()) !== null) {
 			$splitAmount = 2 + $this->random->nextBoundedInt(3);
 			for ($i = 0; $i < $splitAmount; $i++) {
-				$slime = new Slime($this->getLocation());
+				$slime = $this->createSplit();
 				$slime->setType($slimeType);
 				(new MobSpawnEvent($slime, MobSpawnCause::SPLIT, $this))->call();
 				$slime->spawnToAll();

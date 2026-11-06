@@ -106,7 +106,7 @@ final class DespawnRuleRegistry{
 		$this->register(DespawnRule::monster(Endermite::class, maxLifetime: 2400));
 		$this->register(DespawnRule::monster(
 			Slime::class,
-			difficultyCondition: static fn(Slime $slime) : bool => $slime->getType()->getAttackDamage() > 0 // the smallest are harmless
+			difficultyCondition: static fn(Slime $slime) : bool => $slime->getAttackDamage() > 0 // the smallest are harmless
 		));
 		$this->register(new DespawnRule(
 			Wither::class,
