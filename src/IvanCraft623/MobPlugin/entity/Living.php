@@ -71,7 +71,6 @@ abstract class Living extends PMLiving {
 	/** An entity pushes us, and we push it back, so every pair of pushable entities pushes twice per tick. */
 	public const ENTITY_PUSHES_PER_PAIR = 2;
 
-	public const WATER_DRAG = 0.8;
 	public const WATER_GRAVITY_MULTIPLIER = 0.5;
 
 	public const LEVITATION_MOTION_PER_LEVEL = 0.05;
@@ -80,6 +79,9 @@ abstract class Living extends PMLiving {
 	protected float $stepHeight = 0.6;
 
 	protected float $verticalDrag;
+
+	/** Fraction of the motion water takes away each tick, on every axis */
+	protected float $waterDrag;
 
 	protected MobInventory $inventory;
 
@@ -100,12 +102,15 @@ abstract class Living extends PMLiving {
 
 	protected function getInitialVerticalDragMultiplier() : float{ return 0.02; }
 
+	protected function getInitialWaterDragMultiplier() : float{ return 0.2; }
+
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
 		$this->inventory = new MobInventory($this);
 
 		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
+		$this->waterDrag = $this->getInitialWaterDragMultiplier();
 		$this->headYaw = $this->lastHeadYaw = $this->location->yaw;
 
 		$syncHeldItem = function() : void{
@@ -368,9 +373,10 @@ abstract class Living extends PMLiving {
 		$motionZ = $this->motion->z;
 
 		if($inWater){
-			$motionX *= self::WATER_DRAG;
-			$motionY *= self::WATER_DRAG;
-			$motionZ *= self::WATER_DRAG;
+			$waterFriction = 1 - $this->waterDrag;
+			$motionX *= $waterFriction;
+			$motionY *= $waterFriction;
+			$motionZ *= $waterFriction;
 		}
 
 		$levitation = $this->effectManager->get(VanillaEffects::LEVITATION());
@@ -388,7 +394,8 @@ abstract class Living extends PMLiving {
 				($motionY - $gravity) * $verticalDrag;
 		}
 
-		$xzFriction = 1 - $this->drag;
+		//Water replaces the air drag
+		$xzFriction = $inWater ? 1 : 1 - $this->drag;
 		if($this->onGround){
 			$xzFriction *= $this->getWorld()->getBlockAt(
 				(int) floor($this->location->x),
