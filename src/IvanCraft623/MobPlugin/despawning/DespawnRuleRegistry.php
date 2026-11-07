@@ -30,6 +30,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
@@ -108,6 +109,11 @@ final class DespawnRuleRegistry{
 		));
 		$this->register(DespawnRule::monster(Endermite::class, maxLifetime: 2400));
 		$this->register(DespawnRule::monster(MagmaCube::class));
+		foreach([
+			Cod::class
+		] as $entityClass){
+			$this->register(new DespawnRule($entityClass, maxDistance: 40));
+		}
 		$this->register(DespawnRule::monster(
 			Slime::class,
 			difficultyCondition: static fn(Slime $slime) : bool => $slime->getAttackDamage() > 0 // the smallest are harmless
