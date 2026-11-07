@@ -26,12 +26,13 @@ namespace IvanCraft623\MobPlugin\entity\aquatic;
 use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomSwimmingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\SwimIdleGoal;
-use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\AmphibiousLocomotion;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\SwimLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\Bucketable;
 use IvanCraft623\MobPlugin\entity\BucketableTrait;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+
 use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\math\Vector3;
@@ -44,6 +45,8 @@ use function mt_rand;
 abstract class AbstractFish extends PathfinderMob implements Bucketable {
 	use BucketableTrait;
 
+	/** Our travel turns the 0.12 water movement into about half the speed fish have in vanilla, so it is doubled */
+	private const SWIM_SPEED_SCALE = 2.0;
 	private const AVOID_SPEED = 1.5;
 	private const AVOID_SPRINT_SPEED = 2;
 
@@ -74,13 +77,13 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable {
 		$this->setMaxHealth(3);
 		$this->setHasGravity(false);
 
-		$this->navigation->setPathfindingMalus(BlockPathType::WALKABLE, BlockPathType::BLOCKED->getMalus());
-		$this->navigation->setPathfindingMalus(BlockPathType::OPEN, BlockPathType::BLOCKED->getMalus());
 		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER_BORDER, 0);
+
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new PathNavigation($this, new AmphibiousLocomotion());
+		return new PathNavigation($this, new SwimLocomotion(waterSpeed: self::SWIM_SPEED_SCALE));
 	}
 
 	protected function registerGoals() : void{
