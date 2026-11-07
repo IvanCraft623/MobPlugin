@@ -96,6 +96,7 @@ Optional capabilities. Each is an interface; the canonical example shows how to 
 | `ItemPickupCapable` + `ItemPickupCapableTrait` | picks up and equips loot | `Zombie` |
 | `DoorBreaker` + `DoorBreakerTrait` | a share of the spawns break doors | `Zombie`, `Husk` |
 | `DamageTracker` + `DamageTrackerTrait` | `TargetHighestDamagerGoal` | `Wither` |
+| `Flocking` + `FlockingTrait` | moves in a flock, see [Flocking](#flocking) | `AbstractFish` |
 
 ## A minimal mob
 
@@ -203,6 +204,9 @@ Under `entity/ai/goal/`; read the constructor of the one you use.
 - Movement: `RandomStrollGoal`, `WaterAvoidingRandomStrollGoal`, `PanicGoal`,
   `MoveTowardsTargetGoal`, `FleeSunlightGoal`, `AvoidSunlightGoal`,
   `WaterAvoidingRandomFlyingGoal` (needs flying navigation), `FloatGoal`.
+- Swimming: `RandomSwimmingGoal` (`avoidSurface:` keeps targets below the surface), `SwimIdleGoal`,
+  `AvoidEntityGoal` (flees from the given types), `RiverFollowingGoal`, `FlopOutOfWaterGoal`.
+- Flocks: `ManageFlockGoal` and `FollowFlockGoal`, see [Flocking](#flocking).
 - Looking: `LookAtEntityGoal`, `RandomLookAroundGoal`.
 - Combat: `MeleeAttackGoal`, `LeapAtTargetGoal`, `RangedAttackGoal` and
   `RangedBowAttackGoal` (the mob must implement `RangedAttackMob`).

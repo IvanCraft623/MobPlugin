@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\aquatic;
 
 use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\FlopOutOfWaterGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FollowFlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\ManageFlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomSwimmingGoal;
@@ -95,6 +96,7 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 		$this->initFlocking();
 
 		$this->goalSelector->addGoal(0, new ManageFlockGoal($this));
+		$this->goalSelector->addGoal(0, new FlopOutOfWaterGoal($this));
 		//Above the flee goal: a school flees with its leader instead of scattering
 		$this->goalSelector->addGoal(1, new FollowFlockGoal($this));
 		$this->goalSelector->addGoal(1, new AvoidEntityGoal(
@@ -109,9 +111,6 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 		$this->goalSelector->addGoal(5, new SwimIdleGoal($this, 100, 0.05));
 	}
 
-	/**
-	 * Fish can't breathe air: they dry out on land.
-	 */
 	public function canBreathe() : bool{
 		return $this->isInWater();
 	}
