@@ -38,6 +38,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -109,6 +110,7 @@ class MobPlugin extends PluginBase {
 		Spider::class,
 		Zombie::class,
 		Husk::class,
+		GlowSquid::class,
 		MagmaCube::class,
 		Bogged::class,
 		Vindicator::class,

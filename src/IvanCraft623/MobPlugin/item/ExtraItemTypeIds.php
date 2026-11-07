@@ -55,6 +55,7 @@ use function preg_match;
  * @method static int TROPICAL_FISH_BUCKET()
  * @method static int WITHER_SPAWN_EGG()
  * @method static int HUSK_SPAWN_EGG()
+ * @method static int GLOW_SQUID_SPAWN_EGG()
  * @method static int MAGMA_CUBE_SPAWN_EGG()
  * @method static int BOGGED_SPAWN_EGG()
  * @method static int VINDICATOR_SPAWN_EGG()
@@ -88,6 +89,7 @@ final class ExtraItemTypeIds{
 		self::register("wither_spawn_egg");
 		self::register("axolotl_spawn_egg");
 		self::register("husk_spawn_egg");
+		self::register("glow_squid_spawn_egg");
 		self::register("magma_cube_spawn_egg");
 		self::register("bogged_spawn_egg");
 		self::register("vindicator_spawn_egg");

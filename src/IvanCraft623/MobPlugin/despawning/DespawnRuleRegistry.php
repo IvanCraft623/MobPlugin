@@ -30,6 +30,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
@@ -81,6 +82,7 @@ final class DespawnRuleRegistry{
 			MooshroomCow::class,
 			Pig::class,
 			Sheep::class,
+			GlowSquid::class,
 			Squid::class // implemented by PocketMine-MP
 		] as $entityClass){
 			$this->register(new DespawnRule($entityClass));
