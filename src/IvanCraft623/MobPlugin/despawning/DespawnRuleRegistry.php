@@ -33,6 +33,7 @@ use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\aquatic\Salmon;
+use IvanCraft623\MobPlugin\entity\aquatic\TropicalFish;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
@@ -112,7 +113,8 @@ final class DespawnRuleRegistry{
 		$this->register(DespawnRule::monster(MagmaCube::class));
 		foreach([
 			Cod::class,
-			Salmon::class
+			Salmon::class,
+			TropicalFish::class
 		] as $entityClass){
 			$this->register(new DespawnRule($entityClass, maxDistance: 40));
 		}
