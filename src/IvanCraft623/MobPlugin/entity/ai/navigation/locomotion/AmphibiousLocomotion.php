@@ -23,10 +23,6 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
-use IvanCraft623\MobPlugin\entity\ai\control\AquaticMoveControl;
-use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
-use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
-use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
@@ -34,18 +30,15 @@ use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
 
-class AmphibiousLocomotion extends Locomotion{
+class AmphibiousLocomotion extends AquaticLocomotion{
 	public function __construct(
-		private int $maxPitchChange = 85,
-		private int $maxYawChange = 10,
-		private float $waterSpeed = 1.0,
-		private float $landSpeed = 1.0,
-		private bool $buoyant = false
+		int $maxPitchChange = 85,
+		int $maxYawChange = 10,
+		float $landSpeed = 1.0,
+		bool $buoyant = false,
+		bool $gentleVertical = true
 	) {
-	}
-
-	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
-		return new AquaticMoveControl($mob, $navigation, $this->maxPitchChange, $this->maxYawChange, $this->waterSpeed, $this->landSpeed, $this->buoyant);
+		parent::__construct($maxPitchChange, $maxYawChange, $landSpeed, $buoyant, $gentleVertical);
 	}
 
 	public function createEvaluator() : NodeEvaluator{
@@ -57,20 +50,7 @@ class AmphibiousLocomotion extends Locomotion{
 		return BlockPathTypeCostMap::amphibious()->merge($mob->getNavigation()->getCostMap());
 	}
 
-	public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool{
-		return true;
-	}
-
-	public function pathPosition(PathfinderMob $mob, TraversalRules $rules) : Vector3{
-		$position = $mob->getPosition();
-		return new Vector3($position->x, $position->y + $mob->getSize()->getHeight() / 2, $position->z);
-	}
-
 	public function isStableDestination(PathfinderMob $mob, Vector3 $position) : bool{
 		return $mob->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() !== BlockTypeIds::AIR;
-	}
-
-	public function canMoveDirectly(PathfinderMob $mob, Vector3 $from, Vector3 $to) : bool{
-		return self::isClearForMovementBetween($mob, $from, $to, false);
 	}
 }

@@ -52,8 +52,6 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 	use BucketableTrait;
 	use FlockingTrait;
 
-	/** Our travel turns the 0.12 water movement into about half the speed fish have in vanilla, so it is doubled */
-	private const SWIM_SPEED_SCALE = 2.0;
 	private const AVOID_SPEED = 1.5;
 	private const AVOID_SPRINT_SPEED = 2;
 
@@ -90,7 +88,7 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new PathNavigation($this, new SwimLocomotion(waterSpeed: self::SWIM_SPEED_SCALE));
+		return new PathNavigation($this, new SwimLocomotion(gentleVertical: false));
 	}
 
 	protected function registerGoals() : void{

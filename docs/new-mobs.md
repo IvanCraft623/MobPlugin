@@ -375,7 +375,7 @@ with `new` and `spawnToAll()`, and don't add it to `ALL_ENTITIES`.
 ### Different movement
 
 Override `createNavigation()` to pass another `Locomotion` to the `PathNavigation`:
-`WallClimberLocomotion` (`Spider`), `FlyingLocomotion` (`Wither`), `AmphibiousLocomotion` (`Axolotl`);
+`WallClimberLocomotion` (`Spider`), `FlyingLocomotion` (`Wither`), `AmphibiousLocomotion` (`Axolotl`) and `SwimLocomotion` (fish), both on `AquaticLocomotion`;
 `TraversalRules` set what the mob may do. The locomotion also creates the control that steers it (`FlightMoveControl` for
 `FlyingLocomotion`). A flying mob uses `WaterAvoidingRandomFlyingGoal`. `BreakDoorGoal` and `AvoidSunlightGoal` need a ground-based
 locomotion.

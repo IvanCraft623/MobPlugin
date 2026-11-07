@@ -33,7 +33,11 @@ use pocketmine\math\Vector3;
 /**
  * For mobs that never leave the water.
  */
-class SwimLocomotion extends AmphibiousLocomotion{
+class SwimLocomotion extends AquaticLocomotion{
+
+	public function __construct(int $maxPitchChange = 85, int $maxYawChange = 10, bool $gentleVertical = true) {
+		parent::__construct($maxPitchChange, $maxYawChange, 1.0, false, $gentleVertical);
+	}
 
 	public function createEvaluator() : NodeEvaluator{
 		return new SwimNodeEvaluator();

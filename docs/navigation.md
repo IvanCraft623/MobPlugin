@@ -48,6 +48,7 @@ delegates to:
 | `WallClimberLocomotion` | inherited | inherited | Keeps pushing toward the target after the path ends (spiders). |
 | `FlyingLocomotion` | `FlightNodeEvaluator` | `FlightMoveControl` | Steers in 3D, cuts corners through open air. |
 | `AmphibiousLocomotion` | `AmphibiousNodeEvaluator` | `AquaticMoveControl` | Swims in 3D, walks on land. |
+| `SwimLocomotion` | `SwimNodeEvaluator` | `AquaticMoveControl` | Swims in 3D and never leaves the water (fish). |
 
 `TraversalRules` (`getRules()`): `canFloat`, `canOpenDoors`, `canPassDoors` (default true),
 `canWalkOverFences` and `avoidSun`. Goals change them at runtime, e.g. `FloatGoal` sets `canFloat`.
