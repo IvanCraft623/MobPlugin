@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
+use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 
 use pocketmine\block\MobHead;
@@ -45,12 +47,12 @@ class TargetingUtils {
 			}
 			$visibilityPercent *= 0.7 * $percent;
 		}
-		//TODO: skeleton and creeper heads
-		if ($target instanceof Zombie) {
-			$headBlock = $entity->getArmorInventory()->getHelmet()->getBlock();
-			if ($headBlock instanceof MobHead && $headBlock->getMobHeadType()->equals(MobHeadType::ZOMBIE())) {
-				$visibilityPercent *= 0.5;
-			}
+		if(
+			($target instanceof Skeleton && self::isWearingHead($entity, MobHeadType::SKELETON)) ||
+			($target instanceof Creeper && self::isWearingHead($entity, MobHeadType::CREEPER)) ||
+			($target instanceof Zombie && self::isWearingHead($entity, MobHeadType::ZOMBIE))
+		){
+			$visibilityPercent *= 0.5;
 		}
 		return $visibilityPercent;
 	}
@@ -59,5 +61,10 @@ class TargetingUtils {
 		$inventory = $entity->getArmorInventory();
 		$size = $inventory->getSize();
 		return ($size > 0) ? (count($inventory->getContents()) / $size) : 0.0;
+	}
+
+	private static function isWearingHead(Living $entity, MobHeadType $type) : bool{
+		$block = $entity->getArmorInventory()->getHelmet()->getBlock();
+		return $block instanceof MobHead && $block->getMobHeadType() === $type;
 	}
 }
