@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
+use IvanCraft623\MobPlugin\entity\aquatic\Salmon;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
@@ -66,6 +67,8 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg HUSK_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg COD_SPAWN_EGG()
  * @method static MobBucket COD_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg SALMON_SPAWN_EGG()
+ * @method static MobBucket SALMON_BUCKET()
  * @method static \pocketmine\item\SpawnEgg GLOW_SQUID_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg MAGMA_CUBE_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg BOGGED_SPAWN_EGG()
@@ -140,6 +143,7 @@ final class ExtraVanillaItems{
 		self::register("axolotl_spawn_egg", new MobSpawnEgg(new IID(Ids::AXOLOTL_SPAWN_EGG()), "Axolotl Spawn Egg", Axolotl::class));
 		self::register("husk_spawn_egg", new MobSpawnEgg(new IID(Ids::HUSK_SPAWN_EGG()), "Husk Spawn Egg", Husk::class));
 		self::register("cod_spawn_egg", new MobSpawnEgg(new IID(Ids::COD_SPAWN_EGG()), "Cod Spawn Egg", Cod::class));
+		self::register("salmon_spawn_egg", new MobSpawnEgg(new IID(Ids::SALMON_SPAWN_EGG()), "Salmon Spawn Egg", Salmon::class));
 		self::register("glow_squid_spawn_egg", new MobSpawnEgg(new IID(Ids::GLOW_SQUID_SPAWN_EGG()), "Glow Squid Spawn Egg", GlowSquid::class));
 		self::register("magma_cube_spawn_egg", new MobSpawnEgg(new IID(Ids::MAGMA_CUBE_SPAWN_EGG()), "Magma Cube Spawn Egg", MagmaCube::class));
 		self::register("bogged_spawn_egg", new MobSpawnEgg(new IID(Ids::BOGGED_SPAWN_EGG()), "Bogged Spawn Egg", Bogged::class));
@@ -149,6 +153,7 @@ final class ExtraVanillaItems{
 
 	private static function registerBuckets() : void{
 		self::register("cod_bucket", new MobBucket(new IID(Ids::COD_BUCKET()), "Bucket of Cod", Cod::class));
+		self::register("salmon_bucket", new MobBucket(new IID(Ids::SALMON_BUCKET()), "Bucket of Salmon", Salmon::class));
 		self::register("axolotl_bucket", new MobBucket(new IID(Ids::AXOLOTL_BUCKET()), "Bucket of Axolotl", Axolotl::class));
 		//TODO: pass the tropical fish once it exists
 		self::register("tropical_fish_bucket", new MobBucket(new IID(Ids::TROPICAL_FISH_BUCKET()), "Bucket of Tropical Fish"));

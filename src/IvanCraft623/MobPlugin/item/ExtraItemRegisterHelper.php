@@ -68,6 +68,8 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::HUSK_SPAWN_EGG, ExtraVanillaItems::HUSK_SPAWN_EGG(), ["husk_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::COD_SPAWN_EGG, ExtraVanillaItems::COD_SPAWN_EGG(), ["cod_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::COD_BUCKET, ExtraVanillaItems::COD_BUCKET(), ["cod_bucket"]);
+		self::registerSimpleItem(ItemTypeNames::SALMON_SPAWN_EGG, ExtraVanillaItems::SALMON_SPAWN_EGG(), ["salmon_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::SALMON_BUCKET, ExtraVanillaItems::SALMON_BUCKET(), ["salmon_bucket"]);
 		self::registerSimpleItem(ItemTypeNames::GLOW_SQUID_SPAWN_EGG, ExtraVanillaItems::GLOW_SQUID_SPAWN_EGG(), ["glow_squid_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::MAGMA_CUBE_SPAWN_EGG, ExtraVanillaItems::MAGMA_CUBE_SPAWN_EGG(), ["magma_cube_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::BOGGED_SPAWN_EGG, ExtraVanillaItems::BOGGED_SPAWN_EGG(), ["bogged_spawn_egg"]);
