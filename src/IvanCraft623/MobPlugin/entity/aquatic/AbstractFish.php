@@ -105,7 +105,7 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 			self::AVOID_SPRINT_SPEED,
 			stayInWater: true
 		));
-		$this->goalSelector->addGoal(3, new RandomSwimmingGoal($this, 1, 0, 16, 4));
+		$this->goalSelector->addGoal(3, new RandomSwimmingGoal($this, 1, 0, 16, 4, avoidSurface: true));
 		$this->goalSelector->addGoal(5, new SwimIdleGoal($this, 100, 0.05));
 	}
 
