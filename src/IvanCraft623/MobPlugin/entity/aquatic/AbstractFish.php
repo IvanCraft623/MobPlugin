@@ -35,7 +35,9 @@ use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\Bucketable;
 use IvanCraft623\MobPlugin\entity\BucketableTrait;
 use IvanCraft623\MobPlugin\entity\Flocking;
+use IvanCraft623\MobPlugin\entity\FlockingParameters;
 use IvanCraft623\MobPlugin\entity\FlockingTrait;
+use IvanCraft623\MobPlugin\entity\MobType;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 use IvanCraft623\Pathfinder\BlockPathType;
@@ -56,10 +58,35 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 	private const AVOID_SPEED = 1.5;
 	private const AVOID_SPRINT_SPEED = 2;
 
+	private static ?FlockingParameters $flockingParameters = null;
+
 	/**
 	 * Distance, in blocks, at which nearby threats make the fish flee.
 	 */
 	abstract protected function getAvoidDistance() : float;
+
+	public function getFlockingParameters() : FlockingParameters{
+		return self::$flockingParameters ??= new FlockingParameters(
+			influenceRadius: 3,
+			speed: 0.09,
+			separationWeight: 1.75,
+			separationThreshold: 0.95,
+			cohesionWeight: 2,
+			innerCohesionThreshold: 1.25,
+			goalWeight: 2,
+			blockWeight: 0.85,
+			blockDistance: 2,
+			staysBelowSurface: true,
+			useCenterOfMass: true,
+			lowFlockLimit: 4,
+			highFlockLimit: 8,
+			lonerChance: 0.1
+		);
+	}
+
+	public function getMobType() : MobType{
+		return MobType::WATER();
+	}
 
 	public function getDefaultMovementSpeed() : float{
 		return 0.12;

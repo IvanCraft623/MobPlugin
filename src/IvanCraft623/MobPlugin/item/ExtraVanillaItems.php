@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
+use IvanCraft623\MobPlugin\entity\aquatic\Pufferfish;
 use IvanCraft623\MobPlugin\entity\aquatic\Salmon;
 use IvanCraft623\MobPlugin\entity\aquatic\TropicalFish;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
@@ -95,6 +96,8 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg WITHER_SKELETON_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WITHER_SPAWN_EGG()
  * @method static MobBucket TROPICAL_FISH_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg PUFFERFISH_SPAWN_EGG()
+ * @method static MobBucket PUFFERFISH_BUCKET()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -152,6 +155,7 @@ final class ExtraVanillaItems{
 		self::register("bogged_spawn_egg", new MobSpawnEgg(new IID(Ids::BOGGED_SPAWN_EGG()), "Bogged Spawn Egg", Bogged::class));
 		self::register("vindicator_spawn_egg", new MobSpawnEgg(new IID(Ids::VINDICATOR_SPAWN_EGG()), "Vindicator Spawn Egg", Vindicator::class));
 		self::register("zombie_pigman_spawn_egg", new MobSpawnEgg(new IID(Ids::ZOMBIE_PIGMAN_SPAWN_EGG()), "Zombified Piglin Spawn Egg", ZombifiedPiglin::class));
+		self::register("pufferfish_spawn_egg", new MobSpawnEgg(new IID(Ids::PUFFERFISH_SPAWN_EGG()), "Pufferfish Spawn Egg", Pufferfish::class));
 	}
 
 	private static function registerBuckets() : void{
@@ -159,5 +163,6 @@ final class ExtraVanillaItems{
 		self::register("salmon_bucket", new MobBucket(new IID(Ids::SALMON_BUCKET()), "Bucket of Salmon", Salmon::class));
 		self::register("axolotl_bucket", new MobBucket(new IID(Ids::AXOLOTL_BUCKET()), "Bucket of Axolotl", Axolotl::class));
 		self::register("tropical_fish_bucket", new MobBucket(new IID(Ids::TROPICAL_FISH_BUCKET()), "Bucket of Tropical Fish", TropicalFish::class));
+		self::register("pufferfish_bucket", new MobBucket(new IID(Ids::PUFFERFISH_BUCKET()), "Bucket of Pufferfish", Pufferfish::class));
 	}
 }

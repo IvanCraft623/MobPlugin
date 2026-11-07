@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\aquatic;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
-use IvanCraft623\MobPlugin\entity\FlockingParameters;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
@@ -34,8 +33,6 @@ use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class Cod extends AbstractFish {
-
-	private static ?FlockingParameters $flockingParameters = null;
 
 	public static function getNetworkTypeId() : string{ return EntityIds::COD; }
 
@@ -49,25 +46,6 @@ class Cod extends AbstractFish {
 
 	protected function getAvoidDistance() : float{
 		return 6;
-	}
-
-	public function getFlockingParameters() : FlockingParameters{
-		return self::$flockingParameters ??= new FlockingParameters(
-			influenceRadius: 3,
-			speed: 0.09,
-			separationWeight: 1.75,
-			separationThreshold: 0.95,
-			cohesionWeight: 2,
-			innerCohesionThreshold: 1.25,
-			goalWeight: 2,
-			blockWeight: 0.85,
-			blockDistance: 2,
-			staysBelowSurface: true,
-			useCenterOfMass: true,
-			lowFlockLimit: 4,
-			highFlockLimit: 8,
-			lonerChance: 0.1
-		);
 	}
 
 	public function getDefaultMovementSpeed() : float{

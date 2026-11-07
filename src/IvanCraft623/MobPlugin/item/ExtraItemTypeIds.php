@@ -65,6 +65,8 @@ use function preg_match;
  * @method static int BOGGED_SPAWN_EGG()
  * @method static int VINDICATOR_SPAWN_EGG()
  * @method static int ZOMBIE_PIGMAN_SPAWN_EGG()
+ * @method static int PUFFERFISH_SPAWN_EGG()
+ * @method static int PUFFERFISH_BUCKET()
  */
 final class ExtraItemTypeIds{
 	/**
@@ -106,6 +108,8 @@ final class ExtraItemTypeIds{
 		self::register("zombie_pigman_spawn_egg");
 		self::register("tropical_fish_bucket");
 		self::register("axolotl_bucket");
+		self::register("pufferfish_spawn_egg");
+		self::register("pufferfish_bucket");
 	}
 
 	private static function verifyName(string $name) : void{

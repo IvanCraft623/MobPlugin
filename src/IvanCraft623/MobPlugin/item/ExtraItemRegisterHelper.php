@@ -78,6 +78,8 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::ZOMBIE_PIGMAN_SPAWN_EGG, ExtraVanillaItems::ZOMBIE_PIGMAN_SPAWN_EGG(), ["zombie_pigman_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::AXOLOTL_BUCKET, ExtraVanillaItems::AXOLOTL_BUCKET(), ["axolotl_bucket"]);
 		self::registerSimpleItem(ItemTypeNames::TROPICAL_FISH_BUCKET, ExtraVanillaItems::TROPICAL_FISH_BUCKET(), ["tropical_fish_bucket"]);
+		self::registerSimpleItem(ItemTypeNames::PUFFERFISH_SPAWN_EGG, ExtraVanillaItems::PUFFERFISH_SPAWN_EGG(), ["pufferfish_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::PUFFERFISH_BUCKET, ExtraVanillaItems::PUFFERFISH_BUCKET(), ["pufferfish_bucket"]);
 	}
 
 	/**
