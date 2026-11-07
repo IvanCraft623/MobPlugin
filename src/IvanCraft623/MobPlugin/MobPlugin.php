@@ -42,6 +42,7 @@ use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\aquatic\Salmon;
 use IvanCraft623\MobPlugin\entity\aquatic\TropicalFish;
+use IvanCraft623\MobPlugin\entity\aquatic\TropicalFishPreset;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\CustomAttributes;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -64,6 +65,8 @@ use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\loot\LootTableRegistry;
+use IvanCraft623\MobPlugin\spawning\event\SpawnEventRegistry;
+use IvanCraft623\MobPlugin\spawning\event\TropicalFishPresetSpawnEventMap;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
@@ -190,6 +193,14 @@ class MobPlugin extends PluginBase {
 
 	private function registerNaturalSpawning() : void{
 		$settings = Settings::getGlobalSettings();
+
+		SpawnEventRegistry::getInstance()->registerVariants(
+			TropicalFish::class,
+			TropicalFishPresetSpawnEventMap::getInstance()->getAll(),
+			static function(TropicalFish $fish, TropicalFishPreset $preset) : void{
+				$fish->setVariant($preset->getShape(), $preset->getPattern(), $preset->getBaseColor(), $preset->getPatternColor());
+			}
+		);
 
 		$this->getScheduler()->scheduleRepeatingTask(new NaturalSpawnerTask(
 			SpawnRuleRegistry::getInstance(),

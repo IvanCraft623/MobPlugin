@@ -161,6 +161,4 @@ class TropicalFish extends AbstractFish {
 	public function getPickedItem() : ?Item{
 		return ExtraVanillaItems::TROPICAL_FISH_SPAWN_EGG();
 	}
-
-	//TODO: the 22 preset variants natural spawns pick from
 }
