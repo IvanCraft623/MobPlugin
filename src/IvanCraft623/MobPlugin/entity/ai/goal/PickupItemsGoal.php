@@ -37,6 +37,10 @@ use const PHP_INT_MAX;
 
 class PickupItemsGoal extends Goal {
 
+	private const CHECK_INTERVAL = 10;
+
+	private int $checkTimer = 0;
+
 	/** @phpstan-var array<int, int|Closure(Item): int> */
 	private array $wantedItems = [];
 
@@ -93,9 +97,10 @@ class PickupItemsGoal extends Goal {
 	}
 
 	public function canUse() : bool {
-		if (count($this->wantedItems) === 0) {
+		if (count($this->wantedItems) === 0 || --$this->checkTimer > 0) {
 			return false;
 		}
+		$this->checkTimer = $this->reducedTickDelay(self::CHECK_INTERVAL);
 
 		if ($this->cooldownAfterBeingAttacked !== null) {
 			if (
