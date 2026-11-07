@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\aquatic;
 
 use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\FollowFlockGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\ManageFlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomSwimmingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\SwimIdleGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\SwimLocomotion;
@@ -31,19 +33,24 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\Bucketable;
 use IvanCraft623\MobPlugin\entity\BucketableTrait;
+use IvanCraft623\MobPlugin\entity\Flocking;
+use IvanCraft623\MobPlugin\entity\FlockingTrait;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
 use IvanCraft623\Pathfinder\BlockPathType;
 
+use pocketmine\block\Block;
+use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use function mt_rand;
 
 /**
- * A fish: stays in water and flees players and axolotls.
+ * A fish: stays in water, swims in flocks of its kind and flees players and axolotls.
  */
-abstract class AbstractFish extends PathfinderMob implements Bucketable {
+abstract class AbstractFish extends PathfinderMob implements Bucketable, Flocking {
 	use BucketableTrait;
+	use FlockingTrait;
 
 	/** Our travel turns the 0.12 water movement into about half the speed fish have in vanilla, so it is doubled */
 	private const SWIM_SPEED_SCALE = 2.0;
@@ -87,6 +94,11 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable {
 	}
 
 	protected function registerGoals() : void{
+		$this->initFlocking();
+
+		$this->goalSelector->addGoal(0, new ManageFlockGoal($this));
+		//Above the flee goal: a school flees with its leader instead of scattering
+		$this->goalSelector->addGoal(1, new FollowFlockGoal($this));
 		$this->goalSelector->addGoal(1, new AvoidEntityGoal(
 			$this,
 			[Player::class, Axolotl::class],
@@ -104,5 +116,13 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable {
 	 */
 	public function canBreathe() : bool{
 		return $this->isInWater();
+	}
+
+	public function canFlockNow() : bool{
+		return $this->isInWater();
+	}
+
+	public function canFlockThrough(Block $block) : bool{
+		return $block instanceof Water;
 	}
 }

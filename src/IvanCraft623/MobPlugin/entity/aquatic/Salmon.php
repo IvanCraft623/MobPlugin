@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\aquatic;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+use IvanCraft623\MobPlugin\entity\FlockingParameters;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
@@ -37,6 +38,8 @@ class Salmon extends AbstractFish {
 
 	protected SalmonSize $salmonSize;
 
+	private static ?FlockingParameters $flockingParameters = null;
+
 	public static function getNetworkTypeId() : string{ return EntityIds::SALMON; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
@@ -45,6 +48,25 @@ class Salmon extends AbstractFish {
 
 	public function getName() : string{
 		return "Salmon";
+	}
+
+	public function getFlockingParameters() : FlockingParameters{
+		return self::$flockingParameters ??= new FlockingParameters(
+			influenceRadius: 3,
+			speed: 0.12,
+			separationWeight: 0.65,
+			separationThreshold: 0.15,
+			cohesionWeight: 2.25,
+			innerCohesionThreshold: 1.5,
+			goalWeight: 2,
+			blockWeight: 0.75,
+			blockDistance: 1,
+			staysBelowSurface: true,
+			useCenterOfMass: false,
+			lowFlockLimit: 4,
+			highFlockLimit: 8,
+			lonerChance: 0.1
+		);
 	}
 
 	protected function getAvoidDistance() : float{

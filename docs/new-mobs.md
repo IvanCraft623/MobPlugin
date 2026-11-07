@@ -382,6 +382,11 @@ locomotion.
 
 Path costs: `$this->navigation->setPathfindingMalus(BlockPathType::DANGER_FIRE, 16)` in `initProperties()`.
 
+### Flocking
+
+Implement `Flocking` with `FlockingTrait` (fish), call `initFlocking()` in `registerGoals()` and add `ManageFlockGoal` and
+`FollowFlockGoal`. The latter sets the move control's wanted position, so it only suits free movers like swimmers.
+
 ### Sun-sensitive undead
 
 Burning is `Monster::isSunSensitive()` returning `true`: `Monster::tickState()` then sets the

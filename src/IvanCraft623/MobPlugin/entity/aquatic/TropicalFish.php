@@ -26,6 +26,8 @@ namespace IvanCraft623\MobPlugin\entity\aquatic;
 use IvanCraft623\MobPlugin\data\bedrock\TropicalFishPatternIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\TropicalFishShapeIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+use IvanCraft623\MobPlugin\entity\Flocking;
+use IvanCraft623\MobPlugin\entity\FlockingParameters;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
@@ -57,6 +59,8 @@ class TropicalFish extends AbstractFish {
 	protected DyeColor $baseColor;
 
 	protected DyeColor $patternColor;
+
+	private static ?FlockingParameters $flockingParameters = null;
 
 	public static function getNetworkTypeId() : string{ return EntityIds::TROPICALFISH; }
 
@@ -148,6 +152,36 @@ class TropicalFish extends AbstractFish {
 		$this->networkPropertiesDirty = true;
 
 		return $this;
+	}
+
+	public function getFlockingParameters() : FlockingParameters{
+		return self::$flockingParameters ??= new FlockingParameters(
+			influenceRadius: 3,
+			speed: 0.05,
+			separationWeight: 0.65,
+			separationThreshold: 0.15,
+			cohesionWeight: 2.75,
+			innerCohesionThreshold: 1.5,
+			goalWeight: 2,
+			blockWeight: 0.85,
+			blockDistance: 2,
+			staysBelowSurface: true,
+			useCenterOfMass: false,
+			lowFlockLimit: 4,
+			highFlockLimit: 8,
+			lonerChance: 0.1
+		);
+	}
+
+	/**
+	 * Tropical fish only flock with their exact look.
+	 */
+	public function canFlockWith(Flocking $other) : bool{
+		return $other instanceof TropicalFish &&
+			$other->shape === $this->shape &&
+			$other->pattern === $this->pattern &&
+			$other->baseColor === $this->baseColor &&
+			$other->patternColor === $this->patternColor;
 	}
 
 	public function getDrops() : array{

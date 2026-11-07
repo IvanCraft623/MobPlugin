@@ -84,11 +84,6 @@ class AquaticMoveControl extends PathMoveControl {
 	}
 
 	private function tickMoveTo(bool $inWater) : void {
-		if ($this->navigation->isDone()) {
-			$this->idle();
-			return;
-		}
-
 		$this->operation = MoveOperation::WAIT;
 
 		$location = $this->mob->getLocation();
