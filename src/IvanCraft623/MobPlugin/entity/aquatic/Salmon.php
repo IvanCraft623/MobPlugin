@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\aquatic;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+use IvanCraft623\MobPlugin\entity\ai\goal\RiverFollowingGoal;
 use IvanCraft623\MobPlugin\entity\FlockingParameters;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
@@ -67,6 +68,13 @@ class Salmon extends AbstractFish {
 			highFlockLimit: 8,
 			lonerChance: 0.1
 		);
+	}
+
+	protected function registerGoals() : void{
+		parent::registerGoals();
+
+		//Takes over where random swimming finds no target
+		$this->goalSelector->addGoal(3, new RiverFollowingGoal($this));
 	}
 
 	protected function getAvoidDistance() : float{

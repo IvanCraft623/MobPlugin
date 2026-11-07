@@ -528,6 +528,13 @@ abstract class Mob extends Living {
 	protected function tickState() : void{
 	}
 
+	/**
+	 * Moves the mob by a fixed step with collisions, apart from its motion: no acceleration and no drag.
+	 */
+	public function displace(float $dx, float $dy, float $dz) : void{
+		$this->move($dx, $dy, $dz);
+	}
+
 	public function travel(float $sideways, float $upward, float $forward) : void{
 		// TODO: More complex movement suff :P
 

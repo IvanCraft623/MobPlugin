@@ -308,6 +308,8 @@ class CuriousGoal extends Goal{
 - Move through the navigation, never `MoveControl` directly. See
   [navigation.md](navigation.md).
 - Look with `getLookControl()->setLookAt()` every tick: it holds for two ticks.
+- The exceptions follow the vanilla goals: `FollowFlockGoal` sets the move control's wanted position and
+  `RiverFollowingGoal` steps the mob itself.
 - Pick random destinations with `entity/ai/utils/` (`DefaultPositionGenerator`,
   `LandPositionGenerator`, …).
 - `SwellGoal` (creeper) is a compact real example of a goal that stops the navigation in
