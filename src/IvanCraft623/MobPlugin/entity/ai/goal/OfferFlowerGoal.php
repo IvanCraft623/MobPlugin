@@ -29,10 +29,10 @@ use IvanCraft623\MobPlugin\entity\animation\OfferFlowerAnimation;
 use IvanCraft623\MobPlugin\entity\animation\WithdrawFlowerAnimation;
 
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\entity\Villager;
-use pocketmine\world\World;
 
 class OfferFlowerGoal extends Goal {
 
@@ -61,8 +61,7 @@ class OfferFlowerGoal extends Goal {
 	}
 
 	public function canUse() : bool {
-		$time = $this->mob->getWorld()->getTimeOfDay();
-		if ($time >= World::TIME_NIGHT && $time < World::TIME_SUNRISE) { //is day check
+		if (!Utils::isDaytime($this->mob->getWorld())) {
 			return false;
 		}
 

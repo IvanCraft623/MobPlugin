@@ -265,6 +265,12 @@ class Utils {
 			($chunk->getBlockStateId($x & Chunk::COORD_MASK, $y, $z & Chunk::COORD_MASK) >> Block::INTERNAL_STATE_DATA_BITS) === BlockTypeIds::WATER;
 	}
 
+	public static function isDaytime(World $world) : bool{
+		$time = $world->getTimeOfDay();
+
+		return $time < World::TIME_NIGHT || $time >= World::TIME_SUNRISE;
+	}
+
 	public static function isSkyVisible(World $world, Vector3 $pos) : bool{
 		return $world->getPotentialBlockSkyLightAt((int) floor($pos->x), (int) floor($pos->y), (int) floor($pos->z)) === 15;
 	}
