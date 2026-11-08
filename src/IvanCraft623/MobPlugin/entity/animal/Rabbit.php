@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\rabbit\RaidGardenGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\animal\rabbit\RabbitMoveControl;
+use IvanCraft623\MobPlugin\entity\HopperTrait;
 use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
@@ -58,6 +59,7 @@ use pocketmine\player\Player;
 use function mt_rand;
 
 class Rabbit extends Animal {
+	use HopperTrait;
 
 	private const TAG_COAT = "Variant"; //TAG_Int
 

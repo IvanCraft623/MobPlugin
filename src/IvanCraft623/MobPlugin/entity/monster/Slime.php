@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeFloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeKeepOnJumpingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeRandomDirectionGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\HopperTrait;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeMoveControl;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
@@ -51,6 +52,7 @@ use function array_rand;
 use function assert;
 
 class Slime extends Mob implements Enemy {
+	use HopperTrait;
 
 	private const BOUNCE_METADATA_PROPERTY = 24; //byte
 	private const BOUNCE_SQUISH = 1;
