@@ -35,6 +35,8 @@ use function max;
  */
 abstract class MoveControl implements Control {
 
+	private const MIN_LIQUID_CLIMB = 0.009; //blocks the wanted position is above the feet
+
 	protected Vector3 $wantedPosition;
 
 	protected float $speedModifier;
@@ -77,12 +79,17 @@ abstract class MoveControl implements Control {
 	abstract public function tick() : void;
 
 	/**
-	 * Jumps when the wanted position is more than a step up and close.
+	 * Jumps when the wanted position is more than a step up and close. In a liquid a jump is a push up that
+	 * is asked for every tick while the position is above, so there is no jumping state to wait for.
 	 */
 	protected function jumpIfNeeded(float $dx, float $dy, float $dz) : void {
-		if ($dy > $this->mob->getStepHeight() && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
+		$inLiquid = Locomotion::isInLiquid($this->mob);
+		$minClimb = $inLiquid ? self::MIN_LIQUID_CLIMB : $this->mob->getStepHeight();
+		if ($dy > $minClimb && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
 			$this->mob->getJumpControl()->jump();
-			$this->operation = MoveOperation::JUMPING;
+			if (!$inLiquid) {
+				$this->operation = MoveOperation::JUMPING;
+			}
 		}
 	}
 

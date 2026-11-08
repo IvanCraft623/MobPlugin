@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
+use IvanCraft623\MobPlugin\entity\ai\control\SwimThrust;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\Pathfinder\BlockPathTypeCostMap;
 use IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
@@ -35,8 +36,8 @@ use pocketmine\math\Vector3;
  */
 class SwimLocomotion extends AquaticLocomotion{
 
-	public function __construct(int $maxPitchChange = 85, int $maxYawChange = 10, bool $gentleVertical = true) {
-		parent::__construct($maxPitchChange, $maxYawChange, 1.0, false, $gentleVertical);
+	public function __construct(int $maxPitchChange = 85, int $maxYawChange = 10, SwimThrust $thrust = SwimThrust::EASED) {
+		parent::__construct($maxPitchChange, $maxYawChange, 1.0, false, $thrust);
 	}
 
 	public function createEvaluator() : NodeEvaluator{

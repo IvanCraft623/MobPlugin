@@ -33,7 +33,9 @@ final class TraversalRules{
 		public bool $canPassDoors = true,
 		public bool $canWalkOverFences = false,
 		/** Paths stop before the first node in direct sunlight */
-		public bool $avoidSun = false
+		public bool $avoidSun = false,
+		/** Whether an amphibious mob swims through open water; otherwise it wades through it */
+		public bool $canSwim = true
 	){
 	}
 }

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\aquatic;
 
+use IvanCraft623\MobPlugin\entity\ai\control\SwimThrust;
 use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FlopOutOfWaterGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FollowFlockGoal;
@@ -116,7 +117,7 @@ abstract class AbstractFish extends PathfinderMob implements Bucketable, Flockin
 	}
 
 	public function createNavigation() : PathNavigation{
-		return new PathNavigation($this, new SwimLocomotion(gentleVertical: false));
+		return new PathNavigation($this, new SwimLocomotion(thrust: SwimThrust::ANGLED));
 	}
 
 	protected function registerGoals() : void{

@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\entity\ai\control\AquaticMoveControl;
+use IvanCraft623\MobPlugin\entity\ai\control\SwimThrust;
 use IvanCraft623\MobPlugin\entity\ai\goal\drowned\TridentAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FleeSunlightGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
@@ -57,6 +59,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
 use pocketmine\world\sound\TridentThrowSound;
+use function assert;
 
 class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 	use DoorBreakerTrait;
@@ -83,7 +86,7 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 	protected function tickState() : void{
 		parent::tickState();
 
-		$swimPose = $this->isUnderwater() && !$this->getMovementInput()->isIdle();
+		$swimPose = $this->getMoveControl()->isSwimming();
 		if ($swimPose !== $this->swimPose) {
 			$this->swimPose = $swimPose;
 			$this->networkPropertiesDirty = true;
@@ -111,8 +114,23 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 		return $this->isBaby() ? 0.08 : 0.06;
 	}
 
+	public function getMoveControl() : AquaticMoveControl {
+		assert($this->moveControl instanceof AquaticMoveControl);
+		return $this->moveControl;
+	}
+
+	public function setTargetEntity(?Entity $target) : void {
+		parent::setTargetEntity($target);
+
+		//Only hunting drowned swim, the rest wade through the water
+		$this->navigation->getRules()->canSwim = $target !== null;
+	}
+
 	public function createNavigation() : PathNavigation{
-		return new PathNavigation($this, new AmphibiousLocomotion());
+		$navigation = new PathNavigation($this, new AmphibiousLocomotion(thrust: SwimThrust::SLOPED, walksSeabed: true));
+		$navigation->getRules()->canSwim = false;
+
+		return $navigation;
 	}
 
 	protected function registerBehaviorGoals() : void {

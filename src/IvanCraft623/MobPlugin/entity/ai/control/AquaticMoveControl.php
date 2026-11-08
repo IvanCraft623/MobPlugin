@@ -57,9 +57,9 @@ class AquaticMoveControl extends PathMoveControl {
 	private const GENTLE_VERTICAL_PUSH = 0.1;
 
 	/**
-	 * @param float $landSpeed      multiplier of the speed while out of water
-	 * @param bool  $buoyant        whether water pushes the mob up
-	 * @param bool  $gentleVertical whether the mob eases up and down instead of angling its swim at the target
+	 * @param float      $landSpeed multiplier of the speed while out of water
+	 * @param bool       $buoyant   whether water pushes the mob up
+	 * @param SwimThrust $thrust    how the swim is split between horizontal and vertical
 	 */
 	public function __construct(
 		PathfinderMob $mob,
@@ -68,29 +68,48 @@ class AquaticMoveControl extends PathMoveControl {
 		private int $maxYawChange,
 		private float $landSpeed,
 		private bool $buoyant,
-		private bool $gentleVertical
+		private SwimThrust $thrust
 	) {
 		parent::__construct($mob, $navigation);
 	}
 
+	private bool $swimming = false;
+
+	public function isSwimming() : bool {
+		return $this->swimming;
+	}
+
+	/**
+	 * Whether the mob swims this tick: in water and with a locomotion that swims toward the position.
+	 */
+	protected function shouldSwim() : bool {
+		if (!$this->mob->isInWater()) {
+			return false;
+		}
+
+		$position = $this->operation === MoveOperation::MOVE_TO ? $this->wantedPosition : $this->mob->getPosition();
+
+		return $this->navigation->getLocomotion()->swimsAt($this->mob->getWorld(), $this->navigation->getRules(), $position);
+	}
+
 	protected function drive() : void {
-		$inWater = $this->mob->isInWater();
-		$this->mob->setHasGravity(!$inWater);
-		if ($inWater) {
+		$this->swimming = $this->shouldSwim();
+		$this->mob->setHasGravity(!$this->swimming);
+		if ($this->swimming) {
 			if ($this->buoyant) {
 				$this->mob->addMotion(0, self::BUOYANCY, 0);
 			}
 			//Fully underwater mobs float, air touching the body pulls them back down
 			if ($this->mob->getWaterImmersion() < 1) {
-				$swimming = $this->operation === MoveOperation::MOVE_TO;
-				$this->mob->addMotion(0, -($swimming ? self::SURFACE_GRAVITY_SWIMMING : self::SURFACE_GRAVITY), 0);
+				$moving = $this->operation === MoveOperation::MOVE_TO;
+				$this->mob->addMotion(0, -($moving ? self::SURFACE_GRAVITY_SWIMMING : self::SURFACE_GRAVITY), 0);
 			}
 		}
 
 		$this->mob->getMovementInput()->setUpward(0);
 
 		match ($this->operation) {
-			MoveOperation::MOVE_TO => $this->tickMoveTo($inWater),
+			MoveOperation::MOVE_TO => $this->tickMoveTo(),
 			MoveOperation::JUMPING => $this->tickJumping(),
 			MoveOperation::WAIT,
 			MoveOperation::STRAFE => $this->idle(),
@@ -102,7 +121,7 @@ class AquaticMoveControl extends PathMoveControl {
 		$this->mob->getMovementInput()->walk(0);
 	}
 
-	private function tickMoveTo(bool $inWater) : void {
+	private function tickMoveTo() : void {
 		$this->operation = MoveOperation::WAIT;
 
 		$location = $this->mob->getLocation();
@@ -118,7 +137,7 @@ class AquaticMoveControl extends PathMoveControl {
 		$wantedYaw = (atan2($dz, $dx) * 180 / M_PI) - 90;
 		$yaw = $this->rotateLerp($location->yaw, $wantedYaw, $this->maxYawChange);
 
-		if ($inWater) {
+		if ($this->swimming) {
 			$this->swim($yaw, abs(Utils::wrapDegrees($wantedYaw - $location->yaw)), $location->pitch, $dx, $dy, $dz, $distance);
 			if (!$this->mob->getWorld()->getBlock($this->wantedPosition) instanceof Water) {
 				// Leaving the water, swimming alone doesn't climb out of a pool
@@ -141,7 +160,7 @@ class AquaticMoveControl extends PathMoveControl {
 	 * @param float $yawError degrees the yaw is off the wanted position by
 	 */
 	private function swim(float $yaw, float $yawError, float $pitch, float $dx, float $dy, float $dz, float $distance) : void {
-		$speed = $this->speedModifier * $this->mob->getWaterMovementSpeed();
+		$speed = $this->getSwimSpeed();
 		$this->mob->getMovementInput()->walk($speed);
 
 		$distanceXZ = sqrt(($dx ** 2) + ($dz ** 2));
@@ -160,10 +179,22 @@ class AquaticMoveControl extends PathMoveControl {
 	}
 
 	/**
+	 * The movement input while swimming, which the water speed then scales into acceleration.
+	 */
+	private function getSwimSpeed() : float {
+		$speed = $this->thrust === SwimThrust::SLOPED ? $this->mob->getMovementSpeed() : $this->mob->getWaterMovementSpeed();
+
+		return $this->speedModifier * $speed;
+	}
+
+	/**
 	 * Part of the swim speed spent going up (positive) or down.
 	 */
 	private function getVerticalShare(float $dy, float $distance) : float {
-		if ($this->gentleVertical) {
+		if ($this->thrust === SwimThrust::SLOPED) {
+			return $dy / $distance;
+		}
+		if ($this->thrust === SwimThrust::EASED) {
 			//The input is scaled by the water speed later, the push is not
 			return self::GENTLE_VERTICAL_PUSH * $dy / ($distance * $this->mob->getWaterMovementSpeed());
 		}

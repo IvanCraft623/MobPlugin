@@ -25,10 +25,12 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
 use IvanCraft623\MobPlugin\entity\ai\control\AquaticMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\control\SwimThrust;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use pocketmine\math\Vector3;
+use pocketmine\world\World;
 
 abstract class AquaticLocomotion extends Locomotion{
 
@@ -37,12 +39,16 @@ abstract class AquaticLocomotion extends Locomotion{
 		private int $maxYawChange,
 		private float $landSpeed,
 		private bool $buoyant,
-		private bool $gentleVertical
+		private SwimThrust $thrust
 	) {
 	}
 
 	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
-		return new AquaticMoveControl($mob, $navigation, $this->maxPitchChange, $this->maxYawChange, $this->landSpeed, $this->buoyant, $this->gentleVertical);
+		return new AquaticMoveControl($mob, $navigation, $this->maxPitchChange, $this->maxYawChange, $this->landSpeed, $this->buoyant, $this->thrust);
+	}
+
+	public function swimsAt(World $world, TraversalRules $rules, Vector3 $position) : bool{
+		return true;
 	}
 
 	public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool{

@@ -40,6 +40,7 @@ use pocketmine\block\FillableCauldron;
 use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
+use pocketmine\world\World;
 use function count;
 use function floor;
 
@@ -55,6 +56,13 @@ abstract class Locomotion{
 	 */
 	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
 		return new GroundMoveControl($mob, $navigation);
+	}
+
+	/**
+	 * Whether a mob in water swims, and not walks, to $position.
+	 */
+	public function swimsAt(World $world, TraversalRules $rules, Vector3 $position) : bool{
+		return false;
 	}
 
 	abstract public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool;
