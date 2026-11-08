@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
+use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
@@ -131,7 +132,8 @@ class MobPlugin extends PluginBase {
 		WitherSkeleton::class,
 		Wither::class,
 		Pufferfish::class,
-		Drowned::class
+		Drowned::class,
+		PolarBear::class
 	];
 
 	private ?Random $random = null;

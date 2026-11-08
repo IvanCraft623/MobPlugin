@@ -29,6 +29,7 @@ use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
+use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
@@ -100,6 +101,7 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg PUFFERFISH_SPAWN_EGG()
  * @method static MobBucket PUFFERFISH_BUCKET()
  * @method static \pocketmine\item\SpawnEgg DROWNED_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg POLAR_BEAR_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -159,6 +161,7 @@ final class ExtraVanillaItems{
 		self::register("zombie_pigman_spawn_egg", new MobSpawnEgg(new IID(Ids::ZOMBIE_PIGMAN_SPAWN_EGG()), "Zombified Piglin Spawn Egg", ZombifiedPiglin::class));
 		self::register("pufferfish_spawn_egg", new MobSpawnEgg(new IID(Ids::PUFFERFISH_SPAWN_EGG()), "Pufferfish Spawn Egg", Pufferfish::class));
 		self::register("drowned_spawn_egg", new MobSpawnEgg(new IID(Ids::DROWNED_SPAWN_EGG()), "Drowned Spawn Egg", Drowned::class));
+		self::register("polar_bear_spawn_egg", new MobSpawnEgg(new IID(Ids::POLAR_BEAR_SPAWN_EGG()), "Polar Bear Spawn Egg", PolarBear::class));
 	}
 
 	private static function registerBuckets() : void{
