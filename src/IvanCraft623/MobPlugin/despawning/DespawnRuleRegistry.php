@@ -30,6 +30,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
+use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
@@ -88,6 +89,7 @@ final class DespawnRuleRegistry{
 			MooshroomCow::class,
 			Pig::class,
 			PolarBear::class,
+			Rabbit::class,
 			Sheep::class,
 			GlowSquid::class,
 			Squid::class // implemented by PocketMine-MP
