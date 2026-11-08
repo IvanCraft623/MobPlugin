@@ -212,7 +212,7 @@ Under `entity/ai/goal/`; read the constructor of the one you use.
   `RangedBowAttackGoal` (the mob must implement `RangedAttackMob`).
 - Animals: `BreedGoal`, `FollowParentGoal`, `TemptGoal`, `EatBlockGoal`.
 - Loot and doors: `PickupItemsGoal`, `BreakDoorGoal` (ground navigation only).
-- Mob-specific, in subfolders: `creeper/`, `enderman/`, `slime/`, `wither/`.
+- Mob-specific, in subfolders: `creeper/`, `drowned/`, `enderman/`, `rabbit/`, `slime/`, `witch/`, `wither/`.
 - Targets, in `target/`: `HurtByTargetGoal` (`->setAlertOthers()` makes same-type mobs
   join), `NearestAttackableGoal` (scans as far as the follow range, or as its conditions' range if that is shorter;
   `condition:` skips the scan while it is false; use named arguments for the trailing ones), `TargetHighestDamagerGoal` (needs

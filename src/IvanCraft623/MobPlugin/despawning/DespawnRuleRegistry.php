@@ -52,6 +52,7 @@ use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
+use IvanCraft623\MobPlugin\entity\monster\Witch;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use pocketmine\entity\Entity;
@@ -107,6 +108,7 @@ final class DespawnRuleRegistry{
 			Husk::class,
 			Drowned::class,
 			Vindicator::class,
+			Witch::class,
 			Zombie::class,
 			ZombifiedPiglin::class
 		] as $entityClass){

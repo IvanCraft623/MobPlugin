@@ -65,6 +65,7 @@ use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
+use IvanCraft623\MobPlugin\entity\monster\Witch;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
@@ -135,7 +136,8 @@ class MobPlugin extends PluginBase {
 		Pufferfish::class,
 		Drowned::class,
 		PolarBear::class,
-		Rabbit::class
+		Rabbit::class,
+		Witch::class
 	];
 
 	private ?Random $random = null;
