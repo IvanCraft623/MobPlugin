@@ -44,8 +44,6 @@ class ZombifiedPiglin extends AbstractZombie implements NeutralMob {
 
 	private const ANGER_TICKS = 25 * 20;
 
-	private int $remainingAngerTicks = 0;
-
 	public static function getNetworkTypeId() : string {
 		return EntityIds::ZOMBIE_PIGMAN;
 	}
@@ -81,14 +79,6 @@ class ZombifiedPiglin extends AbstractZombie implements NeutralMob {
 
 	public function startAngerTimer() : void {
 		$this->setRemainingAngerTicks(self::ANGER_TICKS);
-	}
-
-	public function getRemainingAngerTicks() : int {
-		return $this->remainingAngerTicks;
-	}
-
-	public function setRemainingAngerTicks(int $ticks) : void {
-		$this->remainingAngerTicks = $ticks;
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool {

@@ -150,8 +150,6 @@ class Enderman extends Monster implements NeutralMob{
 
 	private ?Block $carryBlock = null;
 
-	private int $remainingAngerTicks = 0;
-
 	protected RandomTeleportGoal $teleportGoal;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
@@ -279,10 +277,6 @@ class Enderman extends Monster implements NeutralMob{
 
 	public function startAngerTimer() : void{
 		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
-	}
-
-	public function getRemainingAngerTicks() : int{
-		return $this->remainingAngerTicks;
 	}
 
 	public function setRemainingAngerTicks(int $ticks) : void{

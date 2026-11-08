@@ -73,8 +73,6 @@ class IronGolem extends Golem implements NeutralMob{
 
 	protected float $stepHeight = 1;
 
-	private int $remainingAngerTicks = 0;
-
 	protected bool $createdByPlayer = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
@@ -176,14 +174,6 @@ class IronGolem extends Golem implements NeutralMob{
 
 	public function startAngerTimer() : void{
 		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
-	}
-
-	public function getRemainingAngerTicks() : int{
-		return $this->remainingAngerTicks;
-	}
-
-	public function setRemainingAngerTicks(int $ticks) : void{
-		$this->remainingAngerTicks = $ticks;
 	}
 
 	public function getCrackiness() : IronGolemCrackiness{

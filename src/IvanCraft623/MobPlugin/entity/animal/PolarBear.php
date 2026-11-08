@@ -71,8 +71,6 @@ class PolarBear extends Animal implements NeutralMob {
 		return mt_rand(1, self::BABY_CHANCE) === 1 ? self::STARTING_BABY_AGE : self::ADULT_AGE;
 	}
 
-	private int $remainingAngerTicks = 0;
-
 	protected function getInitialSizeInfo() : EntitySizeInfo{
 		return new EntitySizeInfo(VanillaEntitySizes::POLAR_BEAR_HEIGHT, VanillaEntitySizes::POLAR_BEAR_WIDTH);
 	}
@@ -154,7 +152,7 @@ class PolarBear extends Animal implements NeutralMob {
 	}
 
 	public function startAngerTimer() : void{
-		$this->remainingAngerTicks = $this->isBaby() ? self::BABY_ANGER_TICKS : self::ADULT_ANGER_TICKS;
+		$this->setRemainingAngerTicks($this->isBaby() ? self::BABY_ANGER_TICKS : self::ADULT_ANGER_TICKS);
 
 		$target = $this->getTargetEntity();
 		if ($this->isBaby() && $target !== null) {
@@ -168,14 +166,6 @@ class PolarBear extends Animal implements NeutralMob {
 				$other->setTargetEntity($target);
 			}
 		}
-	}
-
-	public function getRemainingAngerTicks() : int{
-		return $this->remainingAngerTicks;
-	}
-
-	public function setRemainingAngerTicks(int $ticks) : void{
-		$this->remainingAngerTicks = $ticks;
 	}
 
 	public function getDrops() : array{
