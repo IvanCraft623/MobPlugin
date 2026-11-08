@@ -214,7 +214,7 @@ Under `entity/ai/goal/`; read the constructor of the one you use.
 - Loot and doors: `PickupItemsGoal`, `BreakDoorGoal` (ground navigation only).
 - Mob-specific, in subfolders: `creeper/`, `drowned/`, `enderman/`, `rabbit/`, `slime/`, `witch/`, `wither/`.
 - Targets, in `target/`: `HurtByTargetGoal` (`->setAlertOthers()` makes same-type mobs
-  join), `NearestAttackableGoal` (scans as far as the follow range, or as its conditions' range if that is shorter;
+  join), `NearestAttackableGoal` (scans as far as `range:`, the follow range by default;
   `condition:` skips the scan while it is false; use named arguments for the trailing ones), `TargetHighestDamagerGoal` (needs
   `DamageTracker`).
 

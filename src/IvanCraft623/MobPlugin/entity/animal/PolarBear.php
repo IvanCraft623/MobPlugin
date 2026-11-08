@@ -106,9 +106,12 @@ class PolarBear extends Animal implements NeutralMob {
 
 		$this->targetSelector->addGoal(2, new HurtByTargetGoal($this));
 		//A cub that sees a player calls the adults, see startAngerTimer()
-		$cubGoal = new NearestAttackableGoal($this, Player::class, condition: fn() : bool => $this->isBaby());
-		$cubGoal->getTargetingConditions()->setRange(self::CUB_TARGET_RANGE);
-		$this->targetSelector->addGoal(4, $cubGoal);
+		$this->targetSelector->addGoal(4, new NearestAttackableGoal(
+			entity: $this,
+			targetType: Player::class,
+			condition: fn() : bool => $this->isBaby(),
+			range: self::CUB_TARGET_RANGE
+		));
 		//TODO: Attack foxes!
 	}
 

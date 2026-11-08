@@ -53,7 +53,8 @@ class NearestAttackableGoal extends TargetGoal {
 		int $interval = self::DEFAULT_RANDOM_INTERVAL,
 		bool $mustSee = true,
 		?Closure $targetValidator = null,
-		protected ?Closure $condition = null
+		protected ?Closure $condition = null,
+		?float $range = null
 	) {
 		if ($targetType !== Living::class) {
 			Utils::testValidInstance($targetType, Living::class);
@@ -63,7 +64,7 @@ class NearestAttackableGoal extends TargetGoal {
 
 		$this->randomInterval = $this->reducedTickDelay($interval);
 		$this->targetingConditions = (new TargetingConditions())
-			->setRange($this->getFollowDistance())
+			->setRange($range ?? $this->getFollowDistance())
 			->setValidator($targetValidator);
 		if (!$mustSee) {
 			//Don't LOS-ray-trace every candidate during the scan; visibility is already enforced (when

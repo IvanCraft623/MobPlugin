@@ -105,9 +105,7 @@ class Witch extends Monster implements RangedAttackMob {
 
 		$this->targetSelector->addGoal(1, new HurtByTargetGoal($this));
 		foreach ([Player::class, SnowGolem::class, IronGolem::class] as $type) {
-			$goal = new NearestAttackableGoal($this, $type);
-			$goal->getTargetingConditions()->setRange(self::TARGET_RANGE);
-			$this->targetSelector->addGoal(2, $goal);
+			$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, $type, range: self::TARGET_RANGE));
 		}
 	}
 

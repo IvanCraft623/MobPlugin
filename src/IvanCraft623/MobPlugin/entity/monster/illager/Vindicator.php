@@ -107,9 +107,7 @@ class Vindicator extends AbstractIllager {
 	 * @phpstan-param null|Closure() : bool       $condition
 	 */
 	private function addTargetGoal(string $type, ?Closure $validator = null, ?Closure $condition = null) : void{
-		$goal = new NearestAttackableGoal($this, $type, targetValidator: $validator, condition: $condition);
-		$goal->getTargetingConditions()->setRange(self::TARGET_RANGE);
-		$this->targetSelector->addGoal(2, $goal);
+		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, $type, targetValidator: $validator, condition: $condition, range: self::TARGET_RANGE));
 	}
 
 	/**
