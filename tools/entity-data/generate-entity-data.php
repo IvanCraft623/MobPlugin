@@ -49,6 +49,7 @@ use function is_string;
 use function json_decode;
 use function ksort;
 use function preg_match;
+use function preg_replace;
 use function printf;
 use function sprintf;
 use function str_starts_with;
@@ -111,10 +112,10 @@ function main() : int{
 		printf("Wrote %s (%d bytes)\n", $path, strlen($contents));
 	}
 	$sized = 0;
-	foreach($entities as [, $size]){
-		$sized += $size !== null ? 1 : 0;
+	foreach($entities as [, $size, $variants]){
+		$sized += $size !== null || count($variants) !== 0 ? 1 : 0;
 	}
-	printf("Generated %d entity id(s), %d with a base collision box\n", count($entities), $sized);
+	printf("Generated %d entity id(s), %d with a collision box\n", count($entities), $sized);
 
 	return 0;
 }
@@ -126,10 +127,11 @@ function fail(string $message) : int{
 }
 
 /**
- * Every entity of the samples, keyed and sorted by its constant name. Only the base
- * collision box is read: component groups hold variants (babies, slime sizes).
+ * Every entity of the samples, keyed and sorted by its constant name, with its base collision
+ * box and the boxes its component groups declare for its variants (babies, adults, slime
+ * sizes).
  *
- * @phpstan-return array<string, array{string, array{float, float}|null}> constant name => [identifier, [width, height] or null]
+ * @phpstan-return array<string, array{string, array{float, float}|null, array<string, array{float, float}>}> constant name => [identifier, [width, height] or null, variant constant suffix => [width, height]]
  */
 function readEntities(string $entitiesDir) : array{
 	$files = glob($entitiesDir . "/*.json");
@@ -168,11 +170,40 @@ function readEntities(string $entitiesDir) : array{
 
 		$components = $entity["components"] ?? [];
 		$box = is_array($components) ? ($components["minecraft:collision_box"] ?? null) : null;
-		$entities[$constant] = [$identifier, $box !== null ? readCollisionBox($box, $file) : null];
+		$entities[$constant] = [
+			$identifier,
+			$box !== null ? readCollisionBox($box, $file) : null,
+			readVariantBoxes($constant, $entity["component_groups"] ?? [], $file)
+		];
 	}
 	ksort($entities, SORT_STRING);
 
 	return $entities;
+}
+
+/**
+ * @phpstan-return array<string, array{float, float}> variant constant suffix => [width, height]
+ */
+function readVariantBoxes(string $entityConstant, mixed $groups, string $file) : array{
+	$boxes = [];
+	foreach(is_array($groups) ? $groups : [] as $name => $group){
+		$box = is_array($group) ? ($group["minecraft:collision_box"] ?? null) : null;
+		if($box === null){
+			continue;
+		}
+		$groupName = preg_replace('/^minecraft:/', "", (string) $name) ?? "";
+		$suffix = strtoupper(preg_replace('/[^A-Za-z0-9]+/', "_", $groupName) ?? "");
+		// "minecraft:slime_large" of the slime is the SLIME_LARGE size, not SLIME_SLIME_LARGE
+		if(str_starts_with($suffix, $entityConstant . "_")){
+			$suffix = substr($suffix, strlen($entityConstant) + 1);
+		}
+		if(isset($boxes[$suffix])){
+			throw new \RuntimeException("Component group \"$name\" in \"$file\" makes the size name \"$suffix\" twice");
+		}
+		$boxes[$suffix] = readCollisionBox($box, $file);
+	}
+
+	return $boxes;
 }
 
 /**
@@ -193,7 +224,7 @@ function phpFloat(float $value) : string{
 }
 
 /**
- * @phpstan-param array<string, array{string, array{float, float}|null}> $entities
+ * @phpstan-param array<string, array{string, array{float, float}|null, array<string, array{float, float}>}> $entities
  */
 function buildEntityIdsArtifact(array $entities) : string{
 	$lines = [];
@@ -223,19 +254,28 @@ PHP, OUTPUT_NAMESPACE, implode("\n", $lines));
 }
 
 /**
- * @phpstan-param array<string, array{string, array{float, float}|null}> $entities
+ * @phpstan-param array<string, array{string, array{float, float}|null, array<string, array{float, float}>}> $entities
  */
 function buildEntitySizesArtifact(array $entities) : string{
 	$constantLines = [];
-	$mapLines = [];
-	foreach($entities as $constant => [, $size]){
-		if($size === null){
-			continue; // only variants declare a box (babies, adults)
+	$baseLines = [];
+	$variantLines = [];
+	foreach($entities as $constant => [, $size, $variants]){
+		if($size !== null){
+			[$width, $height] = $size;
+			$constantLines[] = sprintf("\tpublic const %s_WIDTH = %s;", $constant, phpFloat($width));
+			$constantLines[] = sprintf("\tpublic const %s_HEIGHT = %s;", $constant, phpFloat($height));
+			$baseLines[] = sprintf("\t\tEntityIds::%1\$s => [self::%1\$s_WIDTH, self::%1\$s_HEIGHT],", $constant);
 		}
-		[$width, $height] = $size;
-		$constantLines[] = sprintf("\tpublic const %s_WIDTH = %s;", $constant, phpFloat($width));
-		$constantLines[] = sprintf("\tpublic const %s_HEIGHT = %s;", $constant, phpFloat($height));
-		$mapLines[] = sprintf("\t\tEntityIds::%1\$s => [self::%1\$s_WIDTH, self::%1\$s_HEIGHT],", $constant);
+		if(count($variants) !== 0){
+			$pairs = [];
+			foreach($variants as $suffix => [$width, $height]){
+				$constantLines[] = sprintf("\tpublic const %s_%s_WIDTH = %s;", $constant, $suffix, phpFloat($width));
+				$constantLines[] = sprintf("\tpublic const %s_%s_HEIGHT = %s;", $constant, $suffix, phpFloat($height));
+				$pairs[] = sprintf("[self::%1\$s_%2\$s_WIDTH, self::%1\$s_%2\$s_HEIGHT]", $constant, $suffix);
+			}
+			$variantLines[] = sprintf("\t\tEntityIds::%s => [%s],", $constant, implode(", ", $pairs));
+		}
 	}
 
 	return FILE_HEADER . sprintf(<<<'PHP'
@@ -246,8 +286,8 @@ use pocketmine\entity\EntitySizeInfo;
 
 /**
  * Auto-generated from the entities of the pinned Mojang bedrock-samples — do not edit by
- * hand. Each entity's base collision box, before scale; entities that only declare boxes
- * for their variants are left out.
+ * hand. Each entity's base collision box and the boxes it declares for its variants, before
+ * scale.
  *
  * Regenerate with: php tools/entity-data/generate-entity-data.php
  */
@@ -257,6 +297,11 @@ final class VanillaEntitySizes{
 
 	/** @phpstan-var array<string, array{float, float}> entity id => [width, height] */
 	private const BY_ID = [
+%s
+	];
+
+	/** @phpstan-var array<string, list<array{float, float}>> entity id => [[width, height]...] */
+	private const VARIANTS_BY_ID = [
 %s
 	];
 
@@ -273,9 +318,28 @@ final class VanillaEntitySizes{
 
 		return new EntitySizeInfo($height, $width);
 	}
+
+	/**
+	 * Every collision box the entity declares, its base one and its variants'.
+	 *
+	 * @return list<EntitySizeInfo>
+	 */
+	public static function getAll(string $entityId) : array{
+		$boxes = self::VARIANTS_BY_ID[$entityId] ?? [];
+		if(isset(self::BY_ID[$entityId])){
+			array_unshift($boxes, self::BY_ID[$entityId]);
+		}
+
+		$sizes = [];
+		foreach($boxes as [$width, $height]){
+			$sizes[] = new EntitySizeInfo($height, $width);
+		}
+
+		return $sizes;
+	}
 }
 
-PHP, OUTPUT_NAMESPACE, implode("\n", $constantLines), implode("\n", $mapLines));
+PHP, OUTPUT_NAMESPACE, implode("\n", $constantLines), implode("\n", $baseLines), implode("\n", $variantLines));
 }
 
 exit(main());

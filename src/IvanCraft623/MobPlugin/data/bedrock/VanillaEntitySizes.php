@@ -24,11 +24,12 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\data\bedrock;
 
 use pocketmine\entity\EntitySizeInfo;
+use function array_unshift;
 
 /**
  * Auto-generated from the entities of the pinned Mojang bedrock-samples — do not edit by
- * hand. Each entity's base collision box, before scale; entities that only declare boxes
- * for their variants are left out.
+ * hand. Each entity's base collision box and the boxes it declares for its variants, before
+ * scale.
  *
  * Regenerate with: php tools/entity-data/generate-entity-data.php
  */
@@ -60,8 +61,20 @@ final class VanillaEntitySizes{
 	public const BREEZE_WIND_CHARGE_PROJECTILE_HEIGHT = 0.3125;
 	public const CAMEL_WIDTH = 1.7;
 	public const CAMEL_HEIGHT = 2.375;
+	public const CAMEL_STANDING_WIDTH = 1.7;
+	public const CAMEL_STANDING_HEIGHT = 2.375;
+	public const CAMEL_BABY_STANDING_WIDTH = 2.11;
+	public const CAMEL_BABY_STANDING_HEIGHT = 3.11;
+	public const CAMEL_SITTING_WIDTH = 1.7;
+	public const CAMEL_SITTING_HEIGHT = 0.945;
+	public const CAMEL_BABY_SITTING_WIDTH = 2.11;
+	public const CAMEL_BABY_SITTING_HEIGHT = 0.944;
 	public const CAMEL_HUSK_WIDTH = 1.7;
 	public const CAMEL_HUSK_HEIGHT = 2.375;
+	public const CAMEL_HUSK_SITTING_WIDTH = 1.7;
+	public const CAMEL_HUSK_SITTING_HEIGHT = 0.945;
+	public const CAMEL_HUSK_STANDING_WIDTH = 1.7;
+	public const CAMEL_HUSK_STANDING_HEIGHT = 2.375;
 	public const CAT_WIDTH = 0.6;
 	public const CAT_HEIGHT = 0.7;
 	public const CAVE_SPIDER_WIDTH = 0.7;
@@ -94,6 +107,10 @@ final class VanillaEntitySizes{
 	public const DRAGON_FIREBALL_HEIGHT = 0.31;
 	public const DROWNED_WIDTH = 0.6;
 	public const DROWNED_HEIGHT = 1.9;
+	public const DROWNED_BABY_DROWNED_WIDTH = 0.98;
+	public const DROWNED_BABY_DROWNED_HEIGHT = 1.96;
+	public const DROWNED_ADULT_DROWNED_WIDTH = 0.6;
+	public const DROWNED_ADULT_DROWNED_HEIGHT = 1.9;
 	public const EGG_WIDTH = 0.25;
 	public const EGG_HEIGHT = 0.25;
 	public const ELDER_GUARDIAN_WIDTH = 1.99;
@@ -120,12 +137,20 @@ final class VanillaEntitySizes{
 	public const FISHING_HOOK_HEIGHT = 0.15;
 	public const FOX_WIDTH = 0.6;
 	public const FOX_HEIGHT = 0.7;
+	public const FOX_BABY_WIDTH = 0.72;
+	public const FOX_BABY_HEIGHT = 0.84;
+	public const FOX_ADULT_WIDTH = 0.6;
+	public const FOX_ADULT_HEIGHT = 0.7;
 	public const FROG_WIDTH = 0.5;
 	public const FROG_HEIGHT = 0.55;
 	public const GHAST_WIDTH = 4.02;
 	public const GHAST_HEIGHT = 4.0;
 	public const GLOW_SQUID_WIDTH = 0.8;
 	public const GLOW_SQUID_HEIGHT = 0.8;
+	public const GLOW_SQUID_SQUID_ADULT_WIDTH = 0.8;
+	public const GLOW_SQUID_SQUID_ADULT_HEIGHT = 0.8;
+	public const GLOW_SQUID_SQUID_BABY_WIDTH = 1.0;
+	public const GLOW_SQUID_SQUID_BABY_HEIGHT = 1.0;
 	public const GOAT_WIDTH = 0.9;
 	public const GOAT_HEIGHT = 1.3;
 	public const GUARDIAN_WIDTH = 0.85;
@@ -134,12 +159,22 @@ final class VanillaEntitySizes{
 	public const HAPPY_GHAST_HEIGHT = 4.0;
 	public const HOGLIN_WIDTH = 0.6;
 	public const HOGLIN_HEIGHT = 1.9;
+	public const HOGLIN_BABY_WIDTH = 1.5;
+	public const HOGLIN_BABY_HEIGHT = 1.7;
+	public const HOGLIN_ADULT_WIDTH = 1.4;
+	public const HOGLIN_ADULT_HEIGHT = 1.4;
 	public const HOPPER_MINECART_WIDTH = 0.98;
 	public const HOPPER_MINECART_HEIGHT = 0.7;
 	public const HORSE_WIDTH = 1.4;
 	public const HORSE_HEIGHT = 1.6;
+	public const HORSE_BABY_WIDTH = 1.96;
+	public const HORSE_BABY_HEIGHT = 2.24;
 	public const HUSK_WIDTH = 0.6;
 	public const HUSK_HEIGHT = 1.9;
+	public const HUSK_ZOMBIE_HUSK_ADULT_WIDTH = 0.6;
+	public const HUSK_ZOMBIE_HUSK_ADULT_HEIGHT = 1.9;
+	public const HUSK_ZOMBIE_HUSK_BABY_WIDTH = 0.98;
+	public const HUSK_ZOMBIE_HUSK_BABY_HEIGHT = 1.96;
 	public const IRON_GOLEM_WIDTH = 1.4;
 	public const IRON_GOLEM_HEIGHT = 2.9;
 	public const LINGERING_POTION_WIDTH = 0.25;
@@ -150,12 +185,22 @@ final class VanillaEntitySizes{
 	public const LLAMA_SPIT_HEIGHT = 0.31;
 	public const MAGMA_CUBE_WIDTH = 2.08;
 	public const MAGMA_CUBE_HEIGHT = 2.08;
+	public const MAGMA_CUBE_SLIME_LARGE_WIDTH = 2.08;
+	public const MAGMA_CUBE_SLIME_LARGE_HEIGHT = 2.08;
+	public const MAGMA_CUBE_SLIME_MEDIUM_WIDTH = 1.04;
+	public const MAGMA_CUBE_SLIME_MEDIUM_HEIGHT = 1.02;
+	public const MAGMA_CUBE_SLIME_SMALL_WIDTH = 0.52;
+	public const MAGMA_CUBE_SLIME_SMALL_HEIGHT = 0.52;
 	public const MINECART_WIDTH = 0.98;
 	public const MINECART_HEIGHT = 0.7;
 	public const MOOSHROOM_WIDTH = 0.9;
 	public const MOOSHROOM_HEIGHT = 1.3;
 	public const MULE_WIDTH = 1.4;
 	public const MULE_HEIGHT = 1.6;
+	public const NAUTILUS_BABY_WIDTH = 0.44;
+	public const NAUTILUS_BABY_HEIGHT = 0.5;
+	public const NAUTILUS_ADULT_WIDTH = 0.875;
+	public const NAUTILUS_ADULT_HEIGHT = 0.95;
 	public const NPC_WIDTH = 0.6;
 	public const NPC_HEIGHT = 2.1;
 	public const OCELOT_WIDTH = 0.6;
@@ -172,6 +217,10 @@ final class VanillaEntitySizes{
 	public const PIG_HEIGHT = 0.9;
 	public const PIGLIN_WIDTH = 0.6;
 	public const PIGLIN_HEIGHT = 1.9;
+	public const PIGLIN_BABY_WIDTH = 0.98;
+	public const PIGLIN_BABY_HEIGHT = 1.96;
+	public const PIGLIN_ADULT_WIDTH = 0.6;
+	public const PIGLIN_ADULT_HEIGHT = 1.9;
 	public const PIGLIN_BRUTE_WIDTH = 0.6;
 	public const PIGLIN_BRUTE_HEIGHT = 1.9;
 	public const PILLAGER_WIDTH = 0.6;
@@ -182,6 +231,10 @@ final class VanillaEntitySizes{
 	public const POLAR_BEAR_HEIGHT = 1.4;
 	public const PUFFERFISH_WIDTH = 0.8;
 	public const PUFFERFISH_HEIGHT = 0.8;
+	public const RABBIT_BABY_WIDTH = 0.6;
+	public const RABBIT_BABY_HEIGHT = 1.0;
+	public const RABBIT_ADULT_WIDTH = 0.81666666;
+	public const RABBIT_ADULT_HEIGHT = 1.0;
 	public const RAVAGER_WIDTH = 1.95;
 	public const RAVAGER_HEIGHT = 2.2;
 	public const SALMON_WIDTH = 0.5;
@@ -194,8 +247,18 @@ final class VanillaEntitySizes{
 	public const SILVERFISH_HEIGHT = 0.3;
 	public const SKELETON_WIDTH = 0.6;
 	public const SKELETON_HEIGHT = 1.9;
+	public const SKELETON_HORSE_BABY_WIDTH = 1.96;
+	public const SKELETON_HORSE_BABY_HEIGHT = 2.24;
+	public const SKELETON_HORSE_ADULT_WIDTH = 1.4;
+	public const SKELETON_HORSE_ADULT_HEIGHT = 1.6;
 	public const SLIME_WIDTH = 2.08;
 	public const SLIME_HEIGHT = 2.08;
+	public const SLIME_LARGE_WIDTH = 2.08;
+	public const SLIME_LARGE_HEIGHT = 2.08;
+	public const SLIME_MEDIUM_WIDTH = 1.04;
+	public const SLIME_MEDIUM_HEIGHT = 1.04;
+	public const SLIME_SMALL_WIDTH = 0.52;
+	public const SLIME_SMALL_HEIGHT = 0.52;
 	public const SMALL_FIREBALL_WIDTH = 0.31;
 	public const SMALL_FIREBALL_HEIGHT = 0.31;
 	public const SNIFFER_WIDTH = 1.9;
@@ -210,12 +273,20 @@ final class VanillaEntitySizes{
 	public const SPLASH_POTION_HEIGHT = 0.25;
 	public const SQUID_WIDTH = 0.8;
 	public const SQUID_HEIGHT = 0.8;
+	public const SQUID_ADULT_WIDTH = 0.8;
+	public const SQUID_ADULT_HEIGHT = 0.8;
+	public const SQUID_BABY_WIDTH = 1.0;
+	public const SQUID_BABY_HEIGHT = 1.0;
 	public const STRAY_WIDTH = 0.6;
 	public const STRAY_HEIGHT = 1.9;
 	public const STRIDER_WIDTH = 0.9;
 	public const STRIDER_HEIGHT = 1.7;
 	public const SULFUR_CUBE_WIDTH = 0.98;
 	public const SULFUR_CUBE_HEIGHT = 0.98;
+	public const SULFUR_CUBE_SMALL_WIDTH = 0.49;
+	public const SULFUR_CUBE_SMALL_HEIGHT = 0.49;
+	public const SULFUR_CUBE_MEDIUM_WIDTH = 0.98;
+	public const SULFUR_CUBE_MEDIUM_HEIGHT = 0.98;
 	public const TADPOLE_WIDTH = 0.8;
 	public const TADPOLE_HEIGHT = 0.6;
 	public const THROWN_TRIDENT_WIDTH = 0.25;
@@ -230,12 +301,20 @@ final class VanillaEntitySizes{
 	public const TRIPOD_CAMERA_HEIGHT = 1.8;
 	public const TROPICALFISH_WIDTH = 0.4;
 	public const TROPICALFISH_HEIGHT = 0.4;
+	public const TURTLE_BABY_WIDTH = 4.0;
+	public const TURTLE_BABY_HEIGHT = 1.333333;
+	public const TURTLE_ADULT_WIDTH = 1.2;
+	public const TURTLE_ADULT_HEIGHT = 0.4;
 	public const VEX_WIDTH = 0.4;
 	public const VEX_HEIGHT = 0.8;
 	public const VILLAGER_WIDTH = 0.6;
 	public const VILLAGER_HEIGHT = 1.9;
 	public const VILLAGER_V2_WIDTH = 0.6;
 	public const VILLAGER_V2_HEIGHT = 1.9;
+	public const VILLAGER_V2_ADULT_WIDTH = 0.6;
+	public const VILLAGER_V2_ADULT_HEIGHT = 1.9;
+	public const VILLAGER_V2_BABY_WIDTH = 0.98;
+	public const VILLAGER_V2_BABY_HEIGHT = 1.96;
 	public const VINDICATOR_WIDTH = 0.6;
 	public const VINDICATOR_HEIGHT = 1.9;
 	public const WANDERING_TRADER_WIDTH = 0.6;
@@ -260,16 +339,36 @@ final class VanillaEntitySizes{
 	public const XP_BOTTLE_HEIGHT = 0.25;
 	public const XP_ORB_WIDTH = 0.25;
 	public const XP_ORB_HEIGHT = 0.25;
+	public const ZOGLIN_ADULT_WIDTH = 1.4;
+	public const ZOGLIN_ADULT_HEIGHT = 1.4;
+	public const ZOGLIN_BABY_WIDTH = 1.5;
+	public const ZOGLIN_BABY_HEIGHT = 1.7;
 	public const ZOMBIE_WIDTH = 0.6;
 	public const ZOMBIE_HEIGHT = 1.9;
+	public const ZOMBIE_ADULT_WIDTH = 0.6;
+	public const ZOMBIE_ADULT_HEIGHT = 1.9;
+	public const ZOMBIE_BABY_WIDTH = 0.98;
+	public const ZOMBIE_BABY_HEIGHT = 1.96;
+	public const ZOMBIE_HORSE_HORSE_BABY_WIDTH = 1.96;
+	public const ZOMBIE_HORSE_HORSE_BABY_HEIGHT = 2.24;
+	public const ZOMBIE_HORSE_HORSE_ADULT_WIDTH = 1.4;
+	public const ZOMBIE_HORSE_HORSE_ADULT_HEIGHT = 1.6;
 	public const ZOMBIE_NAUTILUS_WIDTH = 0.875;
 	public const ZOMBIE_NAUTILUS_HEIGHT = 0.95;
 	public const ZOMBIE_PIGMAN_WIDTH = 0.6;
 	public const ZOMBIE_PIGMAN_HEIGHT = 1.9;
+	public const ZOMBIE_PIGMAN_PIG_ZOMBIE_BABY_WIDTH = 0.98;
+	public const ZOMBIE_PIGMAN_PIG_ZOMBIE_BABY_HEIGHT = 1.96;
+	public const ZOMBIE_PIGMAN_PIG_ZOMBIE_ADULT_WIDTH = 0.6;
+	public const ZOMBIE_PIGMAN_PIG_ZOMBIE_ADULT_HEIGHT = 1.9;
 	public const ZOMBIE_VILLAGER_WIDTH = 0.6;
 	public const ZOMBIE_VILLAGER_HEIGHT = 1.9;
 	public const ZOMBIE_VILLAGER_V2_WIDTH = 0.6;
 	public const ZOMBIE_VILLAGER_V2_HEIGHT = 1.9;
+	public const ZOMBIE_VILLAGER_V2_ADULT_WIDTH = 0.6;
+	public const ZOMBIE_VILLAGER_V2_ADULT_HEIGHT = 1.9;
+	public const ZOMBIE_VILLAGER_V2_BABY_WIDTH = 0.98;
+	public const ZOMBIE_VILLAGER_V2_BABY_HEIGHT = 1.96;
 
 	/** @phpstan-var array<string, array{float, float}> entity id => [width, height] */
 	private const BY_ID = [
@@ -393,6 +492,33 @@ final class VanillaEntitySizes{
 		EntityIds::ZOMBIE_VILLAGER_V2 => [self::ZOMBIE_VILLAGER_V2_WIDTH, self::ZOMBIE_VILLAGER_V2_HEIGHT],
 	];
 
+	/** @phpstan-var array<string, list<array{float, float}>> entity id => [[width, height]...] */
+	private const VARIANTS_BY_ID = [
+		EntityIds::CAMEL => [[self::CAMEL_STANDING_WIDTH, self::CAMEL_STANDING_HEIGHT], [self::CAMEL_BABY_STANDING_WIDTH, self::CAMEL_BABY_STANDING_HEIGHT], [self::CAMEL_SITTING_WIDTH, self::CAMEL_SITTING_HEIGHT], [self::CAMEL_BABY_SITTING_WIDTH, self::CAMEL_BABY_SITTING_HEIGHT]],
+		EntityIds::CAMEL_HUSK => [[self::CAMEL_HUSK_SITTING_WIDTH, self::CAMEL_HUSK_SITTING_HEIGHT], [self::CAMEL_HUSK_STANDING_WIDTH, self::CAMEL_HUSK_STANDING_HEIGHT]],
+		EntityIds::DROWNED => [[self::DROWNED_BABY_DROWNED_WIDTH, self::DROWNED_BABY_DROWNED_HEIGHT], [self::DROWNED_ADULT_DROWNED_WIDTH, self::DROWNED_ADULT_DROWNED_HEIGHT]],
+		EntityIds::FOX => [[self::FOX_BABY_WIDTH, self::FOX_BABY_HEIGHT], [self::FOX_ADULT_WIDTH, self::FOX_ADULT_HEIGHT]],
+		EntityIds::GLOW_SQUID => [[self::GLOW_SQUID_SQUID_ADULT_WIDTH, self::GLOW_SQUID_SQUID_ADULT_HEIGHT], [self::GLOW_SQUID_SQUID_BABY_WIDTH, self::GLOW_SQUID_SQUID_BABY_HEIGHT]],
+		EntityIds::HOGLIN => [[self::HOGLIN_BABY_WIDTH, self::HOGLIN_BABY_HEIGHT], [self::HOGLIN_ADULT_WIDTH, self::HOGLIN_ADULT_HEIGHT]],
+		EntityIds::HORSE => [[self::HORSE_BABY_WIDTH, self::HORSE_BABY_HEIGHT]],
+		EntityIds::HUSK => [[self::HUSK_ZOMBIE_HUSK_ADULT_WIDTH, self::HUSK_ZOMBIE_HUSK_ADULT_HEIGHT], [self::HUSK_ZOMBIE_HUSK_BABY_WIDTH, self::HUSK_ZOMBIE_HUSK_BABY_HEIGHT]],
+		EntityIds::MAGMA_CUBE => [[self::MAGMA_CUBE_SLIME_LARGE_WIDTH, self::MAGMA_CUBE_SLIME_LARGE_HEIGHT], [self::MAGMA_CUBE_SLIME_MEDIUM_WIDTH, self::MAGMA_CUBE_SLIME_MEDIUM_HEIGHT], [self::MAGMA_CUBE_SLIME_SMALL_WIDTH, self::MAGMA_CUBE_SLIME_SMALL_HEIGHT]],
+		EntityIds::NAUTILUS => [[self::NAUTILUS_BABY_WIDTH, self::NAUTILUS_BABY_HEIGHT], [self::NAUTILUS_ADULT_WIDTH, self::NAUTILUS_ADULT_HEIGHT]],
+		EntityIds::PIGLIN => [[self::PIGLIN_BABY_WIDTH, self::PIGLIN_BABY_HEIGHT], [self::PIGLIN_ADULT_WIDTH, self::PIGLIN_ADULT_HEIGHT]],
+		EntityIds::RABBIT => [[self::RABBIT_BABY_WIDTH, self::RABBIT_BABY_HEIGHT], [self::RABBIT_ADULT_WIDTH, self::RABBIT_ADULT_HEIGHT]],
+		EntityIds::SKELETON_HORSE => [[self::SKELETON_HORSE_BABY_WIDTH, self::SKELETON_HORSE_BABY_HEIGHT], [self::SKELETON_HORSE_ADULT_WIDTH, self::SKELETON_HORSE_ADULT_HEIGHT]],
+		EntityIds::SLIME => [[self::SLIME_LARGE_WIDTH, self::SLIME_LARGE_HEIGHT], [self::SLIME_MEDIUM_WIDTH, self::SLIME_MEDIUM_HEIGHT], [self::SLIME_SMALL_WIDTH, self::SLIME_SMALL_HEIGHT]],
+		EntityIds::SQUID => [[self::SQUID_ADULT_WIDTH, self::SQUID_ADULT_HEIGHT], [self::SQUID_BABY_WIDTH, self::SQUID_BABY_HEIGHT]],
+		EntityIds::SULFUR_CUBE => [[self::SULFUR_CUBE_SMALL_WIDTH, self::SULFUR_CUBE_SMALL_HEIGHT], [self::SULFUR_CUBE_MEDIUM_WIDTH, self::SULFUR_CUBE_MEDIUM_HEIGHT]],
+		EntityIds::TURTLE => [[self::TURTLE_BABY_WIDTH, self::TURTLE_BABY_HEIGHT], [self::TURTLE_ADULT_WIDTH, self::TURTLE_ADULT_HEIGHT]],
+		EntityIds::VILLAGER_V2 => [[self::VILLAGER_V2_ADULT_WIDTH, self::VILLAGER_V2_ADULT_HEIGHT], [self::VILLAGER_V2_BABY_WIDTH, self::VILLAGER_V2_BABY_HEIGHT]],
+		EntityIds::ZOGLIN => [[self::ZOGLIN_ADULT_WIDTH, self::ZOGLIN_ADULT_HEIGHT], [self::ZOGLIN_BABY_WIDTH, self::ZOGLIN_BABY_HEIGHT]],
+		EntityIds::ZOMBIE => [[self::ZOMBIE_ADULT_WIDTH, self::ZOMBIE_ADULT_HEIGHT], [self::ZOMBIE_BABY_WIDTH, self::ZOMBIE_BABY_HEIGHT]],
+		EntityIds::ZOMBIE_HORSE => [[self::ZOMBIE_HORSE_HORSE_BABY_WIDTH, self::ZOMBIE_HORSE_HORSE_BABY_HEIGHT], [self::ZOMBIE_HORSE_HORSE_ADULT_WIDTH, self::ZOMBIE_HORSE_HORSE_ADULT_HEIGHT]],
+		EntityIds::ZOMBIE_PIGMAN => [[self::ZOMBIE_PIGMAN_PIG_ZOMBIE_BABY_WIDTH, self::ZOMBIE_PIGMAN_PIG_ZOMBIE_BABY_HEIGHT], [self::ZOMBIE_PIGMAN_PIG_ZOMBIE_ADULT_WIDTH, self::ZOMBIE_PIGMAN_PIG_ZOMBIE_ADULT_HEIGHT]],
+		EntityIds::ZOMBIE_VILLAGER_V2 => [[self::ZOMBIE_VILLAGER_V2_ADULT_WIDTH, self::ZOMBIE_VILLAGER_V2_ADULT_HEIGHT], [self::ZOMBIE_VILLAGER_V2_BABY_WIDTH, self::ZOMBIE_VILLAGER_V2_BABY_HEIGHT]],
+	];
+
 	private function __construct(){}
 
 	/**
@@ -405,5 +531,24 @@ final class VanillaEntitySizes{
 		[$width, $height] = self::BY_ID[$entityId];
 
 		return new EntitySizeInfo($height, $width);
+	}
+
+	/**
+	 * Every collision box the entity declares, its base one and its variants'.
+	 *
+	 * @return list<EntitySizeInfo>
+	 */
+	public static function getAll(string $entityId) : array{
+		$boxes = self::VARIANTS_BY_ID[$entityId] ?? [];
+		if(isset(self::BY_ID[$entityId])){
+			array_unshift($boxes, self::BY_ID[$entityId]);
+		}
+
+		$sizes = [];
+		foreach($boxes as [$width, $height]){
+			$sizes[] = new EntitySizeInfo($height, $width);
+		}
+
+		return $sizes;
 	}
 }
