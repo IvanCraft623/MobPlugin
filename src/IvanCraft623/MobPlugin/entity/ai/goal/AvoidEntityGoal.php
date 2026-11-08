@@ -74,8 +74,12 @@ class AvoidEntityGoal extends Goal {
 		$nearestDistanceSquared = INF;
 		$origin = $this->mob->getPosition();
 		foreach ($this->mob->getSensing()->getNearbyLiving($this->maxDistance) as $candidate) {
+			if (!$this->isAvoided($candidate)) {
+				continue;
+			}
+
 			$distanceSquared = $origin->distanceSquared($candidate->getPosition());
-			if ($distanceSquared < $nearestDistanceSquared && $this->isAvoided($candidate) && $this->conditions->test($this->mob, $candidate)) {
+			if ($distanceSquared < $nearestDistanceSquared && $this->conditions->test($this->mob, $candidate)) {
 				$nearest = $candidate;
 				$nearestDistanceSquared = $distanceSquared;
 			}
