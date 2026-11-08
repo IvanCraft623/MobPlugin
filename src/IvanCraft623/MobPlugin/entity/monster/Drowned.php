@@ -46,8 +46,6 @@ use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use IvanCraft623\Pathfinder\BlockPathType;
-
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use pocketmine\entity\Location;
@@ -79,10 +77,6 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 
 	private bool $swimPose = false;
 
-	public function canBreathe() : bool{
-		return true;
-	}
-
 	protected function tickState() : void{
 		parent::tickState();
 
@@ -102,16 +96,6 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 
 	public function isSunSensitive() : bool{
 		return true;
-	}
-
-	protected function initProperties() : void {
-		parent::initProperties();
-
-		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
-	}
-
-	public function getWaterMovementSpeed() : float{
-		return $this->isBaby() ? 0.08 : 0.06;
 	}
 
 	public function getMoveControl() : AquaticMoveControl {

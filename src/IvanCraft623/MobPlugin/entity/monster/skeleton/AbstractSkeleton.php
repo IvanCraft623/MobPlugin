@@ -30,10 +30,10 @@ use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PickupItemsGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RangedBowAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
@@ -43,6 +43,7 @@ use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
@@ -95,7 +96,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$this->goalSelector->addGoal(2, new AvoidSunlightGoal($this));
 		$this->goalSelector->addGoal(3, new FleeSunlightGoal($this, 1));
 		//TODO: 3 flee wolfs
-		$this->goalSelector->addGoal(5, new WaterAvoidingRandomStrollGoal($this, 1));
+		$this->goalSelector->addGoal(5, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(6, new RandomLookAroundGoal($this));
 
@@ -151,6 +152,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 
 		$this->setMaxHealth(20);
 		$this->setAttackDamage(2);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
 	}
 
 	protected function updatePickupItemsGoal(bool $enabled) : void{

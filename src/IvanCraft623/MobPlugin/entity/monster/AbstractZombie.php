@@ -28,14 +28,13 @@ use Closure;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\DestroyEggGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PickupItemsGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\DoorBreaker;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -45,6 +44,7 @@ use IvanCraft623\MobPlugin\entity\MobType;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
@@ -72,6 +72,8 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 		saveNBT as saveNBTPickupTrait;
 	}
 
+	private const ADULT_WATER_SPEED = 0.06; //acceleration
+	private const BABY_WATER_SPEED = 0.08; //acceleration
 	private const TAG_IS_BABY = "IsBaby"; //TAG_Byte
 
 	private const WATER_CONVERSION_TIME = 300;
@@ -105,6 +107,11 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 		$this->setMaxHealth(20);
 		$this->setAttackDamage(3);
 		$this->setFollowRange(35);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
+	}
+
+	public function canBreathe() : bool {
+		return true;
 	}
 
 	protected function registerGoals() : void {
@@ -115,9 +122,8 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 	}
 
 	protected function registerBehaviorGoals() : void {
-		$this->goalSelector->addGoal(0, new FloatGoal($this));
 		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
-		$this->goalSelector->addGoal(7, new WaterAvoidingRandomStrollGoal($this, 1));
+		$this->goalSelector->addGoal(7, new RandomStrollGoal($this, 1));
 		//$this->goalSelector->addGoal(4, new DestroyEggGoal($this, 1.0, 3)); //TODO!
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
@@ -148,6 +154,7 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 			$this->setScale($value ? $this->getBabyScale() : 1);
 
 			$this->isBaby = $value;
+			$this->setWaterMovementSpeed($value ? self::BABY_WATER_SPEED : self::ADULT_WATER_SPEED);
 			$this->networkPropertiesDirty = true;
 		}
 	}

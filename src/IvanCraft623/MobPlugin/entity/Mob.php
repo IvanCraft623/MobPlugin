@@ -130,7 +130,10 @@ abstract class Mob extends Living {
 
 	protected Attribute $attackKnockbackAttr;
 
+	private const DEFAULT_WATER_SPEED = 0.06; //acceleration
+
 	protected Attribute $airSpeedAttr;
+	protected Attribute $waterSpeedAttr;
 
 	protected Attribute $followRangeAttr;
 
@@ -203,6 +206,8 @@ abstract class Mob extends Living {
 		$this->attributeMap->add($this->attackDamageAttr = AttributeFactory::getInstance()->mustGet(Attribute::ATTACK_DAMAGE));
 		$this->attributeMap->add($this->attackKnockbackAttr = AttributeFactory::getInstance()->mustGet(CustomAttributes::ATTACK_KNOCKBACK));
 		$this->attributeMap->add($this->airSpeedAttr = AttributeFactory::getInstance()->mustGet(CustomAttributes::AIR_MOVEMENT));
+		$this->attributeMap->add($this->waterSpeedAttr = AttributeFactory::getInstance()->mustGet(Attribute::UNDERWATER_MOVEMENT));
+		$this->waterSpeedAttr->setValue(self::DEFAULT_WATER_SPEED);
 
 		$this->followRangeAttr = $this->attributeMap->get(Attribute::FOLLOW_RANGE) ?? throw new AssumptionFailedError("Follow range attribute is null");
 		;
@@ -243,7 +248,14 @@ abstract class Mob extends Living {
 	 * Returns acceleration while in water.
 	 */
 	public function getWaterMovementSpeed() : float{
-		return $this->getMovementSpeed();
+		return $this->waterSpeedAttr->getValue();
+	}
+
+	/**
+	 * Sets acceleration while in water.
+	 */
+	public function setWaterMovementSpeed(float $waterSpeed) : void{
+		$this->waterSpeedAttr->setValue($waterSpeed);
 	}
 
 	/**
