@@ -51,6 +51,7 @@ use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\Drowned;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
@@ -129,7 +130,8 @@ class MobPlugin extends PluginBase {
 		Stray::class,
 		WitherSkeleton::class,
 		Wither::class,
-		Pufferfish::class
+		Pufferfish::class,
+		Drowned::class
 	];
 
 	private ?Random $random = null;

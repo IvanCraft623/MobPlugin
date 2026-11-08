@@ -38,6 +38,7 @@ use IvanCraft623\MobPlugin\entity\aquatic\TropicalFish;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\Drowned;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
@@ -100,6 +101,7 @@ final class DespawnRuleRegistry{
 			Stray::class,
 			WitherSkeleton::class,
 			Husk::class,
+			Drowned::class,
 			Vindicator::class,
 			Zombie::class,
 			ZombifiedPiglin::class

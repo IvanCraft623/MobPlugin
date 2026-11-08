@@ -50,8 +50,7 @@ class Zombie extends AbstractZombie implements DoorBreaker {
 	}
 
 	protected function getWaterConversionType() : ?string {
-		//TODO: Drowned!
-		return null;
+		return Drowned::class;
 	}
 
 	public function generateEquipment() : void{

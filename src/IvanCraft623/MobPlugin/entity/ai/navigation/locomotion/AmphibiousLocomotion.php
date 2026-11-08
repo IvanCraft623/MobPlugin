@@ -50,6 +50,10 @@ class AmphibiousLocomotion extends AquaticLocomotion{
 		return BlockPathTypeCostMap::amphibious()->merge($mob->getNavigation()->getCostMap());
 	}
 
+	public function isGroundBased() : bool{
+		return true;
+	}
+
 	public function isStableDestination(PathfinderMob $mob, Vector3 $position) : bool{
 		return $mob->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() !== BlockTypeIds::AIR;
 	}

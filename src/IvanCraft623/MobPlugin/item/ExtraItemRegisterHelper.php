@@ -80,6 +80,7 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::TROPICAL_FISH_BUCKET, ExtraVanillaItems::TROPICAL_FISH_BUCKET(), ["tropical_fish_bucket"]);
 		self::registerSimpleItem(ItemTypeNames::PUFFERFISH_SPAWN_EGG, ExtraVanillaItems::PUFFERFISH_SPAWN_EGG(), ["pufferfish_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::PUFFERFISH_BUCKET, ExtraVanillaItems::PUFFERFISH_BUCKET(), ["pufferfish_bucket"]);
+		self::registerSimpleItem(ItemTypeNames::DROWNED_SPAWN_EGG, ExtraVanillaItems::DROWNED_SPAWN_EGG(), ["drowned_spawn_egg"]);
 	}
 
 	/**
