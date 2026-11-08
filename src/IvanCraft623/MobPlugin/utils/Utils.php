@@ -51,6 +51,7 @@ use function intdiv;
 use function max;
 use function method_exists;
 use function min;
+use function sqrt;
 use function str_replace;
 use function strtolower;
 use function trim;
@@ -269,6 +270,22 @@ class Utils {
 		$time = $world->getTimeOfDay();
 
 		return $time < World::TIME_NIGHT || $time >= World::TIME_SUNRISE;
+	}
+
+	/**
+	 * The velocity that lobs a projectile from the origin to the target, with random divergence.
+	 */
+	public static function aimProjectile(Random $random, Vector3 $origin, Vector3 $target, float $power, float $divergence) : Vector3{
+		$dx = $target->x - $origin->x;
+		$dz = $target->z - $origin->z;
+		//The arc: aim higher the farther the target is
+		$vec = (new Vector3($dx, $target->y - $origin->y + sqrt(($dx * $dx) + ($dz * $dz)) * 0.2, $dz))->normalize();
+
+		return (new Vector3(
+			$vec->x + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
+			$vec->y + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
+			$vec->z + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence
+		))->normalize()->multiply($power);
 	}
 
 	public static function isSkyVisible(World $world, Vector3 $pos) : bool{

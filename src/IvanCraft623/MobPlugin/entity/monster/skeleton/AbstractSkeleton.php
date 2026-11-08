@@ -53,13 +53,11 @@ use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\Player;
 use pocketmine\world\sound\BowShootSound;
 use function count;
 use function mt_rand;
-use function sqrt;
 
 abstract class AbstractSkeleton extends Monster implements RangedAttackMob, ItemPickupCapable {
 	use EquipmentTrait;
@@ -195,37 +193,16 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$projectile = $this->createArrow(Location::fromObject($eyePos, $world));
 		$projectile->setPickupMode(Arrow::PICKUP_NONE);
 
-		$targetPosition = $target->getPosition();
-
-		$xDiff = $targetPosition->x - $this->location->x;
-		$yDiff = ($targetPosition->y + ($target->getSize()->getHeight() / 3)) - $eyePos->y;
-		$zDiff = $targetPosition->z - $this->location->z;
-		$horizontalDistance = sqrt(($xDiff * $xDiff) + ($zDiff * $zDiff));
-
-		$projectile->setMotion($this->calculateProjectileVelocity(
-			$xDiff,
-			$yDiff + $horizontalDistance * 0.2,
-			$zDiff,
+		$projectile->setMotion(Utils::aimProjectile(
+			$this->getRandom(),
+			$eyePos,
+			$target->getPosition()->add(0, $target->getSize()->getHeight() / 3, 0),
 			1.6 * $force,
 			14 - $world->getDifficulty() * 4
 		));
 		$projectile->spawnToAll();
 
 		$world->addSound($eyePos, new BowShootSound());
-	}
-
-	/**
-	 * Normalizes (x, y, z), applies random per-axis divergence, then rescales to power.
-	 */
-	private function calculateProjectileVelocity(float $x, float $y, float $z, float $power, float $divergence) : Vector3 {
-		$vec = (new Vector3($x, $y, $z))->normalize();
-
-		$random = $this->getRandom();
-		return (new Vector3(
-			$vec->x + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
-			$vec->y + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
-			$vec->z + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence
-		))->normalize()->multiply($power);
 	}
 
 	public function getXpDropAmount() : int{
