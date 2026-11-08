@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\monster;
 
 use Closure;
 use IvanCraft623\MobPlugin\data\bedrock\SlimeTypeIdMap;
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeFloatGoal;
@@ -67,13 +68,15 @@ class Slime extends Mob implements Enemy {
 	protected Closure $attackableValidator;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		if (isset($this->type)) {
-			$scale = $this->type->getScale();
-		} else {
-			$scale = 4;
-		}
+		return $this->getSizeInfoOf($this->type ?? SlimeType::LARGE);
+	}
 
-		return new EntitySizeInfo($scale * 0.52, $scale * 0.52);
+	protected function getSizeInfoOf(SlimeType $type) : EntitySizeInfo{
+		return match($type){
+			SlimeType::SMALL => new EntitySizeInfo(VanillaEntitySizes::SLIME_SMALL_HEIGHT, VanillaEntitySizes::SLIME_SMALL_WIDTH),
+			SlimeType::MEDIUM => new EntitySizeInfo(VanillaEntitySizes::SLIME_MEDIUM_HEIGHT, VanillaEntitySizes::SLIME_MEDIUM_WIDTH),
+			SlimeType::LARGE => new EntitySizeInfo(VanillaEntitySizes::SLIME_LARGE_HEIGHT, VanillaEntitySizes::SLIME_LARGE_WIDTH)
+		};
 	}
 
 	public function getName() : string{

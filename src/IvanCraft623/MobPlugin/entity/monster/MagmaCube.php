@@ -23,10 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\monster;
 
+use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeType;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -37,6 +39,14 @@ class MagmaCube extends Slime {
 
 	public function getName() : string{
 		return "Magma Cube";
+	}
+
+	protected function getSizeInfoOf(SlimeType $type) : EntitySizeInfo{
+		return match($type){
+			SlimeType::SMALL => new EntitySizeInfo(VanillaEntitySizes::MAGMA_CUBE_SLIME_SMALL_HEIGHT, VanillaEntitySizes::MAGMA_CUBE_SLIME_SMALL_WIDTH),
+			SlimeType::MEDIUM => new EntitySizeInfo(VanillaEntitySizes::MAGMA_CUBE_SLIME_MEDIUM_HEIGHT, VanillaEntitySizes::MAGMA_CUBE_SLIME_MEDIUM_WIDTH),
+			SlimeType::LARGE => new EntitySizeInfo(VanillaEntitySizes::MAGMA_CUBE_SLIME_LARGE_HEIGHT, VanillaEntitySizes::MAGMA_CUBE_SLIME_LARGE_WIDTH)
+		};
 	}
 
 	public function isFireProof() : bool{
