@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_481ce64b04486f2f\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_481ce64b04486f2f\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_481ce64b04486f2f\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
@@ -72,12 +72,13 @@ use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\loot\LootTableRegistry;
 use IvanCraft623\MobPlugin\spawning\event\SpawnEventRegistry;
 use IvanCraft623\MobPlugin\spawning\event\TropicalFishPresetSpawnEventMap;
+use IvanCraft623\MobPlugin\spawning\event\VanillaSpawnEvents;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
-use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\execution\SearchExecutor;
+use IvanCraft623\MobPlugin\libs\_481ce64b04486f2f\IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
+use IvanCraft623\MobPlugin\libs\_481ce64b04486f2f\IvanCraft623\Pathfinder\execution\SearchExecutor;
 
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
@@ -92,7 +93,7 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_481ce64b04486f2f\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
@@ -201,16 +202,24 @@ class MobPlugin extends PluginBase {
 		}), 1);
 	}
 
-	private function registerNaturalSpawning() : void{
-		$settings = Settings::getGlobalSettings();
-
-		SpawnEventRegistry::getInstance()->registerVariants(
+	/**
+	 * What the mobs do for the spawn events beyond the registry's own.
+	 */
+	public static function registerSpawnEvents(SpawnEventRegistry $registry) : void{
+		$registry->register(VanillaSpawnEvents::AS_RIDER, Drowned::class, static fn(Drowned $drowned) => $drowned->becomeRider());
+		$registry->registerVariants(
 			TropicalFish::class,
 			TropicalFishPresetSpawnEventMap::getInstance()->getAll(),
 			static function(TropicalFish $fish, TropicalFishPreset $preset) : void{
 				$fish->setVariant($preset->getShape(), $preset->getPattern(), $preset->getBaseColor(), $preset->getPatternColor());
 			}
 		);
+	}
+
+	private function registerNaturalSpawning() : void{
+		$settings = Settings::getGlobalSettings();
+
+		self::registerSpawnEvents(SpawnEventRegistry::getInstance());
 
 		$this->getScheduler()->scheduleRepeatingTask(new NaturalSpawnerTask(
 			SpawnRuleRegistry::getInstance(),
