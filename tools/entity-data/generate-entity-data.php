@@ -283,6 +283,7 @@ function buildEntitySizesArtifact(array $entities) : string{
 namespace %s;
 
 use pocketmine\entity\EntitySizeInfo;
+use function array_unshift;
 
 /**
  * Auto-generated from the entities of the pinned Mojang bedrock-samples — do not edit by
