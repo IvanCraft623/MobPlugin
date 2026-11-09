@@ -182,6 +182,15 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 		$this->equipFromLootTable($ranged ? VanillaLootTables::DROWNED_RANGED_EQUIPMENT() : VanillaLootTables::DROWNED_EQUIPMENT());
 	}
 
+	/**
+	 * The adult that comes ashore on a nautilus.
+	 */
+	public function becomeRider() : void{
+		//TODO: ride a nautilus
+		$this->setBaby(false);
+		$this->equipFromLootTable(VanillaLootTables::DROWNED_RIDER_EQUIPMENT());
+	}
+
 	public function getDrops() : array {
 		return [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::DROWNED())];
 	}

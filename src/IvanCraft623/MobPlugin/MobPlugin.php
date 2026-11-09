@@ -72,6 +72,7 @@ use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\loot\LootTableRegistry;
 use IvanCraft623\MobPlugin\spawning\event\SpawnEventRegistry;
 use IvanCraft623\MobPlugin\spawning\event\TropicalFishPresetSpawnEventMap;
+use IvanCraft623\MobPlugin\spawning\event\VanillaSpawnEvents;
 use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
@@ -205,6 +206,7 @@ class MobPlugin extends PluginBase {
 	 * What the mobs do for the spawn events beyond the registry's own.
 	 */
 	public static function registerSpawnEvents(SpawnEventRegistry $registry) : void{
+		$registry->register(VanillaSpawnEvents::AS_RIDER, Drowned::class, static fn(Drowned $drowned) => $drowned->becomeRider());
 		$registry->registerVariants(
 			TropicalFish::class,
 			TropicalFishPresetSpawnEventMap::getInstance()->getAll(),
