@@ -25,7 +25,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use Closure;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;

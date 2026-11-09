@@ -31,6 +31,8 @@ use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\entity\Living;
 
 use pocketmine\utils\Utils;
+use function max;
+use function min;
 
 class NearestAttackableGoal extends TargetGoal {
 
@@ -43,13 +45,16 @@ class NearestAttackableGoal extends TargetGoal {
 	/**
 	 * @phpstan-param class-string<Living> $targetType
 	 * @phpstan-param null|Closure(Living) : bool $targetValidator
+	 * @phpstan-param null|Closure() : bool        $condition       whether the goal may look for targets at all
 	 */
 	public function __construct(
 		Mob $entity,
 		protected string $targetType,
 		int $interval = self::DEFAULT_RANDOM_INTERVAL,
 		bool $mustSee = true,
-		?Closure $targetValidator = null
+		?Closure $targetValidator = null,
+		protected ?Closure $condition = null,
+		?float $range = null
 	) {
 		if ($targetType !== Living::class) {
 			Utils::testValidInstance($targetType, Living::class);
@@ -59,7 +64,7 @@ class NearestAttackableGoal extends TargetGoal {
 
 		$this->randomInterval = $this->reducedTickDelay($interval);
 		$this->targetingConditions = (new TargetingConditions())
-			->setRange($this->getFollowDistance())
+			->setRange($range ?? $this->getFollowDistance())
 			->setValidator($targetValidator);
 		if (!$mustSee) {
 			//Don't LOS-ray-trace every candidate during the scan; visibility is already enforced (when
@@ -71,6 +76,9 @@ class NearestAttackableGoal extends TargetGoal {
 	}
 
 	public function canUse() : bool{
+		if ($this->condition !== null && !($this->condition)()) {
+			return false;
+		}
 		if ($this->randomInterval > 0 && $this->entity->getRandom()->nextBoundedInt($this->randomInterval) !== 0) {
 			return false;
 		}
@@ -84,9 +92,10 @@ class NearestAttackableGoal extends TargetGoal {
 	}
 
 	protected function findTarget() : void{
+		$range = $this->targetingConditions->getRange();
 		$this->target = $this->entity->getSensing()->findNearest(
 			$this->targetType,
-			$this->getFollowDistance(),
+			$range > 0 ? min($this->getFollowDistance(), max($range, 2.0)) : $this->getFollowDistance(),
 			conditions: $this->targetingConditions,
 			fromEyes: true
 		);

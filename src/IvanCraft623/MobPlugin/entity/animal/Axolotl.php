@@ -44,7 +44,7 @@ use IvanCraft623\MobPlugin\entity\BucketableTrait;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\item\MobBucket;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
@@ -126,7 +126,7 @@ class Axolotl extends Animal implements Bucketable{
 	}
 
 	public function getAmbientSoundEvent() : string{
-		return $this->isUnderwater() ? LevelSoundEvent::AMBIENT_IN_WATER : LevelSoundEvent::AMBIENT;
+		return $this->getSensing()->isUnderwater() ? LevelSoundEvent::AMBIENT_IN_WATER : LevelSoundEvent::AMBIENT;
 	}
 
 	public function createNavigation() : PathNavigation{

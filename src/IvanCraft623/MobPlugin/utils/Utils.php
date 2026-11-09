@@ -26,6 +26,8 @@ namespace IvanCraft623\MobPlugin\utils;
 use DateTime;
 use IvanCraft623\MobPlugin\entity\Mob;
 
+use pocketmine\block\Block;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\item\Bow;
@@ -36,6 +38,7 @@ use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\utils\Random;
+use pocketmine\world\format\Chunk;
 use pocketmine\world\particle\BlockBreakParticle;
 use pocketmine\world\Position;
 use pocketmine\world\World;
@@ -48,6 +51,7 @@ use function intdiv;
 use function max;
 use function method_exists;
 use function min;
+use function sqrt;
 use function str_replace;
 use function strtolower;
 use function trim;
@@ -247,6 +251,41 @@ class Utils {
 
 		$ambientLight = 0; //TODO: 0.1 in nether
 		return (float) self::lerp($ambientLight, $lightPercentage / (4 - 3 * $lightPercentage), 1);
+	}
+
+	/**
+	 * Whether the block is water, read from its chunk's state without building the block.
+	 */
+	public static function isWaterAt(World $world, int $x, int $y, int $z) : bool{
+		if (!$world->isInWorld($x, $y, $z)) {
+			return false;
+		}
+		$chunk = $world->getChunk($x >> Chunk::COORD_BIT_SIZE, $z >> Chunk::COORD_BIT_SIZE);
+
+		return $chunk !== null &&
+			($chunk->getBlockStateId($x & Chunk::COORD_MASK, $y, $z & Chunk::COORD_MASK) >> Block::INTERNAL_STATE_DATA_BITS) === BlockTypeIds::WATER;
+	}
+
+	public static function isDaytime(World $world) : bool{
+		$time = $world->getTimeOfDay();
+
+		return $time < World::TIME_NIGHT || $time >= World::TIME_SUNRISE;
+	}
+
+	/**
+	 * The velocity that lobs a projectile from the origin to the target, with random divergence.
+	 */
+	public static function aimProjectile(Random $random, Vector3 $origin, Vector3 $target, float $power, float $divergence) : Vector3{
+		$dx = $target->x - $origin->x;
+		$dz = $target->z - $origin->z;
+		//The arc: aim higher the farther the target is
+		$vec = (new Vector3($dx, $target->y - $origin->y + sqrt(($dx * $dx) + ($dz * $dz)) * 0.2, $dz))->normalize();
+
+		return (new Vector3(
+			$vec->x + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
+			$vec->y + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
+			$vec->z + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence
+		))->normalize()->multiply($power);
 	}
 
 	public static function isSkyVisible(World $world, Vector3 $pos) : bool{

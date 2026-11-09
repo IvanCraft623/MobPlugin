@@ -33,7 +33,6 @@ use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MovementInput;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
-use IvanCraft623\MobPlugin\loot\LootTable;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
@@ -89,6 +88,7 @@ use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const M_PI;
 
 abstract class Mob extends Living {
+	use LootRollingTrait;
 	use DespawnPersistenceTrait {
 		initEntity as initDespawnPersistence;
 		saveNBT as saveDespawnPersistenceNBT;
@@ -130,7 +130,10 @@ abstract class Mob extends Living {
 
 	protected Attribute $attackKnockbackAttr;
 
+	private const DEFAULT_WATER_SPEED = 0.06; //acceleration
+
 	protected Attribute $airSpeedAttr;
+	protected Attribute $waterSpeedAttr;
 
 	protected Attribute $followRangeAttr;
 
@@ -203,6 +206,8 @@ abstract class Mob extends Living {
 		$this->attributeMap->add($this->attackDamageAttr = AttributeFactory::getInstance()->mustGet(Attribute::ATTACK_DAMAGE));
 		$this->attributeMap->add($this->attackKnockbackAttr = AttributeFactory::getInstance()->mustGet(CustomAttributes::ATTACK_KNOCKBACK));
 		$this->attributeMap->add($this->airSpeedAttr = AttributeFactory::getInstance()->mustGet(CustomAttributes::AIR_MOVEMENT));
+		$this->attributeMap->add($this->waterSpeedAttr = AttributeFactory::getInstance()->mustGet(Attribute::UNDERWATER_MOVEMENT));
+		$this->waterSpeedAttr->setValue(self::DEFAULT_WATER_SPEED);
 
 		$this->followRangeAttr = $this->attributeMap->get(Attribute::FOLLOW_RANGE) ?? throw new AssumptionFailedError("Follow range attribute is null");
 		;
@@ -243,7 +248,14 @@ abstract class Mob extends Living {
 	 * Returns acceleration while in water.
 	 */
 	public function getWaterMovementSpeed() : float{
-		return $this->getMovementSpeed();
+		return $this->waterSpeedAttr->getValue();
+	}
+
+	/**
+	 * Sets acceleration while in water.
+	 */
+	public function setWaterMovementSpeed(float $waterSpeed) : void{
+		$this->waterSpeedAttr->setValue($waterSpeed);
 	}
 
 	/**
@@ -528,6 +540,13 @@ abstract class Mob extends Living {
 	protected function tickState() : void{
 	}
 
+	/**
+	 * Moves the mob by a fixed step with collisions, apart from its motion: no acceleration and no drag.
+	 */
+	public function displace(float $dx, float $dy, float $dz) : void{
+		$this->move($dx, $dy, $dz);
+	}
+
 	public function travel(float $sideways, float $upward, float $forward) : void{
 		// TODO: More complex movement suff :P
 
@@ -748,36 +767,6 @@ abstract class Mob extends Living {
 		}
 
 		parent::setTargetEntity($target);
-	}
-
-	/**
-	 * Rolls a table for this mob's death, credited to whoever killed it.
-	 *
-	 * @return Item[]
-	 */
-	protected function generateDeathLoot(LootTable $table) : array{
-		$cause = $this->getLastDamageCause();
-
-		return $this->generateLoot($table, $cause instanceof EntityDamageByEntityEvent ? $cause->getDamager() : null);
-	}
-
-	/**
-	 * Rolls a table for a drop that $source caused with $tool (its held item if null).
-	 *
-	 * @return Item[]
-	 */
-	protected function generateLoot(LootTable $table, ?Entity $source = null, ?Item $tool = null) : array{
-		return $table->generateFor($this, $this->random, $source, $tool);
-	}
-
-	/**
-	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
-	 */
-	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{
-		$position = $this->location->add(0, $this->getSize()->getHeight(), 0);
-		foreach ($this->generateLoot($table, $source, $tool) as $item) {
-			$this->getWorld()->dropItem($position, $item);
-		}
 	}
 
 	public function onEat() : void{

@@ -25,19 +25,22 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\utils\DefaultPositionGenerator;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 
 class RandomSwimmingGoal extends RandomStrollGoal {
 
 	private const POSITION_ATTEMPTS = 10;
+	private const SURFACE_CLEARANCE = 2;
 
 	public function __construct(
 		PathfinderMob $entity,
 		float $speedModifier,
 		int $interval = 40,
 		protected int $xzRange = 10,
-		protected int $yRange = 7
+		protected int $yRange = 7,
+		protected bool $avoidSurface = false
 	) {
 		parent::__construct($entity, $speedModifier, $interval);
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
@@ -51,11 +54,28 @@ class RandomSwimmingGoal extends RandomStrollGoal {
 		$world = $this->entity->getWorld();
 		for ($i = 0; $i < self::POSITION_ATTEMPTS; ++$i) {
 			$position = DefaultPositionGenerator::getPos($this->entity, $this->xzRange, $this->yRange);
-			if ($position !== null && $world->getBlock($position) instanceof Water) {
+			if ($position !== null && $world->getBlock($position) instanceof Water && !($this->avoidSurface && $this->isNearSurface($position))) {
 				return $position;
 			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * Whether fewer than {@see self::SURFACE_CLEARANCE} blocks of water are left above the position.
+	 */
+	private function isNearSurface(Vector3 $position) : bool{
+		$world = $this->entity->getWorld();
+		$x = $position->getFloorX();
+		$z = $position->getFloorZ();
+		$y = $position->getFloorY();
+		for ($i = 1; $i <= self::SURFACE_CLEARANCE; ++$i) {
+			if (!Utils::isWaterAt($world, $x, $y + $i, $z)) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

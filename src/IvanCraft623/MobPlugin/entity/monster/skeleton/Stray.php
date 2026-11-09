@@ -25,12 +25,20 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\entity\projectile\EffectArrow;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
+use pocketmine\entity\effect\EffectInstance;
+use pocketmine\entity\effect\VanillaEffects;
+use pocketmine\entity\Location;
+use pocketmine\entity\projectile\Arrow;
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
 class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton instead
+
+	private const SLOWNESS_TICKS = 30 * 20;
+	private const SLOWNESS_ARROW_AUX_VALUE = 19;
 
 	public static function getNetworkTypeId() : string {
 		return EntityIds::STRAY;
@@ -42,6 +50,16 @@ class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton 
 
 	public function isSunSensitive() : bool{
 		return true;
+	}
+
+	protected function createArrow(Location $location) : Arrow{
+		return new EffectArrow(
+			$location,
+			$this,
+			false,
+			[new EffectInstance(VanillaEffects::SLOWNESS(), self::SLOWNESS_TICKS)],
+			self::SLOWNESS_ARROW_AUX_VALUE
+		);
 	}
 
 	public function generateEquipment() : void{
@@ -62,6 +80,4 @@ class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton 
 	public static function getWantedItems() : array {
 		return Skeleton::getWantedItems();
 	}
-
-	//TODO: Arrows must have a slowness effect.
 }

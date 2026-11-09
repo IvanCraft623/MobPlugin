@@ -90,7 +90,7 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 		$nowIsBaby = $currentAge >= self::ADULT_AGE && $age < self::ADULT_AGE;
 		if ($nowIsBaby || ($currentAge < self::ADULT_AGE && $age >= self::ADULT_AGE)) {
 			$this->reachedAgeBoundary();
-			$this->setScale($nowIsBaby ? $this->getBabyScale() : 1);
+			$this->setScale($nowIsBaby ? $this->getBabyScale() : $this->getAdultScale());
 
 			$this->networkPropertiesDirty = true;
 		}
@@ -133,5 +133,9 @@ abstract class AgeableMob extends PathfinderMob implements Ageable {
 
 	public function getBabyScale() : float{
 		return 0.5;
+	}
+
+	public function getAdultScale() : float{
+		return 1;
 	}
 }

@@ -41,7 +41,7 @@ use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\particle\TeleportTrailParticle;
 use IvanCraft623\MobPlugin\sound\EntityStareSound;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -149,8 +149,6 @@ class Enderman extends Monster implements NeutralMob{
 	protected float $stepHeight = 1.0625; //1 block + 1 pixel
 
 	private ?Block $carryBlock = null;
-
-	private int $remainingAngerTicks = 0;
 
 	protected RandomTeleportGoal $teleportGoal;
 
@@ -279,10 +277,6 @@ class Enderman extends Monster implements NeutralMob{
 
 	public function startAngerTimer() : void{
 		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
-	}
-
-	public function getRemainingAngerTicks() : int{
-		return $this->remainingAngerTicks;
 	}
 
 	public function setRemainingAngerTicks(int $ticks) : void{

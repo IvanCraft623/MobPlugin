@@ -48,12 +48,19 @@ class Sensing {
 	/** @var array<int, bool> */
 	private array $lineOfSight = [];
 
+	private ?bool $underwater = null;
+
 	public function __construct(private Mob $mob) {
 		$this->nearby = new NearbyEntities($mob);
 	}
 
 	public function tick() : void{
 		$this->lineOfSight = [];
+		$this->underwater = null;
+	}
+
+	public function isUnderwater() : bool{
+		return $this->underwater ??= $this->mob->isUnderwater();
 	}
 
 	public function canSee(Entity $entity) : bool{

@@ -23,29 +23,49 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
-use IvanCraft623\MobPlugin\entity\ai\control\AquaticMoveControl;
-use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
-use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\MobPlugin\entity\ai\control\SwimThrust;
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\evaluator\AmphibiousNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
+use pocketmine\world\World;
 
-class AmphibiousLocomotion extends Locomotion{
+use function floor;
+
+class AmphibiousLocomotion extends AquaticLocomotion{
 	public function __construct(
-		private int $maxPitchChange = 85,
-		private int $maxYawChange = 10,
-		private float $waterSpeed = 1.0,
-		private float $landSpeed = 1.0,
-		private bool $buoyant = false
+		int $maxPitchChange = 85,
+		int $maxYawChange = 10,
+		float $landSpeed = 1.0,
+		bool $buoyant = false,
+		SwimThrust $thrust = SwimThrust::EASED,
+		private bool $walksSeabed = false
 	) {
+		parent::__construct($maxPitchChange, $maxYawChange, $landSpeed, $buoyant, $thrust);
 	}
 
-	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
-		return new AquaticMoveControl($mob, $navigation, $this->maxPitchChange, $this->maxYawChange, $this->waterSpeed, $this->landSpeed, $this->buoyant);
+	/**
+	 * Swims when the rules allow it. With $walksSeabed, it walks where the water has a solid block below.
+	 */
+	public function swimsAt(World $world, TraversalRules $rules, Vector3 $position) : bool{
+		return $rules->canSwim && (
+			!$this->walksSeabed ||
+			!$world->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->isSolid()
+		);
+	}
+
+	/**
+	 * A mob that wades can't cut across a climb, it needs to reach the step.
+	 */
+	public function canMoveDirectly(PathfinderMob $mob, Vector3 $from, Vector3 $to) : bool{
+		if (floor($to->y) !== floor($mob->getPosition()->y) && !$this->swimsAt($mob->getWorld(), $mob->getNavigation()->getRules(), $to)) {
+			return false;
+		}
+
+		return parent::canMoveDirectly($mob, $from, $to);
 	}
 
 	public function createEvaluator() : NodeEvaluator{
@@ -57,20 +77,11 @@ class AmphibiousLocomotion extends Locomotion{
 		return BlockPathTypeCostMap::amphibious()->merge($mob->getNavigation()->getCostMap());
 	}
 
-	public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool{
+	public function isGroundBased() : bool{
 		return true;
-	}
-
-	public function pathPosition(PathfinderMob $mob, TraversalRules $rules) : Vector3{
-		$position = $mob->getPosition();
-		return new Vector3($position->x, $position->y + $mob->getSize()->getHeight() / 2, $position->z);
 	}
 
 	public function isStableDestination(PathfinderMob $mob, Vector3 $position) : bool{
 		return $mob->getWorld()->getBlockAt($position->getFloorX(), $position->getFloorY() - 1, $position->getFloorZ())->getTypeId() !== BlockTypeIds::AIR;
-	}
-
-	public function canMoveDirectly(PathfinderMob $mob, Vector3 $from, Vector3 $to) : bool{
-		return self::isClearForMovementBetween($mob, $from, $to, false);
 	}
 }

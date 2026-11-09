@@ -26,7 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\monster\slime;
 use function spl_object_id;
 
 /**
- * @phpstan-type TMetadata array{0: float, 1: int, 2: float, 3: float, 4: ?SlimeType}
+ * @phpstan-type TMetadata array{0: float, 1: int, 2: ?SlimeType}
  */
 enum SlimeType{
 	case SMALL;
@@ -34,7 +34,7 @@ enum SlimeType{
 	case LARGE;
 
 	/**
-	 * Scale, health, movement speed, attack damage and split type.
+	 * Scale, health and split type.
 	 *
 	 * @phpstan-return TMetadata
 	 */
@@ -43,9 +43,9 @@ enum SlimeType{
 		static $cache = [];
 
 		return $cache[spl_object_id($this)] ??= match($this){
-			self::SMALL => [1, 1, 0.3, 0, null],
-			self::MEDIUM => [2, 4, 0.4, 2, self::SMALL],
-			self::LARGE => [4, 16, 0.6, 4, self::MEDIUM]
+			self::SMALL => [1, 1, null],
+			self::MEDIUM => [2, 4, self::SMALL],
+			self::LARGE => [4, 16, self::MEDIUM]
 		};
 	}
 
@@ -53,9 +53,5 @@ enum SlimeType{
 
 	public function getHealth() : int{ return $this->getMetadata()[1]; }
 
-	public function getDefaultMovementSpeed() : float{ return $this->getMetadata()[2]; }
-
-	public function getAttackDamage() : float{ return $this->getMetadata()[3]; }
-
-	public function getSplitType() : ?SlimeType{ return $this->getMetadata()[4]; }
+	public function getSplitType() : ?SlimeType{ return $this->getMetadata()[2]; }
 }

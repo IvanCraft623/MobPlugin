@@ -29,17 +29,18 @@ use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathType;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\MovementProfile;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\PathCursor;
-use IvanCraft623\MobPlugin\libs\_f5344b0c34424a88\IvanCraft623\Pathfinder\world\BlockGetter;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\MovementProfile;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_3cb7361eeacc73c5\IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\block\FillableCauldron;
 use pocketmine\block\Liquid;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
+use pocketmine\world\World;
 use function count;
 use function floor;
 
@@ -55,6 +56,13 @@ abstract class Locomotion{
 	 */
 	public function createMoveControl(PathfinderMob $mob, PathNavigation $navigation) : MoveControl{
 		return new GroundMoveControl($mob, $navigation);
+	}
+
+	/**
+	 * Whether a mob in water swims, and not walks, to $position.
+	 */
+	public function swimsAt(World $world, TraversalRules $rules, Vector3 $position) : bool{
+		return false;
 	}
 
 	abstract public function canFollowPath(PathfinderMob $mob, TraversalRules $rules) : bool;
