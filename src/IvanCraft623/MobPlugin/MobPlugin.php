@@ -201,16 +201,23 @@ class MobPlugin extends PluginBase {
 		}), 1);
 	}
 
-	private function registerNaturalSpawning() : void{
-		$settings = Settings::getGlobalSettings();
-
-		SpawnEventRegistry::getInstance()->registerVariants(
+	/**
+	 * What the mobs do for the spawn events beyond the registry's own.
+	 */
+	public static function registerSpawnEvents(SpawnEventRegistry $registry) : void{
+		$registry->registerVariants(
 			TropicalFish::class,
 			TropicalFishPresetSpawnEventMap::getInstance()->getAll(),
 			static function(TropicalFish $fish, TropicalFishPreset $preset) : void{
 				$fish->setVariant($preset->getShape(), $preset->getPattern(), $preset->getBaseColor(), $preset->getPatternColor());
 			}
 		);
+	}
+
+	private function registerNaturalSpawning() : void{
+		$settings = Settings::getGlobalSettings();
+
+		self::registerSpawnEvents(SpawnEventRegistry::getInstance());
 
 		$this->getScheduler()->scheduleRepeatingTask(new NaturalSpawnerTask(
 			SpawnRuleRegistry::getInstance(),
