@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_8ba7b7fe2577a0b1\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;

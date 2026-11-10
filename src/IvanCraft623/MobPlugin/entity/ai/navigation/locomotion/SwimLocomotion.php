@@ -25,9 +25,9 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
 use IvanCraft623\MobPlugin\entity\ai\control\SwimThrust;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_8ba7b7fe2577a0b1\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
-use IvanCraft623\MobPlugin\libs\_8ba7b7fe2577a0b1\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_8ba7b7fe2577a0b1\IvanCraft623\Pathfinder\evaluator\SwimNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\IvanCraft623\Pathfinder\BlockPathTypeCostMap;
+use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\IvanCraft623\Pathfinder\evaluator\SwimNodeEvaluator;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;
 
