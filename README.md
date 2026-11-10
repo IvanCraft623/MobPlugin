@@ -23,7 +23,7 @@ For a full breakdown of what's implemented and what's planned, see the [Vanilla 
 ## ⚙️ How It Works
 
 ### Async Pathfinding
-Pathfinding is computed off the main thread using [Pathfinder](https://github.com/IvanCraft623/Pahtfinder), a custom virion that ports Java Edition's pathfinding logic to PHP. This ensures that even complex mob navigation doesn't cause server lag spikes.
+Pathfinding is computed off the main thread using [Pathfinder](https://github.com/IvanCraft623/Pahtfinder), a custom virion that does the pathfinding in PHP. This ensures that even complex mob navigation doesn't cause server lag spikes.
 
 ### Goal-based Finite State Machine (FSM)
 Each mob has a set of **goals** with priorities — things like attacking, fleeing, wandering, or looking at players. Every tick, the mob evaluates which goals are applicable and runs the highest-priority one, switching seamlessly when conditions change. This mirrors how vanilla Minecraft handles mob AI, producing natural and predictable behavior.

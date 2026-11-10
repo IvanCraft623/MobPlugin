@@ -70,7 +70,7 @@ class PanicGoal extends Goal {
 
 	protected function shouldPanic() : bool{
 		//TODO: check if it is freezing
-		return $this->entity->getExpirableLastDamageByEntity() !== null || $this->entity->isOnFire();
+		return $this->entity->getLastDamageByEntity() !== null || $this->entity->isOnFire();
 	}
 
 	protected function findRandomPosition() : ?Vector3 {

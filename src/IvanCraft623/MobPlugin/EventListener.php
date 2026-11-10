@@ -27,7 +27,7 @@ use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
@@ -120,7 +120,7 @@ class EventListener implements Listener {
 	 */
 	public function onEffectAdd(EntityEffectAddEvent $event) : void{
 		$entity = $event->getEntity();
-		if ($entity instanceof Living && !$entity->canAddEffect($event->getEffect())) {
+		if ($entity instanceof Mob && !$entity->canAddEffect($event->getEffect())) {
 			$event->cancel();
 		}
 	}

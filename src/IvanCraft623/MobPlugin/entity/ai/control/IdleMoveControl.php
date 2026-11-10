@@ -21,15 +21,13 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity;
+namespace IvanCraft623\MobPlugin\entity\ai\control;
 
-trait FlyableTrait {
+/**
+ * For mobs that never move toward a wanted position, like a bat that flies by its own motion.
+ */
+class IdleMoveControl extends MoveControl {
 
-	/**
-	 * Flying mobs keep the flying speed name, but it is backed by the same
-	 * mobplugin:air_movement attribute every mob carries (Mob::getAirMovementSpeed()).
-	 */
-	public function getFlyingSpeed() : float{
-		return $this->getAirMovementSpeed();
+	public function tick() : void {
 	}
 }

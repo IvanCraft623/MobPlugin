@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\Mob;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 
 use pocketmine\entity\Entity;
@@ -52,7 +52,7 @@ class RangedBowAttackGoal extends Goal {
 	private int $startActionTick = -1;
 
 	public function __construct(
-		protected Mob&RangedAttackMob $entity,
+		protected PathfinderMob&RangedAttackMob $entity,
 		protected float $speedModifier,
 		private int $minAttackInterval,
 		private int $maxAttackInterval,
@@ -82,12 +82,7 @@ class RangedBowAttackGoal extends Goal {
 		return ($this->canUse() || !$this->entity->getNavigation()->isDone()) && $this->isHoldingBow();
 	}
 
-	public function start() : void {
-		$this->entity->setAggressive(true);
-	}
-
 	public function stop() : void {
-		$this->entity->setAggressive(false);
 		$this->targetVisibilityTicks = 0;
 		$this->attackCooldown = -1;
 		$this->inCombat = false;
@@ -154,6 +149,9 @@ class RangedBowAttackGoal extends Goal {
 				$this->moveBackward ? -$speed : $speed,
 				$this->strafeLeft ? $speed : -$speed
 			);
+
+			// Strafing is relative to the facing, so the whole body keeps facing the target.
+			$this->entity->lookAt($target->getEyePos(), 30, 30);
 		}
 
 		// TODO: handle controlling vehicle, when this entity rides another Mob,

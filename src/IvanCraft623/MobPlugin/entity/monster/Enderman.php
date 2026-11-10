@@ -150,8 +150,6 @@ class Enderman extends Monster implements NeutralMob{
 
 	private ?Block $carryBlock = null;
 
-	private int $remainingAngerTicks = 0;
-
 	protected RandomTeleportGoal $teleportGoal;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
@@ -168,7 +166,7 @@ class Enderman extends Monster implements NeutralMob{
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(0, new FloatGoal($this));
-		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1, false));
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(3, ($this->teleportGoal = new RandomTeleportGoal(entity: $this,
 			randomTeleportRange: new Vector3(32, 32, 32),
 			maxTeleportInterval: 30 * 20)
@@ -248,7 +246,7 @@ class Enderman extends Monster implements NeutralMob{
 		$this->setAttackDamage(7);
 		$this->setFollowRange(64);
 
-		$this->setPathfindingMalus(BlockPathType::WATER, -1);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, -1);
 	}
 
 	public function getDefaultMovementSpeed() : float{
@@ -264,7 +262,7 @@ class Enderman extends Monster implements NeutralMob{
 	}
 
 	public function getDrops() : array{
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::ENDERMAN())];
+		$drops = $this->generateDeathLoot(VanillaLootTables::ENDERMAN());
 
 		if ($this->carryBlock !== null) {
 			$drops = array_merge($drops, $this->carryBlock->getSilkTouchDrops(VanillaItems::DIAMOND_AXE()));
@@ -279,10 +277,6 @@ class Enderman extends Monster implements NeutralMob{
 
 	public function startAngerTimer() : void{
 		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
-	}
-
-	public function getRemainingAngerTicks() : int{
-		return $this->remainingAngerTicks;
 	}
 
 	public function setRemainingAngerTicks(int $ticks) : void{
@@ -313,10 +307,6 @@ class Enderman extends Monster implements NeutralMob{
 		$this->updateAnger(true);
 
 		return $hasUpdate;
-	}
-
-	public function isSensitiveToWater() : bool{
-		return true;
 	}
 
 	public function getCarriedBlock() : ?Block{

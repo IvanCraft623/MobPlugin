@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "37f1aeca108e9daed56c309c87796310",
+    "content-hash": "23f6c893b2b615a2647f6bb9fd29eee3",
     "packages": [
         {
             "name": "adhocore/json-comment",
@@ -227,12 +227,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/IvanCraft623/Pahtfinder.git",
-                "reference": "732734ff1a9e131ed1356095ca42f6780695f17f"
+                "reference": "55d9d6c6791c101ae4d0347ce6a3cf11bf56bf40"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/732734ff1a9e131ed1356095ca42f6780695f17f",
-                "reference": "732734ff1a9e131ed1356095ca42f6780695f17f",
+                "url": "https://api.github.com/repos/IvanCraft623/Pahtfinder/zipball/55d9d6c6791c101ae4d0347ce6a3cf11bf56bf40",
+                "reference": "55d9d6c6791c101ae4d0347ce6a3cf11bf56bf40",
                 "shasum": ""
             },
             "require": {
@@ -275,20 +275,20 @@
                 "source": "https://github.com/IvanCraft623/Pahtfinder/tree/main",
                 "issues": "https://github.com/IvanCraft623/Pahtfinder/issues"
             },
-            "time": "2026-11-03T05:35:28+00:00"
+            "time": "2026-11-06T23:19:12+00:00"
         },
         {
             "name": "kostamax27/loottable",
-            "version": "1.0.1",
+            "version": "1.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kostamax27/LootTable.git",
-                "reference": "12e0794182611e100ef8fc9b877b0acd75d11528"
+                "reference": "17d333a384a69debab69f94f4df55d5185f523fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kostamax27/LootTable/zipball/12e0794182611e100ef8fc9b877b0acd75d11528",
-                "reference": "12e0794182611e100ef8fc9b877b0acd75d11528",
+                "url": "https://api.github.com/repos/kostamax27/LootTable/zipball/17d333a384a69debab69f94f4df55d5185f523fc",
+                "reference": "17d333a384a69debab69f94f4df55d5185f523fc",
                 "shasum": ""
             },
             "require": {
@@ -313,9 +313,9 @@
             ],
             "support": {
                 "issues": "https://github.com/kostamax27/LootTable/issues",
-                "source": "https://github.com/kostamax27/LootTable/tree/1.0.1"
+                "source": "https://github.com/kostamax27/LootTable/tree/1.0.3"
             },
-            "time": "2026-09-22T13:11:18+00:00"
+            "time": "2026-11-03T23:48:30+00:00"
         },
         {
             "name": "netresearch/jsonmapper",
@@ -2250,11 +2250,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.3.4",
+            "version": "2.3.5",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/f20ce6f3c82556cfcfc086b152445a12d1d64fff",
-                "reference": "f20ce6f3c82556cfcfc086b152445a12d1d64fff",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/645a1bd6bead15fc1b8474137467961d0fa30a79",
+                "reference": "645a1bd6bead15fc1b8474137467961d0fa30a79",
                 "shasum": ""
             },
             "require": {
@@ -2310,7 +2310,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-28T22:38:53+00:00"
+            "time": "2026-11-03T12:14:22+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -2696,16 +2696,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "13.4.5",
+            "version": "13.4.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "941457a4f147a60fe2074d40e1fce0d08ea8d930"
+                "reference": "4821376960d0e1e5a7b7b700955ebcab33ecd71b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/941457a4f147a60fe2074d40e1fce0d08ea8d930",
-                "reference": "941457a4f147a60fe2074d40e1fce0d08ea8d930",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/4821376960d0e1e5a7b7b700955ebcab33ecd71b",
+                "reference": "4821376960d0e1e5a7b7b700955ebcab33ecd71b",
                 "shasum": ""
             },
             "require": {
@@ -2719,7 +2719,7 @@
                 "phar-io/manifest": "^2.0.4",
                 "phar-io/version": "^3.2.1",
                 "php": ">=8.4.1",
-                "phpunit/php-code-coverage": "^14.4.1",
+                "phpunit/php-code-coverage": "^14.5.0",
                 "phpunit/php-file-iterator": "^7.0.2",
                 "phpunit/php-invoker": "^7.0.0",
                 "phpunit/php-text-template": "^6.0.1",
@@ -2776,7 +2776,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/13.4.5"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/13.4.6"
             },
             "funding": [
                 {
@@ -2784,7 +2784,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2026-10-27T04:16:22+00:00"
+            "time": "2026-11-02T07:12:28+00:00"
         },
         {
             "name": "psr/container",

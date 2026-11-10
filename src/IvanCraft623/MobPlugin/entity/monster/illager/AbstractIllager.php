@@ -21,21 +21,10 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\loot;
+namespace IvanCraft623\MobPlugin\entity\monster\illager;
 
-use IvanCraft623\MobPlugin\utils\Utils;
-use kostamax27\loottable\condition\LootCondition;
-use kostamax27\loottable\LootContext;
+use IvanCraft623\MobPlugin\entity\monster\Monster;
 
-final class RegionalDifficultyLootCondition implements LootCondition{
-
-	public function __construct(
-		private readonly float $maxChance
-	){}
-
-	public function test(LootContext $context) : bool{
-		$world = $context->entity?->getWorld();
-
-		return $world !== null && Utils::getRegionalDifficulty($world) * $this->maxChance > $context->random->nextFloat();
-	}
+abstract class AbstractIllager extends Monster {
+	//TODO: raids and patrols
 }

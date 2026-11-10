@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\math\Vector3;
 
 class PositionTracker implements PosTracker {
@@ -42,7 +42,7 @@ class PositionTracker implements PosTracker {
 		return clone $this->position;
 	}
 
-	public function isVisibleBy(Living $entity) : bool{
+	public function isVisibleBy(Mob $entity) : bool{
 		return true;
 	}
 }

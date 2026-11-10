@@ -54,6 +54,23 @@ use function preg_match;
  * @method static int WITHER_SKELETON_SPAWN_EGG()
  * @method static int TROPICAL_FISH_BUCKET()
  * @method static int WITHER_SPAWN_EGG()
+ * @method static int HUSK_SPAWN_EGG()
+ * @method static int COD_SPAWN_EGG()
+ * @method static int COD_BUCKET()
+ * @method static int SALMON_SPAWN_EGG()
+ * @method static int SALMON_BUCKET()
+ * @method static int TROPICAL_FISH_SPAWN_EGG()
+ * @method static int GLOW_SQUID_SPAWN_EGG()
+ * @method static int MAGMA_CUBE_SPAWN_EGG()
+ * @method static int BOGGED_SPAWN_EGG()
+ * @method static int VINDICATOR_SPAWN_EGG()
+ * @method static int ZOMBIE_PIGMAN_SPAWN_EGG()
+ * @method static int PUFFERFISH_SPAWN_EGG()
+ * @method static int PUFFERFISH_BUCKET()
+ * @method static int DROWNED_SPAWN_EGG()
+ * @method static int POLAR_BEAR_SPAWN_EGG()
+ * @method static int RABBIT_SPAWN_EGG()
+ * @method static int WITCH_SPAWN_EGG()
  */
 final class ExtraItemTypeIds{
 	/**
@@ -82,8 +99,25 @@ final class ExtraItemTypeIds{
 		self::register("wither_skeleton_spawn_egg");
 		self::register("wither_spawn_egg");
 		self::register("axolotl_spawn_egg");
+		self::register("husk_spawn_egg");
+		self::register("cod_spawn_egg");
+		self::register("cod_bucket");
+		self::register("salmon_spawn_egg");
+		self::register("salmon_bucket");
+		self::register("tropical_fish_spawn_egg");
+		self::register("glow_squid_spawn_egg");
+		self::register("magma_cube_spawn_egg");
+		self::register("bogged_spawn_egg");
+		self::register("vindicator_spawn_egg");
+		self::register("zombie_pigman_spawn_egg");
 		self::register("tropical_fish_bucket");
 		self::register("axolotl_bucket");
+		self::register("pufferfish_spawn_egg");
+		self::register("pufferfish_bucket");
+		self::register("drowned_spawn_egg");
+		self::register("polar_bear_spawn_egg");
+		self::register("rabbit_spawn_egg");
+		self::register("witch_spawn_egg");
 	}
 
 	private static function verifyName(string $name) : void{

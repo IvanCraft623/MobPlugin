@@ -37,22 +37,24 @@ final class EntityRepathThrottleTest extends NavigationTestCase{
 		$throttle->requested(1, false, 0);
 		self::assertFalse($throttle->shouldRequest(1, true, null, 1), "pending");
 
-		$path = self::path(0, 5);
-		$throttle->resolved(1, $path);
-		self::assertFalse($throttle->shouldRequest(1, false, $path, 2), "following that path");
+		$cursor = self::cursor(0, 5);
+		$throttle->resolved(1, $cursor);
+		self::assertFalse($throttle->shouldRequest(1, false, $cursor, 2), "following that path");
 
-		$path->setNextNodeIndex(6);
-		self::assertFalse($throttle->shouldRequest(1, false, $path, 3), "ended, too soon");
-		self::assertTrue($throttle->shouldRequest(1, false, $path, EntityRepathThrottle::INTERVAL), "ended, long enough");
+		for ($i = 0; $i < 6; ++$i) {
+			$cursor->advance();
+		}
+		self::assertFalse($throttle->shouldRequest(1, false, $cursor, 3), "ended, too soon");
+		self::assertTrue($throttle->shouldRequest(1, false, $cursor, EntityRepathThrottle::INTERVAL), "ended, long enough");
 	}
 
 	public function testAnotherPathIsNotTheRequestedOne() : void{
 		$throttle = new EntityRepathThrottle();
 		$throttle->requested(1, false, 0);
-		$throttle->resolved(1, self::path(0, 5));
+		$throttle->resolved(1, self::cursor(0, 5));
 
-		self::assertFalse($throttle->shouldRequest(1, false, self::path(0, 5), 1), "too soon");
-		self::assertTrue($throttle->shouldRequest(1, false, self::path(0, 5), EntityRepathThrottle::INTERVAL));
+		self::assertFalse($throttle->shouldRequest(1, false, self::cursor(0, 5), 1), "too soon");
+		self::assertTrue($throttle->shouldRequest(1, false, self::cursor(0, 5), EntityRepathThrottle::INTERVAL));
 	}
 
 	public function testRequestsMadeWhileAnotherRunsAreNotRemembered() : void{

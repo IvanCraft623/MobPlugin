@@ -58,6 +58,7 @@ final class SpawnEventsTest extends TestCase{
 
 	public function testEveryImplementedMobsEventIsHandled() : void{
 		$registry = new SpawnEventRegistry();
+		MobPlugin::registerSpawnEvents($registry);
 		$events = self::readEvents();
 
 		$unhandled = [];
@@ -77,7 +78,9 @@ final class SpawnEventsTest extends TestCase{
 
 	public function testBuiltInHandlersAreForEventsTheDataSends() : void{
 		$sent = array_merge(...array_values(self::readEvents()));
-		foreach((new SpawnEventRegistry())->getHandledEvents() as $event){
+		$registry = new SpawnEventRegistry();
+		MobPlugin::registerSpawnEvents($registry);
+		foreach($registry->getHandledEvents() as $event){
 			self::assertTrue(in_array($event, $sent, true), "$event is handled but no spawn rule sends it");
 		}
 	}

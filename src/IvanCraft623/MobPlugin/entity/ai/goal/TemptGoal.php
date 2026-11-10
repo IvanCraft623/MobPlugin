@@ -129,7 +129,7 @@ class TemptGoal extends Goal {
 	}
 
 	public function tick() : void{
-		$this->entity->getLookControl()->setLookAt($this->player, $this->entity->getMaxYawRot() + 20);
+		$this->entity->getLookControl()->setLookAt($this->player, $this->entity->getLookControl()->getMaxYawRot() + 20);
 		$playerPos = $this->player->getPosition();
 		if ($this->entity->getPosition()->distanceSquared($playerPos) < 6.25) {
 			$this->entity->getNavigation()->stop();

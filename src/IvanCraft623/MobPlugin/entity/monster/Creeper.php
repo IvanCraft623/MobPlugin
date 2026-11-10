@@ -103,7 +103,7 @@ class Creeper extends Monster implements Explosive, Powerable, WearableHeadMob{
 		$this->goalSelector->addGoal(1, new FloatGoal($this));
 		$this->goalSelector->addGoal(2, new SwellGoal($this));
 		//TODO: avoid ocelots and cats goal
-		$this->goalSelector->addGoal(4, new MeleeAttackGoal($this, 1.25, false));
+		$this->goalSelector->addGoal(4, new MeleeAttackGoal($this, 1.25));
 		$this->goalSelector->addGoal(5, new WaterAvoidingRandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(6, new RandomLookAroundGoal($this));
@@ -315,7 +315,7 @@ class Creeper extends Monster implements Explosive, Powerable, WearableHeadMob{
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::CREEPER())];
+		return $this->generateDeathLoot(VanillaLootTables::CREEPER());
 	}
 
 	public function getPickedItem() : ?Item{

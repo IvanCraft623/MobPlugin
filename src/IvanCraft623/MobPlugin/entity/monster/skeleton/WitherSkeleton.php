@@ -94,13 +94,13 @@ class WitherSkeleton extends AbstractSkeleton implements WearableHeadMob {
 
 		$this->setScale(1.2); //why? bedrock...
 
-		$this->setPathfindingMalus(BlockPathType::LAVA, 8);
-		$this->setPathfindingMalus(BlockPathType::DANGER_FIRE, BlockPathType::OPEN_MALUS);
-		$this->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, BlockPathType::OPEN_MALUS);
+		$this->navigation->setPathfindingMalus(BlockPathType::LAVA, 8);
+		$this->navigation->setPathfindingMalus(BlockPathType::DANGER_FIRE, BlockPathType::OPEN_MALUS);
+		$this->navigation->setPathfindingMalus(BlockPathType::DAMAGE_FIRE, BlockPathType::OPEN_MALUS);
 	}
 
 	public function getDrops() : array{
-		$drops = [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_SKELETON())];
+		$drops = [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITHER_SKELETON())];
 
 		if (($cause = $this->getLastDamageCause()) instanceof EntityDamageByEntityEvent &&
 			($killer = $cause->getDamager()) instanceof Creeper && $killer->isPowered()

@@ -21,26 +21,22 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\loot;
-
-use kostamax27\loottable\function\LootFunction;
-use kostamax27\loottable\LootContext;
-use pocketmine\block\utils\Colored;
-use pocketmine\item\Item;
-use pocketmine\item\ItemBlock;
+namespace IvanCraft623\MobPlugin\entity\ai\control;
 
 /**
- * Gives a colored block item the color of the colored entity that drops it: a sheep's wool.
+ * How a swimmer turns the distance to its wanted position into thrust.
  */
-final class EntityColorLootFunction implements LootFunction{
-
-	public function apply(Item $item, LootContext $context) : Item{
-		$entity = $context->entity;
-		$block = $item instanceof ItemBlock ? $item->getBlock() : null;
-		if(!$entity instanceof Colored || !$block instanceof Colored){
-			return $item;
-		}
-
-		return $block->setColor($entity->getColor())->asItem()->setCount($item->getCount());
-	}
+enum SwimThrust{
+	/**
+	 * Eases up and down with a small push, at the water speed
+	 */
+	case EASED;
+	/**
+	 * Angles the swim at the position, at the water speed
+	 */
+	case ANGLED;
+	/**
+	 * Splits the swim exactly along the slope to the position, at the movement speed
+	 */
+	case SLOPED;
 }

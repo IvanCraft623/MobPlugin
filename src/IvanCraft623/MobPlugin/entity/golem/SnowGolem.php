@@ -127,7 +127,7 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 	}
 
 	public function getDrops() : array{
-		return [...parent::getDrops(), ...$this->generateDeathLoot(VanillaLootTables::SNOWMAN())];
+		return $this->generateDeathLoot(VanillaLootTables::SNOWMAN());
 	}
 
 	public function getPickedItem() : ?Item{
@@ -136,10 +136,6 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 
 	public function getXpDropAmount() : int{
 		return 0;
-	}
-
-	public function isSensitiveToWater() : bool{
-		return true;
 	}
 
 	protected function calculateFallDamage(float $fallDistance) : float{
@@ -158,8 +154,8 @@ class SnowGolem extends Golem implements RangedAttackMob, Shearable{
 		return $hasUpdate;
 	}
 
-	public function tickAi() : void{
-		parent::tickAi();
+	protected function tickState() : void{
+		parent::tickState();
 
 		$pos = $this->getPosition();
 		$world = $this->getWorld();

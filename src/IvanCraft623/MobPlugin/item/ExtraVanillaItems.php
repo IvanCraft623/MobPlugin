@@ -29,19 +29,33 @@ use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
+use IvanCraft623\MobPlugin\entity\animal\PolarBear;
+use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\aquatic\Cod;
+use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
+use IvanCraft623\MobPlugin\entity\aquatic\Pufferfish;
+use IvanCraft623\MobPlugin\entity\aquatic\Salmon;
+use IvanCraft623\MobPlugin\entity\aquatic\TropicalFish;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\monster\CaveSpider;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
+use IvanCraft623\MobPlugin\entity\monster\Drowned;
 use IvanCraft623\MobPlugin\entity\monster\Enderman;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\entity\monster\Husk;
+use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
+use IvanCraft623\MobPlugin\entity\monster\MagmaCube;
+use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\WitherSkeleton;
 use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\entity\monster\Spider;
+use IvanCraft623\MobPlugin\entity\monster\Witch;
+use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use IvanCraft623\MobPlugin\item\ExtraItemTypeIds as Ids;
 
 use pocketmine\item\Item;
@@ -56,6 +70,17 @@ use pocketmine\utils\CloningRegistryTrait;
  *
  * @method static MobBucket AXOLOTL_BUCKET()
  * @method static \pocketmine\item\SpawnEgg AXOLOTL_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg HUSK_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg COD_SPAWN_EGG()
+ * @method static MobBucket COD_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg SALMON_SPAWN_EGG()
+ * @method static MobBucket SALMON_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg TROPICAL_FISH_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg GLOW_SQUID_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg MAGMA_CUBE_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg BOGGED_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg VINDICATOR_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg ZOMBIE_PIGMAN_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg BAT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CAVE_SPIDER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CHICKEN_SPAWN_EGG()
@@ -75,6 +100,12 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg WITHER_SKELETON_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WITHER_SPAWN_EGG()
  * @method static MobBucket TROPICAL_FISH_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg PUFFERFISH_SPAWN_EGG()
+ * @method static MobBucket PUFFERFISH_BUCKET()
+ * @method static \pocketmine\item\SpawnEgg DROWNED_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg POLAR_BEAR_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg RABBIT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg WITCH_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
 	use CloningRegistryTrait;
@@ -123,11 +154,27 @@ final class ExtraVanillaItems{
 		self::register("wither_skeleton_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SKELETON_SPAWN_EGG()), "Wither Skeleton Spawn Egg", WitherSkeleton::class));
 		self::register("wither_spawn_egg", new MobSpawnEgg(new IID(Ids::WITHER_SPAWN_EGG()), "Wither Spawn Egg", Wither::class));
 		self::register("axolotl_spawn_egg", new MobSpawnEgg(new IID(Ids::AXOLOTL_SPAWN_EGG()), "Axolotl Spawn Egg", Axolotl::class));
+		self::register("husk_spawn_egg", new MobSpawnEgg(new IID(Ids::HUSK_SPAWN_EGG()), "Husk Spawn Egg", Husk::class));
+		self::register("cod_spawn_egg", new MobSpawnEgg(new IID(Ids::COD_SPAWN_EGG()), "Cod Spawn Egg", Cod::class));
+		self::register("salmon_spawn_egg", new MobSpawnEgg(new IID(Ids::SALMON_SPAWN_EGG()), "Salmon Spawn Egg", Salmon::class));
+		self::register("tropical_fish_spawn_egg", new MobSpawnEgg(new IID(Ids::TROPICAL_FISH_SPAWN_EGG()), "Tropical Fish Spawn Egg", TropicalFish::class));
+		self::register("glow_squid_spawn_egg", new MobSpawnEgg(new IID(Ids::GLOW_SQUID_SPAWN_EGG()), "Glow Squid Spawn Egg", GlowSquid::class));
+		self::register("magma_cube_spawn_egg", new MobSpawnEgg(new IID(Ids::MAGMA_CUBE_SPAWN_EGG()), "Magma Cube Spawn Egg", MagmaCube::class));
+		self::register("bogged_spawn_egg", new MobSpawnEgg(new IID(Ids::BOGGED_SPAWN_EGG()), "Bogged Spawn Egg", Bogged::class));
+		self::register("vindicator_spawn_egg", new MobSpawnEgg(new IID(Ids::VINDICATOR_SPAWN_EGG()), "Vindicator Spawn Egg", Vindicator::class));
+		self::register("zombie_pigman_spawn_egg", new MobSpawnEgg(new IID(Ids::ZOMBIE_PIGMAN_SPAWN_EGG()), "Zombified Piglin Spawn Egg", ZombifiedPiglin::class));
+		self::register("pufferfish_spawn_egg", new MobSpawnEgg(new IID(Ids::PUFFERFISH_SPAWN_EGG()), "Pufferfish Spawn Egg", Pufferfish::class));
+		self::register("drowned_spawn_egg", new MobSpawnEgg(new IID(Ids::DROWNED_SPAWN_EGG()), "Drowned Spawn Egg", Drowned::class));
+		self::register("polar_bear_spawn_egg", new MobSpawnEgg(new IID(Ids::POLAR_BEAR_SPAWN_EGG()), "Polar Bear Spawn Egg", PolarBear::class));
+		self::register("rabbit_spawn_egg", new MobSpawnEgg(new IID(Ids::RABBIT_SPAWN_EGG()), "Rabbit Spawn Egg", Rabbit::class));
+		self::register("witch_spawn_egg", new MobSpawnEgg(new IID(Ids::WITCH_SPAWN_EGG()), "Witch Spawn Egg", Witch::class));
 	}
 
 	private static function registerBuckets() : void{
+		self::register("cod_bucket", new MobBucket(new IID(Ids::COD_BUCKET()), "Bucket of Cod", Cod::class));
+		self::register("salmon_bucket", new MobBucket(new IID(Ids::SALMON_BUCKET()), "Bucket of Salmon", Salmon::class));
 		self::register("axolotl_bucket", new MobBucket(new IID(Ids::AXOLOTL_BUCKET()), "Bucket of Axolotl", Axolotl::class));
-		//TODO: pass the tropical fish once it exists
-		self::register("tropical_fish_bucket", new MobBucket(new IID(Ids::TROPICAL_FISH_BUCKET()), "Bucket of Tropical Fish"));
+		self::register("tropical_fish_bucket", new MobBucket(new IID(Ids::TROPICAL_FISH_BUCKET()), "Bucket of Tropical Fish", TropicalFish::class));
+		self::register("pufferfish_bucket", new MobBucket(new IID(Ids::PUFFERFISH_BUCKET()), "Bucket of Pufferfish", Pufferfish::class));
 	}
 }

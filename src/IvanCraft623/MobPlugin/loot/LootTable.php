@@ -23,8 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\loot;
 
+use IvanCraft623\MobPlugin\utils\Utils;
 use kostamax27\loottable\LootContext;
+use kostamax27\loottable\LootDifficulty;
+use pocketmine\entity\Entity;
 use pocketmine\item\Item;
+use pocketmine\utils\Random;
 
 /**
  * A vanilla loot table, built when first rolled.
@@ -45,5 +49,22 @@ final class LootTable{
 	 */
 	public function generate(LootContext $context) : array{
 		return LootTableRegistry::getInstance()->resolve($this->name)->generate($context);
+	}
+
+	/**
+	 * Rolls this table for a drop of $entity that $source caused with $tool (its held item if null).
+	 *
+	 * @return Item[]
+	 *
+	 * @throws \InvalidArgumentException if the table can't be built
+	 */
+	public function generateFor(Entity $entity, Random $random, ?Entity $source = null, ?Item $tool = null) : array{
+		return $this->generate(new LootContext(
+			random: $random,
+			entity: $entity,
+			killer: $source,
+			tool: $tool ?? Utils::getHeldItem($source),
+			difficulty: LootDifficulty::fromWorld($entity->getWorld())
+		));
 	}
 }

@@ -27,7 +27,6 @@ use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\math\Vector3;
-use pocketmine\world\World;
 
 class FleeSunlightGoal extends Goal {
 
@@ -43,8 +42,7 @@ class FleeSunlightGoal extends Goal {
 		}
 
 		$world = $this->entity->getWorld();
-		$time = $world->getTimeOfDay();
-		if ($time >= World::TIME_NIGHT && $time < World::TIME_SUNRISE) {
+		if (!Utils::isDaytime($world)) {
 			return false;
 		}
 

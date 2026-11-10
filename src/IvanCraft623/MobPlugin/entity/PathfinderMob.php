@@ -24,10 +24,16 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
+use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
+use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\Pathfinder\PathCursor;
+use pocketmine\color\Color;
 use pocketmine\math\Vector3;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\world\ChunkListener;
 use pocketmine\world\format\Chunk;
+use pocketmine\world\particle\DustParticle;
 use pocketmine\world\Position;
 use pocketmine\world\World;
 
@@ -40,10 +46,30 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	 */
 	protected array $usedChunks = [];
 
-	private ?Path $listenedPath = null;
+	private ?PathCursor $listenedCursor = null;
 
-	private function listenToPathChunks(?Path $path) : void{
-		$chunks = $path?->getCorridorChunks() ?? [];
+	protected PathNavigation $navigation;
+
+	public function createNavigation() : PathNavigation{
+		return new PathNavigation($this, new GroundLocomotion());
+	}
+
+	protected function createMoveControl() : MoveControl{
+		return $this->navigation->getLocomotion()->createMoveControl($this, $this->navigation);
+	}
+
+	public function getNavigation() : PathNavigation{
+		return $this->navigation;
+	}
+
+	protected function initEntity(CompoundTag $nbt) : void{
+		$this->navigation = $this->createNavigation();
+
+		parent::initEntity($nbt);
+	}
+
+	private function listenToPathChunks(?PathCursor $cursor) : void{
+		$chunks = $cursor?->getPath()->getCorridorChunks() ?? [];
 
 		$world = $this->getWorld();
 		foreach($chunks as $hash => $_){
@@ -65,13 +91,21 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		$path = $this->navigation->getPath();
-		if($path !== null && $path->isDone()){
-			$path = null;
+		$cursor = $this->navigation->getCursor();
+
+		if($cursor !== null && $this->ticksLived % 10 === 0 && $this->getSettings()->isDebugModeEnabled()){
+			$world = $this->getWorld();
+			foreach($cursor->getPath()->getNodes() as $node){
+				$world->addParticle($node->add(0.5, 0.5, 0.5), new DustParticle(new Color(255, 0, 0))); //red particle
+			}
 		}
-		if($path !== $this->listenedPath){
-			$this->listenedPath = $path;
-			$this->listenToPathChunks($path);
+
+		if($cursor !== null && $cursor->isDone()){
+			$cursor = null;
+		}
+		if($cursor !== $this->listenedCursor){
+			$this->listenedCursor = $cursor;
+			$this->listenToPathChunks($cursor);
 		}
 
 		return $hasUpdate;
@@ -80,15 +114,29 @@ abstract class PathfinderMob extends Mob implements ChunkListener {
 	protected function setPosition(Vector3 $pos) : bool{
 		if(!$this->closed && $pos instanceof Position && $pos->getWorld() !== $this->getWorld()){
 			//The chunks listened belong to the world being left
-			$this->listenedPath = null;
+			$this->listenedCursor = null;
 			$this->listenToPathChunks(null);
 		}
 
 		return parent::setPosition($pos);
 	}
 
-	public function isPathFinding() : bool{
-		return !$this->navigation->isDone();
+	public function teleport(Vector3 $pos, ?float $yaw = null, ?float $pitch = null) : bool{
+		if(parent::teleport($pos, $yaw, $pitch)){
+			$this->navigation->stop();
+
+			return true;
+		}
+
+		return false;
+	}
+
+	protected function destroyCycles() : void{
+		$this->navigation->stop();
+
+		parent::destroyCycles();
+
+		unset($this->navigation);
 	}
 
 	public function onChunkChanged(int $chunkX, int $chunkZ, Chunk $chunk) : void{}

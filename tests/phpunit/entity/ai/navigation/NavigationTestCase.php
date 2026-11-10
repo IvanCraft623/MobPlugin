@@ -27,6 +27,7 @@ use IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
 use IvanCraft623\Pathfinder\MovementProfile;
 use IvanCraft623\Pathfinder\Node;
 use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use IvanCraft623\Pathfinder\PathResult;
 use IvanCraft623\Pathfinder\world\ArrayChunkSource;
 use IvanCraft623\Pathfinder\world\Terrain;
@@ -43,6 +44,13 @@ abstract class NavigationTestCase extends TestCase{
 			$nodes[] = new Node($x, 64, 0);
 		}
 		return new Path($nodes, new Vector3($toX, 64, 0), $result);
+	}
+
+	/**
+	 * @param int $walked nodes already walked
+	 */
+	protected static function cursor(int $fromX, int $toX, PathResult $result = PathResult::REACHED, int $walked = 0) : PathCursor{
+		return new PathCursor(self::path($fromX, $toX, $result), $walked);
 	}
 
 	protected static function searchSetup(int $maxVisitedNodes = 100, float $followRange = 16) : SearchSetup{

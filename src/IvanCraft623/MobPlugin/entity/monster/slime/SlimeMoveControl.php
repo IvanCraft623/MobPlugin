@@ -58,14 +58,14 @@ class SlimeMoveControl extends MoveControl{
 		$this->mob->setRotation($this->rotateLerp($location->yaw, $this->yaw, 90), $location->pitch);
 
 		if ($this->operation !== MoveOperation::MOVE_TO) {
-			$this->mob->setForwardSpeed(0);
+			$this->mob->getMovementInput()->setForward(0);
 			return;
 		}
 
 		$this->operation = MoveOperation::WAIT;
 
 		if ($this->mob->isOnGround()) {
-			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+			$this->mob->getMovementInput()->walk($this->speedModifier * $this->mob->getMovementSpeed());
 
 			if ($this->jumpDelay-- <= 0) {
 				$this->jumpDelay = $this->slime->getJumpDelay();
@@ -75,11 +75,11 @@ class SlimeMoveControl extends MoveControl{
 
 				$this->slime->getJumpControl()->jump();
 			} else {
-				$this->mob->setSidewaysSpeed(0);
-				$this->mob->setMotionSpeed(0);
+				$this->mob->getMovementInput()->setSideways(0);
+				$this->mob->getMovementInput()->walk(0);
 			}
 		} else {
-			$this->mob->setMotionSpeed($this->speedModifier * $this->mob->getMovementSpeed());
+			$this->mob->getMovementInput()->walk($this->speedModifier * $this->mob->getMovementSpeed());
 		}
 	}
 }

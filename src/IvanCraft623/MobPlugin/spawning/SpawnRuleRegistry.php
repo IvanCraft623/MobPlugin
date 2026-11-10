@@ -39,6 +39,7 @@ use IvanCraft623\MobPlugin\spawning\condition\SlimeChunkCondition;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParser;
 use pocketmine\entity\Entity;
+use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Location;
 use pocketmine\entity\Squid;
 use pocketmine\math\Vector3;
@@ -126,11 +127,25 @@ final class SpawnRuleRegistry{
 			}
 			$groups = array_map(static fn(SpawnRuleGroup $group) : SpawnRuleGroup => $group->withConditions($hardcoded), $groups);
 
-				$size = VanillaEntitySizes::get($identifier) ?? throw new AssumptionFailedError("No vanilla collision box data for found for \"$identifier\"");
+			$size = VanillaEntitySizes::get($identifier) ?? self::getLargestSize($identifier) ?? throw new AssumptionFailedError("No vanilla collision box data for found for \"$identifier\"");
 			$this->register(new SpawnRules($identifier, $categoryId, $groups, self::createFactory($entityClass), $size));
 		}
 
 		return $warnings;
+	}
+
+	/**
+	 * For the entities that only declare the boxes of their variants (babies, adults).
+	 */
+	private static function getLargestSize(string $identifier) : ?EntitySizeInfo{
+		$largest = null;
+		foreach(VanillaEntitySizes::getAll($identifier) as $size){
+			if($largest === null || $size->getWidth() * $size->getHeight() > $largest->getWidth() * $largest->getHeight()){
+				$largest = $size;
+			}
+		}
+
+		return $largest;
 	}
 
 	/**

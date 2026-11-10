@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\Pathfinder\Path;
+use IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\math\Vector3;
 
 /**
@@ -36,13 +36,13 @@ final class PathRequest{
 		public readonly Vector3 $target,
 		public readonly int $reach,
 		public readonly ?float $maxDistanceFromStart,
-		public readonly ?Path $base = null,
+		public readonly ?PathCursor $base = null,
 		public readonly int $spliceIndex = -1,
 		public readonly ?int $rejoinIndex = null
 	){
 	}
 
-	public function splicingOnto(Path $base, int $spliceIndex, ?int $rejoinIndex = null) : self{
+	public function splicingOnto(PathCursor $base, int $spliceIndex, ?int $rejoinIndex = null) : self{
 		return new self($this->target, $this->reach, $this->maxDistanceFromStart, $base, $spliceIndex, $rejoinIndex);
 	}
 

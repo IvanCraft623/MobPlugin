@@ -21,9 +21,29 @@
 
 declare(strict_types=1);
 
-namespace IvanCraft623\MobPlugin\entity;
+namespace IvanCraft623\MobPlugin\entity\animal;
 
-interface Flyable {
+use function mt_rand;
 
-	public function getFlyingSpeed() : float;
+enum RabbitCoat{
+	case BROWN;
+	case WHITE;
+	case BLACK;
+	case SPLOTCHED;
+	case DESERT;
+	case SALT;
+
+	public static function getRandom() : self{
+		$roll = mt_rand(1, 100);
+
+		return match(true){
+			$roll <= 50 => self::BROWN,
+			$roll <= 90 => self::BLACK,
+			default => self::SALT
+		};
+	}
+
+	public static function getRandomSnow() : self{
+		return mt_rand(1, 5) === 1 ? self::SPLOTCHED : self::WHITE;
+	}
 }

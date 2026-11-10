@@ -23,19 +23,17 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\Mob;
-
-use pocketmine\world\World;
+use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 class AvoidSunlightGoal extends Goal {
 
-	public function __construct(protected Mob $entity) { }
+	public function __construct(protected PathfinderMob $entity) { }
 
 	public function canUse() : bool{
-		$time = $this->entity->getWorld()->getTimeOfDay();
-			return !($time >= World::TIME_NIGHT && $time < World::TIME_SUNRISE) && //is day check
-				$this->entity->getArmorInventory()->getHelmet()->isNull() &&
-				$this->entity->getNavigation()->getLocomotion()->isGroundBased();
+		return Utils::isDaytime($this->entity->getWorld()) &&
+			$this->entity->getArmorInventory()->getHelmet()->isNull() &&
+			$this->entity->getNavigation()->getLocomotion()->isGroundBased();
 	}
 
 	public function start() : void{

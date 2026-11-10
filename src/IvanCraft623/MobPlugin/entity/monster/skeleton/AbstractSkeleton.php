@@ -30,10 +30,11 @@ use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PickupItemsGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RangedBowAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
@@ -42,6 +43,7 @@ use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\utils\Utils;
+use IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
@@ -52,15 +54,14 @@ use pocketmine\inventory\CallbackInventoryListener;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
-use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\player\Player;
 use pocketmine\world\sound\BowShootSound;
 use function count;
 use function mt_rand;
-use function sqrt;
 
 abstract class AbstractSkeleton extends Monster implements RangedAttackMob, ItemPickupCapable {
+	use EquipmentTrait;
 	use ItemPickupCapableTrait {
 		initEntity as initEntityPickupTrait;
 		saveNBT as saveNBTPickupTrait;
@@ -73,6 +74,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 
 	protected RangedBowAttackGoal $bowAttackGoal;
 	protected MeleeAttackGoal $meleeAttackGoal;
+	private bool $wasUnderwater = false;
 
 	protected PickupItemsGoal $pickupItemsGoal;
 
@@ -94,7 +96,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$this->goalSelector->addGoal(2, new AvoidSunlightGoal($this));
 		$this->goalSelector->addGoal(3, new FleeSunlightGoal($this, 1));
 		//TODO: 3 flee wolfs
-		$this->goalSelector->addGoal(5, new WaterAvoidingRandomStrollGoal($this, 1));
+		$this->goalSelector->addGoal(5, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(6, new RandomLookAroundGoal($this));
 
@@ -103,8 +105,8 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
 		//TODO: attack baby turtles
 
-		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, self::MIN_ATTACK_INTERVAL, self::MAX_ATTACK_INTERVAL, 15);
-		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25, false);
+		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, static::MIN_ATTACK_INTERVAL, static::MAX_ATTACK_INTERVAL, 15);
+		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25);
 		$this->inventory->getListeners()->add(new CallbackInventoryListener(function(Inventory $inventory, int $slot, Item $oldItem) : void {
 			if ($slot !== MobInventory::SLOT_MAIN_HAND) {
 				return;
@@ -150,6 +152,7 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 
 		$this->setMaxHealth(20);
 		$this->setAttackDamage(2);
+		$this->navigation->setPathfindingMalus(BlockPathType::WATER, 0);
 	}
 
 	protected function updatePickupItemsGoal(bool $enabled) : void{
@@ -160,51 +163,48 @@ abstract class AbstractSkeleton extends Monster implements RangedAttackMob, Item
 		}
 	}
 
+	protected function tickState() : void{
+		parent::tickState();
+
+		$underwater = $this->getSensing()->isUnderwater();
+		if ($underwater !== $this->wasUnderwater) {
+			$this->wasUnderwater = $underwater;
+			$this->updateAttackType();
+		}
+	}
+
 	public function updateAttackType() : void {
-		$useMeleeAttackGoal = $this->inventory->getMainHand()->getTypeId() !== ItemTypeIds::BOW;
+		$useMeleeAttackGoal = !$this->canUseBow();
 
 		$this->goalSelector->removeGoal($useMeleeAttackGoal ? $this->bowAttackGoal : $this->meleeAttackGoal);
 		$this->goalSelector->addGoal(0, $useMeleeAttackGoal ? $this->meleeAttackGoal : $this->bowAttackGoal);
+	}
+
+	protected function canUseBow() : bool {
+		return !$this->getSensing()->isUnderwater() && $this->inventory->getMainHand()->getTypeId() === ItemTypeIds::BOW;
+	}
+
+	protected function createArrow(Location $location) : Arrow {
+		return new Arrow($location, $this, false);
 	}
 
 	public function performRangedAttack(Entity $target, float $force) : void {
 		$eyePos = $this->getEyePos();
 		$world = $this->getWorld();
 
-		$projectile = new Arrow(Location::fromObject($eyePos, $world), $this, false);
+		$projectile = $this->createArrow(Location::fromObject($eyePos, $world));
 		$projectile->setPickupMode(Arrow::PICKUP_NONE);
 
-		$targetPosition = $target->getPosition();
-
-		$xDiff = $targetPosition->x - $this->location->x;
-		$yDiff = ($targetPosition->y + ($target->getSize()->getHeight() / 3)) - $eyePos->y;
-		$zDiff = $targetPosition->z - $this->location->z;
-		$horizontalDistance = sqrt(($xDiff * $xDiff) + ($zDiff * $zDiff));
-
-		$projectile->setMotion($this->calculateProjectileVelocity(
-			$xDiff,
-			$yDiff + $horizontalDistance * 0.2,
-			$zDiff,
+		$projectile->setMotion(Utils::aimProjectile(
+			$this->getRandom(),
+			$eyePos,
+			$target->getPosition()->add(0, $target->getSize()->getHeight() / 3, 0),
 			1.6 * $force,
 			14 - $world->getDifficulty() * 4
 		));
 		$projectile->spawnToAll();
 
 		$world->addSound($eyePos, new BowShootSound());
-	}
-
-	/**
-	 * Normalizes (x, y, z), applies random per-axis divergence, then rescales to power.
-	 */
-	private function calculateProjectileVelocity(float $x, float $y, float $z, float $power, float $divergence) : Vector3 {
-		$vec = (new Vector3($x, $y, $z))->normalize();
-
-		$random = $this->getRandom();
-		return (new Vector3(
-			$vec->x + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
-			$vec->y + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence,
-			$vec->z + ($random->nextFloat() - $random->nextFloat()) * 0.0075 * $divergence
-		))->normalize()->multiply($power);
 	}
 
 	public function getXpDropAmount() : int{

@@ -35,11 +35,17 @@ trait NeutralMobTrait {
 
 	abstract public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void;
 
-	abstract public function getRemainingAngerTicks() : int;
-
-	abstract public function setRemainingAngerTicks(int $ticks) : void;
-
 	abstract public function startAngerTimer() : void;
+
+	protected int $remainingAngerTicks = 0;
+
+	public function getRemainingAngerTicks() : int{
+		return $this->remainingAngerTicks;
+	}
+
+	public function setRemainingAngerTicks(int $ticks) : void{
+		$this->remainingAngerTicks = $ticks;
+	}
 
 	public function updateAnger(bool $value) : void{
 		$target = $this->getTargetEntity();

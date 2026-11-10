@@ -24,9 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
 use Closure;
-use IvanCraft623\MobPlugin\entity\Living;
-
 use IvanCraft623\MobPlugin\entity\Mob;
+
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\player\Player;
 use function max;
@@ -44,6 +43,10 @@ class TargetingConditions {
 		protected bool $testInvisible = true,
 		protected ?Closure $validator = null
 	) {
+	}
+
+	public function getRange() : float{
+		return $this->range;
 	}
 
 	public function setRange(float $range) : self{
@@ -92,6 +95,10 @@ class TargetingConditions {
 		if (!$this->allowInvulnerable && ($target instanceof Player && $target->isCreative())) {
 			return false;
 		}
+		//Cheaper than the distance test below, and most candidates fail it
+		if ($this->validator !== null && !($this->validator)($target)) {
+			return false;
+		}
 		if ($entity !== null && $this->range > 0) {
 			$distanceSquare = $entity->getLocation()->distanceSquared($target->getLocation());
 			$visibility = max($this->range, 2.0);
@@ -105,12 +112,9 @@ class TargetingConditions {
 				}
 			}
 		}
-		if ($this->validator !== null && !($this->validator)($target)) {
-			return false;
-		}
 		if ($entity !== null) {
 			if (!$this->allowNonAttackable) {
-				if ($entity instanceof Living && !$entity->canAttack($target)) {
+				if ($entity instanceof Mob && !$entity->canAttack($target)) {
 					return false;
 				}
 			}

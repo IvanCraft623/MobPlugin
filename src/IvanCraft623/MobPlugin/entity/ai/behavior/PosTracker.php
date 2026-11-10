@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\behavior;
 
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\math\Vector3;
 
 interface PosTracker {
@@ -32,5 +32,5 @@ interface PosTracker {
 
 	public function currentBlockPosition() : Vector3;
 
-	public function isVisibleBy(Living $entity) : bool;
+	public function isVisibleBy(Mob $entity) : bool;
 }

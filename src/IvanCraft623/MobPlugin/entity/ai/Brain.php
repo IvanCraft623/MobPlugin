@@ -30,7 +30,7 @@ use IvanCraft623\MobPlugin\entity\ai\memory\ExpirableValue;
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryModuleType;
 use IvanCraft623\MobPlugin\entity\ai\memory\MemoryStatus;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensor;
-use IvanCraft623\MobPlugin\entity\Living;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\schedule\Activity;
 use IvanCraft623\MobPlugin\entity\schedule\Schedule;
 use IvanCraft623\MobPlugin\utils\Pair;
@@ -319,14 +319,14 @@ class Brain {
 		return $this->activeActivities->contains($activity);
 	}
 
-	public function tick(Living $entity) : void {
+	public function tick(Mob $entity) : void {
 		$this->forgetOutdatedMemories();
 		$this->tickSensors($entity);
 		$this->startEachNonRunningBehavior($entity);
 		$this->tickEachRunningBehavior($entity);
 	}
 
-	private function tickSensors(Living $entity) : void {
+	private function tickSensors(Mob $entity) : void {
 		foreach ($this->sensors as $sensor) {
 			$sensor->tick($entity);
 		}
@@ -344,14 +344,14 @@ class Brain {
 		}
 	}
 
-	public function stopAll(Living $entity) : void {
+	public function stopAll(Mob $entity) : void {
 		$time = $entity->getWorld()->getServer()->getTick();
 		foreach ($this->getRunningBehaviors() as $behavior) {
 			$behavior->doStop($entity, $time);
 		}
 	}
 
-	private function startEachNonRunningBehavior(Living $entity) : void {
+	private function startEachNonRunningBehavior(Mob $entity) : void {
 		$time = $entity->getWorld()->getServer()->getTick();
 		foreach ($this->availableBehaviorsByPriority as $priority => $activities) {
 			foreach ($activities as $activityId => $behaviors) {
@@ -364,7 +364,7 @@ class Brain {
 		}
 	}
 
-	private function tickEachRunningBehavior(Living $entity) : void {
+	private function tickEachRunningBehavior(Mob $entity) : void {
 		$time = $entity->getWorld()->getServer()->getTick();
 		foreach ($this->getRunningBehaviors() as $behavior) {
 			$behavior->tickOrStop($entity, $time);
