@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
@@ -77,8 +77,8 @@ use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
-use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\IvanCraft623\Pathfinder\execution\SearchExecutor;
+use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
+use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\execution\SearchExecutor;
 
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
@@ -93,7 +93,7 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_46146a3065e781f1\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
