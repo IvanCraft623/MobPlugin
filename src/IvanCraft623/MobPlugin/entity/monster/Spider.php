@@ -34,11 +34,14 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\WallClimberLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
+use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\MobType;
 
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\entity\Living;
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
@@ -99,7 +102,11 @@ class Spider extends Monster {
 
 		$this->targetSelector->addGoal(2, new class($this) extends NearestAttackableGoal {
 			public function __construct(Spider $mob) {
-				parent::__construct(entity: $mob, targetType: Player::class); //TODO: attack golems too!
+				parent::__construct(
+					entity: $mob,
+					targetType: Living::class,
+					targetValidator: static fn(Living $entity) : bool => $entity instanceof Player || $entity instanceof IronGolem || $entity instanceof SnowGolem
+				);
 			}
 
 			public function canUse() : bool{

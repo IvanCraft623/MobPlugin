@@ -33,10 +33,12 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\Powerable;
+use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\utils\MobHeadType;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Explosive;
 use pocketmine\entity\Location;
@@ -56,7 +58,7 @@ use pocketmine\world\Explosion;
 use pocketmine\world\sound\IgniteSound;
 use function count;
 
-class Creeper extends Monster implements Explosive, Powerable{
+class Creeper extends Monster implements Explosive, Powerable, WearableHeadMob{
 
 	private const TAG_FUSE = "Fuse"; //TAG_Byte
 	private const TAG_IGNITED = "IsFuseLit"; //TAG_Byte
@@ -70,6 +72,10 @@ class Creeper extends Monster implements Explosive, Powerable{
 	public const DEFAULT_EXPLOSION_RADIUS = 3;
 
 	public static function getNetworkTypeId() : string{ return EntityIds::CREEPER; }
+
+	public function getMobHeadType() : MobHeadType{ return MobHeadType::CREEPER; }
+
+	public function getHeadVisibilityFactor() : float{ return 0.5; }
 
 	protected bool $ignited = false;
 

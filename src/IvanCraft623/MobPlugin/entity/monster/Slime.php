@@ -32,6 +32,8 @@ use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeFloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeKeepOnJumpingGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\slime\SlimeRandomDirectionGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\golem\IronGolem;
+use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\HopperTrait;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\slime\SlimeMoveControl;
@@ -92,9 +94,9 @@ class Slime extends Mob implements Enemy {
 		$this->goalSelector->addGoal(5, new SlimeKeepOnJumpingGoal($this));
 
 		$this->attackableValidator = static function(Living $entity) : bool{
-			return $entity instanceof Player; //TODO: Attack iron golems and snow golems.
+			return $entity instanceof Player || $entity instanceof IronGolem || $entity instanceof SnowGolem;
 		};
-		$this->targetSelector->addGoal(1, new NearestAttackableGoal($this, Player::class));
+		$this->targetSelector->addGoal(1, new NearestAttackableGoal($this, Living::class, targetValidator: $this->attackableValidator));
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
