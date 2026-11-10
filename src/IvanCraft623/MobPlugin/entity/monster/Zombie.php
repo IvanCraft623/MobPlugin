@@ -41,6 +41,7 @@ use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
 use IvanCraft623\MobPlugin\entity\MobType;
+use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\SoundEvents;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -68,7 +69,7 @@ use pocketmine\world\World;
 use function count;
 use function mt_rand;
 
-class Zombie extends Monster implements Ageable, ItemPickupCapable {
+class Zombie extends Monster implements Ageable, ItemPickupCapable, WearableHeadMob {
 	use ItemPickupCapableTrait {
 		initEntity as initEntityPickupTrait;
 		saveNBT as saveNBTPickupTrait;
@@ -98,6 +99,10 @@ class Zombie extends Monster implements Ageable, ItemPickupCapable {
 	public static function getNetworkTypeId() : string {
 		return EntityIds::ZOMBIE;
 	}
+
+	public function getMobHeadType() : MobHeadType{ return MobHeadType::ZOMBIE; }
+
+	public function getHeadVisibilityFactor() : float{ return 0.5; }
 
 	public function getName() : string {
 		return "Zombie";

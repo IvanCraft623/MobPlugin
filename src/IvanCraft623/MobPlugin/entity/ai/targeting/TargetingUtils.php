@@ -23,19 +23,15 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
-use IvanCraft623\MobPlugin\entity\monster\Creeper;
-use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
-use IvanCraft623\MobPlugin\entity\monster\Zombie;
+use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 
 use pocketmine\block\MobHead;
-use pocketmine\block\utils\MobHeadType;
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use function count;
 
 class TargetingUtils {
 
-	public static function getVisibilityPercent(Living $entity, ?Entity $target = null) : float {
+	public static function getVisibilityPercent(Living $entity, Living $viewer) : float {
 		$visibilityPercent = 1.0;
 		if ($entity->isSneaking()) {
 			$visibilityPercent *= 0.8;
@@ -47,12 +43,11 @@ class TargetingUtils {
 			}
 			$visibilityPercent *= 0.7 * $percent;
 		}
-		if(
-			($target instanceof Skeleton && self::isWearingHead($entity, MobHeadType::SKELETON)) ||
-			($target instanceof Creeper && self::isWearingHead($entity, MobHeadType::CREEPER)) ||
-			($target instanceof Zombie && self::isWearingHead($entity, MobHeadType::ZOMBIE))
-		){
-			$visibilityPercent *= 0.5;
+		if ($viewer instanceof WearableHeadMob) {
+			$block = $entity->getArmorInventory()->getHelmet()->getBlock();
+			if ($block instanceof MobHead && $block->getMobHeadType() === $viewer->getMobHeadType()) {
+				$visibilityPercent *= $viewer->getHeadVisibilityFactor();
+			}
 		}
 		return $visibilityPercent;
 	}
@@ -61,10 +56,5 @@ class TargetingUtils {
 		$inventory = $entity->getArmorInventory();
 		$size = $inventory->getSize();
 		return ($size > 0) ? (count($inventory->getContents()) / $size) : 0.0;
-	}
-
-	private static function isWearingHead(Living $entity, MobHeadType $type) : bool{
-		$block = $entity->getArmorInventory()->getHelmet()->getBlock();
-		return $block instanceof MobHead && $block->getMobHeadType() === $type;
 	}
 }
