@@ -47,11 +47,11 @@ delegates to:
 | `GroundLocomotion` | `WalkNodeEvaluator` | `GroundMoveControl` | Default. Snaps targets to the ground. |
 | `WallClimberLocomotion` | inherited | inherited | Keeps pushing toward the target after the path ends (spiders). |
 | `FlyingLocomotion` | `FlightNodeEvaluator` | `FlightMoveControl` | Steers in 3D, cuts corners through open air. |
-| `AmphibiousLocomotion` | `AmphibiousNodeEvaluator` | `AquaticMoveControl` | Swims in 3D, walks on land. |
+| `AmphibiousLocomotion` | `AmphibiousNodeEvaluator` | `AquaticMoveControl` | Walks on land and swims in 3D; with `canSwim` off it wades along the bottom, as a drowned does until it hunts. |
 | `SwimLocomotion` | `SwimNodeEvaluator` | `AquaticMoveControl` | Swims in 3D and never leaves the water (fish). |
 
 `TraversalRules` (`getRules()`): `canFloat`, `canOpenDoors`, `canPassDoors` (default true),
-`canWalkOverFences` and `avoidSun`. Goals change them at runtime, e.g. `FloatGoal` sets `canFloat`.
+`canWalkOverFences`, `avoidSun` and `canSwim` (default true). Goals change them at runtime, e.g. `FloatGoal` sets `canFloat`.
 Path costs per block type are in `getCostMap()`; set them with `setPathfindingMalus()`.
 
 A new way of moving is a `Locomotion` subclass overriding what differs from a walker's (the hooks are
