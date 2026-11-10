@@ -41,10 +41,11 @@ use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
 use IvanCraft623\MobPlugin\entity\MobType;
+use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
@@ -65,7 +66,7 @@ use pocketmine\player\Player;
 use function count;
 use function mt_rand;
 
-abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapable {
+abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapable, WearableHeadMob {
 	use EquipmentTrait;
 	use ItemPickupCapableTrait {
 		initEntity as initEntityPickupTrait;
@@ -92,6 +93,10 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 	public function getMobType() : MobType{
 		return MobType::UNDEAD();
 	}
+
+	public function getMobHeadType() : MobHeadType{ return MobHeadType::ZOMBIE; }
+
+	public function getHeadVisibilityFactor() : float{ return 0.5; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
 		return new EntitySizeInfo(

@@ -25,11 +25,11 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation\locomotion;
 
 use IvanCraft623\MobPlugin\entity\ai\navigation\TraversalRules;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
-use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\Path;
-use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
-use IvanCraft623\MobPlugin\libs\_5c9bb071929fd950\IvanCraft623\Pathfinder\world\BlockGetter;
+use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\evaluator\NodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\evaluator\WalkNodeEvaluator;
+use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\Path;
+use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Water;
 use pocketmine\math\Vector3;

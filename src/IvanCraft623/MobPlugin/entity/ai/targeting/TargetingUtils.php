@@ -23,17 +23,15 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 
-use IvanCraft623\MobPlugin\entity\monster\AbstractZombie;
+use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 
 use pocketmine\block\MobHead;
-use pocketmine\block\utils\MobHeadType;
-use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use function count;
 
 class TargetingUtils {
 
-	public static function getVisibilityPercent(Living $entity, ?Entity $target = null) : float {
+	public static function getVisibilityPercent(Living $entity, Living $viewer) : float {
 		$visibilityPercent = 1.0;
 		if ($entity->isSneaking()) {
 			$visibilityPercent *= 0.8;
@@ -45,11 +43,10 @@ class TargetingUtils {
 			}
 			$visibilityPercent *= 0.7 * $percent;
 		}
-		//TODO: skeleton and creeper heads
-		if ($target instanceof AbstractZombie) {
-			$headBlock = $entity->getArmorInventory()->getHelmet()->getBlock();
-			if ($headBlock instanceof MobHead && $headBlock->getMobHeadType()->equals(MobHeadType::ZOMBIE())) {
-				$visibilityPercent *= 0.5;
+		if ($viewer instanceof WearableHeadMob) {
+			$block = $entity->getArmorInventory()->getHelmet()->getBlock();
+			if ($block instanceof MobHead && $block->getMobHeadType() === $viewer->getMobHeadType()) {
+				$visibilityPercent *= $viewer->getHeadVisibilityFactor();
 			}
 		}
 		return $visibilityPercent;

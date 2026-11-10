@@ -27,6 +27,7 @@ use Closure;
 
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 
+use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use pocketmine\block\BlockTypeIds;
@@ -39,7 +40,7 @@ use pocketmine\item\ItemBlock;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 
-class Skeleton extends AbstractSkeleton {
+class Skeleton extends AbstractSkeleton implements WearableHeadMob {
 
 	public static function getNetworkTypeId() : string {
 		return EntityIds::SKELETON;
@@ -48,6 +49,10 @@ class Skeleton extends AbstractSkeleton {
 	public function getName() : string {
 		return "Skeleton";
 	}
+
+	public function getMobHeadType() : MobHeadType{ return MobHeadType::SKELETON; }
+
+	public function getHeadVisibilityFactor() : float{ return 0.5; }
 
 	public function isSunSensitive() : bool{
 		return true;
