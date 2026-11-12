@@ -70,6 +70,7 @@ use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\loot\LootTableRegistry;
+use IvanCraft623\MobPlugin\memory\MemoryListener;
 use IvanCraft623\MobPlugin\spawning\event\SpawnEventRegistry;
 use IvanCraft623\MobPlugin\spawning\event\TropicalFishPresetSpawnEventMap;
 use IvanCraft623\MobPlugin\spawning\event\VanillaSpawnEvents;
@@ -172,6 +173,7 @@ class MobPlugin extends PluginBase {
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 		$this->getServer()->getPluginManager()->registerEvents(new DespawnListener(DespawnRuleRegistry::getInstance()), $this);
+		$this->getServer()->getPluginManager()->registerEvents(new MemoryListener(), $this);
 	}
 
 	/**
