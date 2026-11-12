@@ -25,6 +25,7 @@ namespace IvanCraft623\MobPlugin\memory;
 
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\Listener;
+use pocketmine\player\Player;
 
 /**
  * Feeds {@see Memories} with what happens in the world.
@@ -45,5 +46,9 @@ final class MemoryListener implements Listener{
 		$memories = Memories::getInstance();
 		$memories->record($victim, Occurrence::HURT_BY, $damager);
 		$memories->record($damager, Occurrence::HURT, $victim);
+		if ($damager instanceof Player) {
+			//TODO: vanilla counts the hits of a tamed mob whose owner is around as the owner's
+			$memories->record($victim, Occurrence::HURT_BY_PLAYER, $damager);
+		}
 	}
 }

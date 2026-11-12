@@ -35,4 +35,8 @@ enum Occurrence{
 	 * The subject hurt the other entity.
 	 */
 	case HURT;
+	/**
+	 * A player hurt the subject.
+	 */
+	case HURT_BY_PLAYER;
 }
