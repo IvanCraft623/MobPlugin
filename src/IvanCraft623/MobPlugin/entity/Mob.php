@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\despawning\DespawnPersistenceTrait;
-use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\entity\ai\control\IdleMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
@@ -108,8 +107,6 @@ abstract class Mob extends Living {
 
 	protected bool $hasBeenDamagedByPlayer = false;
 
-	protected Brain $brain;
-
 	protected LookControl $lookControl;
 
 	protected MoveControl $moveControl;
@@ -186,8 +183,6 @@ abstract class Mob extends Living {
 		$this->moveControl = $this->createMoveControl();
 		$this->jumpControl = new JumpControl($this);
 		$this->sensing = new Sensing($this);
-
-		$this->brain = $this->makeBrain();
 
 		$this->registerGoals();
 	}
@@ -318,14 +313,6 @@ abstract class Mob extends Living {
 
 	public function setFollowRange(float $range) : void{
 		$this->followRangeAttr->setValue($range);
-	}
-
-	protected function makeBrain() : Brain{
-		return new Brain([], [], []);
-	}
-
-	public function getBrain() : Brain{
-		return $this->brain;
 	}
 
 	public function getRandom() : Random {
@@ -809,7 +796,6 @@ abstract class Mob extends Living {
 
 	protected function destroyCycles() : void{
 		$this->lastDamageByEntity = null;
-		unset($this->brain);
 		$this->goalSelector->stopRunningGoals();
 		$this->targetSelector->stopRunningGoals();
 		unset(

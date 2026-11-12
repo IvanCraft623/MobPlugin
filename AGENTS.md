@@ -18,8 +18,8 @@ Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
 - `entity/` — the mob hierarchy (`Mob` → `Living`, `Animal`, `Monster`, `Golem`…), with
   concrete mobs under `entity/{type}/`.
   - `entity/ai/` — the AI framework: `goal/` (the goal FSM, with mob-specific goals in
-    subfolders), `Brain.php`, `memory/`, `behavior/`, `sensing/`, `control/`,
-    `navigation/`, `targeting/`, `utils/`. See `docs/navigation.md`.
+    subfolders), `sensing/`, `control/`, `navigation/`, `targeting/`, `utils/`. See
+    `docs/navigation.md`.
 - `data/bedrock/` — Bedrock id maps. `EntityIds` and `VanillaEntitySizes` are generated;
   entity classes keep PocketMine-MP's `EntityIds` for `getNetworkTypeId()`.
 - `spawning/` — natural spawning from the vanilla spawn rules. `parse/schema/` is
