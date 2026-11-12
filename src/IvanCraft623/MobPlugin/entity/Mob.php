@@ -156,12 +156,6 @@ abstract class Mob extends Living {
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
-		$this->initProperties();
-
-		$this->initDespawnPersistence($nbt);
-
-		$this->random = MobPlugin::getInstance()->getRandom();
-
 		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
 			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
 		} else {
@@ -170,6 +164,12 @@ abstract class Mob extends Living {
 				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
 			}
 		}
+
+		$this->initProperties();
+
+		$this->initDespawnPersistence($nbt);
+
+		$this->random = MobPlugin::getInstance()->getRandom();
 
 		if ($nbt->count() === 0) { //Entity just created!
 			$this->onCreate();
