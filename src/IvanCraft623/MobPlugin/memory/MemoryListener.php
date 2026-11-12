@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\memory;
 
+use IvanCraft623\MobPlugin\entity\Tameable;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\Listener;
 use pocketmine\player\Player;
@@ -46,9 +47,10 @@ final class MemoryListener implements Listener{
 		$memories = Memories::getInstance();
 		$memories->record($victim, Occurrence::HURT_BY, $damager);
 		$memories->record($damager, Occurrence::HURT, $victim);
-		if ($damager instanceof Player) {
-			//TODO: vanilla counts the hits of a tamed mob whose owner is around as the owner's
-			$memories->record($victim, Occurrence::HURT_BY_PLAYER, $damager);
+		//A tamed mob's hit counts as its owner's
+		$hitter = $damager instanceof Tameable ? $damager->getOwningEntity() : $damager;
+		if ($hitter instanceof Player) {
+			$memories->record($victim, Occurrence::HURT_BY_PLAYER, $hitter);
 		}
 	}
 }
