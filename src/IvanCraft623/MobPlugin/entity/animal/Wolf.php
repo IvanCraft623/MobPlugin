@@ -43,6 +43,8 @@ use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\wolf\BegGoal;
 use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingUtils;
 use IvanCraft623\MobPlugin\entity\animation\ShakeWetAnimation;
+use IvanCraft623\MobPlugin\entity\BodyArmored;
+use IvanCraft623\MobPlugin\entity\BodyArmorTrait;
 use IvanCraft623\MobPlugin\entity\Collared;
 use IvanCraft623\MobPlugin\entity\CollaredTrait;
 use IvanCraft623\MobPlugin\entity\Healable;
@@ -54,14 +56,21 @@ use IvanCraft623\MobPlugin\entity\Pet;
 use IvanCraft623\MobPlugin\entity\PetTrait;
 use IvanCraft623\MobPlugin\entity\TameableTrait;
 use IvanCraft623\MobPlugin\entity\TameByItemTrait;
+use IvanCraft623\MobPlugin\item\ExtraItemTypeIds;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
+use IvanCraft623\MobPlugin\item\WolfArmor;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
+use IvanCraft623\MobPlugin\sound\WolfArmorSound;
+use IvanCraft623\MobPlugin\sound\WolfArmorSoundType;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 use IvanCraft623\MobPlugin\utils\Utils;
+use pocketmine\entity\animation\ArmSwingAnimation;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
+use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -69,35 +78,64 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
+use function ceil;
+use function max;
 use function mt_rand;
 
-class Wolf extends Animal implements NeutralMob, Pet, Collared, Healable{
+class Wolf extends Animal implements Pet, Collared, Healable, BodyArmored, NeutralMob{
 	use NeutralMobTrait;
-	use HealableTrait, TameableTrait, TameByItemTrait, PetTrait, CollaredTrait{
-		HealableTrait::onInteract insteadof TameByItemTrait, PetTrait, CollaredTrait;
-		TameableTrait::initEntity insteadof PetTrait, CollaredTrait;
-		TameableTrait::saveNBT insteadof PetTrait, CollaredTrait;
-		TameableTrait::syncNetworkData insteadof PetTrait, CollaredTrait;
-
-		HealableTrait::onInteract as protected interactHealable;
-		TameByItemTrait::onInteract as protected interactTameByItem;
-		PetTrait::onInteract as protected interactPet;
-		CollaredTrait::onInteract as protected interactCollared;
+	use TameableTrait, TameByItemTrait, PetTrait, CollaredTrait, HealableTrait, BodyArmorTrait{
+		//initEntity()
+		TameableTrait::initEntity insteadof PetTrait, CollaredTrait, BodyArmorTrait;
 		TameableTrait::initEntity as protected initTameable;
 		PetTrait::initEntity as protected initPet;
 		CollaredTrait::initEntity as protected initCollared;
+		BodyArmorTrait::initEntity as protected initBodyArmor;
+
+		//saveNBT()
+		TameableTrait::saveNBT insteadof PetTrait, CollaredTrait, BodyArmorTrait;
 		TameableTrait::saveNBT as protected saveTameable;
 		PetTrait::saveNBT as protected savePet;
 		CollaredTrait::saveNBT as protected saveCollared;
+		BodyArmorTrait::saveNBT as protected saveBodyArmor;
+
+		//syncNetworkData()
+		TameableTrait::syncNetworkData insteadof PetTrait, CollaredTrait;
 		TameableTrait::syncNetworkData as protected syncTameable;
 		PetTrait::syncNetworkData as protected syncPet;
 		CollaredTrait::syncNetworkData as protected syncCollared;
+
+		//onInteract()
+		TameByItemTrait::onInteract insteadof PetTrait, CollaredTrait, HealableTrait;
+		TameByItemTrait::onInteract as protected interactTameByItem;
+		PetTrait::onInteract as protected interactPet;
+		CollaredTrait::onInteract as protected interactCollared;
+		HealableTrait::onInteract as protected interactHealable;
+
+		//onDeath()
 		TameableTrait::onDeath as protected onTameableDeath;
+
+		//sendSpawnPacket()
+		BodyArmorTrait::sendSpawnPacket as protected sendBodyArmorSpawnPacket;
 	}
 
 	private const TAG_VARIANT = "Variant"; //TAG_Int
 	private const TAG_PROPERTIES = "properties"; //TAG_Compound
 	private const PROPERTY_INCREASED_MAX_HEALTH = "minecraft:has_increased_max_health"; //TAG_Byte
+	private const PROPERTY_ARMORABLE = "minecraft:is_armorable"; //TAG_Byte
+
+	private const ARMOR_REPAIR_DURABILITY = 8; //durability a scute restores
+
+	private const MODIFIER_WOLF_ARMOR = 100; //damage the armor takes, EntityDamageEvent has no modifier for it
+
+	/** The damage that goes through the armor. */
+	private const UNABSORBED_CAUSES = [
+		EntityDamageEvent::CAUSE_DROWNING => true,
+		EntityDamageEvent::CAUSE_SUFFOCATION => true,
+		EntityDamageEvent::CAUSE_MAGIC => true,
+		EntityDamageEvent::CAUSE_VOID => true,
+		EntityDamageEvent::CAUSE_SUICIDE => true,
+	];
 
 	private const WILD_MAX_HEALTH = 8; //health
 	private const TAMED_MAX_HEALTH = 40; //health
@@ -213,6 +251,7 @@ class Wolf extends Animal implements NeutralMob, Pet, Collared, Healable{
 
 		parent::initEntity($nbt);
 
+		$this->initBodyArmor($nbt);
 		$this->initPet($nbt);
 		$this->initCollared($nbt);
 		if ($this->isOrphaned()) {
@@ -223,15 +262,22 @@ class Wolf extends Animal implements NeutralMob, Pet, Collared, Healable{
 
 	public function saveNBT() : CompoundTag{
 		$nbt = parent::saveNBT()
+			->merge($this->saveBodyArmor())
 			->merge($this->saveTameable())
 			->merge($this->savePet())
 			->merge($this->saveCollared());
 		$nbt->setInt(self::TAG_VARIANT, WolfVariantIdMap::getInstance()->toId($this->variant));
 		$nbt->setTag(self::TAG_PROPERTIES, CompoundTag::create()
 			->setByte(self::PROPERTY_INCREASED_MAX_HEALTH, $this->isTamed() ? 1 : 0)
+			->setByte(self::PROPERTY_ARMORABLE, $this->canWearArmor() ? 1 : 0)
 		);
 
 		return $nbt;
+	}
+
+	protected function sendSpawnPacket(Player $player) : void{
+		parent::sendSpawnPacket($player);
+		$this->sendBodyArmorSpawnPacket($player);
 	}
 
 	protected function onDeath() : void{
@@ -386,13 +432,100 @@ class Wolf extends Animal implements NeutralMob, Pet, Collared, Healable{
 		}
 	}
 
+	/**
+	 * Whether the wolf can have armor on its body: only a tamed adult.
+	 */
+	public function canWearArmor() : bool{
+		return $this->isTamed() && !$this->isBaby();
+	}
+
+	/**
+	 * The armor takes all the damage it can until it breaks, so the wolf is not hurt.
+	 */
+	public function applyDamageModifiers(EntityDamageEvent $source) : void{
+		parent::applyDamageModifiers($source);
+
+		if ($this->getBodyArmor() instanceof WolfArmor && !isset(self::UNABSORBED_CAUSES[$source->getCause()])) {
+			$source->setModifier(-$source->getFinalDamage(), self::MODIFIER_WOLF_ARMOR);
+		}
+	}
+
+	protected function applyPostDamageEffects(EntityDamageEvent $source) : void{
+		parent::applyPostDamageEffects($source);
+
+		$armor = $this->getBodyArmor();
+		$absorbed = -$source->getModifier(self::MODIFIER_WOLF_ARMOR);
+		if (!$armor instanceof WolfArmor || $absorbed <= 0) {
+			return;
+		}
+
+		$crackiness = $armor->getCrackiness();
+		$armor->applyDamage((int) ceil($absorbed));
+		if ($armor->isBroken()) {
+			$this->setBodyArmor(VanillaItems::AIR());
+			$this->broadcastSound(new WolfArmorSound(WolfArmorSoundType::BREAK));
+
+			return;
+		}
+
+		$this->broadcastSound(new WolfArmorSound($armor->getCrackiness() !== $crackiness ? WolfArmorSoundType::CRACK : WolfArmorSoundType::DAMAGE));
+		$this->setBodyArmor($armor);
+	}
+
+	/**
+	 * Puts on, takes off or repairs the armor with the item in hand.
+	 *
+	 * @return bool whether the player's action was used
+	 */
+	private function interactArmor(Player $player) : bool{
+		if ($player->isSneaking() || !$this->canWearArmor()) {
+			return false;
+		}
+
+		$item = $player->getInventory()->getItemInHand();
+		$typeId = $item->getTypeId();
+		if ($item instanceof WolfArmor) {
+			if (!$this->getBodyArmor()->isNull()) {
+				return false;
+			}
+
+			Utils::popItemInHand($player);
+			$this->setBodyArmor($item);
+			$this->broadcastSound(new WolfArmorSound(WolfArmorSoundType::EQUIP));
+
+			return true;
+		}
+
+		if ($typeId === ItemTypeIds::SHEARS && !$this->getBodyArmor()->isNull()) {
+			$this->getWorld()->dropItem($this->location->add(0, $this->size->getHeight() / 2, 0), $this->getBodyArmor());
+			$this->setBodyArmor(VanillaItems::AIR());
+			Utils::damageItemInHand($player);
+			$this->broadcastSound(new WolfArmorSound(WolfArmorSoundType::UNEQUIP));
+
+			return true;
+		}
+
+		$armor = $this->getBodyArmor();
+		if ($typeId === ExtraItemTypeIds::ARMADILLO_SCUTE() && $this->isSitting() && $armor instanceof WolfArmor && $armor->getDamage() > 0) {
+			$armor->setDamage(max($armor->getDamage() - self::ARMOR_REPAIR_DURABILITY, 0));
+			$this->setBodyArmor($armor);
+			Utils::popItemInHand($player);
+			$player->broadcastAnimation(new ArmSwingAnimation($player));
+			$this->broadcastSound(new WolfArmorSound(WolfArmorSoundType::REPAIR));
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
 		$isOwner = $this->isTamed() && $this->getOwningEntityId() === $player->getId();
 
 		return (!$this->isAngry() && $this->interactHealable($player, $clickPos)) ||
 			parent::onInteract($player, $clickPos) ||
 			$this->interactTameByItem($player, $clickPos) ||
-			($isOwner && $this->interactCollared($player, $clickPos)) ||
+			($isOwner && ($this->interactArmor($player) || $this->interactCollared($player, $clickPos))) ||
 			(($isOwner || $this->isOrphaned()) && $this->interactSit($player, $clickPos));
 	}
 
@@ -419,7 +552,16 @@ class Wolf extends Animal implements NeutralMob, Pet, Collared, Healable{
 	}
 
 	public function getDrops() : array{
-		return $this->isBaby() ? [] : $this->generateDeathLoot(VanillaLootTables::WOLF());
+		if ($this->isBaby()) {
+			return [];
+		}
+
+		$drops = $this->generateDeathLoot(VanillaLootTables::WOLF());
+		if (!$this->getBodyArmor()->isNull()) {
+			$drops[] = $this->getBodyArmor();
+		}
+
+		return $drops;
 	}
 
 	public function getPickedItem() : ?Item{
