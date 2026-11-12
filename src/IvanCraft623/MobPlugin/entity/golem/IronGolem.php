@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\Crackiness;
 use IvanCraft623\MobPlugin\entity\Healable;
 use IvanCraft623\MobPlugin\entity\HealableTrait;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
@@ -179,8 +180,15 @@ class IronGolem extends Golem implements NeutralMob, Healable{
 		$this->setRemainingAngerTicks(mt_rand(self::MIN_ANGER_TICKS, self::MAX_ANGER_TICKS));
 	}
 
-	public function getCrackiness() : IronGolemCrackiness{
-		return IronGolemCrackiness::fromHealthPercentage($this->getHealth() / $this->getMaxHealth());
+	public function getCrackiness() : Crackiness{
+		$remaining = $this->getHealth() / $this->getMaxHealth();
+
+		return match(true){
+			$remaining <= 0.25 => Crackiness::HIGH,
+			$remaining <= 0.5 => Crackiness::MEDIUM,
+			$remaining <= 0.75 => Crackiness::LOW,
+			default => Crackiness::NONE
+		};
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
