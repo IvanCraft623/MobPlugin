@@ -64,6 +64,8 @@ use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\EntityEventBroadcaster;
+use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
@@ -413,6 +415,18 @@ abstract class Mob extends Living {
 		}
 
 		return $maxFallDistance + $defaultMax;
+	}
+
+	/**
+	 * Sends the health to the viewers, which PocketMine-MP only sends to the mob itself. For the mobs whose look
+	 * depends on it.
+	 */
+	protected function syncHealthToViewers() : void{
+		NetworkBroadcastUtils::broadcastEntityEvent($this->getViewers(),
+			function(EntityEventBroadcaster $broadcaster, array $recipients) : void{
+				$broadcaster->syncAttributes($recipients, $this, [$this->healthAttr]);
+			}
+		);
 	}
 
 	protected function entityBaseTick(int $tickDiff = 1) : bool{

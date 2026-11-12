@@ -51,8 +51,6 @@ use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\network\mcpe\EntityEventBroadcaster;
-use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
@@ -212,12 +210,8 @@ class IronGolem extends Golem implements NeutralMob, Healable{
 	public function setHealth(float $amount) : void{
 		parent::setHealth($amount);
 
-		//We need to sync health for crackiness display
-		NetworkBroadcastUtils::broadcastEntityEvent($this->getViewers(),
-			function(EntityEventBroadcaster $broadcaster, array $recipients) : void{
-				$broadcaster->syncAttributes($recipients, $this, [$this->healthAttr]);
-			}
-		);
+		//Its crackiness shows the health
+		$this->syncHealthToViewers();
 	}
 
 	public function getHealAmount(Item $item) : float{
