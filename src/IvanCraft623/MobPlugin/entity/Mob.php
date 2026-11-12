@@ -103,7 +103,7 @@ abstract class Mob extends Living {
 	protected ComponentGroups $componentGroups;
 
 	/** Ticks a mob remembers who hurt it. */
-	public const HURT_BY_MEMORY_TICKS = 100;
+	public const HURT_BY_MEMORY_TICKS = 60;
 
 	/** Ticks after a hit by a player that a mob still counts as last hit by one. */
 	public const LAST_HIT_BY_PLAYER_TICKS = 400;
