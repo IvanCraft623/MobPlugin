@@ -101,6 +101,9 @@ abstract class Mob extends Living {
 	protected ComponentGroups $componentGroups;
 
 	/** Latest hit by an entity, forgotten after 100 ticks. Not DamageTracker's per-entity totals. */
+	/** Ticks a mob remembers who hurt it. */
+	public const HURT_BY_MEMORY_TICKS = 100;
+
 	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
 
 	protected int $lastDamageByEntityTick = -1; //server tick
