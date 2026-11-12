@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\targeting;
 use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 
 use pocketmine\block\MobHead;
+use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
 use function count;
 
@@ -50,6 +51,17 @@ class TargetingUtils {
 			}
 		}
 		return $visibilityPercent;
+	}
+
+	/**
+	 * Whether the entities are on the same side: one owns the other, or they have the same owner.
+	 */
+	public static function isSameTeam(Entity $first, Entity $second) : bool {
+		$firstOwnerId = $first->getOwningEntityId();
+		$secondOwnerId = $second->getOwningEntityId();
+
+		return ($firstOwnerId !== null && ($firstOwnerId === $second->getId() || $firstOwnerId === $secondOwnerId)) ||
+			$secondOwnerId === $first->getId();
 	}
 
 	public static function getArmorCoverPercentage(Living $entity) : float {

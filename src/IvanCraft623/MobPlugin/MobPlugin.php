@@ -40,6 +40,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\aquatic\Pufferfish;
@@ -139,7 +140,8 @@ class MobPlugin extends PluginBase {
 		Drowned::class,
 		PolarBear::class,
 		Rabbit::class,
-		Witch::class
+		Witch::class,
+		Wolf::class
 	];
 
 	private ?Random $random = null;
