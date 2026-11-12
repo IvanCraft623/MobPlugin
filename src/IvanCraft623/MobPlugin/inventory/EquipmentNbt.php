@@ -78,6 +78,19 @@ final class EquipmentNbt{
 	}
 
 	/**
+	 * The armor list of a mob that only wears something on its body: the four armor slots empty, then the body.
+	 */
+	public static function saveBodyArmor(Item $body) : ListTag{
+		$list = new ListTag([], NBT::TAG_Compound);
+		for($slot = 0; $slot < self::BODY_INDEX; ++$slot){
+			$list->push(self::saveItem(VanillaItems::AIR()));
+		}
+		$list->push(self::saveItem($body));
+
+		return $list;
+	}
+
+	/**
 	 * Fills the armor inventory without notifying its listeners.
 	 */
 	public static function loadArmor(CompoundTag $nbt, ArmorInventory $armor) : void{
