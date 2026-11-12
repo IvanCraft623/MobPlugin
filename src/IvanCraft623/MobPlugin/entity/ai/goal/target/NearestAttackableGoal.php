@@ -30,7 +30,7 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 use IvanCraft623\MobPlugin\entity\Mob;
 use pocketmine\entity\Living;
 
-use pocketmine\utils\Utils;
+use function is_subclass_of;
 use function max;
 use function min;
 
@@ -56,8 +56,8 @@ class NearestAttackableGoal extends TargetGoal {
 		protected ?Closure $condition = null,
 		?float $range = null
 	) {
-		if ($targetType !== Living::class) {
-			Utils::testValidInstance($targetType, Living::class);
+		if ($targetType !== Living::class && !is_subclass_of($targetType, Living::class)) {
+			throw new \InvalidArgumentException("Class $targetType does not extend " . Living::class);
 		}
 
 		parent::__construct($entity, $mustSee);
