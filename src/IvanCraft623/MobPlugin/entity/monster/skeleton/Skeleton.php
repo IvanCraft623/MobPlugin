@@ -25,6 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
+use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\monster\Creeper;
 
 use IvanCraft623\MobPlugin\entity\WearableHeadMob;
@@ -44,6 +46,12 @@ class Skeleton extends AbstractSkeleton implements WearableHeadMob {
 
 	public static function getNetworkTypeId() : string {
 		return EntityIds::SKELETON;
+	}
+
+	protected function registerGoals() : void{
+		parent::registerGoals();
+
+		$this->goalSelector->addGoal(4, new AvoidEntityGoal($this, [Wolf::class], 6, 1.2, 1.2));
 	}
 
 	public function getName() : string {

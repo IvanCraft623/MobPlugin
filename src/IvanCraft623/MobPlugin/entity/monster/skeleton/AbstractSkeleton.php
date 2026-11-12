@@ -108,7 +108,6 @@ abstract class AbstractSkeleton extends Monster implements Equipped, RangedAttac
 
 		$this->goalSelector->addGoal(2, new AvoidSunlightGoal($this));
 		$this->goalSelector->addGoal(3, new FleeSunlightGoal($this, 1));
-		//TODO: 3 flee wolfs
 		$this->goalSelector->addGoal(5, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(6, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(6, new RandomLookAroundGoal($this));
