@@ -32,6 +32,8 @@ use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MovementInput;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
+use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Occurrence;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
@@ -103,7 +105,8 @@ abstract class Mob extends Living {
 	/** Ticks a mob remembers who hurt it. */
 	public const HURT_BY_MEMORY_TICKS = 100;
 
-	protected bool $hasBeenDamagedByPlayer = false;
+	/** Ticks after a hit by a player that a mob still counts as last hit by one. */
+	public const LAST_HIT_BY_PLAYER_TICKS = 400;
 
 	protected LookControl $lookControl;
 
@@ -360,16 +363,11 @@ abstract class Mob extends Living {
 		return false;
 	}
 
-	public function setLastDamageCause(EntityDamageEvent $type) : void{
-		parent::setLastDamageCause($type);
-
-		if ($type instanceof EntityDamageByEntityEvent && $type->getDamager() instanceof Player) {
-			$this->hasBeenDamagedByPlayer = true;
-		}
-	}
-
+	/**
+	 * Whether a player hit the mob recently enough for it to drop experience.
+	 */
 	public function hasBeenDamagedByPlayer() : bool{
-		return $this->hasBeenDamagedByPlayer;
+		return Memories::getInstance()->latest($this, Occurrence::HURT_BY_PLAYER, self::LAST_HIT_BY_PLAYER_TICKS) !== null;
 	}
 
 	public function getLightLevelDependentMagicValue() : float{
