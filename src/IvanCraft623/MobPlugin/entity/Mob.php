@@ -100,13 +100,8 @@ abstract class Mob extends Living {
 
 	protected ComponentGroups $componentGroups;
 
-	/** Latest hit by an entity, forgotten after 100 ticks. Not DamageTracker's per-entity totals. */
 	/** Ticks a mob remembers who hurt it. */
 	public const HURT_BY_MEMORY_TICKS = 100;
-
-	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
-
-	protected int $lastDamageByEntityTick = -1; //server tick
 
 	protected bool $hasBeenDamagedByPlayer = false;
 
@@ -368,30 +363,9 @@ abstract class Mob extends Living {
 	public function setLastDamageCause(EntityDamageEvent $type) : void{
 		parent::setLastDamageCause($type);
 
-		if ($type instanceof EntityDamageByEntityEvent) {
-			$this->setLastDamageByEntity($type);
-
-			if ($type->getDamager() instanceof Player) {
-				$this->hasBeenDamagedByPlayer = true;
-			}
+		if ($type instanceof EntityDamageByEntityEvent && $type->getDamager() instanceof Player) {
+			$this->hasBeenDamagedByPlayer = true;
 		}
-	}
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
-		return $this->lastDamageByEntity;
-	}
-
-	public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void{
-		$this->lastDamageByEntity = $type;
-		if ($type === null) {
-			$this->lastDamageByEntityTick = -1;
-		} else {
-			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
-		}
-	}
-
-	public function getLastDamageByEntityTick() : int{
-		return $this->lastDamageByEntityTick;
 	}
 
 	public function hasBeenDamagedByPlayer() : bool{
@@ -451,14 +425,6 @@ abstract class Mob extends Living {
 		}
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
-
-		if ($this->lastDamageByEntity !== null &&
-			$this->lastDamageByEntityTick !== -1 &&
-			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
-		) {
-			//The last damager is only remembered for a limited time.
-			$this->setLastDamageByEntity(null);
-		}
 
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
 			$this->networkPropertiesDirty = true; // the debug info is sent in place of the name tag
@@ -798,7 +764,6 @@ abstract class Mob extends Living {
 	}
 
 	protected function destroyCycles() : void{
-		$this->lastDamageByEntity = null;
 		$this->goalSelector->stopRunningGoals();
 		$this->targetSelector->stopRunningGoals();
 		unset(
