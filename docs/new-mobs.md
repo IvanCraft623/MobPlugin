@@ -144,7 +144,7 @@ class Silverfish extends Monster{
   `setWaterMovementSpeed()`.
 - Whatever references the mob (goals, controls, helper objects) is released in
   `destroyCycles()`, or the mob waits for the cyclic GC after despawning.
-- Drops: see [Drops](#drops). A mob that wears or holds items uses `EquipmentTrait`.
+- Drops: see [Drops](#drops). A mob that wears or holds items uses `EquipmentTrait`, one with body armor `BodyArmorTrait`.
 - Other hooks: `createNavigation()`, `createMoveControl()`, `getAmbientSoundInterval()`,
   `generateEquipment()`, `canStandAt()`.
 

@@ -33,22 +33,30 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
+use IvanCraft623\MobPlugin\entity\Equipped;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 
+use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living;
 use pocketmine\entity\Villager;
 use pocketmine\item\Item;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
 use function count;
 use function mt_rand;
 
-class Vindicator extends AbstractIllager {
-	use EquipmentTrait;
+class Vindicator extends AbstractIllager implements Equipped {
+	use EquipmentTrait {
+		initEntity as protected initEquipment;
+		saveNBT as protected saveEquipment;
+		sendSpawnPacket as protected sendEquipmentSpawnPacket;
+		attackEntity as protected attackEntityWithHeldItem;
+	}
 
 	private const TARGET_RANGE = 12;
 	private const JOHNNY_NAME = "Johnny";
@@ -67,6 +75,24 @@ class Vindicator extends AbstractIllager {
 			VanillaEntitySizes::VINDICATOR_WIDTH,
 			VanillaEntitySizes::VINDICATOR_HEIGHT * 0.9
 		);
+	}
+
+	protected function initEntity(CompoundTag $nbt) : void {
+		parent::initEntity($nbt);
+		$this->initEquipment($nbt);
+	}
+
+	public function saveNBT() : CompoundTag {
+		return parent::saveNBT()->merge($this->saveEquipment());
+	}
+
+	public function attackEntity(Entity $entity) : bool {
+		return $this->attackEntityWithHeldItem($entity);
+	}
+
+	protected function sendSpawnPacket(Player $player) : void {
+		parent::sendSpawnPacket($player);
+		$this->sendEquipmentSpawnPacket($player);
 	}
 
 	protected function initProperties() : void {
