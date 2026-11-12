@@ -25,12 +25,16 @@ namespace IvanCraft623\MobPlugin\entity\aquatic;
 
 use IvanCraft623\MobPlugin\despawning\DespawnPersistenceTrait;
 use IvanCraft623\MobPlugin\entity\LootRollingTrait;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
+use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Occurrence;
 
 use pocketmine\entity\Squid;
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
+use function mt_rand;
 
 /**
  * Moves like PocketMine-MP's squid, which has no AI to extend.
@@ -45,6 +49,10 @@ class GlowSquid extends Squid {
 
 	public function getName() : string{
 		return "Glow Squid";
+	}
+
+	public function getXpDropAmount() : int{
+		return Memories::getInstance()->latest($this, Occurrence::HURT_BY_PLAYER, Mob::LAST_HIT_BY_PLAYER_TICKS) !== null ? mt_rand(1, 3) : 0;
 	}
 
 	public function getDrops() : array{
