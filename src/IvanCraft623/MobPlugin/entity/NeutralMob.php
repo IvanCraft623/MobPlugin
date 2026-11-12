@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use pocketmine\entity\Entity;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
 
 interface NeutralMob {
 
@@ -43,8 +42,6 @@ interface NeutralMob {
 	public function isAngryAt(Entity $entity) : bool;
 
 	public function isAngry() : bool;
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent;
 
 	public function canAttack(Entity $target) : bool;
 }
