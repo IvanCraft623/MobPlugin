@@ -43,10 +43,10 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
+use IvanCraft623\MobPlugin\utils\Utils;
 
 use IvanCraft623\Pathfinder\BlockPathType;
 
-use pocketmine\block\BlockTypeIds;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Item;
@@ -159,9 +159,7 @@ class Rabbit extends Animal {
 		$y = $this->location->getFloorY();
 		$z = $this->location->getFloorZ();
 
-		if ($world->getBlockAt($x, $y, $z)->getTypeId() === BlockTypeIds::SNOW_LAYER ||
-			$world->getBlockAt($x, $y - 1, $z)->getTypeId() === BlockTypeIds::SNOW
-		) {
+		if (Utils::isSnowCovered($world, $x, $y, $z)) {
 			return RabbitCoat::getRandomSnow();
 		}
 

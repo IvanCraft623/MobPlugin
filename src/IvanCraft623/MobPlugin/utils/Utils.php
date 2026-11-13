@@ -323,6 +323,14 @@ class Utils {
 			($chunk->getBlockStateId($x & Chunk::COORD_MASK, $y, $z & Chunk::COORD_MASK) >> Block::INTERNAL_STATE_DATA_BITS) === BlockTypeIds::WATER;
 	}
 
+	/**
+	 * Whether the block is a snow layer, or stands on a snow block.
+	 */
+	public static function isSnowCovered(World $world, int $x, int $y, int $z) : bool{
+		return $world->getBlockAt($x, $y, $z)->getTypeId() === BlockTypeIds::SNOW_LAYER ||
+			$world->getBlockAt($x, $y - 1, $z)->getTypeId() === BlockTypeIds::SNOW;
+	}
+
 	public static function isDaytime(World $world) : bool{
 		$time = $world->getTimeOfDay();
 
