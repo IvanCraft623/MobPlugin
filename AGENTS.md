@@ -27,6 +27,7 @@ Plugin code is under `src/IvanCraft623/MobPlugin/` (PSR-0):
 - `despawning/` — natural despawning, for any entity with a registered `DespawnRule`. See
   `docs/despawning.md`.
 - `memory/` — what entities remember about each other, `Memories`, fed by events.
+- `bed/` — which pet sleeps on each bed with its owner, `BedListener`, fed by events.
 - `loot/` — mob drops: the vanilla loot tables, rolled by the `kostamax27/loottable`
   library. See the Drops section of `docs/new-mobs.md`.
 - `utils/`, `sound/`, `particle/`, `pattern/`, `item/`, `inventory/`, `CustomTimings.php`

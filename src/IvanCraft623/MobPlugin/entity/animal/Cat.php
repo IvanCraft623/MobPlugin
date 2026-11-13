@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\data\bedrock\CatVariantIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
+use IvanCraft623\MobPlugin\entity\ai\goal\cat\SleepWithOwnerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\FollowOwnerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\SitOnBlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\SitWhenOrderedGoal;
@@ -38,8 +39,10 @@ use IvanCraft623\MobPlugin\entity\Healable;
 use IvanCraft623\MobPlugin\entity\HealableTrait;
 use IvanCraft623\MobPlugin\entity\Pet;
 use IvanCraft623\MobPlugin\entity\PetTrait;
+use IvanCraft623\MobPlugin\entity\SleepsWithOwner;
 use IvanCraft623\MobPlugin\entity\TameableTrait;
 use IvanCraft623\MobPlugin\entity\TameByItemTrait;
+use IvanCraft623\MobPlugin\entity\WakesWithOwner;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -54,12 +57,13 @@ use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
 use function count;
 use function mt_rand;
 
-class Cat extends Feline implements Pet, Collared, Healable{
+class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 	use TameableTrait, TameByItemTrait, PetTrait, CollaredTrait, HealableTrait{
 		//initEntity()
 		TameableTrait::initEntity insteadof PetTrait, CollaredTrait;
@@ -108,6 +112,8 @@ class Cat extends Feline implements Pet, Collared, Healable{
 
 	protected CatVariant $variant;
 
+	private bool $resting = false;
+
 	protected function getInitialSizeInfo() : EntitySizeInfo{
 		return new EntitySizeInfo(VanillaEntitySizes::CAT_HEIGHT, VanillaEntitySizes::CAT_WIDTH);
 	}
@@ -135,6 +141,7 @@ class Cat extends Feline implements Pet, Collared, Healable{
 		parent::registerGoals();
 
 		$this->goalSelector->addGoal(0, new TeleportToOwnerGoal($this, 12));
+		$this->goalSelector->addGoal(2, new SleepWithOwnerGoal($this, 1.2, 10, 1));
 		$this->goalSelector->addGoal(3, new SitWhenOrderedGoal($this));
 		$this->goalSelector->addGoal(4, new FollowOwnerGoal($this, 1, 10, 2, 12));
 		$this->goalSelector->addGoal(7, new SitOnBlockGoal($this, 1, [
@@ -147,7 +154,7 @@ class Cat extends Feline implements Pet, Collared, Healable{
 			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Block $block) => $block instanceof Furnace && $block->isLit()),
 			new BlockMatcher(BlockTypeIds::BED, static fn(Block $block) => $block instanceof Bed && !$block->isHeadPart()),
 		]));
-		//TODO: sleep with the owner and bring them gifts in the morning!
+		//TODO: bring the owner gifts in the morning!
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 8));
 		//TODO: Wild cats also hunt baby turtles!
@@ -185,6 +192,7 @@ class Cat extends Feline implements Pet, Collared, Healable{
 		$this->syncTameable($properties);
 		$this->syncPet($properties);
 		$this->syncCollared($properties);
+		$properties->setGenericFlag(EntityMetadataFlags::RESTING, $this->resting);
 		$properties->setInt(EntityMetadataProperties::VARIANT, CatVariantIdMap::getInstance()->toId($this->variant));
 	}
 
@@ -212,6 +220,20 @@ class Cat extends Feline implements Pet, Collared, Healable{
 
 	public function isWary() : bool{
 		return !$this->isTamed();
+	}
+
+	/**
+	 * Whether the cat is lying down.
+	 */
+	public function isResting() : bool{
+		return $this->resting;
+	}
+
+	public function setResting(bool $resting) : void{
+		if ($this->resting !== $resting) {
+			$this->resting = $resting;
+			$this->networkPropertiesDirty = true;
+		}
 	}
 
 	protected function onTamed() : void{

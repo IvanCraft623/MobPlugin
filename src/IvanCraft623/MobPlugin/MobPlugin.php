@@ -27,6 +27,7 @@ use bStats\PocketmineMp\charts\DrilldownPie;
 use bStats\PocketmineMp\charts\SingleLineChart;
 use bStats\PocketmineMp\Metrics;
 
+use IvanCraft623\MobPlugin\bed\BedListener;
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
 use IvanCraft623\MobPlugin\despawning\NaturalDespawnTask;
@@ -180,6 +181,7 @@ class MobPlugin extends PluginBase {
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 		$this->getServer()->getPluginManager()->registerEvents(new DespawnListener(DespawnRuleRegistry::getInstance()), $this);
 		$this->getServer()->getPluginManager()->registerEvents(new MemoryListener(), $this);
+		$this->getServer()->getPluginManager()->registerEvents(BedListener::getInstance(), $this);
 	}
 
 	/**
