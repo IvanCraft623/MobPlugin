@@ -25,9 +25,11 @@ namespace IvanCraft623\MobPlugin\despawning;
 
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
+use IvanCraft623\MobPlugin\entity\animal\Cat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
+use IvanCraft623\MobPlugin\entity\animal\Ocelot;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
@@ -89,6 +91,7 @@ final class DespawnRuleRegistry{
 			Chicken::class,
 			Cow::class,
 			MooshroomCow::class,
+			Ocelot::class,
 			Pig::class,
 			PolarBear::class,
 			Rabbit::class,
@@ -98,6 +101,7 @@ final class DespawnRuleRegistry{
 		] as $entityClass){
 			$this->register(new DespawnRule($entityClass));
 		}
+		$this->register(new DespawnRule(Cat::class, persistentWhile: static fn(Cat $cat) : bool => $cat->isTamed()));
 		$this->register(new DespawnRule(Wolf::class, persistentWhile: static fn(Wolf $wolf) : bool => $wolf->isTamed()));
 		foreach([
 			Bogged::class,

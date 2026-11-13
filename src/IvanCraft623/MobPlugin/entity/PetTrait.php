@@ -30,7 +30,7 @@ use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\player\Player;
 
 /**
- * Sitting state and the order to sit.
+ * Sitting state and the order to sit. An orphaned pet sits until a player adopts it.
  *
  * @phpstan-require-extends PathfinderMob
  * @phpstan-require-implements Pet
@@ -42,7 +42,8 @@ trait PetTrait{
 	private bool $sitting = false;
 
 	protected function initEntity(CompoundTag $nbt) : void{
-		$this->sitting = $nbt->getByte(self::TAG_SITTING, 0) !== 0;
+		//Tameable's state is loaded first
+		$this->sitting = $this->isOrphaned() || $nbt->getByte(self::TAG_SITTING, 0) !== 0;
 	}
 
 	public function saveNBT() : CompoundTag{
@@ -68,6 +69,9 @@ trait PetTrait{
 	 * Toggles sitting.
 	 */
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{
+		if ($this->isOrphaned()) {
+			$this->setOwningEntity($player);
+		}
 		$this->setSitting(!$this->sitting);
 		$this->navigation->stop();
 		$this->setTargetEntity(null);

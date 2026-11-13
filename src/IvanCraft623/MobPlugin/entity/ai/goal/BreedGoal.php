@@ -91,7 +91,8 @@ class BreedGoal extends Goal {
 		$this->entity->getNavigation()->moveToEntity($this->partner, $this->speedModifier);
 
 		$this->loveTicks++;
-		if ($this->loveTicks >= 60 && $this->entity->getLocation()->distanceSquared($this->partner->getLocation()) < 9) {
+		//The partner's goal may have bred them already this tick
+		if ($this->loveTicks >= 60 && $this->entity->getLocation()->distanceSquared($this->partner->getLocation()) < 9 && $this->entity->canMate($this->partner)) {
 			$this->bread();
 		}
 	}

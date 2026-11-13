@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\block\Door;
 use pocketmine\math\Vector3;
 use function floor;

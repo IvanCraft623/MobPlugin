@@ -44,7 +44,7 @@ use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;

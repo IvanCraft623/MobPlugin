@@ -27,7 +27,7 @@ use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\GroundLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
-use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\color\Color;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;

@@ -44,7 +44,7 @@ use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
 
-use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\VanillaBlocks;
