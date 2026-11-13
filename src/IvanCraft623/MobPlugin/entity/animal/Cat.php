@@ -27,9 +27,11 @@ use IvanCraft623\MobPlugin\data\bedrock\CatVariantIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\FollowOwnerGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\tame\SitOnBlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\SitWhenOrderedGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\TeleportToOwnerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\ai\utils\BlockMatcher;
 use IvanCraft623\MobPlugin\entity\Collared;
 use IvanCraft623\MobPlugin\entity\CollaredTrait;
 use IvanCraft623\MobPlugin\entity\Healable;
@@ -41,6 +43,11 @@ use IvanCraft623\MobPlugin\entity\TameByItemTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
+use pocketmine\block\Bed;
+use pocketmine\block\Block;
+use pocketmine\block\BlockTypeIds;
+use pocketmine\block\Furnace;
+use pocketmine\block\tile\Chest as ChestTile;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
@@ -130,7 +137,17 @@ class Cat extends Feline implements Pet, Collared, Healable{
 		$this->goalSelector->addGoal(0, new TeleportToOwnerGoal($this, 12));
 		$this->goalSelector->addGoal(3, new SitWhenOrderedGoal($this));
 		$this->goalSelector->addGoal(4, new FollowOwnerGoal($this, 1, 10, 2, 12));
-		//TODO: sit on chests, beds and lit furnaces, sleep with the owner and bring them gifts in the morning!
+		$this->goalSelector->addGoal(7, new SitOnBlockGoal($this, 1, [
+			new BlockMatcher(BlockTypeIds::CHEST, static function(Block $block) : bool{
+				$position = $block->getPosition();
+				$tile = $position->getWorld()->getTileAt($position->getFloorX(), $position->getFloorY(), $position->getFloorZ());
+
+				return !$tile instanceof ChestTile || count($tile->getInventory()->getViewers()) === 0;
+			}),
+			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Block $block) => $block instanceof Furnace && $block->isLit()),
+			new BlockMatcher(BlockTypeIds::BED, static fn(Block $block) => $block instanceof Bed && !$block->isHeadPart()),
+		]));
+		//TODO: sleep with the owner and bring them gifts in the morning!
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 8));
 		//TODO: Wild cats also hunt baby turtles!
