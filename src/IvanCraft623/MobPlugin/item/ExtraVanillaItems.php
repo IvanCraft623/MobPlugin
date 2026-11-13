@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
+use IvanCraft623\MobPlugin\entity\animal\Ocelot;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
@@ -107,6 +108,7 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg POLAR_BEAR_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg RABBIT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WOLF_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg OCELOT_SPAWN_EGG()
  * @method static WolfArmor WOLF_ARMOR()
  * @method static \pocketmine\item\Item ARMADILLO_SCUTE()
  * @method static \pocketmine\item\SpawnEgg WITCH_SPAWN_EGG()
@@ -174,6 +176,7 @@ final class ExtraVanillaItems{
 		self::register("rabbit_spawn_egg", new MobSpawnEgg(new IID(Ids::RABBIT_SPAWN_EGG()), "Rabbit Spawn Egg", Rabbit::class));
 		self::register("witch_spawn_egg", new MobSpawnEgg(new IID(Ids::WITCH_SPAWN_EGG()), "Witch Spawn Egg", Witch::class));
 		self::register("wolf_spawn_egg", new MobSpawnEgg(new IID(Ids::WOLF_SPAWN_EGG()), "Wolf Spawn Egg", Wolf::class));
+		self::register("ocelot_spawn_egg", new MobSpawnEgg(new IID(Ids::OCELOT_SPAWN_EGG()), "Ocelot Spawn Egg", Ocelot::class));
 	}
 
 	private static function registerMaterials() : void{

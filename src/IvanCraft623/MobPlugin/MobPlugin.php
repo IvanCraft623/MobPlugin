@@ -36,6 +36,7 @@ use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
+use IvanCraft623\MobPlugin\entity\animal\Ocelot;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
@@ -141,7 +142,8 @@ class MobPlugin extends PluginBase {
 		PolarBear::class,
 		Rabbit::class,
 		Witch::class,
-		Wolf::class
+		Wolf::class,
+		Ocelot::class
 	];
 
 	private ?Random $random = null;
