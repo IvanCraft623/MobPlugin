@@ -33,6 +33,7 @@ use IvanCraft623\MobPlugin\despawning\NaturalDespawnTask;
 use IvanCraft623\MobPlugin\despawning\WorldDespawnPass;
 use IvanCraft623\MobPlugin\entity\ambient\Bat;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
+use IvanCraft623\MobPlugin\entity\animal\Cat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
@@ -143,6 +144,7 @@ class MobPlugin extends PluginBase {
 		Rabbit::class,
 		Witch::class,
 		Wolf::class,
+		Cat::class,
 		Ocelot::class
 	];
 
