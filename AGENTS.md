@@ -82,6 +82,7 @@ API.
   built on `IntSaveIdMapTrait`.
 - A trait never calls `parent::`. When it overrides a method its host inherits (`initEntity()`, `saveNBT()`,
   `onInteract()`...), it keeps that name and the host aliases it, so a host that forgets to hook it breaks at once.
+- Setters of properties are fluent: they return `$this` (`@return $this`, or `: static`), so calls chain.
 - Registries are `SingletonTrait` classes. Broken invariants throw `AssumptionFailedError`;
   don't catch `\Throwable` broadly.
 - Leave a `TODO` instead of speculative code, and delete what a change orphans.
