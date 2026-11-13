@@ -254,9 +254,6 @@ class Wolf extends Animal implements Pet, Collared, Healable, BodyArmored, Neutr
 		$this->initBodyArmor($nbt);
 		$this->initPet($nbt);
 		$this->initCollared($nbt);
-		if ($this->isOrphaned()) {
-			$this->setSitting(true);
-		}
 		$this->variant = WolfVariantIdMap::getInstance()->fromId($nbt->getInt(self::TAG_VARIANT, -1)) ?? $this->getSpawnVariant();
 	}
 
@@ -526,18 +523,7 @@ class Wolf extends Animal implements Pet, Collared, Healable, BodyArmored, Neutr
 			parent::onInteract($player, $clickPos) ||
 			$this->interactTameByItem($player, $clickPos) ||
 			($isOwner && ($this->interactArmor($player) || $this->interactCollared($player, $clickPos))) ||
-			(($isOwner || $this->isOrphaned()) && $this->interactSit($player, $clickPos));
-	}
-
-	/**
-	 * Whoever sits an orphaned wolf adopts it.
-	 */
-	private function interactSit(Player $player, Vector3 $clickPos) : bool{
-		if ($this->isOrphaned()) {
-			$this->setOwningEntity($player);
-		}
-
-		return $this->interactPet($player, $clickPos);
+			(($isOwner || $this->isOrphaned()) && $this->interactPet($player, $clickPos));
 	}
 
 	public function getBreedOffspring(AgeableMob $partner) : Wolf{
