@@ -84,6 +84,9 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::POLAR_BEAR_SPAWN_EGG, ExtraVanillaItems::POLAR_BEAR_SPAWN_EGG(), ["polar_bear_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::RABBIT_SPAWN_EGG, ExtraVanillaItems::RABBIT_SPAWN_EGG(), ["rabbit_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::WITCH_SPAWN_EGG, ExtraVanillaItems::WITCH_SPAWN_EGG(), ["witch_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::WOLF_SPAWN_EGG, ExtraVanillaItems::WOLF_SPAWN_EGG(), ["wolf_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::WOLF_ARMOR, ExtraVanillaItems::WOLF_ARMOR(), ["wolf_armor"]);
+		self::registerSimpleItem(ItemTypeNames::ARMADILLO_SCUTE, ExtraVanillaItems::ARMADILLO_SCUTE(), ["armadillo_scute"]);
 	}
 
 	/**

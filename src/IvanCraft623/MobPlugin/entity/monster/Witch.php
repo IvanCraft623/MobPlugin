@@ -32,6 +32,8 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RangedAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\witch\DrinkPotionGoal;
+use IvanCraft623\MobPlugin\entity\EquipmentTrait;
+use IvanCraft623\MobPlugin\entity\Equipped;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\golem\SnowGolem;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
@@ -46,17 +48,26 @@ use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Living as PMLiving;
 use pocketmine\entity\Location;
 use pocketmine\entity\projectile\SplashPotion;
+use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
 use pocketmine\item\PotionType;
 use pocketmine\item\VanillaItems;
+use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
 use function max;
 
-class Witch extends Monster implements RangedAttackMob {
+class Witch extends Monster implements Equipped, RangedAttackMob {
+	use EquipmentTrait {
+		initEntity as protected initEquipment;
+		saveNBT as protected saveEquipment;
+		sendSpawnPacket as protected sendEquipmentSpawnPacket;
+		attackEntity as protected attackEntityWithHeldItem;
+	}
 
 	private const TARGET_RANGE = 10; //blocks
 	private const DRINK_TICKS = 32;
+	private const DRINKING_POTION_DROP_CHANCE = 0.085; //probability
 	private const DRINK_SLOWDOWN = 0.25; //movement speed lost while drinking
 	private const POTION_SPEED = 0.75; //blocks per tick
 	private const POTION_DIVERGENCE = 8; //random spread
@@ -82,6 +93,24 @@ class Witch extends Monster implements RangedAttackMob {
 
 	public function getName() : string {
 		return "Witch";
+	}
+
+	protected function initEntity(CompoundTag $nbt) : void {
+		parent::initEntity($nbt);
+		$this->initEquipment($nbt);
+	}
+
+	public function saveNBT() : CompoundTag {
+		return parent::saveNBT()->merge($this->saveEquipment());
+	}
+
+	public function attackEntity(Entity $entity) : bool {
+		return $this->attackEntityWithHeldItem($entity);
+	}
+
+	protected function sendSpawnPacket(Player $player) : void {
+		parent::sendSpawnPacket($player);
+		$this->sendEquipmentSpawnPacket($player);
 	}
 
 	protected function initProperties() : void {
@@ -170,8 +199,12 @@ class Witch extends Monster implements RangedAttackMob {
 		return PotionType::HARMING;
 	}
 
+	public function getEquipmentDropProbability(Item $item, Inventory $inventory, int $slot) : float {
+		return self::DRINKING_POTION_DROP_CHANCE;
+	}
+
 	public function getDrops() : array {
-		return $this->generateDeathLoot(VanillaLootTables::WITCH());
+		return [...$this->getEquipmentDrops(), ...$this->generateDeathLoot(VanillaLootTables::WITCH())];
 	}
 
 	public function getPickedItem() : ?Item{

@@ -27,6 +27,8 @@ use Closure;
 
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Occurrence;
 use pocketmine\entity\object\ItemEntity;
 
 use pocketmine\item\Item;
@@ -103,10 +105,7 @@ class PickupItemsGoal extends Goal {
 		$this->checkTimer = $this->reducedTickDelay(self::CHECK_INTERVAL);
 
 		if ($this->cooldownAfterBeingAttacked !== null) {
-			if (
-				($lastDamageTick = $this->entity->getLastDamageByEntityTick()) !== -1 &&
-				$this->entity->getWorld()->getServer()->getTick() - $lastDamageTick < $this->cooldownAfterBeingAttacked
-			) {
+			if (Memories::getInstance()->latest($this->entity, Occurrence::HURT_BY, $this->cooldownAfterBeingAttacked - 1) !== null) {
 				return false;
 			}
 		}

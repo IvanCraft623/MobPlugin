@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
 use IvanCraft623\MobPlugin\despawning\DespawnPersistenceTrait;
-use IvanCraft623\MobPlugin\entity\ai\Brain;
 use IvanCraft623\MobPlugin\entity\ai\control\IdleMoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\JumpControl;
 use IvanCraft623\MobPlugin\entity\ai\control\LookControl;
@@ -33,6 +32,8 @@ use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\control\MovementInput;
 use IvanCraft623\MobPlugin\entity\ai\goal\GoalSelector;
 use IvanCraft623\MobPlugin\entity\ai\sensing\Sensing;
+use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Occurrence;
 use IvanCraft623\MobPlugin\MobPlugin;
 use IvanCraft623\MobPlugin\Settings;
 use IvanCraft623\MobPlugin\sound\EntitySpawnSound;
@@ -54,15 +55,13 @@ use pocketmine\entity\EntityFactory;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityRegainHealthEvent;
-use pocketmine\item\Durable;
-use pocketmine\item\enchantment\EnchantmentInstance;
-use pocketmine\item\enchantment\MeleeWeaponEnchantment;
-use pocketmine\item\Item;
 use pocketmine\item\Releasable;
 use pocketmine\math\Vector3;
 use pocketmine\math\VoxelRayTrace;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\nbt\tag\ListTag;
+use pocketmine\network\mcpe\EntityEventBroadcaster;
+use pocketmine\network\mcpe\NetworkBroadcastUtils;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataFlags;
 use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
@@ -71,9 +70,7 @@ use pocketmine\player\Player;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;
-use pocketmine\world\sound\ItemBreakSound;
 use pocketmine\world\World;
-use function assert;
 use function basename;
 use function cos;
 use function count;
@@ -101,14 +98,11 @@ abstract class Mob extends Living {
 
 	protected ComponentGroups $componentGroups;
 
-	/** Latest hit by an entity, forgotten after 100 ticks. Not DamageTracker's per-entity totals. */
-	protected ?EntityDamageByEntityEvent $lastDamageByEntity = null;
+	/** Ticks a mob remembers who hurt it. */
+	public const HURT_BY_MEMORY_TICKS = 60;
 
-	protected int $lastDamageByEntityTick = -1; //server tick
-
-	protected bool $hasBeenDamagedByPlayer = false;
-
-	protected Brain $brain;
+	/** Ticks after a hit by a player that a mob still counts as last hit by one. */
+	public const LAST_HIT_BY_PLAYER_TICKS = 400;
 
 	protected LookControl $lookControl;
 
@@ -158,12 +152,6 @@ abstract class Mob extends Living {
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
-		$this->initProperties();
-
-		$this->initDespawnPersistence($nbt);
-
-		$this->random = MobPlugin::getInstance()->getRandom();
-
 		if (($componentGroupsTag = $nbt->getTag(self::TAG_COMPONENT_GROUPS)) instanceof ListTag) {
 			$this->componentGroups = ComponentGroups::fromListTag($componentGroupsTag);
 		} else {
@@ -172,6 +160,12 @@ abstract class Mob extends Living {
 				$this->componentGroups->add(EntityFactory::getInstance()->getSaveId($this::class));
 			}
 		}
+
+		$this->initProperties();
+
+		$this->initDespawnPersistence($nbt);
+
+		$this->random = MobPlugin::getInstance()->getRandom();
 
 		if ($nbt->count() === 0) { //Entity just created!
 			$this->onCreate();
@@ -186,8 +180,6 @@ abstract class Mob extends Living {
 		$this->moveControl = $this->createMoveControl();
 		$this->jumpControl = new JumpControl($this);
 		$this->sensing = new Sensing($this);
-
-		$this->brain = $this->makeBrain();
 
 		$this->registerGoals();
 	}
@@ -320,14 +312,6 @@ abstract class Mob extends Living {
 		$this->followRangeAttr->setValue($range);
 	}
 
-	protected function makeBrain() : Brain{
-		return new Brain([], [], []);
-	}
-
-	public function getBrain() : Brain{
-		return $this->brain;
-	}
-
 	public function getRandom() : Random {
 		return $this->random;
 	}
@@ -375,37 +359,11 @@ abstract class Mob extends Living {
 		return false;
 	}
 
-	public function setLastDamageCause(EntityDamageEvent $type) : void{
-		parent::setLastDamageCause($type);
-
-		if ($type instanceof EntityDamageByEntityEvent) {
-			$this->setLastDamageByEntity($type);
-
-			if ($type->getDamager() instanceof Player) {
-				$this->hasBeenDamagedByPlayer = true;
-			}
-		}
-	}
-
-	public function getLastDamageByEntity() : ?EntityDamageByEntityEvent{
-		return $this->lastDamageByEntity;
-	}
-
-	public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void{
-		$this->lastDamageByEntity = $type;
-		if ($type === null) {
-			$this->lastDamageByEntityTick = -1;
-		} else {
-			$this->lastDamageByEntityTick = $this->getWorld()->getServer()->getTick();
-		}
-	}
-
-	public function getLastDamageByEntityTick() : int{
-		return $this->lastDamageByEntityTick;
-	}
-
+	/**
+	 * Whether a player hit the mob recently enough for it to drop experience.
+	 */
 	public function hasBeenDamagedByPlayer() : bool{
-		return $this->hasBeenDamagedByPlayer;
+		return Memories::getInstance()->latest($this, Occurrence::HURT_BY_PLAYER, self::LAST_HIT_BY_PLAYER_TICKS) !== null;
 	}
 
 	public function getLightLevelDependentMagicValue() : float{
@@ -453,6 +411,18 @@ abstract class Mob extends Living {
 		return $maxFallDistance + $defaultMax;
 	}
 
+	/**
+	 * Sends the health to the viewers, which PocketMine-MP only sends to the mob itself. For the mobs whose look
+	 * depends on it.
+	 */
+	protected function syncHealthToViewers() : void{
+		NetworkBroadcastUtils::broadcastEntityEvent($this->getViewers(),
+			function(EntityEventBroadcaster $broadcaster, array $recipients) : void{
+				$broadcaster->syncAttributes($recipients, $this, [$this->healthAttr]);
+			}
+		);
+	}
+
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		if($this->hasAi){
 			CustomTimings::$entityAiTick->startTiming();
@@ -461,14 +431,6 @@ abstract class Mob extends Living {
 		}
 
 		$hasUpdate = parent::entityBaseTick($tickDiff);
-
-		if ($this->lastDamageByEntity !== null &&
-			$this->lastDamageByEntityTick !== -1 &&
-			$this->getWorld()->getServer()->getTick() - $this->lastDamageByEntityTick > 100
-		) {
-			//The last damager is only remembered for a limited time.
-			$this->setLastDamageByEntity(null);
-		}
 
 		if ($this->getSettings()->isDebugModeEnabled() && $this->ticksLived % 10 === 0) {
 			$this->networkPropertiesDirty = true; // the debug info is sent in place of the name tag
@@ -681,7 +643,7 @@ abstract class Mob extends Living {
 	}
 
 	/**
-	 * Attacks the given entity with the currently-held item.
+	 * Attacks the given entity.
 	 * TODO: make a PR that implements this un PM core.
 	 *
 	 * @return bool if the entity was dealt damage
@@ -691,27 +653,8 @@ abstract class Mob extends Living {
 			return false;
 		}
 
-		$heldItem = $this->inventory->getItemInHand();
-		$oldItem = clone $heldItem;
-
-		$itemAttackPoints = $heldItem->getAttackPoints();
-		$attackPoints = $this->getAttackDamage();
-		$baseDamage = $itemAttackPoints <= 1 ? $attackPoints : $attackPoints + $itemAttackPoints;
-
-		$ev = new EntityDamageByEntityEvent($this, $entity, EntityDamageEvent::CAUSE_ENTITY_ATTACK, $baseDamage);
+		$ev = new EntityDamageByEntityEvent($this, $entity, EntityDamageEvent::CAUSE_ENTITY_ATTACK, $this->getAttackDamage());
 		$ev->setKnockBack($this->getAttackKnockback());
-
-		$meleeEnchantmentDamage = 0;
-		/** @var EnchantmentInstance[] $meleeEnchantments */
-		$meleeEnchantments = [];
-		foreach($heldItem->getEnchantments() as $enchantment){
-			$type = $enchantment->getType();
-			if($type instanceof MeleeWeaponEnchantment && $type->isApplicableTo($entity)){
-				$meleeEnchantmentDamage += $type->getDamageBonus($enchantment->getLevel());
-				$meleeEnchantments[] = $enchantment;
-			}
-		}
-		$ev->setModifier($meleeEnchantmentDamage, EntityDamageEvent::MODIFIER_WEAPON_ENCHANTMENTS);
 
 		$entity->attack($ev);
 
@@ -719,25 +662,6 @@ abstract class Mob extends Living {
 
 		if ($this->isOnFire()) {
 			$entity->setOnFire(8);
-		}
-
-		foreach($meleeEnchantments as $enchantment){
-			$type = $enchantment->getType();
-			assert($type instanceof MeleeWeaponEnchantment);
-			$type->onPostAttack($this, $entity, $enchantment->getLevel());
-		}
-
-		if($this->isAlive()){
-			//reactive damage like thorns might cause us to be killed by attacking another mob, which
-			//would mean we'd already have dropped the inventory by the time we reached here
-
-			$returnedItems = []; //TODO: do something with returned items
-			if($heldItem->onAttackEntity($entity, $returnedItems) && $oldItem->equalsExact($this->inventory->getItemInHand())){
-				if($heldItem instanceof Durable && $heldItem->isBroken()){
-					$this->broadcastSound(new ItemBreakSound());
-				}
-				$this->inventory->setItemInHand($heldItem);
-			}
 		}
 
 		return true;
@@ -808,8 +732,6 @@ abstract class Mob extends Living {
 	}
 
 	protected function destroyCycles() : void{
-		$this->lastDamageByEntity = null;
-		unset($this->brain);
 		$this->goalSelector->stopRunningGoals();
 		$this->targetSelector->stopRunningGoals();
 		unset(

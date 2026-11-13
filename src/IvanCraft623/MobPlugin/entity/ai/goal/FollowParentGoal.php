@@ -35,8 +35,6 @@ class FollowParentGoal extends Goal {
 
 	private Animal $parent;
 
-	private int $ticksToRecalculatePath = 0;
-
 	/** @phpstan-var Closure(Animal) : bool */
 	private Closure $parentFilter;
 
@@ -91,18 +89,11 @@ class FollowParentGoal extends Goal {
 		return true;
 	}
 
-	public function start() : void {
-		$this->ticksToRecalculatePath = 0;
-	}
-
 	public function stop() : void {
 		unset($this->parent);
 	}
 
 	public function tick() : void {
-		if (--$this->ticksToRecalculatePath <= 0) {
-			$this->ticksToRecalculatePath = $this->adjustedTickDelay(10);
-			$this->entity->getNavigation()->moveToEntity($this->parent, $this->speedModifier);
-		}
+		$this->entity->getNavigation()->moveToEntity($this->parent, $this->speedModifier);
 	}
 }

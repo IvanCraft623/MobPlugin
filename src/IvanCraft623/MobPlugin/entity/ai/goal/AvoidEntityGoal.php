@@ -99,7 +99,7 @@ class AvoidEntityGoal extends Goal {
 		return true;
 	}
 
-	private function isAvoided(Living $candidate) : bool{
+	protected function isAvoided(Living $candidate) : bool{
 		foreach ($this->avoidTypes as $type) {
 			if ($candidate instanceof $type) {
 				return true;

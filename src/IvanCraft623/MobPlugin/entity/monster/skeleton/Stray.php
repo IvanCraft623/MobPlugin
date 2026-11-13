@@ -25,6 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\monster\skeleton;
 
 use Closure;
 
+use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
+use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\projectile\EffectArrow;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
@@ -42,6 +44,12 @@ class Stray extends AbstractSkeleton { //uhh, maybe this should extend skeleton 
 
 	public static function getNetworkTypeId() : string {
 		return EntityIds::STRAY;
+	}
+
+	protected function registerGoals() : void{
+		parent::registerGoals();
+
+		$this->goalSelector->addGoal(4, new AvoidEntityGoal($this, [Wolf::class], 6, 1.2, 1.2));
 	}
 
 	public function getName() : string {

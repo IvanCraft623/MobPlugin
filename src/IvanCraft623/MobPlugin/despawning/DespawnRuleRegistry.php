@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\aquatic\Pufferfish;
@@ -97,6 +98,7 @@ final class DespawnRuleRegistry{
 		] as $entityClass){
 			$this->register(new DespawnRule($entityClass));
 		}
+		$this->register(new DespawnRule(Wolf::class, persistentWhile: static fn(Wolf $wolf) : bool => $wolf->isTamed()));
 		foreach([
 			Bogged::class,
 			CaveSpider::class,

@@ -25,7 +25,10 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\ai\utils\DefaultPositionGenerator;
 use IvanCraft623\MobPlugin\entity\ai\utils\NearestBlockFinder;
+use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Occurrence;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\Entity;
@@ -70,7 +73,8 @@ class PanicGoal extends Goal {
 
 	protected function shouldPanic() : bool{
 		//TODO: check if it is freezing
-		return $this->entity->getLastDamageByEntity() !== null || $this->entity->isOnFire();
+		return Memories::getInstance()->latest($this->entity, Occurrence::HURT_BY, Mob::HURT_BY_MEMORY_TICKS) !== null ||
+			$this->entity->isOnFire();
 	}
 
 	protected function findRandomPosition() : ?Vector3 {

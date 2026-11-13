@@ -24,7 +24,6 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
-use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
@@ -34,18 +33,10 @@ use pocketmine\block\Water;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
-use pocketmine\inventory\CallbackInventoryListener;
-use pocketmine\inventory\Inventory;
-use pocketmine\item\Item;
 use pocketmine\math\Vector3;
-use pocketmine\nbt\NBT;
 use pocketmine\nbt\tag\CompoundTag;
-use pocketmine\nbt\tag\ListTag;
 use pocketmine\network\mcpe\NetworkBroadcastUtils;
-use pocketmine\network\mcpe\protocol\MobEquipmentPacket;
 use pocketmine\network\mcpe\protocol\MoveActorAbsolutePacket;
-use pocketmine\network\mcpe\protocol\types\inventory\ContainerIds;
-use pocketmine\network\mcpe\protocol\types\inventory\ItemStackWrapper;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
@@ -84,8 +75,6 @@ abstract class Living extends PMLiving {
 	/** Fraction of the motion water takes away each tick, on every axis */
 	protected float $waterDrag;
 
-	protected MobInventory $inventory;
-
 	/**
 	 * PM only has the body yaw; this is where the head looks, sent in the movement packets.
 	 * Remove when PocketMine supports it, see https://github.com/pmmp/PocketMine-MP/issues/6503
@@ -108,36 +97,9 @@ abstract class Living extends PMLiving {
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->inventory = new MobInventory($this);
-
 		$this->verticalDrag = $this->getInitialVerticalDragMultiplier();
 		$this->waterDrag = $this->getInitialWaterDragMultiplier();
 		$this->headYaw = $this->lastHeadYaw = $this->location->yaw;
-
-		$syncHeldItem = function() : void{
-			foreach($this->getViewers() as $viewer){
-				$this->sendHeldItemsPacket($viewer);
-			}
-		};
-		$this->inventory->getListeners()->add(CallbackInventoryListener::onAnyChange(fn() => $syncHeldItem()));
-		$inventoryTag = $nbt->getListTag("Inventory");
-		if($inventoryTag !== null){
-			$inventoryItems = [];
-			$armorInventoryItems = [];
-
-			/** @var CompoundTag $item */
-			foreach($inventoryTag as $i => $item){
-				$slot = $item->getByte("Slot");
-				if($slot >= 0 && $slot < $this->inventory->getSize()){ //Inventory
-					$inventoryItems[$slot] = Item::nbtDeserialize($item);
-				}elseif($slot >= 100 && $slot < 104){ //Armor
-					$armorInventoryItems[$slot - 100] = Item::nbtDeserialize($item);
-				}
-			}
-
-			self::populateInventoryFromListTag($this->inventory, $inventoryItems);
-			self::populateInventoryFromListTag($this->armorInventory, $armorInventoryItems);
-		}
 	}
 
 	protected function sendSpawnPacket(Player $player) : void{
@@ -146,44 +108,6 @@ abstract class Living extends PMLiving {
 			//The spawn packet gives the head the body yaw
 			$player->getNetworkSession()->sendDataPacket($this->createMovementPacket());
 		}
-		if (!$this->inventory->getMainHand()->isNull() || !$this->inventory->getOffHand()->isNull()) {
-			$this->sendHeldItemsPacket($player);
-		}
-	}
-
-	protected function sendHeldItemsPacket(Player $player) : void{
-		$networksession = $player->getNetworkSession();
-		$networksession->sendDataPacket(MobEquipmentPacket::create(
-			$this->getId(),
-			ItemStackWrapper::legacy($networksession->getTypeConverter()->coreItemStackToNet($this->inventory->getMainHand())),
-			$this->inventory->getHeldItemIndex(),
-			$this->inventory->getHeldItemIndex(),
-			ContainerIds::INVENTORY
-		));
-		$networksession->sendDataPacket(MobEquipmentPacket::create(
-			$this->getId(),
-			ItemStackWrapper::legacy($networksession->getTypeConverter()->coreItemStackToNet($this->inventory->getOffHand())),
-			0,
-			0,
-			ContainerIds::OFFHAND
-		));
-	}
-
-	/**
-	 * @param Item[] $items
-	 * @phpstan-param array<int, Item> $items
-	 */
-	private static function populateInventoryFromListTag(Inventory $inventory, array $items) : void{
-		$listeners = $inventory->getListeners()->toArray();
-		$inventory->getListeners()->clear();
-
-		$inventory->setContents($items);
-
-		$inventory->getListeners()->add(...$listeners);
-	}
-
-	public function getInventory() : MobInventory{
-		return $this->inventory;
 	}
 
 	public function getServer() : Server{
@@ -553,31 +477,6 @@ abstract class Living extends PMLiving {
 
 	public function getStepHeight() : float{
 		return $this->stepHeight;
-	}
-
-	public function saveNBT() : CompoundTag {
-		$nbt = parent::saveNBT();
-
-		$inventoryTag = new ListTag([], NBT::TAG_Compound);
-		$nbt->setTag("Inventory", $inventoryTag);
-
-		//Normal inventory
-		for($slot = 0; $slot < $this->inventory->getSize(); ++$slot){
-			$item = $this->inventory->getItem($slot);
-			if(!$item->isNull()){
-				$inventoryTag->push($item->nbtSerialize($slot));
-			}
-		}
-
-		//Armor
-		for($slot = 100; $slot < 104; ++$slot){
-			$item = $this->armorInventory->getItem($slot - 100);
-			if(!$item->isNull()){
-				$inventoryTag->push($item->nbtSerialize($slot));
-			}
-		}
-
-		return $nbt;
 	}
 
 	/**

@@ -37,6 +37,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\DoorBreaker;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
+use IvanCraft623\MobPlugin\entity\Equipped;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapable;
 use IvanCraft623\MobPlugin\entity\ItemPickupCapableTrait;
@@ -45,7 +46,7 @@ use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
@@ -66,11 +67,23 @@ use pocketmine\player\Player;
 use function count;
 use function mt_rand;
 
-abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapable, WearableHeadMob {
-	use EquipmentTrait;
-	use ItemPickupCapableTrait {
-		initEntity as initEntityPickupTrait;
-		saveNBT as saveNBTPickupTrait;
+abstract class AbstractZombie extends Monster implements Ageable, Equipped, ItemPickupCapable, WearableHeadMob {
+	use EquipmentTrait, ItemPickupCapableTrait {
+		//initEntity()
+		EquipmentTrait::initEntity insteadof ItemPickupCapableTrait;
+		EquipmentTrait::initEntity as protected initEquipment;
+		ItemPickupCapableTrait::initEntity as protected initPickup;
+
+		//saveNBT()
+		EquipmentTrait::saveNBT insteadof ItemPickupCapableTrait;
+		EquipmentTrait::saveNBT as protected saveEquipment;
+		ItemPickupCapableTrait::saveNBT as protected savePickup;
+
+		//sendSpawnPacket()
+		EquipmentTrait::sendSpawnPacket as protected sendEquipmentSpawnPacket;
+
+		//attackEntity()
+		EquipmentTrait::attackEntity as protected attackEntityWithHeldItem;
 	}
 
 	private const ADULT_WATER_SPEED = 0.06; //acceleration
@@ -261,7 +274,8 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 
 	protected function initEntity(CompoundTag $nbt) : void {
 		parent::initEntity($nbt);
-		$this->initEntityPickupTrait($nbt);
+		$this->initEquipment($nbt);
+		$this->initPickup($nbt);
 
 		$isBabyByte = $nbt->getByte(self::TAG_IS_BABY, -1);
 		if ($isBabyByte === 1 || ($isBabyByte === -1 && AgeableMob::getRandomStartAge() !== AgeableMob::ADULT_AGE)) {
@@ -282,8 +296,17 @@ abstract class AbstractZombie extends Monster implements Ageable, ItemPickupCapa
 		}
 	}
 
+	public function attackEntity(Entity $entity) : bool {
+		return $this->attackEntityWithHeldItem($entity);
+	}
+
+	protected function sendSpawnPacket(Player $player) : void {
+		parent::sendSpawnPacket($player);
+		$this->sendEquipmentSpawnPacket($player);
+	}
+
 	public function saveNBT() : CompoundTag {
-		$nbt = parent::saveNBT()->merge($this->saveNBTPickupTrait());
+		$nbt = parent::saveNBT()->merge($this->saveEquipment())->merge($this->savePickup());
 
 		$nbt->setByte(self::TAG_IS_BABY, $this->isBaby() ? 1 : 0);
 

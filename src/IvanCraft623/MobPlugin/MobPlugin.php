@@ -23,9 +23,9 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin;
 
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\bStats\PocketmineMp\charts\DrilldownPie;
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\bStats\PocketmineMp\charts\SingleLineChart;
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\bStats\PocketmineMp\Metrics;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\bStats\PocketmineMp\charts\DrilldownPie;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\bStats\PocketmineMp\charts\SingleLineChart;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\bStats\PocketmineMp\Metrics;
 
 use IvanCraft623\MobPlugin\despawning\DespawnListener;
 use IvanCraft623\MobPlugin\despawning\DespawnRuleRegistry;
@@ -40,6 +40,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\aquatic\Pufferfish;
@@ -70,6 +71,7 @@ use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\entity\monster\ZombifiedPiglin;
 use IvanCraft623\MobPlugin\item\ExtraItemRegisterHelper;
 use IvanCraft623\MobPlugin\loot\LootTableRegistry;
+use IvanCraft623\MobPlugin\memory\MemoryListener;
 use IvanCraft623\MobPlugin\spawning\event\SpawnEventRegistry;
 use IvanCraft623\MobPlugin\spawning\event\TropicalFishPresetSpawnEventMap;
 use IvanCraft623\MobPlugin\spawning\event\VanillaSpawnEvents;
@@ -77,8 +79,8 @@ use IvanCraft623\MobPlugin\spawning\NaturalSpawnerTask;
 use IvanCraft623\MobPlugin\spawning\parse\SpawnRulesParseException;
 use IvanCraft623\MobPlugin\spawning\SpawnRuleRegistry;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\IvanCraft623\Pathfinder\execution\SearchExecutor;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\execution\AsyncSearchExecutor;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\IvanCraft623\Pathfinder\execution\SearchExecutor;
 
 use pocketmine\entity\AttributeFactory;
 use pocketmine\entity\Entity;
@@ -93,7 +95,7 @@ use pocketmine\utils\SingletonTrait;
 use pocketmine\world\World;
 use Symfony\Component\Filesystem\Path;
 
-use IvanCraft623\MobPlugin\libs\_d8e47a9fc36ff85c\xenialdan\apibossbar\API as BossBarAPI;
+use IvanCraft623\MobPlugin\libs\_90ec2bc5187caa10\xenialdan\apibossbar\API as BossBarAPI;
 
 use function count;
 use function mt_rand;
@@ -138,7 +140,8 @@ class MobPlugin extends PluginBase {
 		Drowned::class,
 		PolarBear::class,
 		Rabbit::class,
-		Witch::class
+		Witch::class,
+		Wolf::class
 	];
 
 	private ?Random $random = null;
@@ -172,6 +175,7 @@ class MobPlugin extends PluginBase {
 
 		$this->getServer()->getPluginManager()->registerEvents(new EventListener(), $this);
 		$this->getServer()->getPluginManager()->registerEvents(new DespawnListener(DespawnRuleRegistry::getInstance()), $this);
+		$this->getServer()->getPluginManager()->registerEvents(new MemoryListener(), $this);
 	}
 
 	/**

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
+use IvanCraft623\MobPlugin\entity\Equipped;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 
@@ -52,7 +53,7 @@ class RangedBowAttackGoal extends Goal {
 	private int $startActionTick = -1;
 
 	public function __construct(
-		protected PathfinderMob&RangedAttackMob $entity,
+		protected PathfinderMob&RangedAttackMob&Equipped $entity,
 		protected float $speedModifier,
 		private int $minAttackInterval,
 		private int $maxAttackInterval,

@@ -23,17 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Occurrence;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
-use pocketmine\event\entity\EntityDamageByEntityEvent;
 
 trait NeutralMobTrait {
 
 	abstract public function getTargetEntity() : ?Entity;
 
 	abstract public function setTargetEntity(?Entity $target) : void;
-
-	abstract public function setLastDamageByEntity(?EntityDamageByEntityEvent $type) : void;
 
 	abstract public function startAngerTimer() : void;
 
@@ -78,7 +77,7 @@ trait NeutralMobTrait {
 	}
 
 	public function stopBeingAngry() : void{
-		$this->setLastDamageByEntity(null);
+		Memories::getInstance()->forget($this, Occurrence::HURT_BY);
 		$this->setTargetEntity(null);
 		$this->setRemainingAngerTicks(0);
 	}

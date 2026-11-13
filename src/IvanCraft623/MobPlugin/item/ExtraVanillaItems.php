@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
 use IvanCraft623\MobPlugin\entity\aquatic\Pufferfish;
@@ -105,6 +106,9 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg DROWNED_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg POLAR_BEAR_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg RABBIT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg WOLF_SPAWN_EGG()
+ * @method static WolfArmor WOLF_ARMOR()
+ * @method static \pocketmine\item\Item ARMADILLO_SCUTE()
  * @method static \pocketmine\item\SpawnEgg WITCH_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
@@ -132,6 +136,7 @@ final class ExtraVanillaItems{
 	protected static function setup() : void{
 		self::registerSpawnEggs();
 		self::registerBuckets();
+		self::registerMaterials();
 	}
 
 	private static function registerSpawnEggs() : void{
@@ -168,6 +173,12 @@ final class ExtraVanillaItems{
 		self::register("polar_bear_spawn_egg", new MobSpawnEgg(new IID(Ids::POLAR_BEAR_SPAWN_EGG()), "Polar Bear Spawn Egg", PolarBear::class));
 		self::register("rabbit_spawn_egg", new MobSpawnEgg(new IID(Ids::RABBIT_SPAWN_EGG()), "Rabbit Spawn Egg", Rabbit::class));
 		self::register("witch_spawn_egg", new MobSpawnEgg(new IID(Ids::WITCH_SPAWN_EGG()), "Witch Spawn Egg", Witch::class));
+		self::register("wolf_spawn_egg", new MobSpawnEgg(new IID(Ids::WOLF_SPAWN_EGG()), "Wolf Spawn Egg", Wolf::class));
+	}
+
+	private static function registerMaterials() : void{
+		self::register("wolf_armor", new WolfArmor(new IID(Ids::WOLF_ARMOR()), "Wolf Armor"));
+		self::register("armadillo_scute", new Item(new IID(Ids::ARMADILLO_SCUTE()), "Armadillo Scute"));
 	}
 
 	private static function registerBuckets() : void{
