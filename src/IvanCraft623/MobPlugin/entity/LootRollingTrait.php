@@ -57,11 +57,13 @@ trait LootRollingTrait{
 
 	/**
 	 * Drops what a table rolls for a drop that $source caused with $tool, above this mob's head.
+	 *
+	 * @param int $pickupDelay ticks before the items can be picked up
 	 */
-	protected function dropLoot(LootTable $table, ?Entity $source, ?Item $tool) : void{
+	public function dropLoot(LootTable $table, ?Entity $source, ?Item $tool, int $pickupDelay = 10) : void{
 		$position = $this->location->add(0, $this->getSize()->getHeight(), 0);
 		foreach ($this->generateLoot($table, $source, $tool) as $item) {
-			$this->getWorld()->dropItem($position, $item);
+			$this->getWorld()->dropItem($position, $item, null, $pickupDelay);
 		}
 	}
 }

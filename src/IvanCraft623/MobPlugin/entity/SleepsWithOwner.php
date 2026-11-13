@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 /**
- * A pet that lies on its owner's bed while they sleep.
+ * A pet that went to sleep on its owner's bed and is told when they wake up.
  */
 interface SleepsWithOwner{
 
@@ -34,4 +34,6 @@ interface SleepsWithOwner{
 	public function isResting() : bool;
 
 	public function setResting(bool $resting) : void;
+
+	public function onWakeWithOwner() : void;
 }

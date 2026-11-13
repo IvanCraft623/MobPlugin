@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\data\bedrock\CatVariantIdMap;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
+use IvanCraft623\MobPlugin\entity\ai\goal\cat\GiftToOwnerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\cat\SleepWithOwnerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\FollowOwnerGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\tame\SitOnBlockGoal;
@@ -42,7 +43,6 @@ use IvanCraft623\MobPlugin\entity\PetTrait;
 use IvanCraft623\MobPlugin\entity\SleepsWithOwner;
 use IvanCraft623\MobPlugin\entity\TameableTrait;
 use IvanCraft623\MobPlugin\entity\TameByItemTrait;
-use IvanCraft623\MobPlugin\entity\WakesWithOwner;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
@@ -99,6 +99,8 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 
 	private const TAG_VARIANT = "Variant"; //TAG_Int
 
+	private const COMPONENT_GROUP_GIFT_FOR_OWNER = "minecraft:cat_gift_for_owner";
+
 	private const WILD_MAX_HEALTH = 10; //health
 	private const TAMED_MAX_HEALTH = 20; //health
 	private const ATTACK_DAMAGE = 4; //health
@@ -113,6 +115,8 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 	protected CatVariant $variant;
 
 	private bool $resting = false;
+
+	private bool $giftPending = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
 		return new EntitySizeInfo(VanillaEntitySizes::CAT_HEIGHT, VanillaEntitySizes::CAT_WIDTH);
@@ -141,6 +145,7 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 		parent::registerGoals();
 
 		$this->goalSelector->addGoal(0, new TeleportToOwnerGoal($this, 12));
+		$this->goalSelector->addGoal(1, new GiftToOwnerGoal($this, 0.7, 0.74999, 0.8, 6));
 		$this->goalSelector->addGoal(2, new SleepWithOwnerGoal($this, 1.2, 10, 1));
 		$this->goalSelector->addGoal(3, new SitWhenOrderedGoal($this));
 		$this->goalSelector->addGoal(4, new FollowOwnerGoal($this, 1, 10, 2, 12));
@@ -154,7 +159,6 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Block $block) => $block instanceof Furnace && $block->isLit()),
 			new BlockMatcher(BlockTypeIds::BED, static fn(Block $block) => $block instanceof Bed && !$block->isHeadPart()),
 		]));
-		//TODO: bring the owner gifts in the morning!
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 8));
 		//TODO: Wild cats also hunt baby turtles!
@@ -168,10 +172,17 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 
 		$this->initPet($nbt);
 		$this->initCollared($nbt);
+		$this->giftPending = $this->componentGroups->has(self::COMPONENT_GROUP_GIFT_FOR_OWNER);
 		$this->variant = CatVariantIdMap::getInstance()->fromId($nbt->getInt(self::TAG_VARIANT, -1)) ?? $this->getSpawnVariant();
 	}
 
 	public function saveNBT() : CompoundTag{
+		if ($this->giftPending) {
+			$this->componentGroups->add(self::COMPONENT_GROUP_GIFT_FOR_OWNER);
+		} elseif ($this->componentGroups->isset(self::COMPONENT_GROUP_GIFT_FOR_OWNER)) {
+			$this->componentGroups->remove(self::COMPONENT_GROUP_GIFT_FOR_OWNER);
+		}
+
 		$nbt = parent::saveNBT()
 			->merge($this->saveTameable())
 			->merge($this->savePet())
@@ -234,6 +245,21 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 			$this->resting = $resting;
 			$this->networkPropertiesDirty = true;
 		}
+	}
+
+	/**
+	 * Whether it has a gift for its owner.
+	 */
+	public function hasGiftPending() : bool{
+		return $this->giftPending;
+	}
+
+	public function setGiftPending(bool $pending) : void{
+		$this->giftPending = $pending;
+	}
+
+	public function onWakeWithOwner() : void{
+		$this->setGiftPending(true);
 	}
 
 	protected function onTamed() : void{

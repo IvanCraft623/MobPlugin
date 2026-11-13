@@ -24,9 +24,12 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\bed;
 
 use IvanCraft623\MobPlugin\entity\SleepsWithOwner;
+use pocketmine\block\Bed;
+use pocketmine\block\Block;
 use pocketmine\entity\Entity;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerBedLeaveEvent;
+use pocketmine\player\Player;
 use pocketmine\utils\SingletonTrait;
 use pocketmine\world\Position;
 use pocketmine\world\World;
@@ -71,6 +74,19 @@ final class BedListener implements Listener{
 	 */
 	public function onPlayerBedLeave(PlayerBedLeaveEvent $event) : void{
 		$bed = $event->getBed()->getPosition();
-		unset($this->claims[$bed->getWorld()->getId()][World::blockHash($bed->getFloorX(), $bed->getFloorY(), $bed->getFloorZ())]);
+		$worldId = $bed->getWorld()->getId();
+		$hash = World::blockHash($bed->getFloorX(), $bed->getFloorY(), $bed->getFloorZ());
+		$pet = $this->claims[$worldId][$hash] ?? null;
+		unset($this->claims[$worldId][$hash]);
+		if ($pet !== null && !$pet->isClosed() && self::isNaturalWake($event->getPlayer(), $event->getBed())) {
+			$pet->onWakeWithOwner();
+		}
+	}
+
+	/**
+	 * Whether the night was skipped, which sets the time of day to 0: the only wake-up vanilla doesn't force.
+	 */
+	private static function isNaturalWake(Player $player, Block $bed) : bool{
+		return $bed instanceof Bed && $player->getWorld()->getTimeOfDay() === 0;
 	}
 }
