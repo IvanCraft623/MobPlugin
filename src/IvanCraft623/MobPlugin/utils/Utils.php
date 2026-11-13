@@ -28,15 +28,21 @@ use IvanCraft623\MobPlugin\entity\Equipped;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\block\utils\DyeColor;
+use pocketmine\crafting\ExactRecipeIngredient;
+use pocketmine\crafting\ShapelessRecipeType;
+use pocketmine\data\bedrock\DyeColorIdMap;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\item\Bow;
 use pocketmine\item\Durable;
+use pocketmine\item\Dye;
 use pocketmine\item\Item;
 use pocketmine\item\Releasable;
 use pocketmine\item\VanillaItems;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\Server;
 use pocketmine\utils\Random;
 use pocketmine\world\format\Chunk;
 use pocketmine\world\particle\BlockBreakParticle;
@@ -45,9 +51,12 @@ use pocketmine\world\World;
 use function abs;
 use function array_key_last;
 use function array_sum;
+use function ceil;
+use function count;
 use function floor;
 use function fmod;
 use function intdiv;
+use function log;
 use function max;
 use function method_exists;
 use function min;
@@ -64,6 +73,11 @@ class Utils {
 
 	private const REGIONAL_DIFFICULTY_NORMAL_BASE = 0.375; //on normal difficulty, with a new moon
 	private const REGIONAL_DIFFICULTY_MOON_FACTOR = 0.25; //multiplies the brightness of the moon
+
+	private static ?int $dyeColorBits = null; //bits a dye color id needs, set on first use
+
+	/** @var array<int, DyeColor>|null dye pair key => the color the two dyes make, built on first use */
+	private static ?array $dyeMixes = null;
 
 	/**
 	 * Picks a key with a probability proportional to its weight, or null when no weight is
@@ -87,6 +101,49 @@ class Utils {
 		}
 
 		return array_key_last($weights);
+	}
+
+	/**
+	 * The color that two dyes of these colors make when crafted together, in either order, or null if they make none.
+	 */
+	public static function mixDyeColors(DyeColor $first, DyeColor $second) : ?DyeColor{
+		self::$dyeMixes ??= self::loadDyeMixes();
+
+		return self::$dyeMixes[self::getDyePairKey($first, $second)] ?? null;
+	}
+
+	/**
+	 * @return array<int, DyeColor>
+	 */
+	private static function loadDyeMixes() : array{
+		$mixes = [];
+		foreach (Server::getInstance()->getCraftingManager()->getShapelessRecipes() as $recipes) {
+			foreach ($recipes as $recipe) {
+				$ingredients = $recipe->getIngredientList();
+				$results = $recipe->getResults();
+				if ($recipe->getType() !== ShapelessRecipeType::CRAFTING || count($ingredients) !== 2 || count($results) !== 1 || !$results[0] instanceof Dye) {
+					continue;
+				}
+
+				$first = $ingredients[0] instanceof ExactRecipeIngredient ? $ingredients[0]->getItem() : null;
+				$second = $ingredients[1] instanceof ExactRecipeIngredient ? $ingredients[1]->getItem() : null;
+				if ($first instanceof Dye && $second instanceof Dye) {
+					$mixes[self::getDyePairKey($first->getColor(), $second->getColor())] ??= $results[0]->getColor();
+				}
+			}
+		}
+
+		return $mixes;
+	}
+
+	private static function getDyePairKey(DyeColor $first, DyeColor $second) : int{
+		$ids = DyeColorIdMap::getInstance();
+		$firstId = $ids->toId($first);
+		$secondId = $ids->toId($second);
+
+		self::$dyeColorBits ??= (int) ceil(log(count(DyeColor::cases()), 2));
+
+		return (min($firstId, $secondId) << self::$dyeColorBits) | max($firstId, $secondId);
 	}
 
 	public static function clamp(float $value, float $minValue, float $maxValue) : float {

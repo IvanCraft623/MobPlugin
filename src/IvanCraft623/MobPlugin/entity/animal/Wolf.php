@@ -545,6 +545,9 @@ class Wolf extends Animal implements Pet, Collared, Healable, BodyArmored, Neutr
 		$offspring = new Wolf($this->getLocation());
 		if ($this->isTamed()) {
 			$offspring->becomeTamed($this->getOwningEntity());
+			$collar1 = $this->getCollarColor();
+			$collar2 = $partner->getCollarColor();
+			$offspring->setCollarColor(Utils::mixDyeColors($collar1, $collar2) ?? (mt_rand(0, 1) === 0 ? $collar1 : $collar2));
 		}
 		$offspring->setVariant(mt_rand(0, 1) === 0 ? $this->variant : $partner->variant);
 

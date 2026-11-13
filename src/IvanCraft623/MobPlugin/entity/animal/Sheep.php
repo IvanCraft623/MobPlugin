@@ -87,10 +87,10 @@ class Sheep extends Animal implements Shearable, Colored{
 	}
 
 	public static function getOffspringColor(Sheep $parent1, Sheep $parent2) : DyeColor{
-		//In java if the colors can be combined it returns the resulting color
-		//However in bedrock a random color is chosen from the parents.
+		$color1 = $parent1->getColor();
+		$color2 = $parent2->getColor();
 
-		return mt_rand(0, 1) === 0 ? $parent1->getColor() : $parent2->getColor();
+		return Utils::mixDyeColors($color1, $color2) ?? (mt_rand(0, 1) === 0 ? $color1 : $color2);
 	}
 
 	protected bool $sheared = false;
