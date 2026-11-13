@@ -99,10 +99,6 @@ class Ocelot extends Feline implements Trusting{
 		$this->syncTrusting($properties);
 	}
 
-	public function isWary() : bool{
-		return !$this->isTrusting();
-	}
-
 	protected function getTrustingComponentGroup() : string{
 		return self::COMPONENT_GROUP_TRUSTING;
 	}
@@ -120,7 +116,7 @@ class Ocelot extends Feline implements Trusting{
 	}
 
 	public function canFallInLove() : bool{
-		return $this->isTrusting() && parent::canFallInLove();
+		return $this->hasTrust() && parent::canFallInLove();
 	}
 
 	public function onInteract(Player $player, Vector3 $clickPos) : bool{

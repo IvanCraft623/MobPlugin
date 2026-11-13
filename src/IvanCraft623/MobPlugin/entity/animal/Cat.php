@@ -229,8 +229,8 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 		return $this;
 	}
 
-	public function isWary() : bool{
-		return !$this->isTamed();
+	public function isTrusting(Player $player) : bool{
+		return $this->isTamed();
 	}
 
 	/**

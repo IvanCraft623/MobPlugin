@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\animal;
 
-use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\AvoidUntrustedEntitiesGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\feline\StalkAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
@@ -32,6 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PanicGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\Trusting;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
@@ -40,18 +41,13 @@ use pocketmine\player\Player;
 /**
  * What cats and ocelots share: stalking, no fall damage, tempting with fish and wariness of players.
  */
-abstract class Feline extends Animal{
+abstract class Feline extends Animal implements Trusting{
 
 	/** Fish, which breeds and grows felines. */
 	private const FOOD = [
 		ItemTypeIds::RAW_FISH => true,
 		ItemTypeIds::RAW_SALMON => true,
 	];
-
-	/**
-	 * Whether it avoids players and gets scared by them.
-	 */
-	abstract public function isWary() : bool;
 
 	public function getDefaultMovementSpeed() : float{
 		return 0.3;
@@ -86,19 +82,11 @@ abstract class Feline extends Animal{
 				parent::__construct($feline, 0.5, false);
 			}
 
-			protected function canScare() : bool{
-				return $this->feline->isWary();
+			protected function canScare(Player $player) : bool{
+				return !$this->feline->isTrusting($player);
 			}
 		});
-		$this->goalSelector->addGoal(6, new class($this) extends AvoidEntityGoal{
-			public function __construct(private Feline $feline){
-				parent::__construct($feline, [Player::class], 10, 0.8, 1.33);
-			}
-
-			public function canUse() : bool{
-				return $this->feline->isWary() && parent::canUse();
-			}
-		});
+		$this->goalSelector->addGoal(6, new AvoidUntrustedEntitiesGoal($this, 10, 0.8, 1.33));
 		$this->goalSelector->addGoal(8, new WaterAvoidingRandomStrollGoal($this, 0.8));
 		$this->goalSelector->addGoal(9, new LookAtEntityGoal($this, Player::class, 8));
 	}
