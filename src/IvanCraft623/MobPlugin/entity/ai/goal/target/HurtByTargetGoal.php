@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\memory\Memories;
+use IvanCraft623\MobPlugin\memory\Memory;
 use IvanCraft623\MobPlugin\memory\Occurrence;
 use pocketmine\entity\Living;
 
@@ -47,7 +48,7 @@ class HurtByTargetGoal extends TargetGoal {
 
 	private int $lastDamageTick = -1;
 
-	private int $pendingDamageTick = -1;
+	private ?Memory $pending = null; //the hit that is about to start
 
 	/** @phpstan-var class-string<Living>[] */
 	private array $ignoredDamagers = [];
@@ -104,7 +105,7 @@ class HurtByTargetGoal extends TargetGoal {
 		}
 
 		$this->target = $damager;
-		$this->pendingDamageTick = $memory->getTick();
+		$this->pending = $memory;
 
 		return true;
 	}
@@ -113,8 +114,11 @@ class HurtByTargetGoal extends TargetGoal {
 		/** @var Living $target*/
 		$target = $this->target;
 
+		/** @var Memory $hit */
+		$hit = $this->pending;
+
 		$this->entity->setTargetEntity($target);
-		$this->lastDamageTick = $this->pendingDamageTick;
+		$this->lastDamageTick = $hit->getTick();
 		$this->unseenMemoryTicks = 300;
 
 		if ($this->alertSameType) {
