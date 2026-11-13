@@ -24,9 +24,11 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\goal\rabbit;
 
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
+use IvanCraft623\MobPlugin\entity\ai\utils\BlockMatcher;
 use IvanCraft623\MobPlugin\entity\ai\utils\NearestBlockFinder;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
+use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\Carrot;
 use pocketmine\math\Vector3;
@@ -44,11 +46,14 @@ class RaidGardenGoal extends Goal {
 
 	private bool $ate = false;
 
+	private BlockMatcher $grownCrop;
+
 	public function __construct(
 		protected PathfinderMob $mob,
 		protected float $speedModifier,
 		protected int $searchRange = 16
 	) {
+		$this->grownCrop = new BlockMatcher(BlockTypeIds::CARROTS, static fn(Block $block) => $block instanceof Carrot && $block->getAge() === Carrot::MAX_AGE);
 		$this->setFlags(Goal::FLAG_MOVE);
 	}
 
@@ -68,7 +73,9 @@ class RaidGardenGoal extends Goal {
 	}
 
 	public function canContinueToUse() : bool{
-		return !$this->ate && $this->isGrown($this->crop) && !$this->mob->getNavigation()->isDone();
+		return !$this->ate &&
+			$this->grownCrop->matches($this->mob->getWorld()->getBlock($this->crop)) &&
+			!$this->mob->getNavigation()->isDone();
 	}
 
 	public function start() : void{
@@ -95,18 +102,6 @@ class RaidGardenGoal extends Goal {
 	}
 
 	private function findCrop() : ?Vector3{
-		foreach (NearestBlockFinder::find($this->mob->getWorld(), $this->mob->getPosition(), $this->searchRange, self::SEARCH_HEIGHT, BlockTypeIds::CARROTS) as $position) {
-			if ($this->isGrown($position)) {
-				return $position;
-			}
-		}
-
-		return null;
-	}
-
-	private function isGrown(Vector3 $position) : bool{
-		$block = $this->mob->getWorld()->getBlock($position);
-
-		return $block instanceof Carrot && $block->getAge() === Carrot::MAX_AGE;
+		return NearestBlockFinder::findNearest($this->mob->getWorld(), $this->mob->getPosition(), $this->searchRange, self::SEARCH_HEIGHT, [$this->grownCrop])?->getPosition();
 	}
 }

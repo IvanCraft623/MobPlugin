@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
+use pocketmine\block\Block;
 use pocketmine\block\RuntimeBlockStateRegistry;
 use pocketmine\math\Vector3;
 use pocketmine\world\format\Chunk;
@@ -33,6 +34,7 @@ use function abs;
 use function count;
 use function max;
 use function min;
+use const INF;
 use const PHP_INT_MAX;
 
 class NearestBlockFinder {
@@ -148,6 +150,42 @@ class NearestBlockFinder {
 				}
 			}
 		}
+	}
+
+	/**
+	 * The nearest block a matcher accepts.
+	 *
+	 * @param non-empty-list<BlockMatcher> $matchers
+	 */
+	public static function findNearest(World $world, Vector3 $origin, int $horizontalRange, int $verticalRange, array $matchers) : ?Block{
+		/** @var array<int, list<BlockMatcher>> $matchersByType */
+		$matchersByType = [];
+		foreach ($matchers as $matcher) {
+			$matchersByType[$matcher->getTypeId()][] = $matcher;
+		}
+
+		$nearest = null;
+		$nearestDistanceSquared = INF;
+		foreach ($matchersByType as $typeId => $typeMatchers) {
+			foreach (self::find($world, $origin, $horizontalRange, $verticalRange, $typeId) as $position) {
+				$block = $world->getBlock($position);
+				foreach ($typeMatchers as $matcher) {
+					if (!$matcher->matches($block)) {
+						continue;
+					}
+
+					$distanceSquared = $origin->distanceSquared($position);
+					if ($distanceSquared < $nearestDistanceSquared) {
+						$nearest = $block;
+						$nearestDistanceSquared = $distanceSquared;
+					}
+					// Positions come nearest first, so the rest of this type is farther
+					break 2;
+				}
+			}
+		}
+
+		return $nearest;
 	}
 
 	/**
