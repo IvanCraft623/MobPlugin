@@ -27,6 +27,7 @@ use IvanCraft623\MobPlugin\entity\ai\utils\DefaultPositionGenerator;
 use IvanCraft623\MobPlugin\entity\ai\utils\NearestBlockFinder;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
+use IvanCraft623\MobPlugin\entity\Pet;
 use IvanCraft623\MobPlugin\memory\Memories;
 use IvanCraft623\MobPlugin\memory\Occurrence;
 
@@ -97,6 +98,10 @@ class PanicGoal extends Goal {
 	}
 
 	public function start() : void{
+		if ($this->entity instanceof Pet) {
+			$this->entity->setSitting(false);
+		}
+
 		$this->entity->getNavigation()->moveToXYZ($this->target->x, $this->target->y, $this->target->z, $this->speedModifier);
 	}
 
