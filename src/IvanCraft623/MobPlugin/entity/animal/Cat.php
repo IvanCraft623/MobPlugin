@@ -47,8 +47,8 @@ use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Bed;
-use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\block\Chest;
 use pocketmine\block\Furnace;
 use pocketmine\block\tile\Chest as ChestTile;
 use pocketmine\entity\EntitySizeInfo;
@@ -150,14 +150,14 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 		$this->goalSelector->addGoal(3, new SitWhenOrderedGoal($this));
 		$this->goalSelector->addGoal(4, new FollowOwnerGoal($this, 1, 10, 2, 12));
 		$this->goalSelector->addGoal(7, new SitOnBlockGoal($this, 1, [
-			new BlockMatcher(BlockTypeIds::CHEST, static function(Block $block) : bool{
-				$position = $block->getPosition();
+			new BlockMatcher(BlockTypeIds::CHEST, static function(Chest $chest) : bool{
+				$position = $chest->getPosition();
 				$tile = $position->getWorld()->getTileAt($position->getFloorX(), $position->getFloorY(), $position->getFloorZ());
 
 				return !$tile instanceof ChestTile || count($tile->getInventory()->getViewers()) === 0;
 			}),
-			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Block $block) => $block instanceof Furnace && $block->isLit()),
-			new BlockMatcher(BlockTypeIds::BED, static fn(Block $block) => $block instanceof Bed && !$block->isHeadPart()),
+			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Furnace $furnace) => $furnace->isLit()),
+			new BlockMatcher(BlockTypeIds::BED, static fn(Bed $bed) => !$bed->isHeadPart()),
 		]));
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 8));

@@ -25,7 +25,6 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal\tame;
 
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\ai\utils\BlockMatcher;
-use IvanCraft623\MobPlugin\entity\ai\utils\NearestBlockFinder;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\entity\Pet;
 use pocketmine\block\Block;
@@ -52,14 +51,14 @@ class SitOnBlockGoal extends Goal{
 
 	private float $seatY; //top of the target block
 
-	/** @var non-empty-list<BlockMatcher> */
+	/** @var non-empty-list<BlockMatcher<*>> */
 	private array $seats;
 
 	/**
-	 * @param non-empty-list<BlockMatcher> $seats          the blocks that can be sat on
-	 * @param int                          $searchRange    blocks
-	 * @param int                          $searchHeight   blocks up and down
-	 * @param int                          $searchInterval ticks between searches, plus up to as many random ones
+	 * @param non-empty-list<BlockMatcher<*>> $seats        the blocks that can be sat on
+	 * @param int $searchRange    blocks
+	 * @param int $searchHeight   blocks up and down
+	 * @param int $searchInterval ticks between searches, plus up to as many random ones
 	 */
 	public function __construct(
 		private PathfinderMob&Pet $mob,
@@ -92,7 +91,7 @@ class SitOnBlockGoal extends Goal{
 		}
 		$this->waitTicks = $this->reducedTickDelay($this->searchInterval + $this->mob->getRandom()->nextBoundedInt($this->searchInterval));
 
-		$seat = NearestBlockFinder::findNearest($this->mob->getWorld(), $this->mob->getPosition(), $this->searchRange, $this->searchHeight, $this->seats);
+		$seat = BlockMatcher::find($this->mob->getWorld(), $this->mob->getPosition(), $this->searchRange, $this->searchHeight, ...$this->seats)->current();
 		if ($seat === null) {
 			return false;
 		}
