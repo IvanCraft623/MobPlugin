@@ -28,30 +28,24 @@ use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\math\Vector3;
 
-class MoveToWaterGoal extends Goal {
-
-	/** Average ticks between searches */
-	private const SEARCH_INTERVAL = 10;
+class MoveToWaterGoal extends MoveToBlockGoal {
 
 	protected Vector3 $water;
 
 	public function __construct(
-		protected PathfinderMob $entity,
+		PathfinderMob $entity,
 		protected float $speedModifier,
 		protected int $searchRange = 16,
 		protected int $searchHeight = 5
 	) {
-		$this->setFlags(Goal::FLAG_MOVE);
+		parent::__construct($entity);
 	}
 
-	public function canUse() : bool{
-		if (!$this->entity->isOnGround() ||
-			$this->entity->isInWater() ||
-			$this->entity->getRandom()->nextBoundedInt($this->reducedTickDelay(self::SEARCH_INTERVAL)) !== 0
-		) {
-			return false;
-		}
+	protected function canSearch() : bool{
+		return $this->entity->isOnGround() && !$this->entity->isInWater();
+	}
 
+	protected function findBlock() : bool{
 		$water = $this->findWater();
 		if ($water === null) {
 			return false;
