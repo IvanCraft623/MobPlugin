@@ -23,12 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
-use IvanCraft623\MobPlugin\inventory\MobInventory;
-
 /**
- * A mob that holds items in its hands and wears armor, see {@see EquipmentTrait}.
+ * A mob that also wears armor, see {@see EquipmentTrait}.
  */
-interface Equipped{
-
-	public function getInventory() : MobInventory;
+interface Equipped extends ItemCarrier{
 }
