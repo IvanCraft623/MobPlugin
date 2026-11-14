@@ -99,6 +99,20 @@ abstract class Living extends PMLiving {
 
 	protected function getInitialDragMultiplier() : float{ return 0.09; }
 
+	/**
+	 * @return float fraction of its horizontal speed it loses each tick
+	 */
+	public function getDrag() : float{
+		return $this->drag;
+	}
+
+	/**
+	 * @return float fraction of its vertical speed it loses each tick
+	 */
+	public function getVerticalDrag() : float{
+		return $this->verticalDrag;
+	}
+
 	protected function getInitialVerticalDragMultiplier() : float{ return 0.02; }
 
 	protected function getInitialWaterDragMultiplier() : float{ return 0.2; }

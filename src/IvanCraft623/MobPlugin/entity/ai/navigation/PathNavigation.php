@@ -167,9 +167,11 @@ final class PathNavigation {
 	}
 
 	/**
+	 * Asks for the path to a position without following it.
+	 *
 	 * @phpstan-return Promise<PathCursor>
 	 */
-	private function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
+	public function requestPathTo(Vector3 $position, int $reach, ?float $maxDistanceFromStart = null) : Promise{
 		CustomTimings::$pathRequest->startTiming();
 		$promise = $this->requester->request($this->locomotion->adjustTarget($this->mob, $position), $reach, $this->follower->getCursor(), $maxDistanceFromStart);
 		CustomTimings::$pathRequest->stopTiming();
