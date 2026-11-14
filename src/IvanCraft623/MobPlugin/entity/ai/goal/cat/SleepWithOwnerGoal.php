@@ -23,11 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal\cat;
 
+use Closure;
 use IvanCraft623\MobPlugin\bed\BedListener;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\entity\Pet;
-use IvanCraft623\MobPlugin\entity\SleepsWithOwner;
+use IvanCraft623\MobPlugin\entity\Sleepable;
 use pocketmine\block\Bed;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
@@ -56,14 +57,16 @@ class SleepWithOwnerGoal extends Goal{
 	private int $settleTicks = -1;
 
 	/**
-	 * @param int   $searchHeight blocks the cat may be above or below its owner
-	 * @param float $goalRadius   blocks from the bed's center that count as arrived
+	 * @param int              $searchHeight    blocks the cat may be above or below its owner
+	 * @param float            $goalRadius      blocks from the bed's center that count as arrived
+	 * @param Closure() : void $onWakeWithOwner called when the owner wakes up naturally while the cat is on the bed
 	 */
 	public function __construct(
-		private PathfinderMob&Pet&SleepsWithOwner $mob,
+		private PathfinderMob&Pet&Sleepable $mob,
 		private float $speedModifier,
 		private int $searchHeight,
-		private float $goalRadius
+		private float $goalRadius,
+		private Closure $onWakeWithOwner
 	){
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
@@ -82,7 +85,7 @@ class SleepWithOwnerGoal extends Goal{
 		$bed = $owner->getSpawn();
 		if ($bed->getWorld() !== $this->mob->getWorld() || !$bed->getWorld()->getBlock($bed) instanceof Bed ||
 			abs($owner->getPosition()->y - $this->mob->getPosition()->y) > $this->searchHeight ||
-			!BedListener::getInstance()->claim($bed, $this->mob)
+			!BedListener::getInstance()->claim($bed, $this->mob, $this->onWakeWithOwner)
 		) {
 			return false;
 		}
@@ -120,7 +123,7 @@ class SleepWithOwnerGoal extends Goal{
 
 	public function stop() : void{
 		$this->owner = null;
-		$this->mob->setResting(false);
+		$this->mob->setSleeping(false);
 		$this->mob->getNavigation()->stop();
 		BedListener::getInstance()->release($this->bed, $this->mob);
 	}
@@ -144,7 +147,7 @@ class SleepWithOwnerGoal extends Goal{
 		if ($this->settleTicks <= self::SETTLE_TICKS - self::TURN_TICKS) {
 			if ($this->settleTicks === 0) {
 				$this->mob->getNavigation()->stop();
-				$this->mob->setResting(true);
+				$this->mob->setSleeping(true);
 			}
 
 			return;

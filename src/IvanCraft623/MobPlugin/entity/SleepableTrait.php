@@ -23,17 +23,31 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use pocketmine\entity\Entity;
+
 /**
- * A pet that went to sleep on its owner's bed and is told when they wake up.
+ * Sleeping state. Each host shows it with its own metadata flag.
+ *
+ * @phpstan-require-extends Entity
+ * @phpstan-require-implements Sleepable
  */
-interface SleepsWithOwner{
+trait SleepableTrait{
+
+	private bool $sleeping = false;
+
+	public function isSleeping() : bool{
+		return $this->sleeping;
+	}
 
 	/**
-	 * Whether it is lying down on the bed.
+	 * @return $this
 	 */
-	public function isResting() : bool;
+	public function setSleeping(bool $sleeping) : static{
+		if ($this->sleeping !== $sleeping) {
+			$this->sleeping = $sleeping;
+			$this->networkPropertiesDirty = true;
+		}
 
-	public function setResting(bool $resting) : void;
-
-	public function onWakeWithOwner() : void;
+		return $this;
+	}
 }
