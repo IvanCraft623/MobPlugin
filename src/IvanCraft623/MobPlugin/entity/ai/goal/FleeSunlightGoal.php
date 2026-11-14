@@ -23,30 +23,16 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
-use IvanCraft623\MobPlugin\entity\PathfinderMob;
 use IvanCraft623\MobPlugin\utils\Utils;
 
-use pocketmine\math\Vector3;
-
-class FleeSunlightGoal extends Goal {
-
-	protected Vector3 $hidePosition;
-
-	public function __construct(protected PathfinderMob $entity, protected float $speedModifier) {
-		$this->setFlags(Goal::FLAG_MOVE);
-	}
+class FleeSunlightGoal extends FindCoverGoal {
 
 	public function canUse() : bool{
 		if ($this->entity->getTargetEntityId() !== null) {
 			return false;
 		}
 
-		$world = $this->entity->getWorld();
-		if (!Utils::isDaytime($world)) {
-			return false;
-		}
-
-		if (!Utils::isSkyVisible($world, $this->entity->getEyePos())) {
+		if (!Utils::isDaytime($this->entity->getWorld())) {
 			return false;
 		}
 
@@ -54,45 +40,10 @@ class FleeSunlightGoal extends Goal {
 			return false;
 		}
 
-		$pos = $this->getHidePosition();
-		if ($pos === null) {
-			return false;
-		}
-
-		$this->hidePosition = $pos;
-		return true;
+		return parent::canUse();
 	}
 
-	public function canContinueToUse() : bool{
-		return !$this->entity->getNavigation()->isDone();
-	}
-
-	public function start() : void{
-		$this->entity->getNavigation()->moveToXYZ($this->hidePosition->x, $this->hidePosition->y, $this->hidePosition->z, $this->speedModifier);
-	}
-
-	public function stop() : void{
-		parent::stop();
-
-		unset($this->hidePosition);
-	}
-
-	protected function getHidePosition() : ?Vector3{
-		$random = $this->entity->getRandom();
-		$entityPosition = $this->entity->getPosition();
-		$world = $this->entity->getWorld();
-
-		for ($i = 0; $i < 10; ++$i) {
-			$p = $entityPosition->add(
-				$random->nextBoundedInt(20) - 10,
-				$random->nextBoundedInt(6) - 3,
-				$random->nextBoundedInt(20) - 10
-			);
-			if (!Utils::isSkyVisible($world, $p) && $this->entity->getWalkTargetValue($p) < 0) {
-				return $p->floor()->add(0.5, 0, 0.5);
-			}
-		}
-
-		return null;
+	protected function isExposed() : bool{
+		return Utils::isSkyVisible($this->entity->getWorld(), $this->entity->getEyePos());
 	}
 }
