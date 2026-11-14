@@ -44,7 +44,8 @@ class PanicGoal extends Goal {
 
 	public function __construct(
 		protected PathfinderMob $entity,
-		protected float $speedModifier
+		protected float $speedModifier,
+		protected bool $preferWater = false
 	) {
 		$this->setFlags(Goal::FLAG_MOVE);
 	}
@@ -55,7 +56,7 @@ class PanicGoal extends Goal {
 		}
 
 		//Actually this behavior only happens in java, but it's a cool feature B)
-		if ($this->entity->isOnFire()) {
+		if ($this->preferWater || $this->entity->isOnFire()) {
 			$target = $this->lookForWater($this->entity, 5);
 			if ($target !== null) {
 				$this->target = $target;
