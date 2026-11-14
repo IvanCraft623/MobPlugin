@@ -27,12 +27,14 @@ use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\monster\Witch;
 
 use pocketmine\entity\effect\VanillaEffects;
+use pocketmine\item\Potion;
 use pocketmine\item\PotionType;
+use pocketmine\item\VanillaItems;
 
 /**
- * Drinks a potion that helps with what the witch is going through.
+ * Takes out a potion that helps with what the witch is going through; {@see ConsumeCarriedItemGoal} drinks it.
  */
-class DrinkPotionGoal extends Goal {
+class ChoosePotionToDrinkGoal extends Goal {
 
 	private const FAR_TARGET_DISTANCE_SQUARED = 121; //blocks squared
 
@@ -42,7 +44,7 @@ class DrinkPotionGoal extends Goal {
 	}
 
 	public function canUse() : bool{
-		if ($this->witch->isDrinking()) {
+		if ($this->witch->getInventory()->getItemInHand() instanceof Potion) {
 			return false;
 		}
 
@@ -56,11 +58,11 @@ class DrinkPotionGoal extends Goal {
 	}
 
 	public function start() : void{
-		$this->witch->startDrinking($this->potion);
+		$this->witch->getInventory()->setItemInHand(VanillaItems::POTION()->setType($this->potion));
 	}
 
 	public function canContinueToUse() : bool{
-		return $this->witch->isDrinking();
+		return false;
 	}
 
 	private function pickPotion() : ?PotionType{

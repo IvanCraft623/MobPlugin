@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\monster;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+use IvanCraft623\MobPlugin\entity\ai\goal\ConsumeCarriedItemGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
@@ -31,7 +32,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RangedAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\witch\DrinkPotionGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\witch\ChoosePotionToDrinkGoal;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\Equipped;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -50,8 +51,8 @@ use pocketmine\entity\Location;
 use pocketmine\entity\projectile\SplashPotion;
 use pocketmine\inventory\Inventory;
 use pocketmine\item\Item;
+use pocketmine\item\Potion;
 use pocketmine\item\PotionType;
-use pocketmine\item\VanillaItems;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
@@ -66,7 +67,6 @@ class Witch extends Monster implements Equipped, RangedAttackMob {
 	}
 
 	private const TARGET_RANGE = 10; //blocks
-	private const DRINK_TICKS = 32;
 	private const DRINKING_POTION_DROP_CHANCE = 0.085; //probability
 	private const DRINK_SLOWDOWN = 0.25; //movement speed lost while drinking
 	private const POTION_SPEED = 0.75; //blocks per tick
@@ -78,10 +78,6 @@ class Witch extends Monster implements Equipped, RangedAttackMob {
 	public static function getNetworkTypeId() : string {
 		return EntityIds::WITCH;
 	}
-
-	private ?PotionType $drinking = null;
-
-	private int $drinkTicks = 0;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
 		return new EntitySizeInfo(
@@ -126,7 +122,8 @@ class Witch extends Monster implements Equipped, RangedAttackMob {
 
 	protected function registerGoals() : void {
 		$this->goalSelector->addGoal(1, new FloatGoal($this));
-		$this->goalSelector->addGoal(1, new DrinkPotionGoal($this));
+		$this->goalSelector->addGoal(1, new ChoosePotionToDrinkGoal($this));
+		$this->goalSelector->addGoal(1, $this->createDrinkGoal());
 		$this->goalSelector->addGoal(2, new RangedAttackGoal($this, 1, 60, 60, 10));
 		$this->goalSelector->addGoal(4, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(5, new LookAtEntityGoal($this, Player::class, 16));
@@ -138,28 +135,36 @@ class Witch extends Monster implements Equipped, RangedAttackMob {
 		}
 	}
 
-	public function isDrinking() : bool {
-		return $this->drinking !== null;
-	}
-
-	public function startDrinking(PotionType $potion) : void {
-		$this->drinking = $potion;
-		$this->drinkTicks = self::DRINK_TICKS;
-		$this->getInventory()->setItemInHand(VanillaItems::POTION()->setType($potion));
-		$this->moveSpeedAttr->setValue(max(0.0, $this->getDefaultMovementSpeed() - self::DRINK_SLOWDOWN));
-	}
-
-	protected function tickState() : void {
-		parent::tickState();
-
-		if ($this->drinking !== null && --$this->drinkTicks <= 0) {
-			foreach ($this->drinking->getEffects() as $effect) {
-				$this->getEffects()->add($effect);
+	/**
+	 * Drinks the potion in hand while walking, slowed.
+	 */
+	private function createDrinkGoal() : ConsumeCarriedItemGoal {
+		return new class($this) extends ConsumeCarriedItemGoal {
+			public function __construct(private Witch $witch) {
+				parent::__construct($witch, Potion::class, consumeDuration: 32, residueAction: self::RESIDUE_DESTROY);
 			}
-			$this->drinking = null;
-			$this->getInventory()->setItemInHand(VanillaItems::AIR());
-			$this->moveSpeedAttr->setValue($this->getDefaultMovementSpeed());
-		}
+
+			public function start() : void {
+				parent::start();
+				$this->witch->setMovementSlowed(true);
+			}
+
+			public function stop() : void {
+				parent::stop();
+				$this->witch->setMovementSlowed(false);
+			}
+		};
+	}
+
+	/**
+	 * @internal for the goal that makes it drink
+	 */
+	public function setMovementSlowed(bool $slowed) : static {
+		$this->moveSpeedAttr->setValue(
+			$slowed ? max(0.0, $this->getDefaultMovementSpeed() - self::DRINK_SLOWDOWN) : $this->getDefaultMovementSpeed()
+		);
+
+		return $this;
 	}
 
 	public function performRangedAttack(Entity $target, float $force) : void {
