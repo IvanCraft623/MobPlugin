@@ -26,6 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\animal;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\EatableBlock;
 use IvanCraft623\MobPlugin\entity\ai\goal\EatBlockGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FollowParentGoal;
@@ -40,9 +41,12 @@ use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\sound\ShearSound;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\Block;
+use pocketmine\block\BlockTypeIds;
 use pocketmine\block\utils\Colored;
 use pocketmine\block\utils\ColoredTrait;
 use pocketmine\block\utils\DyeColor;
+use pocketmine\block\VanillaBlocks;
 use pocketmine\data\bedrock\DyeColorIdMap;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
@@ -113,7 +117,11 @@ class Sheep extends Animal implements Shearable, Colored{
 		$this->goalSelector->addGoal(2, new BreedGoal($this, 1));
 		$this->goalSelector->addGoal(3, new TemptGoal($this, 1.25, false));
 		$this->goalSelector->addGoal(4, new FollowParentGoal($this, 1.1));
-		$this->goalSelector->addGoal(5, new EatBlockGoal($this));
+		$this->goalSelector->addGoal(5, new EatBlockGoal($this, [
+			new EatableBlock(BlockTypeIds::GRASS, static fn() : Block => VanillaBlocks::DIRT()),
+			new EatableBlock(BlockTypeIds::TALL_GRASS, static fn() : Block => VanillaBlocks::AIR()),
+			new EatableBlock(BlockTypeIds::FERN, static fn() : Block => VanillaBlocks::AIR())
+		]));
 		$this->goalSelector->addGoal(6, new WaterAvoidingRandomStrollGoal($this, 0.8));
 		$this->goalSelector->addGoal(7, new LookAtEntityGoal($this, Player::class, 6));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
