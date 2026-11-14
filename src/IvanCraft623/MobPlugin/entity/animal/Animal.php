@@ -196,10 +196,13 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		(new MobSpawnEvent($offspring, MobSpawnCause::BREEDING))->call();
 		$offspring->spawnToAll();
 
-		$this->finalizeSpawnChildFromBreeding($partner, $offspring);
+		$this->finishBreeding($partner);
 	}
 
-	public function finalizeSpawnChildFromBreeding(Animal $partner, AgeableMob $offspring) : void{
+	/**
+	 * Puts both parents on their breeding cooldown and rewards the breeding with experience.
+	 */
+	protected function finishBreeding(Animal $partner) : void{
 		foreach ([$this, $partner] as $parent) {
 			$parent->setAge(self::PARENT_AGE_AFTER_BREEDING);
 			$parent->setInLoveTicks(0);
