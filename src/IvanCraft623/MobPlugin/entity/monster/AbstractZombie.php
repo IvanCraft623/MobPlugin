@@ -86,6 +86,7 @@ abstract class AbstractZombie extends Monster implements Ageable, Equipped, Item
 		EquipmentTrait::attackEntity as protected attackEntityWithHeldItem;
 	}
 
+	protected const UNSEEN_MEMORY = 340; //ticks a target it can't see is kept
 	private const ADULT_WATER_SPEED = 0.06; //acceleration
 	private const BABY_WATER_SPEED = 0.08; //acceleration
 	private const TAG_IS_BABY = "IsBaby"; //TAG_Byte
@@ -149,9 +150,17 @@ abstract class AbstractZombie extends Monster implements Ageable, Equipped, Item
 
 	protected function registerTargetGoals() : void {
 		$this->targetSelector->addGoal(1, new HurtByTargetGoal($this));
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal(entity: $this, targetType: Player::class, mustSee: true));
+		$this->targetSelector->addGoal(
+			2,
+			(new NearestAttackableGoal(entity: $this, targetType: Player::class, mustSee: true))->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
+
+		);
 		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: Villager::class, mustSee: false));
-		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
+		$this->targetSelector->addGoal(
+			3,
+			(new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true))
+				->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
+		);
 
 		//TODO: Attack baby turtles!
 		//$this->targetSelector->addGoal(5, new NearestAttackableGoal($this, Turtle::class, 10, true, false, fn($turtle) => $turtle->isBaby()));

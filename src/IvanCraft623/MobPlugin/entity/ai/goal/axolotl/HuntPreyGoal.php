@@ -33,6 +33,7 @@ class HuntPreyGoal extends NearestAttackableGoal{
 
 	public function __construct(private Axolotl $axolotl){
 		parent::__construct($axolotl, Squid::class, targetValidator: static fn(Living $prey) : bool => $prey->isUnderwater());
+		$this->setUnseenMemoryTicks(340);
 	}
 
 	public function canUse() : bool{

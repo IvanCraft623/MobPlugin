@@ -141,13 +141,13 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 	 * @phpstan-param class-string<Living> $type
 	 */
 	private function addTargetGoal(string $type, bool $mustSee) : void {
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal(
+		$this->targetSelector->addGoal(2, (new NearestAttackableGoal(
 			entity: $this,
 			targetType: $type,
 			mustSee: $mustSee,
 			targetValidator: fn(Living $target) : bool => self::isStandingInWater($target) || !Utils::isDaytime($this->getWorld()),
 			range: self::TARGET_RANGE
-		));
+		))->setUnseenMemoryTicks(self::UNSEEN_MEMORY));
 	}
 
 	private static function isStandingInWater(Living $entity) : bool {
