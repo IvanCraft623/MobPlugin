@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\animal\Cow;
 use IvanCraft623\MobPlugin\entity\animal\Goat;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Ocelot;
+use IvanCraft623\MobPlugin\entity\animal\Panda;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
@@ -95,6 +96,7 @@ final class DespawnRuleRegistry{
 			Goat::class,
 			MooshroomCow::class,
 			Ocelot::class,
+			Panda::class,
 			Pig::class,
 			PolarBear::class,
 			Rabbit::class,

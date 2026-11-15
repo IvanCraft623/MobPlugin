@@ -94,6 +94,7 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::TURTLE_SCUTE, ExtraVanillaItems::TURTLE_SCUTE(), ["turtle_scute"]);
 		self::registerSimpleItem(BlockTypeNames::SEAGRASS, ExtraVanillaItems::SEAGRASS(), ["seagrass"]);
 		self::registerSimpleItem(ItemTypeNames::TURTLE_SPAWN_EGG, ExtraVanillaItems::TURTLE_SPAWN_EGG(), ["turtle_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::PANDA_SPAWN_EGG, ExtraVanillaItems::PANDA_SPAWN_EGG(), ["panda_spawn_egg"]);
 	}
 
 	/**
