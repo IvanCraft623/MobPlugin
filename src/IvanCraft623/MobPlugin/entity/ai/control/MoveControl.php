@@ -85,7 +85,9 @@ abstract class MoveControl implements Control {
 	protected function jumpIfNeeded(float $dx, float $dy, float $dz) : void {
 		$inLiquid = Locomotion::isInLiquid($this->mob);
 		$minClimb = $inLiquid ? self::MIN_LIQUID_CLIMB : $this->mob->getStepHeight();
-		if ($dy > $minClimb && ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth())) {
+		//A wide mob can't get that close to what it has to climb, so being stopped by it counts as close
+		$close = ($dx ** 2) + ($dz ** 2) < max(1.0, $this->mob->getSize()->getWidth()) || $this->mob->isCollidedHorizontally;
+		if ($dy > $minClimb && $close) {
 			$this->mob->getJumpControl()->jump();
 			if (!$inLiquid) {
 				$this->operation = MoveOperation::JUMPING;
