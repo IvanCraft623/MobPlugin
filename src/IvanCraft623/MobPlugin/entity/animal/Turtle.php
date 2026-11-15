@@ -44,6 +44,7 @@ use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\EntitySizeInfo;
+use pocketmine\entity\Living;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\NBT;
@@ -216,6 +217,13 @@ class Turtle extends Animal{
 
 		$properties->setGenericFlag(EntityMetadataFlags::PREGNANT, $this->pregnant || $this->wantsToLayEgg);
 		$properties->setGenericFlag(EntityMetadataFlags::LAYING_EGG, $this->layingEgg);
+	}
+
+	/**
+	 * Whether predators go after it: a baby out of the water.
+	 */
+	public static function isBabyOnLand(Living $entity) : bool{
+		return $entity instanceof self && $entity->isBaby() && !$entity->isInWater();
 	}
 
 	public function reachedAgeBoundary() : void{

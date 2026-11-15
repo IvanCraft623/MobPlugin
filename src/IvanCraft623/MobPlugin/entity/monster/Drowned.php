@@ -36,6 +36,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\AmphibiousLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
+use IvanCraft623\MobPlugin\entity\animal\Turtle;
 use IvanCraft623\MobPlugin\entity\DoorBreaker;
 use IvanCraft623\MobPlugin\entity\DoorBreakerTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -133,8 +134,13 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 			$this->addTargetGoal($type, true);
 		}
 		$this->addTargetGoal(Villager::class, false);
-
-		//TODO: Attack baby turtles!
+		$this->targetSelector->addGoal(2, (new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			mustSee: true,
+			targetValidator: Turtle::isBabyOnLand(...),
+			range: self::TARGET_RANGE
+		))->setUnseenMemoryTicks(self::UNSEEN_MEMORY));
 	}
 
 	/**

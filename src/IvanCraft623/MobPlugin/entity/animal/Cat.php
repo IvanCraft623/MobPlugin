@@ -160,7 +160,13 @@ class Cat extends Feline implements Pet, Collared, Healable, Sleepable{
 		]));
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 8));
-		//TODO: Wild cats also hunt baby turtles!
+		$this->targetSelector->addGoal(1, new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			targetValidator: Turtle::isBabyOnLand(...),
+			condition: fn() => !$this->isTamed(),
+			range: 8
+		));
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{

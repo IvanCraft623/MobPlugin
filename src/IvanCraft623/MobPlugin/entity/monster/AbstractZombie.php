@@ -24,8 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\monster;
 
 use Closure;
-
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+
 use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\goal\DestroyEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
@@ -35,6 +35,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\animal\Turtle;
 use IvanCraft623\MobPlugin\entity\DoorBreaker;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\Equipped;
@@ -161,9 +162,11 @@ abstract class AbstractZombie extends Monster implements Ageable, Equipped, Item
 			(new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true))
 				->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
 		);
-
-		//TODO: Attack baby turtles!
-		//$this->targetSelector->addGoal(5, new NearestAttackableGoal($this, Turtle::class, 10, true, false, fn($turtle) => $turtle->isBaby()));
+		$this->targetSelector->addGoal(
+			3,
+			(new NearestAttackableGoal(entity: $this, targetType: Turtle::class, mustSee: true, targetValidator: Turtle::isBabyOnLand(...)))
+				->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
+		);
 	}
 
 	protected function onFirstUpdate(int $currentTick) : void{

@@ -78,7 +78,13 @@ class Ocelot extends Feline implements Trusting{
 		parent::registerGoals();
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Chicken::class, range: 8));
-		//TODO: Ocelots also hunt baby turtles, and an adult can spawn with two wild kittens!
+		$this->targetSelector->addGoal(1, new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			targetValidator: Turtle::isBabyOnLand(...),
+			range: 8
+		));
+		//TODO: An adult ocelot can spawn with two wild kittens!
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
