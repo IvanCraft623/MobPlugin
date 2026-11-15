@@ -91,6 +91,9 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::GOAT_SPAWN_EGG, ExtraVanillaItems::GOAT_SPAWN_EGG(), ["goat_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::WOLF_ARMOR, ExtraVanillaItems::WOLF_ARMOR(), ["wolf_armor"]);
 		self::registerSimpleItem(ItemTypeNames::ARMADILLO_SCUTE, ExtraVanillaItems::ARMADILLO_SCUTE(), ["armadillo_scute"]);
+		self::registerSimpleItem(ItemTypeNames::TURTLE_SCUTE, ExtraVanillaItems::TURTLE_SCUTE(), ["turtle_scute"]);
+		self::registerSimpleItem(BlockTypeNames::SEAGRASS, ExtraVanillaItems::SEAGRASS(), ["seagrass"]);
+		self::registerSimpleItem(ItemTypeNames::TURTLE_SPAWN_EGG, ExtraVanillaItems::TURTLE_SPAWN_EGG(), ["turtle_spawn_egg"]);
 	}
 
 	/**
