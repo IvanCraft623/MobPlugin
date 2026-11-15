@@ -27,6 +27,7 @@ enum MobSpawnCause{
 	case NATURAL;
 	case BUILT;
 	case BREEDING;
+	case HATCHING;
 	case SPLIT;
 	case SUMMONED;
 	case CONVERSION;
