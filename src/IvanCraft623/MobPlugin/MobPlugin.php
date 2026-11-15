@@ -38,6 +38,7 @@ use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Cat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
+use IvanCraft623\MobPlugin\entity\animal\Fox;
 use IvanCraft623\MobPlugin\entity\animal\Goat;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Ocelot;
@@ -151,6 +152,7 @@ class MobPlugin extends PluginBase {
 		Wolf::class,
 		Cat::class,
 		Ocelot::class,
+		Fox::class,
 		Goat::class,
 		Turtle::class,
 		Panda::class

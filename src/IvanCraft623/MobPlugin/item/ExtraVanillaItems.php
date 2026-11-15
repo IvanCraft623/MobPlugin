@@ -28,6 +28,7 @@ use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Cat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
+use IvanCraft623\MobPlugin\entity\animal\Fox;
 use IvanCraft623\MobPlugin\entity\animal\Goat;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Ocelot;
@@ -115,6 +116,7 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg CAT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg OCELOT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg GOAT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg FOX_SPAWN_EGG()
  * @method static WolfArmor WOLF_ARMOR()
  * @method static \pocketmine\item\Item ARMADILLO_SCUTE()
  * @method static \pocketmine\item\Item TURTLE_SCUTE()
@@ -189,6 +191,7 @@ final class ExtraVanillaItems{
 		self::register("cat_spawn_egg", new MobSpawnEgg(new IID(Ids::CAT_SPAWN_EGG()), "Cat Spawn Egg", Cat::class));
 		self::register("ocelot_spawn_egg", new MobSpawnEgg(new IID(Ids::OCELOT_SPAWN_EGG()), "Ocelot Spawn Egg", Ocelot::class));
 		self::register("goat_spawn_egg", new MobSpawnEgg(new IID(Ids::GOAT_SPAWN_EGG()), "Goat Spawn Egg", Goat::class));
+		self::register("fox_spawn_egg", new MobSpawnEgg(new IID(Ids::FOX_SPAWN_EGG()), "Fox Spawn Egg", Fox::class));
 		self::register("turtle_spawn_egg", new MobSpawnEgg(new IID(Ids::TURTLE_SPAWN_EGG()), "Turtle Spawn Egg", Turtle::class));
 		self::register("panda_spawn_egg", new MobSpawnEgg(new IID(Ids::PANDA_SPAWN_EGG()), "Panda Spawn Egg", Panda::class));
 	}

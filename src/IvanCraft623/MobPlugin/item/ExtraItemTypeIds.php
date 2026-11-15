@@ -79,6 +79,7 @@ use function preg_match;
  * @method static int SEAGRASS()
  * @method static int TURTLE_SPAWN_EGG()
  * @method static int PANDA_SPAWN_EGG()
+ * @method static int FOX_SPAWN_EGG()
  * @method static int GOAT_SPAWN_EGG()
  * @method static int WITCH_SPAWN_EGG()
  */
@@ -131,6 +132,7 @@ final class ExtraItemTypeIds{
 		self::register("wolf_spawn_egg");
 		self::register("cat_spawn_egg");
 		self::register("ocelot_spawn_egg");
+		self::register("fox_spawn_egg");
 		self::register("goat_spawn_egg");
 		self::register("wolf_armor");
 		self::register("armadillo_scute");

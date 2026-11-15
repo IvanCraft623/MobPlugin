@@ -81,6 +81,8 @@ abstract class Living extends PMLiving {
 
 	protected float $verticalDrag;
 
+	private bool $wasOnGroundBeforeMove = false; //whether it stood on the ground when this tick's move began
+
 	/** Fraction of the motion water takes away each tick, on every axis */
 	protected float $waterDrag;
 
@@ -182,6 +184,7 @@ abstract class Living extends PMLiving {
 		$this->timings->startTiming();
 
 		if($this->hasMovementUpdate()){
+			$this->wasOnGroundBeforeMove = $this->onGround;
 			$motionX = abs($this->motion->x) > self::MOTION_THRESHOLD ? $this->motion->x : 0;
 			$motionY = abs($this->motion->y) > self::MOTION_THRESHOLD ? $this->motion->y : 0;
 			$motionZ = abs($this->motion->z) > self::MOTION_THRESHOLD ? $this->motion->z : 0;
@@ -343,8 +346,10 @@ abstract class Living extends PMLiving {
 		}
 
 		//Water replaces the air drag and the friction of the floor
+		//The floor's friction depends on whether it stood on the ground before this tick's move: a jump or leap
+		//is dragged as a grounded step, and the tick it lands on is not
 		$xzFriction = $inWater ? 1 : 1 - $this->drag;
-		if($this->onGround && !$inWater){
+		if($this->wasOnGroundBeforeMove && !$inWater){
 			$xzFriction *= $this->getWorld()->getBlockAt(
 				(int) floor($this->location->x),
 				(int) floor($this->location->y - 1),
