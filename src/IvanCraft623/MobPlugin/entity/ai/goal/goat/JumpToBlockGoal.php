@@ -26,7 +26,7 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal\goat;
 use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
 use IvanCraft623\MobPlugin\entity\animal\Goat;
 use IvanCraft623\MobPlugin\sound\GoatJumpToBlockSound;
-use IvanCraft623\MobPlugin\libs\_c7b2bc3349bc5e96\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_9082f0cf01fb9e8d\IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Vector3;
 use function array_sum;
