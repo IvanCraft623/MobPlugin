@@ -62,7 +62,7 @@ class PickupItemsGoal extends Goal {
 	public function __construct(
 		protected PathfinderMob&ItemPickupCapable $entity,
 		protected float $speedMultiplier = 1.0,
-		protected float $goalRadius = 2,
+		protected float $goalRadius = 2, //blocks from the mob's body
 		protected float $maxDist = 8.0,
 		protected ?float $searchHeight = null,
 		protected ?int $cooldownAfterBeingAttacked = null,
@@ -204,7 +204,9 @@ class PickupItemsGoal extends Goal {
 			$this->entity->getNavigation()->moveToEntity($this->targetItem, $this->speedMultiplier);
 		}
 
-		if ($this->entity->getLocation()->distanceSquared($this->targetItem->getLocation()) <= $this->goalRadius * $this->goalRadius) {
+		//Measured from the mob's body, not its centre: a wide mob stops walking with the item in front of it
+		$reach = $this->entity->getBoundingBox()->expandedCopy($this->goalRadius, 0.5, $this->goalRadius);
+		if ($reach->isVectorInside($this->targetItem->getPosition()->add(0, $this->targetItem->size->getHeight() / 2, 0))) {
 			$this->entity->pickupItem($this->targetItem, min($this->wantedCount, $this->targetItem->getItem()->getCount()));
 			$this->targetItem = null;
 		}
