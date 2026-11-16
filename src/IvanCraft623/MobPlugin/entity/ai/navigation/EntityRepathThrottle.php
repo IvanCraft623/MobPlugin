@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_9082f0cf01fb9e8d\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_b6c6bbd2999f1cae\IvanCraft623\Pathfinder\PathCursor;
 
 /**
  * Keeps goals that chase an entity from requesting a path every tick.
