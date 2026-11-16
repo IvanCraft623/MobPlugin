@@ -23,12 +23,12 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity;
 
+use pocketmine\player\Player;
+
 /**
- * A mob that stops avoiding players once it trusts them.
+ * A mob that stops avoiding the players it trusts.
  */
 interface Trusting{
 
-	public function isTrusting() : bool;
-
-	public function setTrusting(bool $trusting) : void;
+	public function isTrusting(Player $player) : bool;
 }

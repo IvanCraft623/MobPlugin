@@ -34,6 +34,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RangedBowAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\animal\Turtle;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\Equipped;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -44,7 +45,7 @@ use IvanCraft623\MobPlugin\entity\monster\Monster;
 use IvanCraft623\MobPlugin\entity\RangedAttackMob;
 use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_c7b2bc3349bc5e96\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
@@ -115,7 +116,12 @@ abstract class AbstractSkeleton extends Monster implements Equipped, RangedAttac
 		$this->targetSelector->addGoal(1, $this->hurtByTargetGoal = new HurtByTargetGoal($this));
 		$this->targetSelector->addGoal(2, new NearestAttackableGoal(entity: $this, targetType: Player::class, mustSee: true));
 		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
-		//TODO: attack baby turtles
+		$this->targetSelector->addGoal(3, new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			mustSee: true,
+			targetValidator: Turtle::isBabyOnLand(...)
+		));
 
 		$this->bowAttackGoal = new RangedBowAttackGoal($this, 1, static::MIN_ATTACK_INTERVAL, static::MAX_ATTACK_INTERVAL, 15);
 		$this->meleeAttackGoal = new MeleeAttackGoal($this, 1.25);

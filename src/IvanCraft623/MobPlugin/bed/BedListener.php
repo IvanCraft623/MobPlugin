@@ -23,7 +23,8 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\bed;
 
-use IvanCraft623\MobPlugin\entity\SleepsWithOwner;
+use Closure;
+use IvanCraft623\MobPlugin\entity\Sleepable;
 use pocketmine\block\Bed;
 use pocketmine\block\Block;
 use pocketmine\entity\Entity;
@@ -40,31 +41,36 @@ use pocketmine\world\World;
 final class BedListener implements Listener{
 	use SingletonTrait;
 
-	/** @var array<int, array<int, Entity&SleepsWithOwner>> pet by world id and bed block hash */
+	/**
+	 * @var array<int, array<int, array{Entity&Sleepable, Closure() : void}>>
+	 *      pet and what to do when its owner wakes, by world id and bed block hash
+	 */
 	private array $claims = [];
 
 	/**
 	 * Gives the bed to the pet, unless another pet has it.
 	 *
+	 * @param Closure() : void $onWakeWithOwner called when the owner wakes up naturally
+	 *
 	 * @return bool whether the pet has the bed
 	 */
-	public function claim(Position $bed, Entity&SleepsWithOwner $pet) : bool{
+	public function claim(Position $bed, Entity&Sleepable $pet, Closure $onWakeWithOwner) : bool{
 		$worldId = $bed->getWorld()->getId();
 		$hash = World::blockHash($bed->getFloorX(), $bed->getFloorY(), $bed->getFloorZ());
-		$claimant = $this->claims[$worldId][$hash] ?? null;
+		$claimant = $this->claims[$worldId][$hash][0] ?? null;
 		if ($claimant !== null && $claimant !== $pet && !$claimant->isClosed()) {
 			return false;
 		}
 
-		$this->claims[$worldId][$hash] = $pet;
+		$this->claims[$worldId][$hash] = [$pet, $onWakeWithOwner];
 
 		return true;
 	}
 
-	public function release(Position $bed, Entity&SleepsWithOwner $pet) : void{
+	public function release(Position $bed, Entity&Sleepable $pet) : void{
 		$worldId = $bed->getWorld()->getId();
 		$hash = World::blockHash($bed->getFloorX(), $bed->getFloorY(), $bed->getFloorZ());
-		if (($this->claims[$worldId][$hash] ?? null) === $pet) {
+		if (($this->claims[$worldId][$hash][0] ?? null) === $pet) {
 			unset($this->claims[$worldId][$hash]);
 		}
 	}
@@ -76,10 +82,10 @@ final class BedListener implements Listener{
 		$bed = $event->getBed()->getPosition();
 		$worldId = $bed->getWorld()->getId();
 		$hash = World::blockHash($bed->getFloorX(), $bed->getFloorY(), $bed->getFloorZ());
-		$pet = $this->claims[$worldId][$hash] ?? null;
+		$claim = $this->claims[$worldId][$hash] ?? null;
 		unset($this->claims[$worldId][$hash]);
-		if ($pet !== null && !$pet->isClosed() && self::isNaturalWake($event->getPlayer(), $event->getBed())) {
-			$pet->onWakeWithOwner();
+		if ($claim !== null && !$claim[0]->isClosed() && self::isNaturalWake($event->getPlayer(), $event->getBed())) {
+			$claim[1]();
 		}
 	}
 

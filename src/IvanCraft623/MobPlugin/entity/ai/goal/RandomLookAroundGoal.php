@@ -25,36 +25,49 @@ namespace IvanCraft623\MobPlugin\entity\ai\goal;
 
 use IvanCraft623\MobPlugin\entity\Mob;
 use function cos;
+use function deg2rad;
 use function sin;
-use const M_PI;
 
+/**
+ * Looks in a random direction now and then, within an angle of the way it was facing.
+ */
 class RandomLookAroundGoal extends Goal {
 
-	protected float $relX;
+	protected float $baseYaw = 0.0; //degrees, the way it was facing when it started
 
-	protected float $relZ;
+	protected float $targetYaw = 0.0; //degrees, the way it is looking now
 
-	protected int $lookTime;
+	protected int $lookTicksLeft = 0; //ticks left of the current look
 
-	public function __construct(protected Mob $entity) {
+	/**
+	 * @param float $probability chance, out of 1 per check, of starting to look around
+	 * @param int   $minLookTime least ticks a look lasts, the most is one less than $maxLookTime
+	 * @param int   $maxLookTime see $minLookTime
+	 * @param float $minAngle    degrees, least a look turns from where it faced when it started
+	 * @param float $maxAngle    degrees, most a look turns from where it faced when it started
+	 */
+	public function __construct(
+		protected Mob $entity,
+		protected float $probability = 0.02,
+		protected int $minLookTime = 20,
+		protected int $maxLookTime = 40,
+		protected float $minAngle = -180.0,
+		protected float $maxAngle = 180.0
+	) {
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK);
 	}
 
 	public function canUse() : bool{
-		return $this->entity->getRandom()->nextFloat() < 0.02;
+		return $this->entity->getRandom()->nextFloat() < $this->probability;
 	}
 
 	public function canContinueToUse() : bool{
-		return $this->lookTime >= 0;
+		return $this->lookTicksLeft >= 0;
 	}
 
 	public function start() : void{
-		$randomRadians = M_PI * 2 * $this->entity->getRandom()->nextFloat();
-
-		$this->relX = cos($randomRadians);
-		$this->relZ = sin($randomRadians);
-
-		$this->lookTime = 20 + $this->entity->getRandom()->nextBoundedInt(20);
+		$this->baseYaw = $this->entity->getLocation()->getYaw();
+		$this->pickLook();
 	}
 
 	public function requiresUpdateEveryTick() : bool{
@@ -62,8 +75,18 @@ class RandomLookAroundGoal extends Goal {
 	}
 
 	public function tick() : void{
-		$this->lookTime--;
+		--$this->lookTicksLeft;
 
-		$this->entity->getLookControl()->setLookAt($this->entity->getEyePos()->add($this->relX, 0, $this->relZ));
+		$yaw = deg2rad($this->targetYaw);
+		$this->entity->getLookControl()->setLookAt($this->entity->getEyePos()->add(-sin($yaw), 0, cos($yaw)));
+	}
+
+	protected function pickLook() : void{
+		$random = $this->entity->getRandom();
+
+		$this->targetYaw = $this->baseYaw + $this->minAngle + $random->nextFloat() * ($this->maxAngle - $this->minAngle);
+		$this->lookTicksLeft = $this->minLookTime + (
+			$this->maxLookTime > $this->minLookTime ? $random->nextBoundedInt($this->maxLookTime - $this->minLookTime) : 0
+		);
 	}
 }

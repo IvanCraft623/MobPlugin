@@ -27,7 +27,6 @@ use IvanCraft623\MobPlugin\entity\animal\Animal;
 use IvanCraft623\MobPlugin\entity\animation\EatBlockAnimation;
 
 use pocketmine\block\Block;
-use pocketmine\block\VanillaBlocks;
 use pocketmine\world\particle\BlockBreakParticle;
 use function max;
 
@@ -35,47 +34,21 @@ class EatBlockGoal extends Goal {
 
 	public const EAT_ANIMATION_TICKS = 40;
 
-	/** @var array<int, Block> */
-	private static array $eatableBlocks;
-
-	/** @var array<int, Block> */
-	private static array $eatableBlockReplacers;
-
-	private static function initEatableBlocks() : void{
-		if (!isset(self::$eatableBlocks)) {
-			self::addEatableBlock(VanillaBlocks::GRASS(), VanillaBlocks::DIRT());
-			self::addEatableBlock(VanillaBlocks::TALL_GRASS(), VanillaBlocks::AIR());
-			self::addEatableBlock(VanillaBlocks::FERN(), VanillaBlocks::AIR());
-		}
-	}
-
-	public static function addEatableBlock(Block $block, Block $replacer) : void{
-		$id = $block->getStateId();
-		self::$eatableBlocks[$id] = $block;
-		self::$eatableBlockReplacers[$id] = $replacer;
-	}
-
-	public static function isEatable(Block $block) : bool{
-		self::initEatableBlocks();
-
-		return isset(self::$eatableBlocks[$block->getStateId()]);
-	}
-
-	public static function getEatableReplacer(Block $block) : Block{
-		self::initEatableBlocks();
-
-		if (!self::isEatable($block)) {
-			throw new \InvalidArgumentException("Block provided is not eatable");
-		}
-
-		return clone self::$eatableBlockReplacers[$block->getStateId()];
-	}
+	/** @var array<int, EatableBlock<*>> block type id => what it becomes once eaten */
+	private array $eatables = [];
 
 	private int $eatAnimationTick = 0;
 
+	/**
+	 * @param non-empty-list<EatableBlock<*>> $eatables
+	 */
 	public function __construct(
-		protected Animal $entity
+		protected Animal $entity,
+		array $eatables
 	) {
+		foreach ($eatables as $eatable) {
+			$this->eatables[$eatable->getMatcher()->getTypeId()] = $eatable;
+		}
 		$this->setFlags(Goal::FLAG_MOVE, Goal::FLAG_LOOK, Goal::FLAG_JUMP);
 	}
 
@@ -84,7 +57,7 @@ class EatBlockGoal extends Goal {
 			return false;
 		}
 
-		return $this->findEatableBlock() !== null;
+		return $this->findEatable() !== null;
 	}
 
 	public function start() : void{
@@ -109,25 +82,30 @@ class EatBlockGoal extends Goal {
 	public function tick() : void{
 		$this->eatAnimationTick = max($this->eatAnimationTick - 1, 0);
 		if ($this->eatAnimationTick === $this->adjustedTickDelay(4)) {
-			$block = $this->findEatableBlock();
-			if ($block !== null) {
+			$found = $this->findEatable();
+			if ($found !== null) {
+				[$block, $eaten] = $found;
 				$world = $this->entity->getWorld();
 				$world->addParticle($this->entity->getPosition()->floor()->add(0.5, 0.5, 0.5), new BlockBreakParticle($block));
 
-				$world->setBlock($block->getPosition(), self::getEatableReplacer($block));
+				$world->setBlock($block->getPosition(), $eaten);
 
 				$this->entity->onEat();
 			}
 		}
 	}
 
-	public function findEatableBlock() : ?Block{
+	/**
+	 * @return array{Block, Block}|null the block it stands on or in, and what it becomes once eaten
+	 */
+	private function findEatable() : ?array{
 		$world = $this->entity->getWorld();
 		$pos = $this->entity->getPosition();
 		foreach ([$pos, $pos->down()] as $position) {
 			$block = $world->getBlock($position);
-			if (self::isEatable($block)) {
-				return $block;
+			$eaten = ($this->eatables[$block->getTypeId()] ?? null)?->getEaten($block);
+			if ($eaten !== null) {
+				return [$block, $eaten];
 			}
 		}
 

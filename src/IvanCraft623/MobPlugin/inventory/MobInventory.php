@@ -34,8 +34,11 @@ class MobInventory extends SimpleInventory {
 
 	private Living $holder;
 
-	public function __construct(Living $holder) {
-		parent::__construct(2);
+	/**
+	 * @param int $size 1 for a mob that only carries something in its hand, 2 for one with an offhand too
+	 */
+	public function __construct(Living $holder, int $size = 2) {
+		parent::__construct($size);
 		$this->holder = $holder;
 	}
 

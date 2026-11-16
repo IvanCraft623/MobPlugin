@@ -32,7 +32,7 @@ use IvanCraft623\MobPlugin\event\MobFeedEvent;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_c7b2bc3349bc5e96\IvanCraft623\Pathfinder\BlockPathType;
 use pocketmine\block\BlockTypeIds;
 use pocketmine\entity\animation\ConsumingItemAnimation;
 use pocketmine\entity\Living;
@@ -196,10 +196,13 @@ abstract class Animal extends AgeableMob implements Feedable, Lureable{
 		(new MobSpawnEvent($offspring, MobSpawnCause::BREEDING))->call();
 		$offspring->spawnToAll();
 
-		$this->finalizeSpawnChildFromBreeding($partner, $offspring);
+		$this->finishBreeding($partner);
 	}
 
-	public function finalizeSpawnChildFromBreeding(Animal $partner, AgeableMob $offspring) : void{
+	/**
+	 * Puts both parents on their breeding cooldown and rewards the breeding with experience.
+	 */
+	protected function finishBreeding(Animal $partner) : void{
 		foreach ([$this, $partner] as $parent) {
 			$parent->setAge(self::PARENT_AGE_AFTER_BREEDING);
 			$parent->setInLoveTicks(0);

@@ -26,9 +26,5 @@ namespace IvanCraft623\MobPlugin\entity;
 /**
  * A tameable mob that stays with its owner and sits when the owner orders it to.
  */
-interface Pet extends Tameable{
-
-	public function isSitting() : bool;
-
-	public function setSitting(bool $sitting) : void;
+interface Pet extends Tameable, Sittable{
 }

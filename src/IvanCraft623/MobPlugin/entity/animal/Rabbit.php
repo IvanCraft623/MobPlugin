@@ -29,11 +29,12 @@ use IvanCraft623\MobPlugin\entity\AgeableMob;
 use IvanCraft623\MobPlugin\entity\ai\control\MoveControl;
 use IvanCraft623\MobPlugin\entity\ai\goal\AvoidEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\BreedGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\EatableBlock;
 use IvanCraft623\MobPlugin\entity\ai\goal\FloatGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\FollowParentGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PanicGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\rabbit\RaidGardenGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\RaidGardenGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\TemptGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\WaterAvoidingRandomStrollGoal;
 use IvanCraft623\MobPlugin\entity\animal\rabbit\RabbitMoveControl;
@@ -43,10 +44,13 @@ use IvanCraft623\MobPlugin\entity\monster\Slime;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\spawning\BiomeTagMap;
+use IvanCraft623\MobPlugin\utils\Utils;
 
-use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_c7b2bc3349bc5e96\IvanCraft623\Pathfinder\BlockPathType;
 
+use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\block\Carrot;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\item\Item;
@@ -127,7 +131,14 @@ class Rabbit extends Animal {
 		$this->goalSelector->addGoal(4, new AvoidEntityGoal($this, [Player::class], 8, 1.5, 1.8));
 		//TODO: Avoid wolves!
 		$this->goalSelector->addGoal(4, new AvoidEntityGoal($this, [Monster::class, Slime::class], 4, 1.5, 1.5));
-		$this->goalSelector->addGoal(5, new RaidGardenGoal($this, 0.6));
+		$this->goalSelector->addGoal(5, new RaidGardenGoal($this, 0.6, [
+			new EatableBlock(
+				BlockTypeIds::CARROTS,
+				//TODO: vanilla leaves an eaten carrot at some growth stage, not necessarily 0
+				static fn(Carrot $carrot) : Block => $carrot->setAge(0),
+				static fn(Carrot $carrot) : bool => $carrot->getAge() === Carrot::MAX_AGE
+			)
+		]));
 		$this->goalSelector->addGoal(6, new FollowParentGoal($this, 1.1));
 		$this->goalSelector->addGoal(6, new WaterAvoidingRandomStrollGoal($this, 0.6));
 		$this->goalSelector->addGoal(11, new LookAtEntityGoal($this, Player::class, 10));
@@ -159,9 +170,7 @@ class Rabbit extends Animal {
 		$y = $this->location->getFloorY();
 		$z = $this->location->getFloorZ();
 
-		if ($world->getBlockAt($x, $y, $z)->getTypeId() === BlockTypeIds::SNOW_LAYER ||
-			$world->getBlockAt($x, $y - 1, $z)->getTypeId() === BlockTypeIds::SNOW
-		) {
+		if (Utils::isSnowCovered($world, $x, $y, $z)) {
 			return RabbitCoat::getRandomSnow();
 		}
 

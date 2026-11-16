@@ -24,6 +24,8 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ambient;
 
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+use IvanCraft623\MobPlugin\entity\Sleepable;
+use IvanCraft623\MobPlugin\entity\SleepableTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\utils\Utils;
 
@@ -41,15 +43,14 @@ use function count;
 use function floor;
 use const M_PI;
 
-class Bat extends Ambient {
+class Bat extends Ambient implements Sleepable {
+	use SleepableTrait;
 
 	public const WAKEUP_DISTANCE = 4;
 
-	private const TAG_RESTING = "BatFlags"; //TAG_Byte
+	private const TAG_SLEEPING = "BatFlags"; //TAG_Byte
 
 	protected ?Vector3 $target = null;
-
-	protected bool $isResting = false;
 
 	public static function getNetworkTypeId() : string{ return EntityIds::BAT; }
 
@@ -74,13 +75,13 @@ class Bat extends Ambient {
 	protected function initEntity(CompoundTag $nbt) : void{
 		parent::initEntity($nbt);
 
-		$this->isResting = $nbt->getByte(self::TAG_RESTING, 0) !== 0;
+		$this->setSleeping($nbt->getByte(self::TAG_SLEEPING, 0) !== 0);
 	}
 
 	public function saveNBT() : CompoundTag{
 		$nbt = parent::saveNBT();
 
-		$nbt->setByte(self::TAG_RESTING, $this->isResting() ? 1 : 0);
+		$nbt->setByte(self::TAG_SLEEPING, $this->isSleeping() ? 1 : 0);
 
 		return $nbt;
 	}
@@ -88,26 +89,11 @@ class Bat extends Ambient {
 	protected function syncNetworkData(EntityMetadataCollection $properties) : void{
 		parent::syncNetworkData($properties);
 
-		$properties->setGenericFlag(EntityMetadataFlags::RESTING, $this->isResting());
-	}
-
-	public function isResting() : bool{
-		return $this->isResting;
-	}
-
-	/**
-	 * @return $this
-	 */
-	public function setResting(bool $resting) : self{
-		$this->isResting = $resting;
-
-		$this->networkPropertiesDirty = true;
-
-		return $this;
+		$properties->setGenericFlag(EntityMetadataFlags::RESTING, $this->isSleeping()); //bedrock shows a sleeping bat as resting
 	}
 
 	protected function tryChangeMovement() : void{
-		if (!$this->isResting()) {
+		if (!$this->isSleeping()) {
 			$this->motion = new Vector3($this->motion->x, $this->motion->y * 0.6, $this->motion->z);
 		}
 
@@ -117,7 +103,7 @@ class Bat extends Ambient {
 	protected function entityBaseTick(int $tickDiff = 1) : bool{
 		$hasUpdate = parent::entityBaseTick($tickDiff);
 
-		if ($this->isResting()) {
+		if ($this->isSleeping()) {
 			$this->motion = Vector3::zero();
 			$this->setPosition(new Vector3(
 				$this->location->x,
@@ -132,9 +118,9 @@ class Bat extends Ambient {
 	protected function tickState() : void{
 		parent::tickState();
 
-		if ($this->isResting()) {
-			if (!$this->canRest()) {
-				$this->setResting(false);
+		if ($this->isSleeping()) {
+			if (!$this->canSleep()) {
+				$this->setSleeping(false);
 			} elseif ($this->random->nextBoundedInt(200) === 0) {
 				$this->setRotation($this->random->nextBoundedInt(360), $this->location->pitch);
 			}
@@ -164,13 +150,13 @@ class Bat extends Ambient {
 			$yawDiff = Utils::wrapDegrees($newYaw - $this->location->yaw);
 			$this->setRotation($newYaw, $this->location->pitch);
 
-			if ($this->random->nextBoundedInt(100) === 0 && $this->canRest()) {
-				$this->setResting(true);
+			if ($this->random->nextBoundedInt(100) === 0 && $this->canSleep()) {
+				$this->setSleeping(true);
 			}
 		}
 	}
 
-	protected function canRest() : bool{
+	protected function canSleep() : bool{
 		$world = $this->getWorld();
 		if (!$world->getBlockAt($this->location->getFloorX(), $this->location->getFloorY() + 1, $this->location->getFloorZ())->isFullCube()) {
 			return false;
@@ -187,7 +173,7 @@ class Bat extends Ambient {
 		parent::attack($source);
 
 		if (!$source->isCancelled()) {
-			$this->setResting(false);
+			$this->setSleeping(false);
 		}
 	}
 

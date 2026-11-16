@@ -24,17 +24,18 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\monster;
 
 use Closure;
-
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
+
 use IvanCraft623\MobPlugin\entity\AgeableMob;
-use IvanCraft623\MobPlugin\entity\ai\goal\DestroyEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PickupItemsGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\StompTurtleEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
+use IvanCraft623\MobPlugin\entity\animal\Turtle;
 use IvanCraft623\MobPlugin\entity\DoorBreaker;
 use IvanCraft623\MobPlugin\entity\EquipmentTrait;
 use IvanCraft623\MobPlugin\entity\Equipped;
@@ -46,7 +47,7 @@ use IvanCraft623\MobPlugin\entity\WearableHeadMob;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\utils\Utils;
-use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_c7b2bc3349bc5e96\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\BlockTypeIds;
 use pocketmine\block\MobHead;
@@ -86,6 +87,7 @@ abstract class AbstractZombie extends Monster implements Ageable, Equipped, Item
 		EquipmentTrait::attackEntity as protected attackEntityWithHeldItem;
 	}
 
+	protected const UNSEEN_MEMORY = 340; //ticks a target it can't see is kept
 	private const ADULT_WATER_SPEED = 0.06; //acceleration
 	private const BABY_WATER_SPEED = 0.08; //acceleration
 	private const TAG_IS_BABY = "IsBaby"; //TAG_Byte
@@ -142,19 +144,29 @@ abstract class AbstractZombie extends Monster implements Ageable, Equipped, Item
 	protected function registerBehaviorGoals() : void {
 		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(7, new RandomStrollGoal($this, 1));
-		//$this->goalSelector->addGoal(4, new DestroyEggGoal($this, 1.0, 3)); //TODO!
+		$this->goalSelector->addGoal(5, new StompTurtleEggGoal($this));
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
 	}
 
 	protected function registerTargetGoals() : void {
 		$this->targetSelector->addGoal(1, new HurtByTargetGoal($this));
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal(entity: $this, targetType: Player::class, mustSee: true));
-		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: Villager::class, mustSee: false));
-		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true));
+		$this->targetSelector->addGoal(
+			2,
+			(new NearestAttackableGoal(entity: $this, targetType: Player::class, mustSee: true))->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
 
-		//TODO: Attack baby turtles!
-		//$this->targetSelector->addGoal(5, new NearestAttackableGoal($this, Turtle::class, 10, true, false, fn($turtle) => $turtle->isBaby()));
+		);
+		$this->targetSelector->addGoal(3, new NearestAttackableGoal(entity: $this, targetType: Villager::class, mustSee: false));
+		$this->targetSelector->addGoal(
+			3,
+			(new NearestAttackableGoal(entity: $this, targetType: IronGolem::class, mustSee: true))
+				->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
+		);
+		$this->targetSelector->addGoal(
+			3,
+			(new NearestAttackableGoal(entity: $this, targetType: Turtle::class, mustSee: true, targetValidator: Turtle::isBabyOnLand(...)))
+				->setUnseenMemoryTicks(self::UNSEEN_MEMORY)
+		);
 	}
 
 	protected function onFirstUpdate(int $currentTick) : void{

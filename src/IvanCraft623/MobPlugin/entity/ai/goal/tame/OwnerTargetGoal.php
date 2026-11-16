@@ -23,36 +23,22 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\goal\tame;
 
-use IvanCraft623\MobPlugin\entity\ai\goal\Goal;
-use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
-use IvanCraft623\MobPlugin\entity\ai\goal\target\TargetGoal;
-use IvanCraft623\MobPlugin\entity\ai\targeting\TargetingConditions;
+use IvanCraft623\MobPlugin\entity\ai\goal\target\FightTargetGoal;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\Pet;
 use IvanCraft623\MobPlugin\memory\Memories;
-use IvanCraft623\MobPlugin\memory\Memory;
 use IvanCraft623\MobPlugin\memory\Occurrence;
-use pocketmine\entity\Living;
 
 /**
  * Targets what the owner remembers of its last fight, once per fight, while the pet stands.
  */
-abstract class OwnerTargetGoal extends TargetGoal{
-
-	private TargetingConditions $targetingConditions;
-
-	private int $lastTick = -1; //server tick of the fight already answered
-
-	private ?Memory $pending = null; //the fight that is about to start
+abstract class OwnerTargetGoal extends FightTargetGoal{
 
 	protected function __construct(
 		private Mob&Pet $pet,
 		private Occurrence $occurrence
 	){
-		parent::__construct($pet, false);
-
-		$this->targetingConditions = HurtByTargetGoal::HURT_BY_TARGETING();
-		$this->setFlags(Goal::FLAG_TARGET);
+		parent::__construct($pet);
 	}
 
 	public function canUse() : bool{
@@ -61,33 +47,7 @@ abstract class OwnerTargetGoal extends TargetGoal{
 		}
 
 		$owner = $this->pet->getOwningEntity();
-		if ($owner === null) {
-			return false;
-		}
 
-		$memory = Memories::getInstance()->latest($owner, $this->occurrence, Mob::HURT_BY_MEMORY_TICKS);
-		if ($memory === null || $memory->getTick() === $this->lastTick) {
-			return false;
-		}
-
-		$target = $memory->getEntity();
-		if (!$target instanceof Living || !$this->canAttack($target, $this->targetingConditions)) {
-			return false;
-		}
-
-		$this->target = $target;
-		$this->pending = $memory;
-
-		return true;
-	}
-
-	public function start() : void{
-		/** @var Memory $fight */
-		$fight = $this->pending;
-
-		$this->lastTick = $fight->getTick();
-		$this->entity->setTargetEntity($this->target);
-
-		parent::start();
+		return $owner !== null && $this->answer(Memories::getInstance()->latest($owner, $this->occurrence, Mob::HURT_BY_MEMORY_TICKS));
 	}
 }

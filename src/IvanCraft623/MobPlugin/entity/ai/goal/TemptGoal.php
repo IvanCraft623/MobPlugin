@@ -89,7 +89,7 @@ class TemptGoal extends Goal {
 	}
 
 	public function canContinueToUse() : bool{
-		if ($this->canScare()) {
+		if ($this->canScare($this->player)) {
 			$pLocation = $this->player->getLocation();
 			if ($this->entity->getPosition()->distanceSquared($pLocation) < 36) {
 				if ($pLocation->distanceSquared($this->lastPlayerLocation) > 0.01) {
@@ -112,7 +112,7 @@ class TemptGoal extends Goal {
 		return $this->canUse();
 	}
 
-	protected function canScare() : bool{
+	protected function canScare(Player $player) : bool{
 		return $this->canScare;
 	}
 

@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\item;
 
+use pocketmine\data\bedrock\block\BlockTypeNames;
 use pocketmine\data\bedrock\item\ItemTypeNames;
 use pocketmine\data\bedrock\item\SavedItemData;
 use pocketmine\item\Item;
@@ -87,8 +88,14 @@ final class ExtraItemRegisterHelper{
 		self::registerSimpleItem(ItemTypeNames::WOLF_SPAWN_EGG, ExtraVanillaItems::WOLF_SPAWN_EGG(), ["wolf_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::CAT_SPAWN_EGG, ExtraVanillaItems::CAT_SPAWN_EGG(), ["cat_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::OCELOT_SPAWN_EGG, ExtraVanillaItems::OCELOT_SPAWN_EGG(), ["ocelot_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::GOAT_SPAWN_EGG, ExtraVanillaItems::GOAT_SPAWN_EGG(), ["goat_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::FOX_SPAWN_EGG, ExtraVanillaItems::FOX_SPAWN_EGG(), ["fox_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::WOLF_ARMOR, ExtraVanillaItems::WOLF_ARMOR(), ["wolf_armor"]);
 		self::registerSimpleItem(ItemTypeNames::ARMADILLO_SCUTE, ExtraVanillaItems::ARMADILLO_SCUTE(), ["armadillo_scute"]);
+		self::registerSimpleItem(ItemTypeNames::TURTLE_SCUTE, ExtraVanillaItems::TURTLE_SCUTE(), ["turtle_scute"]);
+		self::registerSimpleItem(BlockTypeNames::SEAGRASS, ExtraVanillaItems::SEAGRASS(), ["seagrass"]);
+		self::registerSimpleItem(ItemTypeNames::TURTLE_SPAWN_EGG, ExtraVanillaItems::TURTLE_SPAWN_EGG(), ["turtle_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::PANDA_SPAWN_EGG, ExtraVanillaItems::PANDA_SPAWN_EGG(), ["panda_spawn_egg"]);
 	}
 
 	/**

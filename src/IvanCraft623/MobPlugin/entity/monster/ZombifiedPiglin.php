@@ -27,12 +27,13 @@ use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\StompTurtleEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
-use IvanCraft623\MobPlugin\libs\_846fe8b6dd3f27ec\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_c7b2bc3349bc5e96\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
@@ -66,6 +67,7 @@ class ZombifiedPiglin extends AbstractZombie implements NeutralMob {
 
 	protected function registerBehaviorGoals() : void {
 		$this->goalSelector->addGoal(5, new MeleeAttackGoal($this, 1.5));
+		$this->goalSelector->addGoal(6, new StompTurtleEggGoal($this));
 		$this->goalSelector->addGoal(8, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(9, new LookAtEntityGoal($this, Player::class, 6));
 		$this->goalSelector->addGoal(10, new RandomLookAroundGoal($this));

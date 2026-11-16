@@ -42,6 +42,9 @@ class LookControl implements Control {
 	/** Degrees per tick the head turns back to the body when there is nothing to look at */
 	private const HEAD_RECENTER_SPEED = 10.0;
 
+	/** Degrees the head may be off the wanted direction to count as pointing at it */
+	public const DEFAULT_MAX_YAW_ERROR = 10.0;
+
 	/** Horizontal motion squared above which the mob counts as moving */
 	private const MOVING_MOTION_SQUARED = 2.5E-7;
 
@@ -82,6 +85,23 @@ class LookControl implements Control {
 		$this->lookAtTimer = 2;
 	}
 
+	/**
+	 * Whether the head points at what it was told to look at, give or take the degrees. False if it looks at nothing.
+	 */
+	public function isLookingAtWanted(float $maxYawError = self::DEFAULT_MAX_YAW_ERROR) : bool{
+		return $this->lookAtTimer > 0 &&
+			abs(Utils::degreesDifference($this->mob->getHeadYaw(), $this->yawTo($this->wanted))) <= $maxYawError;
+	}
+
+	/**
+	 * The yaw that makes the mob face the position.
+	 */
+	private function yawTo(Vector3 $position) : float{
+		$location = $this->mob->getLocation();
+
+		return (atan2($position->z - $location->z, $position->x - $location->x) * (180 / M_PI)) - 90;
+	}
+
 	public function tick() : void {
 		$location = $this->mob->getLocation();
 		$pitch = $this->resetPitchOnTick() ? 0.0 : $location->pitch;
@@ -93,7 +113,7 @@ class LookControl implements Control {
 			$dx = $this->wanted->x - $location->x;
 			$dy = $this->wanted->y - ($location->y + $this->mob->getEyeHeight());
 			$dz = $this->wanted->z - $location->z;
-			$headYaw = static::rotateTowards($headYaw, (atan2($dz, $dx) * (180 / M_PI)) - 90, $this->yawMaxRotationAngle);
+			$headYaw = static::rotateTowards($headYaw, $this->yawTo($this->wanted), $this->yawMaxRotationAngle);
 			$pitch = static::rotateTowards($pitch, -(atan2($dy, sqrt(($dx ** 2) + ($dz ** 2))) * (180 / M_PI)), $this->pitchMaxRotationAngle);
 		} else {
 			$headYaw = static::rotateTowards($headYaw, $location->yaw, self::HEAD_RECENTER_SPEED);

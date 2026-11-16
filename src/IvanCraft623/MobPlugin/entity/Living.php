@@ -24,15 +24,20 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity;
 
 use IvanCraft623\MobPlugin\CustomTimings;
+use IvanCraft623\MobPlugin\entity\animation\TotemUseAnimation;
+use IvanCraft623\MobPlugin\inventory\MobInventory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
 use pocketmine\block\Block;
 use pocketmine\block\Lava;
 use pocketmine\block\Liquid;
 use pocketmine\block\Water;
+use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living as PMLiving;
+use pocketmine\event\entity\EntityDamageEvent;
+use pocketmine\item\Totem;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\NetworkBroadcastUtils;
@@ -40,6 +45,7 @@ use pocketmine\network\mcpe\protocol\MoveActorAbsolutePacket;
 use pocketmine\player\Player;
 use pocketmine\Server;
 use pocketmine\timings\Timings;
+use pocketmine\world\sound\TotemUseSound;
 use function abs;
 use function atan2;
 use function floor;
@@ -64,6 +70,9 @@ abstract class Living extends PMLiving {
 
 	public const WATER_GRAVITY_MULTIPLIER = 0.25;
 	private const LIQUID_JUMP_PUSH = 0.04; //blocks per tick, added to the vertical motion
+	private const TOTEM_REGENERATION_TICKS = 40 * 20; //ticks of Regeneration that a totem gives
+	private const TOTEM_FIRE_RESISTANCE_TICKS = 40 * 20; //ticks of Fire Resistance that a totem gives
+	private const TOTEM_ABSORPTION_TICKS = 5 * 20; //ticks of Absorption that a totem gives
 
 	public const LEVITATION_MOTION_PER_LEVEL = 0.05;
 	public const LEVITATION_LERP_FACTOR = 0.2;
@@ -71,6 +80,8 @@ abstract class Living extends PMLiving {
 	protected float $stepHeight = 0.6;
 
 	protected float $verticalDrag;
+
+	private bool $wasOnGroundBeforeMove = false; //whether it stood on the ground when this tick's move began
 
 	/** Fraction of the motion water takes away each tick, on every axis */
 	protected float $waterDrag;
@@ -89,6 +100,20 @@ abstract class Living extends PMLiving {
 	private float $lavaImmersion = 0.0;
 
 	protected function getInitialDragMultiplier() : float{ return 0.09; }
+
+	/**
+	 * @return float fraction of its horizontal speed it loses each tick
+	 */
+	public function getDrag() : float{
+		return $this->drag;
+	}
+
+	/**
+	 * @return float fraction of its vertical speed it loses each tick
+	 */
+	public function getVerticalDrag() : float{
+		return $this->verticalDrag;
+	}
 
 	protected function getInitialVerticalDragMultiplier() : float{ return 0.02; }
 
@@ -159,6 +184,7 @@ abstract class Living extends PMLiving {
 		$this->timings->startTiming();
 
 		if($this->hasMovementUpdate()){
+			$this->wasOnGroundBeforeMove = $this->onGround;
 			$motionX = abs($this->motion->x) > self::MOTION_THRESHOLD ? $this->motion->x : 0;
 			$motionY = abs($this->motion->y) > self::MOTION_THRESHOLD ? $this->motion->y : 0;
 			$motionZ = abs($this->motion->z) > self::MOTION_THRESHOLD ? $this->motion->z : 0;
@@ -320,8 +346,10 @@ abstract class Living extends PMLiving {
 		}
 
 		//Water replaces the air drag and the friction of the floor
+		//The floor's friction depends on whether it stood on the ground before this tick's move: a jump or leap
+		//is dragged as a grounded step, and the tick it lands on is not
 		$xzFriction = $inWater ? 1 : 1 - $this->drag;
-		if($this->onGround && !$inWater){
+		if($this->wasOnGroundBeforeMove && !$inWater){
 			$xzFriction *= $this->getWorld()->getBlockAt(
 				(int) floor($this->location->x),
 				(int) floor($this->location->y - 1),
@@ -338,6 +366,57 @@ abstract class Living extends PMLiving {
 	 */
 	protected function onClimbable() : bool{
 		return $this->canClimbWalls() && $this->getWorld()->getBlock($this->location)->canClimb();
+	}
+
+	public function applyDamageModifiers(EntityDamageEvent $source) : void{
+		parent::applyDamageModifiers($source);
+
+		$type = $source->getCause();
+		if ($type !== EntityDamageEvent::CAUSE_SUICIDE && $type !== EntityDamageEvent::CAUSE_VOID && $this->getTotemSlot() !== null) {
+			$compensation = $this->getHealth() - $source->getFinalDamage() - 1;
+			if ($compensation <= -1) {
+				$source->setModifier($compensation, EntityDamageEvent::MODIFIER_TOTEM);
+			}
+		}
+	}
+
+	protected function applyPostDamageEffects(EntityDamageEvent $source) : void{
+		parent::applyPostDamageEffects($source);
+
+		if ($source->getModifier(EntityDamageEvent::MODIFIER_TOTEM) < 0) { //Totem prevented death
+			$this->effectManager->clear();
+
+			$this->effectManager->add(new EffectInstance(VanillaEffects::REGENERATION(), self::TOTEM_REGENERATION_TICKS, 1));
+			$this->effectManager->add(new EffectInstance(VanillaEffects::FIRE_RESISTANCE(), self::TOTEM_FIRE_RESISTANCE_TICKS, 1));
+			$this->effectManager->add(new EffectInstance(VanillaEffects::ABSORPTION(), self::TOTEM_ABSORPTION_TICKS, 1));
+
+			$this->broadcastAnimation(new TotemUseAnimation($this));
+			$this->broadcastSound(new TotemUseSound());
+
+			$slot = $this->getTotemSlot();
+			if ($slot !== null && $this instanceof ItemCarrier) {
+				$inventory = $this->getInventory();
+				$totem = $inventory->getItem($slot);
+				$totem->pop();
+				$inventory->setItem($slot, $totem);
+			}
+		}
+	}
+
+	/**
+	 * The slot of the totem that saves this mob from dying: the main hand first, then the offhand.
+	 */
+	private function getTotemSlot() : ?int{
+		if (!$this instanceof ItemCarrier) {
+			return null;
+		}
+
+		$inventory = $this->getInventory();
+		if ($inventory->getMainHand() instanceof Totem) {
+			return MobInventory::SLOT_MAIN_HAND;
+		}
+
+		return $this instanceof Equipped && $inventory->getOffHand() instanceof Totem ? MobInventory::SLOT_OFFHAND : null;
 	}
 
 	/**

@@ -133,7 +133,11 @@ class Vindicator extends AbstractIllager implements Equipped {
 	 * @phpstan-param null|Closure() : bool       $condition
 	 */
 	private function addTargetGoal(string $type, ?Closure $validator = null, ?Closure $condition = null) : void{
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, $type, targetValidator: $validator, condition: $condition, range: self::TARGET_RANGE));
+		$this->targetSelector->addGoal(
+			2,
+			(new NearestAttackableGoal($this, $type, targetValidator: $validator, condition: $condition, range: self::TARGET_RANGE))
+				->setUnseenMemoryTicks(800)
+		);
 	}
 
 	/**

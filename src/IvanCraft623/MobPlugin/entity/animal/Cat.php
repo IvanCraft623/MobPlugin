@@ -40,15 +40,16 @@ use IvanCraft623\MobPlugin\entity\Healable;
 use IvanCraft623\MobPlugin\entity\HealableTrait;
 use IvanCraft623\MobPlugin\entity\Pet;
 use IvanCraft623\MobPlugin\entity\PetTrait;
-use IvanCraft623\MobPlugin\entity\SleepsWithOwner;
+use IvanCraft623\MobPlugin\entity\Sleepable;
+use IvanCraft623\MobPlugin\entity\SleepableTrait;
 use IvanCraft623\MobPlugin\entity\TameableTrait;
 use IvanCraft623\MobPlugin\entity\TameByItemTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
 use IvanCraft623\MobPlugin\utils\Utils;
 use pocketmine\block\Bed;
-use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
+use pocketmine\block\Chest;
 use pocketmine\block\Furnace;
 use pocketmine\block\tile\Chest as ChestTile;
 use pocketmine\entity\EntitySizeInfo;
@@ -63,8 +64,8 @@ use pocketmine\player\Player;
 use function count;
 use function mt_rand;
 
-class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
-	use TameableTrait, TameByItemTrait, PetTrait, CollaredTrait, HealableTrait{
+class Cat extends Feline implements Pet, Collared, Healable, Sleepable{
+	use TameableTrait, TameByItemTrait, PetTrait, CollaredTrait, HealableTrait, SleepableTrait{
 		//initEntity()
 		TameableTrait::initEntity insteadof PetTrait, CollaredTrait;
 		TameableTrait::initEntity as protected initTameable;
@@ -114,8 +115,6 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 
 	protected CatVariant $variant;
 
-	private bool $resting = false;
-
 	private bool $giftPending = false;
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
@@ -146,22 +145,28 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 
 		$this->goalSelector->addGoal(0, new TeleportToOwnerGoal($this, 12));
 		$this->goalSelector->addGoal(1, new GiftToOwnerGoal($this, 0.7, 0.74999, 0.8, 6));
-		$this->goalSelector->addGoal(2, new SleepWithOwnerGoal($this, 1.2, 10, 1));
+		$this->goalSelector->addGoal(2, new SleepWithOwnerGoal($this, 1.2, 10, 1, fn() => $this->setGiftPending(true)));
 		$this->goalSelector->addGoal(3, new SitWhenOrderedGoal($this));
 		$this->goalSelector->addGoal(4, new FollowOwnerGoal($this, 1, 10, 2, 12));
 		$this->goalSelector->addGoal(7, new SitOnBlockGoal($this, 1, [
-			new BlockMatcher(BlockTypeIds::CHEST, static function(Block $block) : bool{
-				$position = $block->getPosition();
+			new BlockMatcher(BlockTypeIds::CHEST, static function(Chest $chest) : bool{
+				$position = $chest->getPosition();
 				$tile = $position->getWorld()->getTileAt($position->getFloorX(), $position->getFloorY(), $position->getFloorZ());
 
 				return !$tile instanceof ChestTile || count($tile->getInventory()->getViewers()) === 0;
 			}),
-			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Block $block) => $block instanceof Furnace && $block->isLit()),
-			new BlockMatcher(BlockTypeIds::BED, static fn(Block $block) => $block instanceof Bed && !$block->isHeadPart()),
+			new BlockMatcher(BlockTypeIds::FURNACE, static fn(Furnace $furnace) => $furnace->isLit()),
+			new BlockMatcher(BlockTypeIds::BED, static fn(Bed $bed) => !$bed->isHeadPart()),
 		]));
 
 		$this->targetSelector->addGoal(1, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 8));
-		//TODO: Wild cats also hunt baby turtles!
+		$this->targetSelector->addGoal(1, new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			targetValidator: Turtle::isBabyOnLand(...),
+			condition: fn() => !$this->isTamed(),
+			range: 8
+		));
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
@@ -203,7 +208,7 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 		$this->syncTameable($properties);
 		$this->syncPet($properties);
 		$this->syncCollared($properties);
-		$properties->setGenericFlag(EntityMetadataFlags::RESTING, $this->resting);
+		$properties->setGenericFlag(EntityMetadataFlags::RESTING, $this->isSleeping()); //bedrock shows a sleeping cat as resting
 		$properties->setInt(EntityMetadataProperties::VARIANT, CatVariantIdMap::getInstance()->toId($this->variant));
 	}
 
@@ -229,22 +234,8 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 		return $this;
 	}
 
-	public function isWary() : bool{
-		return !$this->isTamed();
-	}
-
-	/**
-	 * Whether the cat is lying down.
-	 */
-	public function isResting() : bool{
-		return $this->resting;
-	}
-
-	public function setResting(bool $resting) : void{
-		if ($this->resting !== $resting) {
-			$this->resting = $resting;
-			$this->networkPropertiesDirty = true;
-		}
+	public function isTrusting(Player $player) : bool{
+		return $this->isTamed();
 	}
 
 	/**
@@ -256,10 +247,6 @@ class Cat extends Feline implements Pet, Collared, Healable, SleepsWithOwner{
 
 	public function setGiftPending(bool $pending) : void{
 		$this->giftPending = $pending;
-	}
-
-	public function onWakeWithOwner() : void{
-		$this->setGiftPending(true);
 	}
 
 	protected function onTamed() : void{

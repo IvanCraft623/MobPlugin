@@ -28,12 +28,16 @@ use IvanCraft623\MobPlugin\entity\animal\Axolotl;
 use IvanCraft623\MobPlugin\entity\animal\Cat;
 use IvanCraft623\MobPlugin\entity\animal\Chicken;
 use IvanCraft623\MobPlugin\entity\animal\Cow;
+use IvanCraft623\MobPlugin\entity\animal\Fox;
+use IvanCraft623\MobPlugin\entity\animal\Goat;
 use IvanCraft623\MobPlugin\entity\animal\MooshroomCow;
 use IvanCraft623\MobPlugin\entity\animal\Ocelot;
+use IvanCraft623\MobPlugin\entity\animal\Panda;
 use IvanCraft623\MobPlugin\entity\animal\Pig;
 use IvanCraft623\MobPlugin\entity\animal\PolarBear;
 use IvanCraft623\MobPlugin\entity\animal\Rabbit;
 use IvanCraft623\MobPlugin\entity\animal\Sheep;
+use IvanCraft623\MobPlugin\entity\animal\Turtle;
 use IvanCraft623\MobPlugin\entity\animal\Wolf;
 use IvanCraft623\MobPlugin\entity\aquatic\Cod;
 use IvanCraft623\MobPlugin\entity\aquatic\GlowSquid;
@@ -111,8 +115,14 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg WOLF_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg CAT_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg OCELOT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg GOAT_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg FOX_SPAWN_EGG()
  * @method static WolfArmor WOLF_ARMOR()
  * @method static \pocketmine\item\Item ARMADILLO_SCUTE()
+ * @method static \pocketmine\item\Item TURTLE_SCUTE()
+ * @method static \pocketmine\item\Item SEAGRASS()
+ * @method static \pocketmine\item\SpawnEgg TURTLE_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg PANDA_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg WITCH_SPAWN_EGG()
  */
 final class ExtraVanillaItems{
@@ -180,11 +190,18 @@ final class ExtraVanillaItems{
 		self::register("wolf_spawn_egg", new MobSpawnEgg(new IID(Ids::WOLF_SPAWN_EGG()), "Wolf Spawn Egg", Wolf::class));
 		self::register("cat_spawn_egg", new MobSpawnEgg(new IID(Ids::CAT_SPAWN_EGG()), "Cat Spawn Egg", Cat::class));
 		self::register("ocelot_spawn_egg", new MobSpawnEgg(new IID(Ids::OCELOT_SPAWN_EGG()), "Ocelot Spawn Egg", Ocelot::class));
+		self::register("goat_spawn_egg", new MobSpawnEgg(new IID(Ids::GOAT_SPAWN_EGG()), "Goat Spawn Egg", Goat::class));
+		self::register("fox_spawn_egg", new MobSpawnEgg(new IID(Ids::FOX_SPAWN_EGG()), "Fox Spawn Egg", Fox::class));
+		self::register("turtle_spawn_egg", new MobSpawnEgg(new IID(Ids::TURTLE_SPAWN_EGG()), "Turtle Spawn Egg", Turtle::class));
+		self::register("panda_spawn_egg", new MobSpawnEgg(new IID(Ids::PANDA_SPAWN_EGG()), "Panda Spawn Egg", Panda::class));
 	}
 
 	private static function registerMaterials() : void{
 		self::register("wolf_armor", new WolfArmor(new IID(Ids::WOLF_ARMOR()), "Wolf Armor"));
 		self::register("armadillo_scute", new Item(new IID(Ids::ARMADILLO_SCUTE()), "Armadillo Scute"));
+		self::register("turtle_scute", new Item(new IID(Ids::TURTLE_SCUTE()), "Scute"));
+		//TODO: seagrass is a block, make it placeable
+		self::register("seagrass", new Item(new IID(Ids::SEAGRASS()), "Seagrass"));
 	}
 
 	private static function registerBuckets() : void{

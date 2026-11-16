@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\utils;
 
 use DateTime;
-use IvanCraft623\MobPlugin\entity\Equipped;
+use IvanCraft623\MobPlugin\entity\ItemCarrier;
 
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -235,7 +235,7 @@ class Utils {
 	 * The item in the main hand of a player or a mob, or null for anything else.
 	 */
 	public static function getHeldItem(?Entity $entity) : ?Item{
-		return $entity instanceof Human || $entity instanceof Equipped ? $entity->getInventory()->getItemInHand() : null;
+		return $entity instanceof Human || $entity instanceof ItemCarrier ? $entity->getInventory()->getItemInHand() : null;
 	}
 
 	public static function popItemInHand(Player $player, int $amount = 1) : void{
@@ -321,6 +321,14 @@ class Utils {
 
 		return $chunk !== null &&
 			($chunk->getBlockStateId($x & Chunk::COORD_MASK, $y, $z & Chunk::COORD_MASK) >> Block::INTERNAL_STATE_DATA_BITS) === BlockTypeIds::WATER;
+	}
+
+	/**
+	 * Whether the block is a snow layer, or stands on a snow block.
+	 */
+	public static function isSnowCovered(World $world, int $x, int $y, int $z) : bool{
+		return $world->getBlockAt($x, $y, $z)->getTypeId() === BlockTypeIds::SNOW_LAYER ||
+			$world->getBlockAt($x, $y - 1, $z)->getTypeId() === BlockTypeIds::SNOW;
 	}
 
 	public static function isDaytime(World $world) : bool{

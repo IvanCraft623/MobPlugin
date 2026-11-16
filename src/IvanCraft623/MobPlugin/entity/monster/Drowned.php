@@ -31,11 +31,13 @@ use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\StompTurtleEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\AmphibiousLocomotion;
 use IvanCraft623\MobPlugin\entity\ai\navigation\PathNavigation;
 use IvanCraft623\MobPlugin\entity\animal\Axolotl;
+use IvanCraft623\MobPlugin\entity\animal\Turtle;
 use IvanCraft623\MobPlugin\entity\DoorBreaker;
 use IvanCraft623\MobPlugin\entity\DoorBreakerTrait;
 use IvanCraft623\MobPlugin\entity\golem\IronGolem;
@@ -121,7 +123,7 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 		$this->goalSelector->addGoal(2, new FleeSunlightGoal($this, 1));
 		$this->goalSelector->addGoal(2, new TridentAttackGoal($this));
 		$this->goalSelector->addGoal(3, new MeleeAttackGoal($this, 1));
-		//TODO: Stomp turtle eggs!
+		$this->goalSelector->addGoal(4, new StompTurtleEggGoal($this));
 		$this->goalSelector->addGoal(7, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 6));
 		$this->goalSelector->addGoal(9, new RandomLookAroundGoal($this));
@@ -133,21 +135,26 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 			$this->addTargetGoal($type, true);
 		}
 		$this->addTargetGoal(Villager::class, false);
-
-		//TODO: Attack baby turtles!
+		$this->targetSelector->addGoal(2, (new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			mustSee: true,
+			targetValidator: Turtle::isBabyOnLand(...),
+			range: self::TARGET_RANGE
+		))->setUnseenMemoryTicks(self::UNSEEN_MEMORY));
 	}
 
 	/**
 	 * @phpstan-param class-string<Living> $type
 	 */
 	private function addTargetGoal(string $type, bool $mustSee) : void {
-		$this->targetSelector->addGoal(2, new NearestAttackableGoal(
+		$this->targetSelector->addGoal(2, (new NearestAttackableGoal(
 			entity: $this,
 			targetType: $type,
 			mustSee: $mustSee,
 			targetValidator: fn(Living $target) : bool => self::isStandingInWater($target) || !Utils::isDaytime($this->getWorld()),
 			range: self::TARGET_RANGE
-		));
+		))->setUnseenMemoryTicks(self::UNSEEN_MEMORY));
 	}
 
 	private static function isStandingInWater(Living $entity) : bool {

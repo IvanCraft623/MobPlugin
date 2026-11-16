@@ -58,11 +58,13 @@ trait PetTrait{
 		return $this->sitting;
 	}
 
-	public function setSitting(bool $sitting) : void{
+	public function setSitting(bool $sitting) : static{
 		if ($this->sitting !== $sitting) {
 			$this->sitting = $sitting;
 			$this->networkPropertiesDirty = true;
 		}
+
+		return $this;
 	}
 
 	/**

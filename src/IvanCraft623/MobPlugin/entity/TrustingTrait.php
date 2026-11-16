@@ -77,7 +77,14 @@ trait TrustingTrait{
 		$properties->setGenericFlag(EntityMetadataFlags::TRUSTING, $this->trusting);
 	}
 
-	public function isTrusting() : bool{
+	/**
+	 * Whether it trusts players, any of them.
+	 */
+	public function hasTrust() : bool{
+		return $this->trusting;
+	}
+
+	public function isTrusting(Player $player) : bool{
 		return $this->trusting;
 	}
 

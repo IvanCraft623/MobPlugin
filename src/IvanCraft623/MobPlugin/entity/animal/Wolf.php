@@ -242,7 +242,14 @@ class Wolf extends Animal implements Pet, Collared, Healable, BodyArmored, Neutr
 		$this->targetSelector->addGoal(4, new NearestAttackableGoal(entity: $this, targetType: AbstractSkeleton::class, range: 16));
 		$this->targetSelector->addGoal(4, new NearestAttackableGoal(entity: $this, targetType: Sheep::class, condition: fn() => !$this->isTamed(), range: 16));
 		$this->targetSelector->addGoal(4, new NearestAttackableGoal(entity: $this, targetType: Rabbit::class, condition: fn() => !$this->isTamed(), range: 16));
-		//TODO: Wild wolves also hunt foxes and baby turtles!
+		$this->targetSelector->addGoal(4, new NearestAttackableGoal(
+			entity: $this,
+			targetType: Turtle::class,
+			targetValidator: Turtle::isBabyOnLand(...),
+			condition: fn() => !$this->isTamed(),
+			range: 16
+		));
+		//TODO: Wild wolves also hunt foxes!
 	}
 
 	protected function initEntity(CompoundTag $nbt) : void{
