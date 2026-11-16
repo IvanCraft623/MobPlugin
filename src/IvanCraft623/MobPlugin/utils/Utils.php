@@ -60,11 +60,16 @@ use function log;
 use function max;
 use function method_exists;
 use function min;
+use function pathinfo;
 use function sqrt;
+use function str_contains;
 use function str_replace;
+use function strrpos;
 use function strtolower;
+use function substr;
 use function trim;
 use function ucwords;
+use const PATHINFO_FILENAME;
 
 class Utils {
 
@@ -371,5 +376,40 @@ class Utils {
 
 	public static function isHalloween(?DateTime $date = null) : bool{
 		return ($date ?? new DateTime())->format('m-d') === '10-31';
+	}
+
+	/**
+	 * Returns a readable identifier for the class of the given object. Sanitizes class names for anonymous classes.
+	 */
+	public static function getNiceClassName(object $obj, bool $shortName = false) : string{
+		$class = $obj::class;
+		if(!str_contains($class, "@anonymous")){
+			return $shortName ? self::stripNamespace($class) : $class;
+		}
+
+		$reflect = new \ReflectionClass($obj);
+		$filename = $reflect->getFileName();
+		$location = $filename !== false
+			? pathinfo($filename, PATHINFO_FILENAME) . "#L" . $reflect->getStartLine()
+			: "internal";
+
+		$parent = $reflect->getParentClass();
+		if($parent !== false){
+			$type = $shortName ? $parent->getShortName() : $parent->getName();
+		}else{
+			$interfaces = $reflect->getInterfaceNames();
+			if(count($interfaces) > 0){
+				$type = $shortName ? self::stripNamespace($interfaces[0]) : $interfaces[0];
+			}else{
+				$type = "class";
+			}
+		}
+
+		return $type . "@anonymous:" . $location;
+	}
+
+	private static function stripNamespace(string $class) : string{
+		$pos = strrpos($class, '\\');
+		return $pos !== false ? substr($class, $pos + 1) : $class;
 	}
 }

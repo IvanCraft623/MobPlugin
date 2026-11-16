@@ -71,7 +71,6 @@ use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;
 use pocketmine\world\World;
-use function basename;
 use function cos;
 use function count;
 use function debug_backtrace;
@@ -80,7 +79,6 @@ use function max;
 use function round;
 use function sin;
 use function sqrt;
-use function str_replace;
 use const DEBUG_BACKTRACE_IGNORE_ARGS;
 use const M_PI;
 
@@ -448,7 +446,7 @@ abstract class Mob extends Living {
 		$data = [];
 		foreach ($this->goalSelector->getRunningGoals() as $wrappedGoal) {
 			$goalInfo = $wrappedGoal->getCurrentDebugInfo();
-			$data[] = basename(str_replace('\\', '/', $wrappedGoal->goal::class)) . ($goalInfo === null ?
+			$data[] = Utils::getNiceClassName($wrappedGoal->goal, true) . ($goalInfo === null ?
 				"" : " (" . $goalInfo . ")"
 			);
 		}
