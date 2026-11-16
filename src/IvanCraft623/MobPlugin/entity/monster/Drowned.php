@@ -31,6 +31,7 @@ use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\StompTurtleEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\AmphibiousLocomotion;
@@ -122,7 +123,7 @@ class Drowned extends AbstractZombie implements DoorBreaker, RangedAttackMob {
 		$this->goalSelector->addGoal(2, new FleeSunlightGoal($this, 1));
 		$this->goalSelector->addGoal(2, new TridentAttackGoal($this));
 		$this->goalSelector->addGoal(3, new MeleeAttackGoal($this, 1));
-		//TODO: Stomp turtle eggs!
+		$this->goalSelector->addGoal(4, new StompTurtleEggGoal($this));
 		$this->goalSelector->addGoal(7, new RandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 6));
 		$this->goalSelector->addGoal(9, new RandomLookAroundGoal($this));

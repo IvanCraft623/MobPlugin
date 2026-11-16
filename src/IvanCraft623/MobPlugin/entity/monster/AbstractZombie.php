@@ -27,12 +27,12 @@ use Closure;
 use IvanCraft623\MobPlugin\data\bedrock\VanillaEntitySizes;
 
 use IvanCraft623\MobPlugin\entity\AgeableMob;
-use IvanCraft623\MobPlugin\entity\ai\goal\DestroyEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\LookAtEntityGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\MeleeAttackGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\PickupItemsGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomLookAroundGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\RandomStrollGoal;
+use IvanCraft623\MobPlugin\entity\ai\goal\StompTurtleEggGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\HurtByTargetGoal;
 use IvanCraft623\MobPlugin\entity\ai\goal\target\NearestAttackableGoal;
 use IvanCraft623\MobPlugin\entity\animal\Turtle;
@@ -144,7 +144,7 @@ abstract class AbstractZombie extends Monster implements Ageable, Equipped, Item
 	protected function registerBehaviorGoals() : void {
 		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
 		$this->goalSelector->addGoal(7, new RandomStrollGoal($this, 1));
-		//$this->goalSelector->addGoal(4, new DestroyEggGoal($this, 1.0, 3)); //TODO!
+		$this->goalSelector->addGoal(5, new StompTurtleEggGoal($this));
 		$this->goalSelector->addGoal(8, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
 	}
