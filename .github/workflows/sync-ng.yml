@@ -1,0 +1,77 @@
+name: Sync ng
+
+# Keeps the ng branch (NetherGames' PocketMine-MP) up to date with main.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: sync-ng
+
+permissions:
+  contents: write
+  issues: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ng
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: axolotl-pm/setup-php-action@1.0.0
+        with:
+          php-version: 8.4
+          install-path: ./bin
+
+      - name: Merge main into ng
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Run main's copy: ng only has the script after the first sync.
+          git fetch origin main
+          git show origin/main:.github/scripts/sync-ng.sh > "$RUNNER_TEMP/sync-ng.sh"
+          if bash "$RUNNER_TEMP/sync-ng.sh"; then
+            echo "conflicts=" >> "$GITHUB_OUTPUT"
+          else
+            echo "conflicts=$(git diff --name-only --diff-filter=U | paste -sd ' ')" >> "$GITHUB_OUTPUT"
+            git merge --abort || true
+          fi
+
+      - name: Push ng
+        if: steps.merge.outputs.conflicts == ''
+        run: |
+          git push origin ng
+          # Pushes made with GITHUB_TOKEN don't trigger workflows, so run them by hand.
+          gh workflow run ci.yml --ref ng
+          gh workflow run build.yml --ref ng
+          for number in $(gh issue list --label ng-sync --state open --json number --jq '.[].number'); do
+            gh issue close "$number" --comment "ng is in sync with main again."
+          done
+
+      - name: Report conflicts
+        if: steps.merge.outputs.conflicts != ''
+        env:
+          CONFLICTS: ${{ steps.merge.outputs.conflicts }}
+        run: |
+          gh label create ng-sync --color D93F0B --description "main could not be merged into ng" 2>/dev/null || true
+          if [ -z "$(gh issue list --label ng-sync --state open --json number --jq '.[].number')" ]; then
+            gh issue create --label ng-sync --title "main could not be merged into ng" --body "Conflicts in: \`$CONFLICTS\`
+
+          Fix it locally and push ng:
+
+          \`\`\`bash
+          git switch ng
+          git merge main    # resolve, then commit
+          git push origin ng
+          \`\`\`"
+          fi
+          exit 1

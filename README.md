@@ -49,7 +49,8 @@ Mobs spawn from the vanilla Bedrock [spawn rules](https://github.com/Mojang/bedr
 
 <div align="center">
 
-[![Download Nightly](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/IvanCraft623/MobPlugin/main/plugin.yml&query=$.version&label=Download&suffix=%2Bdev&color=blueviolet&style=for-the-badge&logo=github&logoColor=white)](https://github.com/IvanCraft623/MobPlugin/releases/download/nightly/MobPlugin.phar)
+[![Download Axolotl-PM](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/IvanCraft623/MobPlugin/main/plugin.yml&query=$.version&label=Axolotl-PM&suffix=%2Bdev&color=blueviolet&style=for-the-badge&logo=github&logoColor=white)](https://github.com/IvanCraft623/MobPlugin/releases/download/nightly/MobPlugin.phar)
+[![Download NetherGames](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/IvanCraft623/MobPlugin/ng/plugin.yml&query=$.version&label=NetherGames&suffix=%2Bdev&color=orange&style=for-the-badge&logo=github&logoColor=white)](https://github.com/IvanCraft623/MobPlugin/releases/download/nightly-ng/MobPlugin-NG.phar)
 
 *Always up to date · Built from the latest commit*
 

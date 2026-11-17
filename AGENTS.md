@@ -60,6 +60,12 @@ Outside `src/`:
 Pathfinding is the external virion `ivancraft623/pathfinder`; keep usage aligned with its
 API.
 
+## Branches
+
+- `main` targets Axolotl-PM.
+- `ng` is `main` plus the changes NetherGames' PocketMine-MP needs (its multi-protocol `TypeConverter`, injected into particles). `sync-ng.yml` merges every `main` push into it. If a merge conflicts, it opens an `ng-sync` issue: run `git switch ng && .github/scripts/sync-ng.sh`, fix what is left, push. Never rebase `ng`.
+- Make changes on `main`; touch `ng` only for NetherGames-specific code.
+
 ## Conventions
 
 - Mob behavior goes through the goal FSM, not inline in entity tick methods. Port a mob by
