@@ -37,3 +37,34 @@ jobs:
           artifact-id: ${{ needs.build.outputs.artifact-id }}
           plugin-name: ${{ needs.build.outputs.plugin-name }}
           pm-version:  ${{ needs.build.outputs.pm-version }}
+
+  build-ng:
+    needs: validate
+    uses: axolotl-pm/pmmp-plugin-actions/.github/workflows/build-phar.yml@main
+    with:
+      php-version: '8.2'
+      ref: ng
+      artifact-name: MobPlugin-NG-phar
+      attest: true
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+
+  publish-ng:
+    needs: [publish, build-ng]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.build-ng.outputs.artifact-id }}
+          path: ${{ runner.temp }}/phar
+
+      - name: Add the NG phar to the release
+        run: |
+          mv "$RUNNER_TEMP/phar/${{ needs.build-ng.outputs.plugin-name }}.phar" "$RUNNER_TEMP/MobPlugin-NG.phar"
+          gh release upload "$GITHUB_REF_NAME" "$RUNNER_TEMP/MobPlugin-NG.phar" --clobber --repo "$GITHUB_REPOSITORY"

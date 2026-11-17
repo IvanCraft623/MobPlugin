@@ -2,18 +2,21 @@ name: Nightly
 
 on:
   push:
-    branches: [main]
+    branches: [main, ng]
+  workflow_dispatch:
 
 jobs:
   build:
     uses: axolotl-pm/pmmp-plugin-actions/.github/workflows/build-phar.yml@main
     with:
       php-version: '8.2'
-      stage-poggit: true
+      stage-poggit: ${{ github.ref_name == 'main' && 'true' || 'false' }}
+      artifact-name: ${{ github.ref_name == 'ng' && 'MobPlugin-NG-phar' || '' }}
     permissions:
       contents: write
 
   publish:
+    if: github.ref_name == 'main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -26,3 +29,33 @@ jobs:
           plugin-name:    ${{ needs.build.outputs.plugin-name }}
           plugin-version: ${{ needs.build.outputs.plugin-version }}
           pm-version:     ${{ needs.build.outputs.pm-version }}
+
+  publish-ng:
+    if: github.ref_name == 'ng'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: ${{ runner.temp }}/phar
+
+      - name: Publish nightly-ng release
+        run: |
+          mv "$RUNNER_TEMP/phar/${{ needs.build.outputs.plugin-name }}.phar" "$RUNNER_TEMP/MobPlugin-NG.phar"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag --force nightly-ng "$GITHUB_SHA" && git push --force origin tag nightly-ng
+          notes="For NetherGames' PocketMine-MP (NG-PocketMine-MP)"$'\n'"From commit: $GITHUB_SHA"$'\n'"⚠️ This is a development build. Not recommended for production use."
+          if gh release view nightly-ng >/dev/null 2>&1; then
+            gh release edit nightly-ng --prerelease --title "Nightly Build ${{ needs.build.outputs.plugin-version }} (NG)" --notes "$notes"
+          else
+            gh release create nightly-ng --prerelease --title "Nightly Build ${{ needs.build.outputs.plugin-version }} (NG)" --notes "$notes"
+          fi
+          gh release upload nightly-ng "$RUNNER_TEMP/MobPlugin-NG.phar" --clobber

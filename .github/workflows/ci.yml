@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, ng]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
