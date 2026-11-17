@@ -38,10 +38,11 @@ namespace IvanCraft623\MobPlugin\tools\registry\generate;
 
 require __DIR__ . "/../../vendor/autoload.php";
 
-use Composer\InstalledVersions;
 use FilesystemIterator;
+use pocketmine\VersionInfo;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use function array_slice;
@@ -122,10 +123,11 @@ function main(array $args) : int{
 		$bootstrap = Path::makeAbsolute($bootstrap, $workingDirectory);
 	}
 
-	$installPath = InstalledVersions::getInstallPath("pocketmine/pocketmine-mp");
-	$generator = $installPath !== null ? realpath($installPath . "/build/codegen/registry-interface.php") : false;
+	//The server package is whichever fork is installed: it only replaces pocketmine/pocketmine-mp, so Composer has no path for that name.
+	$versionInfo = (new ReflectionClass(VersionInfo::class))->getFileName();
+	$generator = $versionInfo !== false ? realpath(dirname($versionInfo, 2) . "/build/codegen/registry-interface.php") : false;
 	if($generator === false){
-		return fail("pocketmine/pocketmine-mp has no build/codegen/registry-interface.php; run composer install");
+		return fail("The installed PocketMine-MP has no build/codegen/registry-interface.php; run composer install");
 	}
 
 	$layout = sys_get_temp_dir() . "/mobplugin-registry-" . bin2hex(random_bytes(4));
