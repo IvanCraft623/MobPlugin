@@ -23,24 +23,20 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\particle;
 
-use pocketmine\block\Block;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\types\LevelEvent;
-use pocketmine\world\particle\Particle;
+use pocketmine\world\particle\BlockParticle;
 
 /**
  * The bits of a turtle egg breaking.
  */
-class EggBreakParticle implements Particle{
-
-	public function __construct(private Block $egg){}
+class EggBreakParticle extends BlockParticle{
 
 	public function encode(Vector3 $pos) : array{
 		return [LevelEventPacket::create(
 			LevelEvent::PARTICLE_EGG_BREAK,
-			TypeConverter::getInstance()->getBlockTranslator()->internalIdToNetworkId($this->egg->getStateId()),
+			$this->toRuntimeId(),
 			$pos
 		)];
 	}

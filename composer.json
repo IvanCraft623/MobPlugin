@@ -11,14 +11,26 @@
         "kostamax27/loottable": "^1.0.1"
     },
     "require-dev": {
-        "axolotl-pm/pocketmine-mp": "^5.51.2",
         "phpstan/phpstan": "2.3.5",
         "phpunit/phpunit": "^13.4",
         "sof3/pharynx": "^0.3.8",
         "justinrainbow/json-schema": "^6.10.0",
-        "mojang/bedrock-samples": "1.21.50"
+        "mojang/bedrock-samples": "1.21.50",
+        "nethergamesmc/pocketmine-mp": "dev-stable"
     },
     "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/NetherGamesMC/PocketMine-MP.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/NetherGamesMC/BedrockProtocol.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/NetherGamesMC/BedrockData.git"
+        },
         {
             "type": "vcs",
             "url": "https://github.com/IvanCraft623/Pahtfinder.git"
@@ -64,5 +76,7 @@
         ],
         "generate-bedrock-notice": "php tools/bedrock/notice.php",
         "test": "vendor/bin/phpunit --bootstrap vendor/autoload.php --fail-on-warning --no-progress tests/phpunit"
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

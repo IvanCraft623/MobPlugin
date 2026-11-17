@@ -23,24 +23,20 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\particle;
 
-use pocketmine\block\Block;
 use pocketmine\math\Vector3;
-use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\LevelEventPacket;
 use pocketmine\network\mcpe\protocol\types\LevelEvent;
-use pocketmine\world\particle\Particle;
+use pocketmine\world\particle\BlockParticle;
 
 /**
  * The splash of a mob that jumps off a liquid.
  */
-class JumpPreventedParticle implements Particle{
-
-	public function __construct(private Block $liquid){}
+class JumpPreventedParticle extends BlockParticle{
 
 	public function encode(Vector3 $pos) : array{
 		return [LevelEventPacket::create(
 			LevelEvent::JUMP_PREVENTED,
-			TypeConverter::getInstance()->getBlockTranslator()->internalIdToNetworkId($this->liquid->getStateId()),
+			$this->toRuntimeId(),
 			$pos
 		)];
 	}
