@@ -6,12 +6,12 @@
     "require": {
         "php": "^8.2",
         "ivancraft623/pathfinder": "dev-main",
-        "inxomnyaa/apibossbar": "dev-pm5",
+        "axolotl-plugin-orphanage/apibossbar": "dev-pm5",
         "bstats/pocketmine-mp": "^1.0.0",
         "kostamax27/loottable": "^1.0.1"
     },
     "require-dev": {
-        "pocketmine/pocketmine-mp": "^5.42.2",
+        "axolotl-pm/pocketmine-mp": "^5.51.2",
         "phpstan/phpstan": "2.3.5",
         "phpunit/phpunit": "^13.4",
         "sof3/pharynx": "^0.3.8",

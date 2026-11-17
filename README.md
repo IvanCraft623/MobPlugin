@@ -12,7 +12,7 @@
 
 ## 📃 Description
 
-MobPlugin is a plugin for [PocketMine-MP](https://github.com/pmmp/PocketMine-MP) that implements mob AI aiming to replicate vanilla Minecraft: Bedrock Edition behavior as closely as possible.
+MobPlugin is a plugin for [PocketMine-MP](https://github.com/axolotl-pm/PocketMine-MP) that implements mob AI aiming to replicate vanilla Minecraft: Bedrock Edition behavior as closely as possible.
 
 For a full breakdown of what's implemented and what's planned, see the [Vanilla Minecraft Feature Tracking](https://github.com/IvanCraft623/MobPlugin/issues/36) issue.
 

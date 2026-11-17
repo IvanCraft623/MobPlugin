@@ -4,7 +4,7 @@ Guidance for AI coding agents (and humans) working on **MobPlugin**.
 
 ## What this project is
 
-A [PocketMine-MP](https://github.com/pmmp/PocketMine-MP) API 5 plugin (PHP) that
+A [PocketMine-MP](https://github.com/axolotl-pm/PocketMine-MP) API 5 plugin (PHP) that
 implements vanilla mob behavior for Minecraft: **Bedrock Edition**, on its own AI framework
 (goals, sensing, navigation, movement controls).
 
