@@ -33,7 +33,7 @@ use IvanCraft623\MobPlugin\entity\NeutralMob;
 use IvanCraft623\MobPlugin\entity\NeutralMobTrait;
 use IvanCraft623\MobPlugin\item\ExtraVanillaItems;
 use IvanCraft623\MobPlugin\loot\VanillaLootTables;
-use IvanCraft623\MobPlugin\libs\_83dbee3897704487\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_68e84d2717e68b7f\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\item\Item;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
