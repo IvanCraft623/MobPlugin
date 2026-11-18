@@ -68,6 +68,7 @@ use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
 use IvanCraft623\MobPlugin\entity\monster\MagmaCube;
+use IvanCraft623\MobPlugin\entity\monster\Silverfish;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
@@ -128,6 +129,7 @@ class MobPlugin extends PluginBase {
 		Creeper::class,
 		Enderman::class,
 		Endermite::class,
+		Silverfish::class,
 		Slime::class,
 		Spider::class,
 		Zombie::class,
