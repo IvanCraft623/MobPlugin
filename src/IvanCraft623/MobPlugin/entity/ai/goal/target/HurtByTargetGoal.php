@@ -46,6 +46,8 @@ class HurtByTargetGoal extends TargetGoal {
 
 	private bool $alertSameType = false;
 
+	private ?float $alertRange = null; //blocks, horizontally, null to alert as far as it follows
+
 	private int $lastDamageTick = -1;
 
 	private ?Memory $pending = null; //the hit that is about to start
@@ -80,6 +82,17 @@ class HurtByTargetGoal extends TargetGoal {
 	public function setAlertOthers(string ...$ignoredAlert) : self{
 		$this->alertSameType = true;
 		$this->ignoredAlert = $ignoredAlert;
+
+		return $this;
+	}
+
+	/**
+	 * @param float $range blocks, horizontally
+	 *
+	 * @return $this
+	 */
+	public function setAlertRange(float $range) : self{
+		$this->alertRange = $range;
 
 		return $this;
 	}
@@ -129,7 +142,7 @@ class HurtByTargetGoal extends TargetGoal {
 	}
 
 	protected function alertOthers(Living $target) : void{
-		foreach ($this->entity->getSensing()->getNearbyLiving($this->getFollowDistance(), self::ALERT_RANGE_Y) as $other) {
+		foreach ($this->entity->getSensing()->getNearbyLiving($this->alertRange ?? $this->getFollowDistance(), self::ALERT_RANGE_Y) as $other) {
 			if ($other instanceof $this->entity &&
 				$other->getTargetEntityId() === null &&
 				!$this->shouldIgnoreAlert($other)
