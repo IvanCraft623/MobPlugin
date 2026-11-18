@@ -53,6 +53,7 @@ use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
 use IvanCraft623\MobPlugin\entity\monster\MagmaCube;
+use IvanCraft623\MobPlugin\entity\monster\Silverfish;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
@@ -133,6 +134,7 @@ final class DespawnRuleRegistry{
 			persistentWhile: static fn(Enderman $enderman) : bool => $enderman->getCarriedBlock() !== null
 		));
 		$this->register(DespawnRule::monster(Endermite::class, maxLifetime: 2400));
+		$this->register(DespawnRule::monster(Silverfish::class));
 		$this->register(DespawnRule::monster(MagmaCube::class));
 		foreach([
 			Cod::class,

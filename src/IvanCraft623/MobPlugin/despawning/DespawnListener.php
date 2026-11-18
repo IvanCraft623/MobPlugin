@@ -63,7 +63,11 @@ final class DespawnListener implements Listener{
 	public function onMobSpawn(MobSpawnEvent $event) : void{
 		$parent = $event->getParent();
 		$persistent = match($event->getCause()){
-			MobSpawnCause::BREEDING, MobSpawnCause::HATCHING, MobSpawnCause::SPAWN_EGG, MobSpawnCause::BUCKET => true,
+			MobSpawnCause::BREEDING,
+			MobSpawnCause::HATCHING,
+			MobSpawnCause::SPAWN_EGG,
+			MobSpawnCause::BUCKET,
+			MobSpawnCause::INFESTED_BLOCK => true,
 			MobSpawnCause::SPLIT => $parent !== null && $this->registry->getProfile($parent)?->isPersistent() === true,
 			default => false
 		};

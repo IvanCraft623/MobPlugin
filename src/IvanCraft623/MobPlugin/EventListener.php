@@ -29,12 +29,14 @@ use IvanCraft623\MobPlugin\entity\boss\Boss;
 use IvanCraft623\MobPlugin\entity\boss\Wither;
 use IvanCraft623\MobPlugin\entity\Mob;
 use IvanCraft623\MobPlugin\entity\monster\Endermite;
+use IvanCraft623\MobPlugin\entity\monster\Silverfish;
 use IvanCraft623\MobPlugin\entity\monster\Zombie;
 use IvanCraft623\MobPlugin\event\MobSpawnCause;
 use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\pattern\BlockPatternFactory;
 use IvanCraft623\MobPlugin\utils\Utils;
 
+use pocketmine\block\InfestedStone;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\effect\EffectInstance;
 use pocketmine\entity\effect\VanillaEffects;
@@ -42,14 +44,17 @@ use pocketmine\entity\Location;
 use pocketmine\entity\projectile\EnderPearl;
 use pocketmine\entity\projectile\Projectile;
 use pocketmine\entity\projectile\SplashPotion;
+use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 use pocketmine\event\entity\EntityDeathEvent;
 use pocketmine\event\entity\EntityEffectAddEvent;
+use pocketmine\event\entity\EntityExplodeEvent;
 use pocketmine\event\entity\ProjectileHitEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerInteractEvent;
 use pocketmine\event\player\PlayerJoinEvent;
+use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\ItemTypeIds;
 use pocketmine\item\PotionType;
 use pocketmine\math\Facing;
@@ -233,6 +238,58 @@ class EventListener implements Listener {
 		));
 		(new MobSpawnEvent($endermite, MobSpawnCause::ENDER_PEARL, $pearl))->call();
 		$endermite->spawnToAll();
+	}
+
+	// --- Silverfish ---
+
+	/**
+	 * An infested block broken without Silk Touch, and not in creative, lets its silverfish out.
+	 *
+	 * @priority MONITOR
+	 */
+	public function onInfestedBlockBreak(BlockBreakEvent $event) : void{
+		if ($event->isCancelled()) {
+			return;
+		}
+
+		$block = $event->getBlock();
+		if (!$block instanceof InfestedStone ||
+			$event->getPlayer()->isCreative() ||
+			$event->getItem()->hasEnchantment(VanillaEnchantments::SILK_TOUCH())
+		) {
+			return;
+		}
+
+		$silverfish = new Silverfish(Location::fromObject(
+			$block->getPosition()->add(0.5, 0, 0.5),
+			$block->getPosition()->getWorld(),
+			PMUtils::getRandomFloat() * 360
+		));
+		(new MobSpawnEvent($silverfish, MobSpawnCause::INFESTED_BLOCK))->call();
+		$silverfish->spawnToAll();
+	}
+
+	/**
+	 * An infested block destroyed by an explosion lets its silverfish out.
+	 *
+	 * @priority MONITOR
+	 */
+	public function onInfestedBlockExplode(EntityExplodeEvent $event) : void{
+		if ($event->isCancelled()) {
+			return;
+		}
+
+		foreach ($event->getBlockList() as $block) {
+			if ($block instanceof InfestedStone) {
+				$silverfish = new Silverfish(Location::fromObject(
+					$block->getPosition()->add(0.5, 0, 0.5),
+					$block->getPosition()->getWorld(),
+					PMUtils::getRandomFloat() * 360
+				));
+				(new MobSpawnEvent($silverfish, MobSpawnCause::INFESTED_BLOCK))->call();
+				$silverfish->spawnToAll();
+			}
+		}
 	}
 
 	// --- Boss bars ---
