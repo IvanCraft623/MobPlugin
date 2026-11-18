@@ -48,6 +48,7 @@ final class ExtraItemRegisterHelper{
 
 	public static function registerItems() : void{
 		self::registerSimpleItem(ItemTypeNames::ENDERMITE_SPAWN_EGG, ExtraVanillaItems::ENDERMITE_SPAWN_EGG(), ["endermite_spawn_egg"]);
+		self::registerSimpleItem(ItemTypeNames::SILVERFISH_SPAWN_EGG, ExtraVanillaItems::SILVERFISH_SPAWN_EGG(), ["silverfish_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::MOOSHROOM_SPAWN_EGG, ExtraVanillaItems::MOOSHROOM_SPAWN_EGG(), ["mooshroom_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::COW_SPAWN_EGG, ExtraVanillaItems::COW_SPAWN_EGG(), ["cow_spawn_egg"]);
 		self::registerSimpleItem(ItemTypeNames::SHEEP_SPAWN_EGG, ExtraVanillaItems::SHEEP_SPAWN_EGG(), ["sheep_spawn_egg"]);

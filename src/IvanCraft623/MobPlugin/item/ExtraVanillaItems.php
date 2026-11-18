@@ -55,6 +55,7 @@ use IvanCraft623\MobPlugin\entity\monster\Endermite;
 use IvanCraft623\MobPlugin\entity\monster\Husk;
 use IvanCraft623\MobPlugin\entity\monster\illager\Vindicator;
 use IvanCraft623\MobPlugin\entity\monster\MagmaCube;
+use IvanCraft623\MobPlugin\entity\monster\Silverfish;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Bogged;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Skeleton;
 use IvanCraft623\MobPlugin\entity\monster\skeleton\Stray;
@@ -95,6 +96,7 @@ use pocketmine\utils\CloningRegistryTrait;
  * @method static \pocketmine\item\SpawnEgg CREEPER_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ENDERMAN_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg ENDERMITE_SPAWN_EGG()
+ * @method static \pocketmine\item\SpawnEgg SILVERFISH_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg IRON_GOLEM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg MOOSHROOM_SPAWN_EGG()
  * @method static \pocketmine\item\SpawnEgg PIG_SPAWN_EGG()
@@ -155,6 +157,7 @@ final class ExtraVanillaItems{
 
 	private static function registerSpawnEggs() : void{
 		self::register("endermite_spawn_egg", new MobSpawnEgg(new IID(Ids::ENDERMITE_SPAWN_EGG()), "Endermite Spawn Egg", Endermite::class));
+		self::register("silverfish_spawn_egg", new MobSpawnEgg(new IID(Ids::SILVERFISH_SPAWN_EGG()), "Silverfish Spawn Egg", Silverfish::class));
 		self::register("mooshroom_spawn_egg", new MobSpawnEgg(new IID(Ids::MOOSHROOM_SPAWN_EGG()), "Mooshroom Spawn Egg", MooshroomCow::class));
 		self::register("cow_spawn_egg", new MobSpawnEgg(new IID(Ids::COW_SPAWN_EGG()), "Cow Spawn Egg", Cow::class));
 		self::register("sheep_spawn_egg", new MobSpawnEgg(new IID(Ids::SHEEP_SPAWN_EGG()), "Sheep Spawn Egg", Sheep::class));

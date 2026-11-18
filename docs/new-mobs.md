@@ -84,17 +84,19 @@ Optional capabilities are interfaces; the example shows the wiring:
 
 ## A minimal mob
 
-```php
-class Silverfish extends Monster{
+`entity/monster/Endermite.php` is a small real mob; this is its code without the ender pearl spawn chance constant.
 
-	public static function getNetworkTypeId() : string{ return EntityIds::SILVERFISH; }
+```php
+class Endermite extends Monster{
+
+	public static function getNetworkTypeId() : string{ return EntityIds::ENDERMITE; }
 
 	protected function getInitialSizeInfo() : EntitySizeInfo{
-		return new EntitySizeInfo(VanillaEntitySizes::SILVERFISH_HEIGHT, VanillaEntitySizes::SILVERFISH_WIDTH);
+		return new EntitySizeInfo(VanillaEntitySizes::ENDERMITE_HEIGHT, VanillaEntitySizes::ENDERMITE_WIDTH);
 	}
 
 	public function getName() : string{
-		return "Silverfish";
+		return "Endermite";
 	}
 
 	public function getMobType() : MobType{
@@ -105,7 +107,7 @@ class Silverfish extends Monster{
 		parent::initProperties();
 
 		$this->setMaxHealth(8);
-		$this->setAttackDamage(1);
+		$this->setAttackDamage(2);
 	}
 
 	public function getDefaultMovementSpeed() : float{
@@ -114,21 +116,23 @@ class Silverfish extends Monster{
 
 	protected function registerGoals() : void{
 		$this->goalSelector->addGoal(1, new FloatGoal($this));
-		$this->goalSelector->addGoal(4, new MeleeAttackGoal($this, 1));
-		$this->goalSelector->addGoal(5, new WaterAvoidingRandomStrollGoal($this, 1));
+		//TODO: powder snow climb goal
+		$this->goalSelector->addGoal(2, new MeleeAttackGoal($this, 1));
+		$this->goalSelector->addGoal(3, new WaterAvoidingRandomStrollGoal($this, 1));
 		$this->goalSelector->addGoal(7, new LookAtEntityGoal($this, Player::class, 8));
 		$this->goalSelector->addGoal(8, new RandomLookAroundGoal($this));
 
-		$this->targetSelector->addGoal(1, new HurtByTargetGoal($this));
+		$this->targetSelector->addGoal(1, (new HurtByTargetGoal($this))->setAlertOthers());
 		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, Player::class));
+		$this->targetSelector->addGoal(2, new NearestAttackableGoal($this, Enderman::class));
 	}
 
 	public function getXpDropAmount() : int{
-		return $this->hasBeenDamagedByPlayer() ? 5 : 0;
+		return $this->hasBeenDamagedByPlayer() ? 3 : 0;
 	}
 
 	public function getPickedItem() : ?Item{
-		return ExtraVanillaItems::SILVERFISH_SPAWN_EGG();
+		return ExtraVanillaItems::ENDERMITE_SPAWN_EGG();
 	}
 }
 ```

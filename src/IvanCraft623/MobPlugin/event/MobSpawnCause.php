@@ -34,6 +34,9 @@ enum MobSpawnCause{
 	case SPAWN_EGG;
 	case BUCKET;
 	case ENDER_PEARL;
-	/** For plugins that spawn mobs their own way. */
+	case INFESTED_BLOCK;
+	/**
+	 * For plugins that spawn mobs their own way.
+	 */
 	case CUSTOM;
 }
