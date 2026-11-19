@@ -25,8 +25,8 @@ namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
 use IvanCraft623\MobPlugin\entity\ai\navigation\locomotion\Locomotion;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_075cd0d7d17cc7a8\IvanCraft623\Pathfinder\PathCursor;
-use IvanCraft623\MobPlugin\libs\_075cd0d7d17cc7a8\IvanCraft623\Pathfinder\world\BlockGetter;
+use IvanCraft623\MobPlugin\libs\_f15d4ff2cb75913b\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_f15d4ff2cb75913b\IvanCraft623\Pathfinder\world\BlockGetter;
 use pocketmine\math\Vector3;
 use function abs;
 

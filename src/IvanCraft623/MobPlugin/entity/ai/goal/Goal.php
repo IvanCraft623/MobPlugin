@@ -32,9 +32,6 @@ abstract class Goal {
 	public const FLAG_JUMP = 2;
 	public const FLAG_TARGET = 3;
 
-	/** @var int[] */
-	private array $flags = [];
-
 	private int $flagMask = 0;
 
 	abstract public function canUse() : bool;
@@ -60,15 +57,7 @@ abstract class Goal {
 	public function tick() : void{
 	}
 
-	/**
-	 * @return int[]
-	 */
-	public function getFlags() : array{
-		return $this->flags;
-	}
-
 	public function setFlags(int ...$flags) : void{
-		$this->flags = $flags;
 		$this->flagMask = 0;
 		foreach ($flags as $flag) {
 			$this->flagMask |= 1 << $flag;
