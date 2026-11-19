@@ -43,13 +43,13 @@ Outside `src/`:
   merge the loot tables, from the pinned `mojang/bedrock-samples` dev dependency, and
   generate registry classes with PocketMine-MP's registry generator (`tools/registry/`).
 - `tests/phpunit/` — the PHPUnit suite.
-- `.github/workflows/` — `ci.yml` (PHPStan, PHPUnit, generated data drift), `build.yml`
+- `.github/workflows/` — `ci.yml` (code style, PHPStan, PHPUnit, generated data drift), `build.yml`
   (nightly phar) and `release.yml` (tagged releases).
 
 ## Tooling
 
 - `composer install` — dependencies. Don't edit `vendor/` or `composer.lock` by hand.
-- `php-cs-fixer fix` — code style, including the license header. Run it after editing.
+- `php-cs-fixer fix` — code style, including the license header. Run it after editing, with the version CI pins (`ci.yml`).
 - `vendor/bin/phpstan.phar analyze --no-progress` — PHPStan level 9.
 - `composer test` — PHPUnit.
 - `composer build` — builds `MobPlugin.phar`.
