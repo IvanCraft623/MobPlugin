@@ -29,8 +29,8 @@ use function ksort;
 
 class GoalSelector {
 
-	/** @var array<int, WrappedGoal> flag => WrappedGoal */
-	protected array $lockedFlags = [];
+	/** @var array<int, WrappedGoal> flag => the goal holding it */
+	protected array $flagHolders = [];
 
 	/** @var WrappedGoal[] */
 	protected array $availableGoals = [];
@@ -76,11 +76,11 @@ class GoalSelector {
 		}
 
 		$lockedFlags = 0;
-		foreach ($this->lockedFlags as $flag => $wrappedGoal) {
+		foreach ($this->flagHolders as $flag => $wrappedGoal) {
 			if ($wrappedGoal->isRunning()) {
 				$lockedFlags |= 1 << $flag;
 			} else {
-				unset($this->lockedFlags[$flag]);
+				unset($this->flagHolders[$flag]);
 			}
 		}
 
@@ -100,7 +100,7 @@ class GoalSelector {
 				continue;
 			}
 			if (($flags & $lockedFlags) !== 0) {
-				foreach ($this->lockedFlags as $flag => $holder) {
+				foreach ($this->flagHolders as $flag => $holder) {
 					if (($flags & (1 << $flag)) !== 0 && !$holder->canBeReplacedBy($wrappedGoal)) {
 						continue 2;
 					}
@@ -113,11 +113,11 @@ class GoalSelector {
 				continue;
 			}
 
-			foreach ($goal->getFlags() as $flag) {
-				if (isset($this->lockedFlags[$flag])) {
-					$this->lockedFlags[$flag]->stop();
+			for ($flag = Goal::FLAG_MOVE; $flag <= Goal::FLAG_TARGET; $flag++) {
+				if (($flags & (1 << $flag)) !== 0) {
+					$this->flagHolders[$flag]?->stop();
+					$this->flagHolders[$flag] = $wrappedGoal;
 				}
-				$this->lockedFlags[$flag] = $wrappedGoal;
 			}
 			$lockedFlags |= $flags;
 
