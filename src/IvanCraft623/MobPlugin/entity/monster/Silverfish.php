@@ -46,6 +46,7 @@ use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
+use function count;
 
 class Silverfish extends Monster {
 
@@ -53,8 +54,14 @@ class Silverfish extends Monster {
 	private const HOST_WALK_TARGET_VALUE = 10.0; //score, it likes to be at a block it can hide in
 	private const MAGMA_WALK_TARGET_VALUE = -0.5; //score, and to stay off magma
 
-	/** @var array<int, InfestedStone>|null built when first needed, see getInfestedBlocks() */
-	private static ?array $infestedBlocks = null;
+	/** @var array<int, true> type ids of the blocks it can hide in, see initInfestationInfo() */
+	private static array $infestableTypeIds = [];
+
+	/** @var list<int> type ids of the infested forms of those blocks, see initInfestationInfo() */
+	private static array $infestedTypeIds = [];
+
+	/** @var array<int, int> state id xor mask that swaps a block with its infested form, keyed by the type id of both */
+	private static array $infestationToggleMasks = [];
 
 	public static function getNetworkTypeId() : string{ return EntityIds::SILVERFISH; }
 
@@ -99,7 +106,7 @@ class Silverfish extends Monster {
 
 	public function getWalkTargetValue(Vector3 $position) : float{
 		$world = $this->getWorld();
-		if (isset(self::getInfestedBlocks()[$world->getBlock($position)->getTypeId()])) {
+		if (self::isInfestable($world->getBlock($position))) {
 			return self::HOST_WALK_TARGET_VALUE;
 		}
 		if ($world->getBlock($position->down())->getTypeId() === BlockTypeIds::MAGMA) {
@@ -114,40 +121,56 @@ class Silverfish extends Monster {
 		return 0.25;
 	}
 
-	/**
-	 * The infested blocks in their default state, keyed by the type id of the block each one imitates.
-	 *
-	 * @return array<int, InfestedStone>
-	 */
-	public static function getInfestedBlocks() : array{
-		if (self::$infestedBlocks === null) {
-			self::$infestedBlocks = [];
-			foreach (VanillaBlocks::getAll() as $block) {
-				if ($block instanceof InfestedStone) {
-					self::$infestedBlocks[$block->getImitatedBlock()->getTypeId()] = $block;
-				}
-			}
+	private static function initInfestationInfo() : void{
+		if (count(self::$infestableTypeIds) !== 0) {
+			return;
 		}
 
-		return self::$infestedBlocks;
+		foreach (VanillaBlocks::getAll() as $block) {
+			if ($block instanceof InfestedStone) {
+				$hostTypeId = $block->getImitatedBlock()->getTypeId();
+				$mask = $block->getStateId() ^ $block->getImitatedBlock()->getStateId();
+				self::$infestableTypeIds[$hostTypeId] = true;
+				self::$infestedTypeIds[] = $block->getTypeId();
+				self::$infestationToggleMasks[$hostTypeId] = $mask;
+				self::$infestationToggleMasks[$block->getTypeId()] = $mask;
+			}
+		}
 	}
 
 	/**
-	 * Infests a block a silverfish can hide in, or turns an infested block back, keeping its state (deepslate's axis).
-	 * Both blocks encode their state alike, so their state ids differ by the same bits in every state.
+	 * Whether a silverfish can hide in the block, not whether it already has.
+	 */
+	public static function isInfestable(Block $block) : bool{
+		self::initInfestationInfo();
+
+		return isset(self::$infestableTypeIds[$block->getTypeId()]);
+	}
+
+	/**
+	 * @return list<int>
+	 */
+	public static function getInfestedTypeIds() : array{
+		self::initInfestationInfo();
+
+		return self::$infestedTypeIds;
+	}
+
+	/**
+	 * Infests a block a silverfish can hide in, or turns an infested block back, keeping its state.
+	 * Both encode their state alike, so xoring the state id with the bits that set them apart swaps the type only.
 	 *
 	 * @return Block|null null if the block is neither
 	 */
 	public static function toggleInfestation(Block $block) : ?Block{
-		$host = $block instanceof InfestedStone ? $block->getImitatedBlock() : $block;
-		$infested = self::getInfestedBlocks()[$host->getTypeId()] ?? null;
-		if ($infested === null) {
+		self::initInfestationInfo();
+
+		$mask = self::$infestationToggleMasks[$block->getTypeId()] ?? null;
+		if ($mask === null) {
 			return null;
 		}
 
-		return RuntimeBlockStateRegistry::getInstance()->fromStateId(
-			$block->getStateId() ^ $infested->getStateId() ^ $infested->getImitatedBlock()->getStateId()
-		);
+		return RuntimeBlockStateRegistry::getInstance()->fromStateId($block->getStateId() ^ $mask);
 	}
 
 	public function getPickedItem() : ?Item{
