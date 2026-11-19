@@ -32,12 +32,10 @@ use IvanCraft623\MobPlugin\event\MobSpawnEvent;
 use IvanCraft623\MobPlugin\memory\Memories;
 use IvanCraft623\MobPlugin\memory\Occurrence;
 
-use pocketmine\block\InfestedStone;
 use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Location;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\utils\Utils as PMUtils;
-use function array_map;
 
 /**
  * While something that hurt it is remembered, breaks the infested blocks around it every second, letting the
@@ -85,7 +83,7 @@ class WakeUpFriendsGoal extends Goal {
 			$this->entity->getPosition(),
 			self::SEARCH_RANGE,
 			self::SEARCH_HEIGHT,
-			...array_map(static fn(InfestedStone $infested) : int => $infested->getTypeId(), Silverfish::getInfestedBlocks())
+			...Silverfish::getInfestedTypeIds()
 		) as $position) {
 			if ($mobGriefing) {
 				$world->setBlock($position, VanillaBlocks::AIR());
