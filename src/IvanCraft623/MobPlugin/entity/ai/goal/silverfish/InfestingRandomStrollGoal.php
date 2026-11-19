@@ -58,7 +58,7 @@ class InfestingRandomStrollGoal extends RandomStrollGoal {
 				(int) floor($position->z) + $offset[2]
 			);
 
-			if (isset(Silverfish::getInfestedBlocks()[$block->getTypeId()])) {
+			if (Silverfish::isInfestable($block)) {
 				$this->target = $block;
 
 				return true;
