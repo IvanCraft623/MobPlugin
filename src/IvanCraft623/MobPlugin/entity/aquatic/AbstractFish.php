@@ -41,7 +41,7 @@ use IvanCraft623\MobPlugin\entity\FlockingTrait;
 use IvanCraft623\MobPlugin\entity\MobType;
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
 
-use IvanCraft623\MobPlugin\libs\_f15d4ff2cb75913b\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_47f51ab364465e1c\IvanCraft623\Pathfinder\BlockPathType;
 
 use pocketmine\block\Block;
 use pocketmine\block\Water;
