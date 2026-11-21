@@ -115,7 +115,7 @@ class GoalSelector {
 
 			for ($flag = Goal::FLAG_MOVE; $flag <= Goal::FLAG_TARGET; $flag++) {
 				if (($flags & (1 << $flag)) !== 0) {
-					$this->flagHolders[$flag]?->stop();
+					($this->flagHolders[$flag] ?? null)?->stop();
 					$this->flagHolders[$flag] = $wrappedGoal;
 				}
 			}
