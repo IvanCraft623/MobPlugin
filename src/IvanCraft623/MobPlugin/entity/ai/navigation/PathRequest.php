@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\navigation;
 
-use IvanCraft623\MobPlugin\libs\_abb2fb605ab8c97f\IvanCraft623\Pathfinder\PathCursor;
+use IvanCraft623\MobPlugin\libs\_a6c4024b7fc66434\IvanCraft623\Pathfinder\PathCursor;
 use pocketmine\math\Vector3;
 
 /**
