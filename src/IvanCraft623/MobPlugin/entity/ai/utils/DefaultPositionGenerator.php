@@ -24,7 +24,7 @@ declare(strict_types=1);
 namespace IvanCraft623\MobPlugin\entity\ai\utils;
 
 use IvanCraft623\MobPlugin\entity\PathfinderMob;
-use IvanCraft623\MobPlugin\libs\_a6c4024b7fc66434\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
+use IvanCraft623\MobPlugin\libs\_f8fbc2a3e2ee221f\IvanCraft623\Pathfinder\pathtype\BlockClassifier;
 use pocketmine\math\Vector3;
 use pocketmine\utils\Random;
 use pocketmine\world\Position;

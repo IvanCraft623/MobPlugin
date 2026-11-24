@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace IvanCraft623\MobPlugin\entity\ai\control;
 
-use IvanCraft623\MobPlugin\libs\_a6c4024b7fc66434\IvanCraft623\Pathfinder\BlockPathType;
+use IvanCraft623\MobPlugin\libs\_f8fbc2a3e2ee221f\IvanCraft623\Pathfinder\BlockPathType;
 use function atan2;
 use function cos;
 use function floor;
